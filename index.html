@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Under Construction</title>
+  <style>
+    :root { --gold: #c9a84c; --bg0: #0e0c08; --bg1: #1c1508; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+      color: var(--gold);
+      background: radial-gradient(120% 120% at 50% 0%, var(--bg1) 0%, var(--bg0) 70%);
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+    }
+    .card {
+      max-width: 560px; width: 100%;
+      border: 1.2px solid var(--gold); border-radius: 10px;
+      padding: 48px 36px;
+      background: linear-gradient(180deg, rgba(38,28,8,.45), rgba(19,15,4,.45));
+    }
+    .glyph { font-size: 56px; line-height: 1; opacity: .85; }
+    h1 { font-size: 26px; font-weight: 700; letter-spacing: 2px; margin: 22px 0 8px; text-transform: uppercase; }
+    p { color: #c9a84c; opacity: .65; font-size: 15px; line-height: 1.6; margin: 0 0 28px; }
+    a.btn {
+      display: inline-block; text-decoration: none;
+      color: var(--gold); border: 1.4px solid var(--gold); border-radius: 6px;
+      padding: 11px 22px; font-size: 14px; font-weight: 700; letter-spacing: .6px;
+      transition: background .15s ease, color .15s ease;
+    }
+    a.btn:hover { background: var(--gold); color: var(--bg0); }
+    .foot { margin-top: 26px; font-size: 12px; opacity: .4; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="glyph">𓂀</div>
+    <h1>Under Construction</h1>
+    <p>This site is being rebuilt. In the meantime, explore the Akhenaten project wiki.</p>
+    <a class="btn" href="https://dalerank.github.io/Akhenaten/wiki/">Akhenaten Wiki →</a>
+    <div class="foot">Akhenaten — open-source reimplementation of Pharaoh (1999)</div>
+  </main>
+</body>
+</html>
