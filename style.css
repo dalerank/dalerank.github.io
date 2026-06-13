@@ -133,15 +133,15 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
 .books .sec-head h2{color:var(--paper-2)} .books .sec-head h2 .n{color:var(--gold-soft)}
 .books .sec-head a.more{color:var(--gold-soft)}
 .booklist{display:grid;grid-template-columns:repeat(2,1fr);gap:40px;position:relative;z-index:1}
-.book{display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:start}
+.book{display:grid;grid-template-columns:180px 1fr;grid-template-rows:1fr auto;gap:24px;align-items:start}
 .bookcol{display:flex;flex-direction:column;gap:14px}
 .bookcol .btn{display:block;width:100%;text-align:center}
 .bookcol .btnrow{display:flex;flex-wrap:nowrap;gap:6px}
 .bookcol .btnrow .btn{width:auto;flex:1 1 auto;min-width:0;white-space:nowrap;
   font-size:11px;letter-spacing:.02em;padding-left:5px;padding-right:5px}
-.bookcol .alt{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+.bookcol .alt,.book .bookbtns .alt{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--gold-soft);text-align:center;text-decoration:underline;text-underline-offset:3px;margin-top:-3px}
-.bookcol .alt:hover{color:#fff}
+.bookcol .alt:hover,.book .bookbtns .alt:hover{color:#fff}
 .cover{aspect-ratio:3/4.2;width:140px;align-self:center;border-radius:4px 10px 10px 4px;position:relative;
   box-shadow:14px 16px 30px rgba(0,0,0,.35);transform:rotate(-3deg);transition:transform .25s}
 .book:hover .cover{transform:rotate(0) translateY(-4px)}
@@ -165,6 +165,11 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
 .book .price{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--gold-soft);margin-right:14px}
 .btn.buy{border-color:var(--gold-soft);background:var(--gold-soft);color:#1b1405}
 .btn.buy:hover{box-shadow:4px 6px 0 rgba(0,0,0,.25)}
+.book .bookbtns{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.book .bookbtns .btnrow{display:flex;flex-wrap:nowrap;gap:8px;align-items:center}
+.book .bookbtns .btnrow .btn{flex:1 1 0;width:auto;text-align:center;white-space:nowrap}
+.book .bookbtns .altrow{display:flex;align-items:center;justify-content:center;gap:14px;min-height:44px}
+.book .bookbtns .altrow .price{margin-right:0;margin-bottom:0}
 
 /* ---------- projects ---------- */
 .projects-stack{display:flex;flex-direction:column;gap:26px}
