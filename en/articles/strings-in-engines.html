@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Strings in game engines — dalerank</title>
+<meta name="description" content="How strings work in game engines: C-strings and NTBS, std::string and SSO, string_view, sized/pool/arena strings, shared strings, identifiers and SIMD parsing." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/strings-in-engines.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/strings-in-engines.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/strings-in-engines.html">RU</a><i>/</i><a class="on" href="strings-in-engines.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap article">
+
+  <div class="article-head">
+    <span class="tag">Abnormal programming</span>
+    <h1>Strings in game engines</h1>
+    <div class="ameta"><span>September 5, 2024</span><span>15 min</span></div>
+  </div>
+
+  <article class="prose">
+    <img src="../../assets/articles/strings-in-engines/str-01.png" alt="" class="post-image" loading="lazy" />
+    <p>Historically, the need for strings and their use in game engines was fairly limited — except, perhaps, for resource localization, where you needed full support for something beyond the ASCII set. But if they wanted to, developers managed to pack even those resources into the available 200 elements of the ASCII set, and since a game usually launches in only one locale, there was no need for conversion at all. There are differences from the standard, though: thanks to Sony, practically from the early 2000s, even before the C++20 standard, game developers had several models of character literals available. Standard ASCII on the PS1 and partial Unicode support (ISO 10646); the SDK for the second PlayStation added UTF-16 and UTF-32 support, and after the PS3 came out, UTF-8 support was added.</p>
+    <pre style="margin:1.4rem 0"><code>int main()
+{
+  char     c1{ 'a' };       // 'narrow' char
+  char8_t  c2{ u8'a' };     // UTF-8  - (PS3 and later)
+  char16_t c3{ u'貓' };     // UTF-16 - (PS2)
+  char32_t c4{ U'🐱' };     // UTF-32 - (PS2 limited)
+  wchar_t  c5{ L'β' };      // wide char - wchar_t
+}</code></pre>
+
+    <h2>C-Style strings (NTBS)</h2>
+    <img src="../../assets/articles/strings-in-engines/str-02.png" alt="" class="post-image" loading="lazy" />
+    <p>Any null-terminated byte sequence (NTBS), which is a chain of non-zero bytes plus a terminating null character (the character literal <code>'\0'</code>).</p>
+    <p>The length of an NTBS is the number of elements preceding the terminating null character. An empty NTBS has length zero.</p>
+    <p>A string literal is a sequence of characters surrounded by double quotes (<code>" "</code>).</p>
+    <pre style="margin:1.4rem 0"><code>int main(void)
+{
+  char string_literal[] = "Hello World";
+
+  std::cout &lt;&lt; sizeof(string_literal) &lt;&lt; '\n';  // 12
+  std::cout &lt;&lt; strlen(string_literal) &lt;&lt; '\n';  // 11
+}</code></pre>
+    <p>In C/C++, single quotes (<code>'</code>) are used to denote character literals. Single quotes (<code>' '</code>) can't be used to represent strings, but the first SDKs from Sony allowed you to place strings the same way; the same role was played by the <code>`</code> character ("grave," or "backtick"). In that case the compiler placed those strings closer to the start of <code>.rodata</code>, if we map it onto a modern exe, which had certain peculiarities in use.</p>
+    <pre style="margin:1.4rem 0"><code>char string_literal[] = `Hello World`;  // also a string, placed at the start of rodata
+char another_string_literal[] = 'Hello World'; // this was allowed too</code></pre>
+
+    <h2>C-strings and string literals</h2>
+    <p>What's the difference between the following two string definitions? (<a href="https://godbolt.org/z/xT3b7TdPf" target="_blank" rel="noopener">godbolt</a>)</p>
+    <pre style="margin:1.4rem 0"><code>int main()
+{
+   char message[] = "this is a string";
+   printf("%u\n", sizeof(message));
+
+   const char *msg_ptr = "this is a string";
+   printf("%u", sizeof(msg_ptr));
+}</code></pre>
+    <details>
+      <summary>Spoiler — disassembly</summary>
+      <pre style="margin:1.4rem 0"><code>main:
+        push    rbp
+        mov     rbp, rsp
+        sub     rsp, 48
+        mov     rax, qword ptr [rip + .L__const.main.message]
+        mov     qword ptr [rbp - 32], rax
+        mov     rax, qword ptr [rip + .L__const.main.message+8]
+        mov     qword ptr [rbp - 24], rax
+        mov     al, byte ptr [rip + .L__const.main.message+16]
+        mov     byte ptr [rbp - 16], al
+        lea     rdi, [rip + .L.str]
+        mov     esi, 17
+        mov     al, 0
+        call    printf@PLT
+        lea     rax, [rip + .L.str.1]
+        mov     qword ptr [rbp - 40], rax
+        lea     rdi, [rip + .L.str.2]
+        mov     esi, 8
+        mov     al, 0
+        call    printf@PLT
+        xor     eax, eax
+        add     rsp, 48
+        pop     rbp
+        ret
+
+.L__const.main.message:
+        .asciz  "this is a string"
+
+.L.str:
+        .asciz  "%u\n"
+
+.L.str.1:
+        .asciz  "this is a string"
+
+.L.str.2:
+        .asciz  "%u"</code></pre>
+    </details>
+    <p>The first output will show 17 — the number of characters in the string (including the null character). The second will show the size of a pointer. The strings above are visually identical, but:</p>
+    <ul>
+      <li>For <code>message</code>, memory is allocated on the stack at runtime. From the compiler's point of view it's a byte array filled from the string literal. This data can be modified without issue.</li>
+      <li>For <code>msg_ptr</code>, only the address of the string literal is stored on the stack — the literal itself lives in the <code>.rodata</code> segment, and no copy of the literal is made. This data usually can't be changed, though with some effort it can.</li>
+      <li>The first feature of those backtick strings was that identical strings were "merged" to save memory. The second was the ability to write into that section, which many developers used, for example, to pass data around the standard save mechanisms within a single game session.</li>
+    </ul>
+    <p>The valiant Nintendo decided to continue Sony's glorious tradition of tossing developers extra puzzles, and in its latest SDKs (since 2018) rolled out its own string implementation based on a separate memory pool in the system. By the benchmarks it works faster, but I wouldn't say it became popular.</p>
+
+    <h2>C String Standard Library</h2>
+    <p>Usually a vendor's SDK provides a string-manipulation library <code>&lt;string.h&gt;</code>, optimized for the specific console model, containing helper functions like <code>strcpy</code>/<code>strlen</code>. Well, everyone except Sony. Before the switch to clang, those functions weren't in the SDK distribution. But most developers didn't notice, because game engines already had their own hand-written functions for working with strings. Microsoft, by the way, didn't suffer from such a careless attitude — everything was in place from the very first Xbox SDKs.</p>
+    <pre style="margin:1.4rem 0"><code>copying strings         : strcpy, strncpy, strdup
+concatenating strings   : strcat, strncat, strappend
+comparing strings       : strcmp, strncmp
+parsing strings         : strcspn, strstr, strchr, strchrrev, strupper...
+tokenize                : strtok, strsplit
+length                  : strlen, strempty</code></pre>
+    <p>All these functions rely on the passed pointer pointing to a properly formed null-terminated string; to this day the behavior of these functions is undefined if the pointer is to something other than an NTBS. Sony made attempts to push strings that began and ended with a special byte sequence, with those blocks living outside the data block, but they didn't get past SDK versions 4 and 5, and are now removed entirely. The reason for such inventions was console security and the consecutive hacks of the PS3 Fat and PS3 Slim.</p>
+    <blockquote><p><strong>Scope of application:</strong> the widest — any software that doesn't require special string capabilities. In game engines, in pure form it's not very common because of the verbosity of the supporting code, security issues, and portability problems across platforms.</p></blockquote>
+
+    <h2>C++ strings</h2>
+    <img src="../../assets/articles/strings-in-engines/str-03.png" alt="" class="post-image" loading="lazy" />
+    <p>The C++ standard library supports the <code>&lt;string&gt;</code> header. The base type <code>std::string</code> can be thought of as a variable-size array of characters, and it contains functions for the most common operations — initialization from string literals, concatenation, search, and so on — which, however, doesn't make parsing strings any simpler than with C-strings, but still takes most of the work off the average programmer. Adding, mind you, other problems and tasks — but more on that later.</p>
+    <pre style="margin:1.4rem 0"><code>const std::string this_string { "This is" }; // initialise
+
+int main() {
+  std::string name = " string";
+  std::string concat_str =  this_string + name; // concatenation
+
+  std::cout &lt;&lt; concat_str;
+
+  if (!this_string.empty()) {
+    std::cout &lt;&lt; '\n' &lt;&lt; this_string.length() &lt;&lt; '\n';
+    std::cout &lt;&lt; this_string[0] &lt;&lt; ' ' &lt;&lt; this_string.front() &lt;&lt; '\n';
+    std::cout &lt;&lt; this_string[this_string.length()-1] &lt;&lt; ' ' &lt;&lt; concat_str.back() &lt;&lt; '\n';
+  }
+}
+
+// ---- output ----
+This is string
+7
+T T
+s g</code></pre>
+    <p><code>std::string</code> can't be used directly where a <code>const char*</code> is required, because the <code>data</code> field isn't necessarily the first member of the class and you can't reference it. And many (if not all) SDK utilities, tools, and interfaces prefer a C-API that requires converting <code>std::string</code> to <code>const char*</code>. The C-API here isn't chosen out of luxury either: the internal ABI implementation for classes can differ not only between vendors and compilers, but even within minor compiler versions for a console, as Nintendo likes to do, periodically breaking backward compatibility between SDKs. That's why a single bundle may contain several binaries built for different targets, because a user isn't obliged to update the console to the latest firmware and may well sit on the previous stable build.</p>
+    <p><code>std::string</code> has a <code>.c_str()</code> method that returns a pointer to the internal C-style string (<code>const char*</code>). Besides that, <code>std::string</code>, like most container types, allows access to its internal data via <code>.data()</code> or the standard library function <code>std::data()</code>.</p>
+    <blockquote><p><strong>Scope of application:</strong> used very sparingly, relying more on in-house solutions and string algorithms, and also because of dynamic memory allocation.</p></blockquote>
+
+    <h2>Memory management</h2>
+    <p>By default <code>std::string</code> uses the default allocator, which uses <code>::new</code> and <code>::delete</code> to allocate heap memory where it stores the actual null-terminated data (NTBS).</p>
+    <pre style="margin:1.4rem 0"><code>int main() {
+    const char* this_is_ro_string = "literal string";    // stored in .rodata
+    char this_is_stack_string[] = "literal string";      // stored on stack
+    std::string this_is_heap_string = "Literal String";  // stored in .heap
+}</code></pre>
+    <p>By the standard, <code>std::string</code> contains the main parts:</p>
+    <pre style="margin:1.4rem 0"><code>class string {
+  data -&gt; placed by the allocator; accessible via .data()
+  length -&gt; may be absent or computed on the fly / per operation
+            accessible via .length() or .size()
+  capacity -&gt; available data volume ( &gt;= length); accessible via .capacity()
+}</code></pre>
+    <p>The concrete implementations in SDKs are completely different — some support an internal buffer, some are minimally simple, some with a dedicated string pool or in shared memory — it all depends on the vendor. This is probably the main reason most engines prefer to have their own cross-platform classes for working with strings.</p>
+
+    <h2>Short String Optimisation (SSO)</h2>
+    <p>Modern compilers (for example, Clang) support a string-specific optimization — Short-String Optimisation (SSO). A string class may contain a control part, and for some implementations, besides the data pointer and size, it may also hold a CRC and a pointer to a pool or buffer, which also take up some memory.</p>
+    <pre style="margin:1.4rem 0"><code>class string {
+  void *data; // 8bytes
+  size_t size; // 8bytes
+  size_t capacity; // 8Bytes
+  size_t crc;  // 8bytes
+}</code></pre>
+    <p>And for small strings the size of this control part exceeds the useful payload of data, which — from the standpoint of performance and memory consumption — significantly reduces the advantages of using <code>std::string</code>. To improve memory usage and remove unnecessary allocations, when a string contains fewer characters than the control part, the compiler may (the keyword being "may," since it heavily depends on the enabled optimization modes) store the string in the stack space allocated for the control part, instead of allocating heap memory.</p>
+
+    <h2>C++17 std::string_view</h2>
+    <img src="../../assets/articles/strings-in-engines/str-04.png" alt="" class="post-image" loading="lazy" />
+    <p>C++17 added a new way to work with strings in the form of <code>std::string_view</code>, which describes a string-like object and, for example, can reference a contiguous sequence of char-like objects. A typical implementation of <code>std::string_view</code> contains just two members: a pointer to the character type and a size. And although it doesn't solve the problems of NTBS strings, <code>std::string_view</code> in C++17 added a safer alternative to C-style strings.</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;class _T, class _Traits = char_traits&lt;_CharT&gt; &gt;
+class string_view {
+public:
+    typedef _CharT value_type;
+    typedef size_t size_type;
+    ...
+private:
+    const value_type* __data;
+    size_type __size;
+};</code></pre>
+    <p><code>std::string_view</code> is more than a good candidate for possibly refactoring legacy code (where appropriate), replacing parameters of type <code>const char*</code> and <code>const std::string&amp;</code> with <code>std::string_view</code> — but the problems inherent to NTBS haven't gone anywhere, and a couple of new ones have been added:</p>
+    <blockquote><p><strong>Scope of application:</strong> often used to reduce overhead and simplify string handling, but with a mature codebase of in-house solutions, priority still goes to the engine's own classes.</p></blockquote>
+
+    <h2>String lifetime management</h2>
+    <p>First, the developer is responsible for making sure a <code>std::string_view</code> doesn't outlive the character array it references — it's the same pointer, just in a pretty wrapper. You don't have to try hard to make such a mistake, but in well-written code it shouldn't happen (<a href="https://godbolt.org/z/fxY6xfc11" target="_blank" rel="noopener">godbolt</a>). On consoles, and elsewhere, like any other dangling-pointer bug, this error is unlikely to be caught at runtime and can lead to hard-to-find bugs. If the memory hasn't yet been reclaimed for another object, the string may well still be there and print fine, or print partially — there are plenty of variations.</p>
+    <pre style="margin:1.4rem 0"><code>using namespace std::string_literals; // operator""s
+using namespace std::literals;        // operator""sv
+
+int main() {
+  // OK: a string literal somewhere in .rodata
+  std::string_view ntbs{ "a string literal" };
+  // UB: an rvalue string allocated on the heap, temporary in scope
+  std::string_view heap_string{ "a temporary string"s };
+  // the string is deallocated
+  std::cout &lt;&lt; "Address of heap_string: " &lt;&lt; (void*)heap_string.data() &lt;&lt; '\n';
+  std::cout &lt;&lt; "Data at heap_string: " &lt;&lt; heap_string.data() &lt;&lt; '\n';
+}</code></pre>
+
+    <h2>Non null-terminated strings</h2>
+    <p>The second mistake: unlike <code>string::data()</code> and string literals, <code>string_view::data()</code> may return a pointer to a buffer that isn't null-terminated, for example a substring. So passing <code>data()</code> to a function that only takes a <code>const char*</code> and expects a null-terminated string would be an error. <code>std::string_view</code> doesn't guarantee at all that it points to a null-terminated string (NTBS), or to a string at all:</p>
+    <pre style="margin:1.4rem 0"><code>void sv_print(std::string_view str) {
+  std::cout &lt;&lt; str.length() &lt;&lt; ' '&lt;&lt; reinterpret_cast&lt;const void*&gt;(str.data()) &lt;&lt; '\n';
+  std::cout &lt;&lt; "cout: " &lt;&lt; str &lt;&lt; '\n';     // based on str.length()
+  printf("stdout: %s\n",str.data());        // based on NUL
+}
+
+int main() {
+    std::string      str_s  {"godbolt compiler explorer"};
+    std::string_view str_sv {"godbolt compiler explorer"};
+    char char_arr2[] = {
+        'a',' ','c','h','a','r',' ','a','r','r','a','y'
+        }; // Not null character terminated
+   sv_print(str_s.substr(8,8));
+   sv_print(str_sv.substr(8,8));
+   sv_print(char_arr2);
+}
+
+// ---- output ----
+8 0x7ffff4bf1550
+cout: compiler
+stdout: compiler
+
+8 0x40201f
+cout: compiler
+stdout: compiler explorer
+
+16 0x7ffff4bf1514
+cout: a char array▒▒▒
+stdout: a char array▒▒▒</code></pre>
+
+    <h2>Sized String</h2>
+    <p>The attitude toward memory usage by strings starts to change for the worse when you suddenly decide to port a game/engine to a console or mobile platform where memory isn't unlimited, and it turns out OOM very much exists and arrives much earlier than you expected, even if there's still a couple hundred megabytes available in total. Then you start figuring out where the memory went, why it's all riddled with little holes, and why with 200 MB available we can't find room for a one-kilobyte string. This is where in-place strings come to the rescue — they have the drawback of incomplete buffer utilization, but they sit nicely on the stack, don't allocate dynamic memory when used, and have predictable timing because they're almost always in the cache. The implementation is trivially simple, and it's effectively just a convenient wrapper over a character array. If anyone's interested in the full implementation, you can take a look <a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/bstring.h" target="_blank" rel="noopener">here</a>, or search GitHub for a prettier one — there are plenty.</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;size_t _size&gt;
+class string_sz {
+    using ref = bstring&lt;_size&gt;&amp;;
+    using const_ref = const sized_string&lt;_size&gt;&amp;;
+
+protected:
+    char _data[_size];
+    ...
+};</code></pre>
+    <p>Or you can play with a static allocator and keep the interface to the standard library's string class. The main problem with this and other classes is the need to thread them through the class interfaces and function signatures you use, which isn't always convenient and isn't always possible. Another plus of such strings is that their contents stay on the stack even in minidumps, and that helps a lot during debugging, whereas ordinary heap strings hold only a pointer to the data.</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;size_t _size&gt;
+using string_sz = std::string&lt;char, static_allocator&lt;char, _size&gt;&gt;;
+using string_sz64 = string_sz&lt;64&gt;;</code></pre>
+    <blockquote><p><strong>Scope of application:</strong> probably the widest of all the string classes presented. Practically any use of <code>string</code> can be replaced with this type, and the code only benefits. The exception is perhaps logs, due to their large volume of text.</p></blockquote>
+
+    <h2>Short Live String</h2>
+    <p>When your engine gets its own memory manager and the ability to control the allocation process, you'll find that most string allocations — if you haven't already moved them to Sized String or Hybrid String — live no longer than two or three frames, or even have a lifetime within a single frame. The problem with such strings is that short-lived allocations riddle memory with holes, increasing the already considerable time to find a place for data. This is solved in two basically similar ways; the first is creating a separate buffer for such strings: by its nature it's very likely to have room for a new string, and if the room does run out, you can create a second buffer. An important feature of this approach is reducing fragmentation of the main memory and moving these problems into a controlled area.</p>
+    <pre style="margin:1.4rem 0"><code>using string_sl = std::string&lt;char, custom_allocator&lt;char&gt;&gt;;</code></pre>
+    <blockquote><p><strong>Scope of application:</strong> various algorithms and parts of the engine that need dynamic allocation, but for which tying them to the standard memory manager is expensive or impossible.</p></blockquote>
+
+    <h2>One[N] Frame String</h2>
+    <p>And the second, more radical way. The mechanism of ultra-fast string allocation stands apart — used, for example, for working with strings in the renderer. Yes, they're sometimes needed there too, but even the fastest allocators don't always cope. The essence of this mechanism is that strings are placed in a special buffer that's cleared at the end of the frame or every N frames; such an allocator can only allocate memory and is implemented as a simple offset of the pointer in the buffer by the requested size. The absence of overhead for finding a block and freeing it makes it the winner among other algorithms, but its scope of application is very limited.</p>
+    <blockquote><p><strong>Scope of application:</strong> usually the renderer, shader properties, and resource handling. In short, everything that has to load fast and whose intermediate results no one cares about.</p></blockquote>
+
+    <h2>Pool String</h2>
+    <p>A more general implementation of the idea of getting rid of random memory allocation when using strings — or at least making it more predictable and controllable — is using string pools, which can again be implemented by overloading the allocator. I described the advantages of this approach above: reducing fragmentation of the main memory and controlling the allocation and use of strings. But such pools are also subject to fragmentation, albeit to a lesser degree. A further development of this mechanism was the use of <a href="https://en.wikipedia.org/wiki/Slab_allocation" target="_blank" rel="noopener">slab</a> or arena allocators, which are least subject to fragmentation. Such Arena Pool Strings allocate space for a string in uniform chunks, for example 64 bytes, even if the string only takes 2. The screenshot shows an example of filling an arena with 32-byte blocks. The probability of placing a new string in the same spot after the "blue" segment is removed is much higher than if it had occupied only the requested amount of memory.</p>
+    <img src="../../assets/articles/strings-in-engines/str-05.png" alt="" class="post-image" loading="lazy" />
+    <p>The advantage of this approach is that the larger the block, the less the external fragmentation of the pool, and given short-lived strings, returning blocks of equal size keeps the buffer utilization percentage roughly level. Subsequently profiling such pools by size makes it possible, before release, to trim them to the needed limits so that the fill percentage is around 90–95%. Another advantage of string pools is the ability to make them thread-local where the logic allows — for example for that same renderer or sound engine — decoupling them even further from the main thread and improving thread performance.</p>
+    <blockquote><p><strong>Scope of application:</strong> working with strings in threads, parsing configs, where it's important to depend as little as possible on standard memory-allocation mechanisms.</p></blockquote>
+
+    <h2>Hybrid String</h2>
+    <p>A compromise between fixed-size strings and ordinary ones: such strings use a hybrid (pmr) allocator that switches to dynamic memory if the requested size exceeds the internal buffer's size. It's justified when using structures with a roughly known string size, for example names in the file system or resource names. File names won't contain truly short strings and usually lend themselves well to size prediction. So most resource file names don't exceed 160 characters and aren't shorter than 70, which gives us possible losses on empty characters of no more than 15% when using a 128-byte buffer (the data was obtained for resource names in the Metro Exodus project).</p>
+
+    <h2>Shared String</h2>
+    <p>Another feature of game engines is the use of repeated resource names: animations, tags, property names, and everything similar. Using any of the string types presented above to describe such structures simply means wasting memory. Ten, a hundred, or even a thousand copies of the "velocity" tag, used across hundreds of objects, will hardly please anyone. This task, known as <a href="https://en.wikipedia.org/wiki/String_interning" target="_blank" rel="noopener">string interning</a>, is solved not only by game developers, but also by those of compilers, platforms, and programming languages. And although such a string is usually not the largest memory block, the many copies they require for their work already make them stand out in the memory tracker. With a shared string, memory is allocated for the string only on a new placement, allowing several objects to point to the same chain of characters. And if one of the variables changes its content, a new string is created (<a href="https://en.wikipedia.org/wiki/Copy-on-write" target="_blank" rel="noopener">copy-on-write, CoW</a>).</p>
+    <p>A similar optimization also exists in garbage-collected languages in the form of an immutable object, and an assignment <code>a=b</code> doesn't create a new string but changes the reference count for that string. Another upside of using such strings is simplified string comparison, when we can rely on some marker inside the string instead of calling an element-by-element comparison. The shared-string mechanism unambiguously identifies identical strings; the simplest implementation can be <a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/xstring.h" target="_blank" rel="noopener">seen here</a>.</p>
+    <pre style="margin:1.4rem 0"><code>class string_shared {
+   shared_value* _p;
+};
+
+inline bool operator==(xstring const&amp; a, xstring const&amp; b) {
+  return a._p == b._p;
+}</code></pre>
+    <p>And then code like this no longer looks like a profiler's dream (<code>tag</code> here is strings): only int comparisons happen here, not string comparisons.</p>
+    <pre style="margin:1.4rem 0"><code>void npc::on_event (const time_tag &amp;tt) {
+    if (tt.tag == event_step_left) {
+        on_step(e_step_left);
+    } else if (tt.tag == event_step_right) {
+        on_step(e_step_right);
+    } else if (tt.tag == event_step_left_hand) {
+        on_step(e_step_left_hand);
+    } else if (tt.tag == event_step_right_hand) {
+        on_step(e_step_right_hand);
+    } else if (tt.tag == event_jump_left) {
+        on_step(e_jump_left);
+    } else if (tt.tag == event_jump_right) {
+        on_step(e_jump_right);
+    ....
+}</code></pre>
+    <blockquote><p><strong>Scope of application:</strong> properties, tags, markers, and so on — everything a human needs to see as readable text, while the engine needs that text to be unique. Not suitable for logs and various generated strings of the form <code>"Object%X_Property%Y_%Z"</code>.</p></blockquote>
+
+    <h2>Identifiers</h2>
+    <p>A further development of the shared-string mechanism is identifier strings: those same animation tags don't have to have a name. A tag name is a convenient, human-friendly label for a resource or property, but for a game engine there's no significant difference between the string <code>"animation_tag"</code> and the number 1 — the main thing is that they have a unique representation within the project. And if, at the engine's or game's initialization stage, such a variable takes on some unique value, then the ways it's used in the game won't change at all, while in places where there used to be string (or other marker) comparison, there will simply be number comparison. This becomes especially noticeable in the release build, when such metadata is additionally encrypted or removed from the build entirely.</p>
+    <pre style="margin:1.4rem 0"><code>struct string_key {
+  int id;
+#ifdef EDITOR
+  const char *str;
+#endif
+}
+
+string_key animation_tag{1, "animation_tag"};
+
+if (animation.tag == animation_tag) {
+  ...
+}</code></pre>
+    <blockquote><p><strong>Scope of application:</strong> markers for resources, object types, classes, and anything that can be generated at compile time or read in advance from configs.</p></blockquote>
+
+    <h2>Simd Strings</h2>
+    <p>But even these optimizations don't always help, and then exotic tricks come to the rescue in the form of SSE-adapted strings and the algorithms to work with them. Level descriptions, objects, all configs in most cases sit as text, for example lua/js tables. Parsing a 108-megabyte level Lua file with ordinary strings took about two minutes on a not-so-weak CPU. Typical functions process strings character by character, which leads to too many branches and data dependencies, while ignoring 80% of the power of modern processors. You can use SIMD instructions to speed up some operations often used in file parsing, for example <code>strstr</code> and <code>strchr</code>. Just as an example — the speed of finding a substring in a string (the example is, of course, synthetic; you have to look at and profile real cases in the code):</p>
+    <pre style="margin:1.4rem 0"><code>strstr             x86:  2.0 GB/s
+string.find        x86:  1.6 GB/s
+boost.string.find  x86:  1.3 GB/s
+simd.find          x86: 10.1 GB/s</code></pre>
+    <blockquote><p><strong>Scope of application:</strong> mainly parsing configs and work in hot functions like shader auto-generation.</p></blockquote>
+
+    <h2>Conclusion</h2>
+    <img src="../../assets/articles/strings-in-engines/str-06.png" alt="" class="post-image" loading="lazy" />
+    <p>That's about all I wanted to tell you about the peculiarities of using strings.</p>
+    <p>The C++ standard library supports a flexible and rich class for working with strings. Unfortunately, <code>std::string</code> isn't suitable for game engines and game development because of the need to manage dynamic memory.</p>
+    <p>Short string optimization, used carefully, lets you safely manage strings of small length. However, mechanisms that prevent heap usage have a great many advantages that have long been widely battle-tested in game engines.</p>
+    <p>I hope that in the future someone on the committee will have the courage to push something similar into the standard; in any case, the moves toward <code>std::string_view</code> and <code>std::pmr::string</code> have shown that it's possible.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
