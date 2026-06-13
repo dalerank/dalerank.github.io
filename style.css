@@ -226,6 +226,8 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
 .article .prose ul{padding-left:22px} .article .prose li{margin:0 0 8px}
 .post-image{width:100%;border-radius:14px;border:1.5px solid var(--line-strong);
   margin:26px 0;display:block;box-shadow:var(--shadow)}
+.post-image + .cap{margin-top:-14px}
+.prose .cap{font-size:14.5px;color:var(--ink-soft);font-style:italic;text-align:center;margin:0 0 26px}
 .backlink{display:inline-block;margin:36px 0 0;font-family:var(--mono);font-size:12px;
   text-transform:uppercase;letter-spacing:.12em;color:var(--rust)}
 .backlink:hover{color:var(--clay)}
