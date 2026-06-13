@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Are you sure you want to become a programmer in gamedev? — dalerank</title>
+<meta name="description" content="An honest look from the inside at a programmer's job in gamedev: what programmers actually do, interviews, overtime, engines, studio traditions, designers, and why it's still worth it." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/gamedev-programmer.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/gamedev-programmer.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/gamedev-programmer.html">RU</a><i>/</i><a class="on" href="gamedev-programmer.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>Are you sure you want to become a programmer in gamedev?</h1><div class="ameta"><span>Nov 19, 2023</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/541/654/993/5416549936d69c8fe96e8e8dafc02ba7.jpg" alt="" class="post-image" loading="lazy" />
+    <p>I have to disappoint you: programmers don't make games — designers and artists do. You can fire a programmer and another will come along, and in a conditional month, two, or six start closing tasks no worse. If a designer quits, their monster, gun, or content is left without an owner and without a "vision". If a neighbor doesn't pick it up (and the neighbor has their own monster), then in most cases their work simply goes into the drawer and the monster is rewritten from scratch on the same assets and principles, but from scratch.</p>
+    <p>If the art director who carries the project's "vision" leaves, the project gets really bad: in most cases it changes visually beyond recognition, even though the assets may be the same. Programmers do everything except the game itself: rendering, sound, physics, networking, AI, inverse kinematics, pathfinding, and so on. We can argue about it in the comments.</p>
+    <hr />
+    <h2>What do programmers even do here?</h2>
+    <p>When I got my dream job at EA SPb I, too, thought I'd "now" be making games — bringing the bright, the kind, and the eternal through unique mechanics. But I got bogged down in a heap of C/C++ code, hunting bottlenecks on low-end devices, and was handed a crooked Indian (it really was developed in India) framework for showing ads on a 5-inch screen.</p>
+    <p>Here, for example, is code from a parser of values read from the ad block's JSON. I even changed the code a couple of times, but with updates everything reverted to how it was. And the lead got an angry email asking not to change anything, because it would be hard to maintain.</p>
+    <pre style="margin:1.4rem 0"><code>if(value1 == "-0")
+   value1 = "+0";
+ if(value2 == "-0")
+   value2 = "+0";
+
+ if(value1 == "-0.0")
+   value1 = "+0.0";
+ if(value2 == "-0.0")
+   value2 = "+0.0";
+
+ if(value1 == "-0.00")
+   value1 = "+0.00";
+ if(value2 == "-0.00")
+   value2 = "+0.00"; </code></pre>
+    <p>from the same place, in another function — and it was like that everywhere, whatever you opened.</p>
+    <pre style="margin:1.4rem 0"><code>switch (*p) {
+    case '0': id += 0; break;
+    case '1': id += 1; break;
+    case '2': id += 2; break;
+    case '3': id += 3; break;
+    case '4': id += 4; break;
+    case '5': id += 5; break;
+    case '6': id += 6; break;
+    case '7': id += 7; break;
+    case '8': id += 8; break;
+    case '9': id += 9; break;
+    case 'a': case 'A': id += 10; break;
+    case 'b': case 'B': id += 11; break;
+    case 'c': case 'C': id += 12; break;
+    case 'd': case 'D': id += 13; break;
+    case 'e': case 'E': id += 14; break;
+    case 'f': case 'F': id += 15; break;
+    case 'g': case 'G': id += 16; break;</code></pre>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/6fd/8f5/066/6fd8f50662b7d454b181370465c42e73.jpg" alt="I'd love to find whoever wrote this and have a word" class="post-image" loading="lazy" />
+    <p class="cap">I'd love to find whoever wrote this and have a word</p>
+    <h2>And in what language?</h2>
+    <p>C++ has for decades been, without alternatives, the main language of game development. The way it claimed its niche somewhere in the early 2000s, it remains the main tool for making games. I recently posted an article describing the engines I'd encountered for development (<a href="not-unity-alone.html">Not Unity alone…</a>); everything that is more or less used by the community and actively developed is written in C++. The whole "bloody enterprise of sweat, tears, and pixels" all the more so.</p>
+    <p>A lot of code is also written in C; it's used mostly in dependencies and external libs, and there too it's gradually ceding ground to C++, but very slowly. Nobody is eager to rewrite tons of working library code just for the sake of refactoring. But C++ is used mostly for engines and surrounding tooling; the golden age of using C++ to implement game logic ended about fifteen years ago with the arrival of powerful combines like Unity/Unreal, and that's a good thing — C++ is definitely not for writing game logic, though Unreal tries to prove otherwise. But Unreal's isn't quite honest C++: it's a dialect of the language generously sprinkled with syntactic sugar and nailed firmly to the engine's functionality. And without precompilation it won't start at all.</p>
+    <pre style="margin:1.4rem 0"><code>UCLASS()
+class UTeaOptions : public UObject
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY()
+    int32 MaximumNumberOfCupsPerDay = 10;
+
+    UPROPERTY()
+    float CupWidth = 11.5f;
+
+    UPROPERTY()
+    FString TeaType = TEXT("Earl Grey");
+
+    UPROPERTY()
+    EDrinkingStyle DrinkingStyle = EDrinkingStyle::PinkyExtended;
+};</code></pre>
+    <details class="code"><summary>A few more stones thrown at Unreal</summary>
+    <pre style="margin:1.4rem 0"><code>TMap&lt;FString, int32&gt; MyMap;
+for (auto It = MyMap.CreateIterator(); It; ++It)
+{
+    UE_LOG(LogCategory, Log, TEXT("Key: %s, Value: %d"), It.Key(), *It.Value());
+}
+</code></pre>
+    <pre style="margin:1.4rem 0"><code>for (TFieldIterator&lt;UProperty&gt; PropertyIt(InStruct, EFieldIteratorFlags::IncludeSuper); PropertyIt; ++PropertyIt)
+{
+    UProperty* Property = *PropertyIt;
+    UE_LOG(LogCategory, Log, TEXT("Property name: %s"), *Property-&gt;GetName());
+}</code></pre>
+    <pre style="margin:1.4rem 0"><code>// Find first Thing whose name contains the word "Hello"
+Thing* HelloThing = ArrayOfThings.FindByPredicate([](const Thing&amp; Th){
+  return Th.GetName().Contains(TEXT("Hello"));
+});
+
+// Sort array in reverse order of name
+Algo::Sort(ArrayOfThings, [](const Thing&amp; Lhs, const Thing&amp; Rhs){ 
+  return Lhs.GetName() &gt; Rhs.GetName(); 
+});</code></pre>
+    </details>
+    <p>But if you know C well, they'll gladly take you on to dig through legacy code. And there's also Git, JVM, MySQL, Nginx, PostgreSQL, tarantool, tensorflow, and a sea of other C code that's used and often embedded right into the game engines themselves; the functionality of these components also has to be changed and adapted to the dev team's needs.</p>
+    <p>In fairness, it's worth mentioning that C is still used in the Unity engine (alongside C++), both for writing engine modules and for core logic. All of Unity's renderer was written in pure C. My information may be outdated — I worked with the engine in 2014–16 — but core engine components are usually rewritten only in extreme cases. As an option, you could go work there.</p>
+    <p>In big commercially successful engines there's even more bureaucracy and secrecy than in new game announcements; you'll never learn more than a couple of years in advance what new feature is being built for Rage or Frostbite. If it has reached the general public, it means it went through its ten circles of hell and a hundred and twenty review sign-offs. The reason is simple: if you announce it, then competitors will get it too, even if it wasn't in their plans, which means it'll be harder to poach developers and harder for directors to justify their salaries.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/5c7/8b7/9d4/5c78b79d4c441cacacb08d7a179e44bd.jpg" alt="Honor the NDA — not a word to anyone" class="post-image" loading="lazy" />
+    <p class="cap">Honor the NDA — not a word to anyone</p>
+    <p>Game programmers also have to do the math and often invent new algorithms, work out complex five-story formulas, and write a lot of code on paper. Yes, you heard right: almost all the programmers I know carry around a thick paper notebook full of formulas, calculations, and snippets of code. Because the code for the tasks set before you often simply doesn't exist online — it lives in the head of a data analyst or designer.</p>
+    <p>There's another side: often a game programmer doesn't even need to write anything at all. More valued are skills in testing and analysis, improving existing engine code, integrating tools, and processing telemetry data. Some solutions and approaches can be taken from other engines or from the OS kernel (Linux, for example) — surprisingly, there's a lot of overlapping subject matter there, especially around resource and memory management. For instance, if you use the system memory manager you lose up to a third (30%) of performance; Unity's memory manager is entirely custom, built on the memory-arena principle, Unreal's is a fork of dlmalloc, and Dagor uses it too.</p>
+    <h2>Interviews</h2>
+    <p>Interviews are a sore subject altogether because of the lack of people; the States have been vacuuming up the market for the third year running, and in this respect European game development found itself in a very vulnerable position, because it can't offer 1.5–2x salary and is forced to lose developers and, worse, designers. Google can of course lay off 10k IT people, but in gamedev the shortage of about 70k people across all positions from programmers to artists was there and stayed that way. I described the problem with designers at the start; all that's left is to pray for the old-timers, leads, and the core team, who aren't so easy to poach. The money question takes a back seat here, because these people are already making their dream game.</p>
+    <p>The seed question usually asked of every candidate goes like this:<br /> — Do you have any projects shipped to release?</p>
+    <p>If you answered no, consider that the number of interview rounds will double from there. Studios are very reluctant to take people "off the street"; there's a high chance the person will bail in six months, not knowing the specifics of the field. Many got burned on this, which led to such oddities.</p>
+    <p>The second question is usually:<br /> — Are you ready to work with legacy code?</p>
+    <p>This, mind you, is for a position whose main tasks will be writing new functionality.</p>
+    <p>The third is somehow closer to the point. It usually sounds like:<br /> — Are you ready to dig into adjacent tasks outside your area of expertise?<br /> — Are you OK with doing solution analysis / reverse engineering?</p>
+    <p>If there are more NOs than YESes, you probably won't get along with the lead.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/2ef/fa6/2a3/2effa62a3e26b1e5d965f8689a4824c1.jpg" alt="Came for the interview?" class="post-image" loading="lazy" />
+    <p class="cap">Came for the interview?</p>
+    <h2>Overtime</h2>
+    <p><br />The overtime question has set everyone's teeth on edge, but I'll put it this way: crunches are avoided so as not to lose the team, but a programmer who delivers results spends, on average, 9–10 working hours a day. Effective work on tasks there is about five hours, six at most; the rest is reviews, research, and talking with colleagues about tasks.</p>
+    <h2>How to get hired</h2>
+    <p>What's funny, the European gamedev market has one curious feature: the bigger and more famous the project, the easier it is to get in for almost any open position. Whereas for some startup or an indie outfit of five students, they'll grill you on every topic of game development and Computer Science, throw in a bit of audio and AI, and then it turns out the company is making yet another match-three on Unity. At Arkane, for the then just-starting Deathloop, instead of a tech review I got a heart-to-heart with the tech lead (engine team; the lead was a fellow countryman from Kazakhstan), and when I tried to arrange cooperation with Triskell Interactive they asked me everything but the color of Vronsky's horse's eyes. And it still turned out my development experience wasn't enough for a clone of an old Egyptian city-builder on Unity — maybe for the best, the game was "drowned" in mobile mechanics and ideas.</p>
+    <h2>Unit tests</h2>
+    <p>It so happened that engines were written by smart people, gamedev legends, who compiled code in their heads, debugged it in their heads too, and then committed straight to the repo. Tests were written on a leftover basis the night after release so it wouldn't slide into regression. Attempts to introduce integration testing of code before it lands in the repo still, even now, often run into incomprehension and a redirect to QA, who are supposed to do this very testing comprehensively — but they're people too, there are too few of them too, and they too have their own tasks up to their necks.</p>
+    <p>Things are better only at Larian/Dice and large studios. They write engines that from the start espouse a different development principle based on (TDD) or something similar. Fixing all the bugs a month before a milestone is, alas, still the norm. Big companies at least keep an eye on this somehow, while mid-size and indie just make games. They make them however they can. This is partly the fault of the many-times-accelerated development pipeline and the powerful combine engines that shield you from the chance to shoot yourself in the foot — at worst there'll be a log message, but the game will keep running, though not always correctly.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/32d/310/bdd/32d310bdd8ccd3fe3f2167b181de12b0.png" alt="How to shoot yourself in the foot effectively" class="post-image" loading="lazy" />
+    <p class="cap">How to shoot yourself in the foot effectively</p>
+    <p>Here the Larian lead gameplay programmer explains how they pulled it off. It's a studio tradition — more on traditions below.</p>
+    <p>But it's not all bad! The situation is changing and the general mechanisms of secure software development are creeping in to us. In gamedev it's very hard for a programmer to convince a studio to start using new tools. Something minor — no problem: a new monitor, computer, keyboard, a smoothie in the kitchen in the morning. Pushing through static analysis tools, if it's not built into the pipeline, is practically impossible — file a task to QA.</p>
+    <h2>Relationships with indie developers</h2>
+    <p>With solo developers it's even worse. If you take an indie developer and drop them into the generally accepted model of game production — with our daily 5–7 minute standups, builds on the build farm, QA teams, commit reviews, unit tests, and so on — it turns out that they (programmer, designer, artist) can't solve a single task at all. These aren't just words; studios have repeatedly tried hiring people from indie development, and you have to retrain them to work in a team and to a plan; it doesn't always work out, and you have to part ways, because they couldn't handle planning and compromises — they write the game as it writes itself, the way they did back in the wild gamedev of the '90s.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/ad8/571/e74/ad8571e74ef6ef1f33109aa0f1edcf62.jpg" alt="Hired an indie dev onto the team" class="post-image" loading="lazy" />
+    <p class="cap">Hired an indie dev onto the team</p>
+    <p>You can read about how <a href="https://evilnoob.at.ua/blog/kto_pridumal_igru_kazaki_vsjo_o_izdatele_kompjuternoj_igry/2012-01-03-33" target="_blank" rel="noopener">Cossacks</a> was made.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/5b4/8f0/096/5b48f00961f6bbaed4d63ccfdb38d30f.png" alt="" class="post-image" loading="lazy" />
+    <h2>Traditions</h2>
+    <p>Yet every studio has built up a whole layer of traditions. I'm not talking about traditions like dousing a newcomer with a decade-old Château (one French company) or going as a whole department to the banya to drink beer (Remedy — they're proud of theirs). Traditions go all the way down to the code style the founding fathers used (a tab indent on the empty line after a function name and caching values in objects — Unity) or CamelCase, using prefixes to identify the object type: "A" for actors, "U" for objects inheriting UObject (Unreal). It's worse when the traditions enshrine not-the-best practices, like verbal tasks that may not be filed as tickets in Jira, or handing a task off to another assignee without the author's knowledge (a St. Petersburg studio that made an XCOM for mobile).</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/65a/e24/0dd/65ae240ddcbfacb81d2a2404f8666ead.png" alt="Every New Year my friends and I go to the banya" class="post-image" loading="lazy" />
+    <p class="cap">Every New Year my friends and I go to the banya</p>
+    <h2>Frameworks and the codebase.</h2>
+    <p>Here it's total anarchy: apart from the large open game engines and open-source projects, there is no trusted, test-covered codebase. There's EASTL, but not everyone is willing to use it due to a dislike of EA; platform std libraries aren't liked because of vendor lock-in and slowness. The algorithms seem to be the same, yet the implementation differs on the Box and the PlayStation. I've written before about the <strong>evil</strong> memcpy on the PlayStation — it's a system call that checks the intersection of the addresses in use with the console's protected memory regions. Not ready for memcpy to be slow? Write your own.</p>
+    <p>Gamedev legends like Carmack, Sweeney, and Cain were downright addicted to wholesale wheel-reinventing. Need a vector? Let's write our own with all the bells and whistles, never mind that it's the third time. Unity/Frostbite/Unreal/CryEngine/Dagor — everyone has written their own standard algorithm libraries. That is, there are no common bricks from which you could reliably assemble a working, portable solution; add to that the differences in platform implementations. There's no common engine-development culture (except maybe the god object — that pattern is everywhere), no continuity, no common terminology. Everywhere has its own folklore and rich inner world.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/05f/56b/4d9/05f56b4d9897e625d24c4903025d35a3.png" alt="Going to rewrite the vector?" class="post-image" loading="lazy" />
+    <p class="cap">Going to rewrite the vector?</p>
+    <p>In my memory Unreal has already had a fourth change of development ideology. <strong>Tim Sweeney</strong> is an old-school programmer; if you look at the 2007-era code, from when the first leaks happened, the engine was a monolith with a heap of homebrew wheels. Then came <strong>Jim Brown</strong>'s turn and the engine moved toward standard components and code unification, but some of the wheels were carefully parked and others simply forgotten. Then <strong>Nick Penwarden</strong> arrived, the engine was open-sourced, and they began turning Unreal toward mobile, which required reworking the internal architecture, piled on a heap of new features, and broke no fewer old ones. Now <strong>Mike Fricker</strong> is at the helm and the engine is moving toward plugins and AI-containerizing everything they can reach — we'll see where it leads. Still believe Unreal is a good choice? Look at the architecture of clang, then peek under Unreal's hood. Sometimes you get the feeling it's being written by students.</p>
+    <h2>Hello, neighbor</h2>
+    <p>Before covid it was mostly in the office; now, with permission, remote. A programmer usually works in small interest groups (4–5 people). Everyone's interests differ: some do AI, some the engine and tools, some the editor. Tasks often interleave with neighboring departments, and you have to dig into a rendering bug that suddenly popped up because of errors in resource loading — but about five to ten frames later, and the call stack has nothing to do with rendering at all. There are few random people here; in four cases out of five the programmers' bosses are former fellow programmers from the same area, they know far more about programming, but either burned out and moved to administrative posts, or stay in player-coach roles solving the hard tasks that others can't manage.</p>
+    <p>They also often go off into research and implementing new technologies, the payoff from which will be visible in a year if you're lucky. So get ready to often hear: "Your code is @#$%^&amp;" and get sent back to respawn, i.e. to redo the commit. Given their vast experience, they prefer proven simple tools and scripts over solutions and IDEs.</p>
+    <blockquote style="margin:1.6rem 0;padding:2px 0 2px 18px;border-left:3px solid var(--line-strong);color:var(--ink-soft);font-style:italic">By the way, git has a problem too: it's great for source code, but what do you do with gigabyte textures, 100 MB model files, or a level's Lua/JSON that's 20–30 MB of text? You either keep two repos — one for sources, one for content — or you write your own solution.</blockquote>
+    <p>Be ready to be poked in the nose more than once about your ignorance of algorithms, the codebase, or studio traditions, weak knowledge of vector math, or the specifics of the field. If you land with a good lead who knows their area of the engine, be ready to cry at night over commits returned for the tenth time. If you survive and stay in the department, you'll build the game engine on par with the founding fathers. The average tenure of a programmer at a studio is a year to a year and a half. In a group of 40–50 people, the core team is 10–15 people who have worked there for over 4 years and are the carriers of knowledge and technology, plus 2–3 tech leads who determine where the engine goes.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/223/3a7/921/2233a7921a910a1da48a615866818b1c.png" alt="You wrote the task, but you wrote it without respect" class="post-image" loading="lazy" />
+    <p class="cap">You wrote the task, but you wrote it without respect</p>
+    <h2>Designers</h2>
+    <p>Designers are a separate conversation; designers must be loved, because, as I said above, the designer makes the game. Talk to them, teach them, help them, don't let them do @#$%&amp;. Designers must be creative people, otherwise the game won't come together, not even a match-three. For a designer, the ability to write poetry and to draw is far more important than the ability to write code. Writing code can be learned; the ability to write poetry and make games is a gift of nature. <br />Designers will come to you with their ideas, questions, and bugs; if a designer files a bug, it's no longer their problem but the programmer's. Sometimes the last line of defense against a designer is only the lead, who can explain why we can't do it that way — or, by force of will, send the task to the backlog.</p>
+    <p>Good designers are forgiven a great deal; their "code" (BTs, scripts, AI) isn't studied, analyzed, or tested. You're unlikely to hear from them words like "architecture", "tests", "code review". Only the finished in-game behavior is of interest. The thing is, a designer is usually fully responsible for their area on the map, the logic, the props, and if you force them to fit quality to standards, it only gets worse in the end. That's why designers are valued more highly in studios than programmers. Programmers can be replaced cheaply; replacing a designer is expensive.</p>
+    <p>How designers ultimately write their code/BT/AI nobody really cares. The result is what matters. This logic interests no one except the one or two designers who support the feature. At one St. Petersburg studio (the one that made the XCOM for mobile) a designer named the functions in his scripts after characters from "Attack on Titan" and nobody cared at all, since no one but him worked with that code. Meanwhile he was in good standing on the project, and that quirk was overlooked, just like coming in late and wanting to reheat fish in the microwave at lunch.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/b6d/1ab/1c5/b6d1ab1c5cf1348bda16b2dcf4c7dc34.jpg" alt="Designers must be loved" class="post-image" loading="lazy" />
+    <p class="cap">Designers must be loved</p>
+    <h2>Schools of development and their influence on studios</h2>
+    <p>Because of solo engine development and the fundamental closedness and secrecy of game development, many different engine-building schools have formed. We can roughly call them Unreal/Unity and Housemade/Solo. Moreover, Unreal/Unity are more widespread in Europe and Asia, and housemade in the States. The g<strong>r</strong>eater concentration of gamedev studios in the States made developing your own engine one of the marks of a studio's quality and status. The Unreal school is more oriented toward small-team work and modular projects that are easy to prototype, gather assets for, and knock together an MVP — and then figure out how to make the project unique. Responsibility is shared among all participants, with minimal use of programmer labor on engine work and more emphasis on game mechanics.</p>
+    <p>The Housemade school is large teams of 50+ people, well-known projects, the presence of a core team, and long development cycles with minimal external dependencies. Responsibility usually lies with the founding fathers, and the failure of an engine-game leads to the studio's dissolution.</p>
+    <p>I've had the chance to work at companies that use both of these approaches, and I can say that serious conflicts arise between adherents of the different schools within a single group, and here you have to look for compromises — and the Unreal followers have been winning lately. It's like the disputes between Windows and Linux adherents.</p>
+    <p>I noticed one more feature: if a studio moves to another engine instead of its own, it means the core team fell apart (<a href="https://gamerant.com/cd-projekt-red-explains-using-unreal-engine-5-the-witcher-4/" target="_blank" rel="noopener">https://gamerant.com/cd-projekt-red-explains-using-unreal-engine-5-the-witcher-4/</a>) and the game will have no original solutions. This is neither good nor bad — it's just that a different generation of developers has arrived who can't work with complex things but can make good games. And conversely, if a studio started writing or forked one of the engines, it means specialists grew there who can write things comparable to Unity/Unreal, and often better.</p>
+    <p>The first Cities Skylines was written in Unity; the programmers took the engine and rewrote it for the game. The second part is written on the Unity 2206 core and, judging by what I saw, they didn't even try to adapt it for the game. You've seen the problems yourselves (<a href="https://habr.com/ru/articles/772284/" target="_blank" rel="noopener">Why Cities: Skylines 2 lags so much</a>), though all they needed to do was keep the old team.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/555/0a9/2a2/5550a92a2448928c9bbca29fc27fe18b.png" alt="Proving that Unreal is better" class="post-image" loading="lazy" />
+    <p class="cap">Proving that Unreal is better</p>
+    <h2>Little communication at work</h2>
+    <p>As a rule, one person is put on one feature; teamwork within a single task is hampered by their sheer number. That's why the programmers in gamedev are usually introverts, misanthropes, and sociopaths — may my colleagues forgive me. Communicating with them isn't always comfortable, sometimes it's hard and you have to make compromises, as well as remember the color and quirks of everyone's pet peeves. Most programmers utterly lack soft skills, because technical qualities and the ability to solve the task at hand are valued more, which studio management cultivates even further by hiring superstars onto the team. Writing in the chat at five in the morning to discuss a bug fix is par for the course. I have my own quirks too; usually a review gets its approval on the 5th–6th revision.</p>
+    <p>An ordinary situation: a programmer in principle discusses his feature with no one but the lead for several weeks, and then dumps a hundred or two commits into the repo, doing "good" to everyone indiscriminately and blocking the studio's work — for a couple of days if you're lucky, until all the bugs are caught in an emergency scramble. An arm's length away sits another developer just like him from the rendering department; he'll push his commits a week later. Rendering is a separate hazard altogether — they're not satisfied with common algorithms. Each local Carmack tries to write his own version of the stack, swap, checksum calculation, temporary buffers, and strings. A stack allocator is downright a lovely thing — you don't even get scolded for that anymore — and so on and so forth, good if they add unit tests. And two Carmacks can also get into a fight over a rejection of technologies, and at night the loser ultimatively deletes the code from the repo and wipes the commit history.</p>
+    <p>Industrial development of housemade engines in the industry resembles the Wild West. Each sheriff lines up his Indians differently and is glad if they start singing in unison. Each time, from project to project, the sheriff heroically starts solving the same problems. Programmers in gamedev have no package manager, no common solutions, as is ubiquitous in enterprise or in Python development. So each time, in each new project, we're forced to go from a baby's first steps to Michael Jackson. Or to drag our legacy along from previous projects. Need to pull data out of influxdb? Kindly write it yourself, and preferably in C++.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/535/9bc/b8c/5359bcb8c5c0c1c4f39e0a06756d08cd.png" alt="John-the-engine Carmack" class="post-image" loading="lazy" />
+    <p class="cap">John-the-engine Carmack</p>
+    <h2>Development by generations</h2>
+    <p>In gamedev, like in a village, nothing changes for decades. It's not our fault — something truly new comes out roughly once per console generation, and that's 7–10 years. What is there to say, when the PlayStation still hasn't fully shipped the C++14 standard in Sony's compiler, and the Switch and mobile are a separate topic. Constant conservatism in the technology set, and at the same time an explosive growth of the stack at generation changes, leads to such a strange state. Whether in 2014 in Unity I was fighting bottlenecks on the iPhone 4S during level loading, or now we're short on PS5 bus bandwidth during save loading. At the same time this work requires you to continuously keep learning something in order to make our array even more optimal and unreally fast.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/62f/223/9e3/62f2239e3c510393462ecb8e9dd90dd6.png" alt="My precious!" class="post-image" loading="lazy" />
+    <p class="cap">My precious!</p>
+    <h2>No place for girls here</h2>
+    <p>They exist among designers and artists, but there are almost none among engine developers. They might accidentally drop in for half a year, or appear by mistake and misunderstanding, but they don't stay long. I know professional women programmers in banking, CAD, and embedded development; I don't know any in gamedev.</p>
+    <h2>Knowledge and expertise</h2>
+    <p>You're unlikely to hear words like Framework, boost, std::map, std::thread. Moreover, if you try to sneak that through review, colleagues will look at you sternly and say "Vai-vai, take this @$%^&amp; away, dear friend." Frameworks aren't forbidden, but if it isn't already in the engine, you can write it and there's no need to pull in a new dependency. Although an engine's list of SDK dependencies is usually close to a hundred different libs, these are all time-tested libraries and technologies that have reached maturity, like zlib, squish, lua. The main principle in development is: it must be fast and your own. There won't be any bows and rhinestones in the engine, because that reduces performance. We have only one pattern here: it must work fast — and only one abstract data structure, the array. Everything else is built using these two components.</p>
+    <h2>Too gloomy?</h2>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/06b/242/f05/06b242f05fc8834e55a5169b245b2f8d.png" alt="Is it all really @#$%&amp;?" class="post-image" loading="lazy" />
+    <p class="cap">Is it all really @#$%&amp;?</p>
+    <p>I've described it all rather gloomily; in fact there are many positives that compensate for the difficulties.</p>
+    <h3>People play games</h3>
+    <p>Games are seen and played by hundreds and thousands of people; dozens of journalists will discuss them. Here you create software that will be remembered for decades not just as an icon on a screen, but like paintings, books, and music. Game programmers created an entire industry that has matched cinema in money. By the way, the blunders and bugs are also visible to everyone at once, and your colleagues and players won't fail to point them out to you.</p>
+    <h2>I'm the boss here</h2>
+    <p>The main advantage is the ability to influence development from practically the lowest positions. It's unlikely anywhere else will let you research and rewrite the spinlock implementation in a finished engine that has already shipped a game (<a href="spinlocks.html">the spinlocks article</a>); everything is tied to your knowledge and your ability to pitch your solutions. On consoles, only the OS is closer to your game code than you are; you have full control over the devkit (let's leave PC aside for now), and even the OS dances to your tune. Everything can be measured, any parameter read through the SDK and inspected, and the console dev team is always ready to help with development for their hardware.</p>
+    <h2>They listen to you</h2>
+    <p>Working as a programmer in gamedev forces you to show and prove your decisions. A solution you push into the engine you'll have to defend before people far smarter and more experienced. As I wrote above, leads are yesterday's programmers, with a good background, who understand code well and know the engine. In 8 cases out of 10 no one will be telling you what to do and breathing down your neck. They'll correct you at review.</p>
+    <h2>A small cozy world</h2>
+    <p>Since I jumped into big gamedev in 2014, every year one or two new acquaintances appear from various studios, but the old connections are kept too. Everyone who made games keeps making them; a few people defected to fintech or something else entirely, but then came back. If you've managed to work here, something will feel lacking in other places.</p>
+    <h2>P.S.</h2>
+    <p>The gamedev world lags behind "big IT". We have everything, from version control for sources to building from scripts, there's a semblance of teamwork, standups, automated tests — but it's all our own, homemade. Gamedev programmer salaries are average for the market, but lower than in web/FinTech or enterprise. If you compare making games with web/fintech, it's like a Formula 1 driver and the driver of a comfortable S-class sedan. A rigid chassis, minimal comforts, but it's fast and everyone knows Schumacher. But try fitting all your logic into 15 ms, with processing four hundred NPCs on the level, physics, music, and rendering to the screen without FPS drops.</p>
+    <p>All this for a team photo at the game's release and your name in the credits. Come to gamedev — we make games here.</p>
+    <p><br />P.P.S. Many ask in DMs how to get hired. Write directly to the studios, even if there's no position you fancy there. People are always in short supply, and there are always plenty of tasks — though that's true everywhere in IT. As for pay, I can only speak for myself. If you have no experience, no shipped projects, and burning eyes, take what they give you (debatable, of course). Work for six months to a year and you'll understand what's what, as <a href="https://habr.com/ru/users/eltay" target="_blank" rel="noopener">@Eltay</a> rightly said in the comments.</p>
+    <blockquote style="margin:1.6rem 0;padding:2px 0 2px 18px;border-left:3px solid var(--line-strong);color:var(--ink-soft);font-style:italic">Salaries — yes, they're average for the market, but finding a company with decent pay is generally doable. Though you won't strike gold working for hire here.</blockquote>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
