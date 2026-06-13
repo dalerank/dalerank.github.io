@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++ — dalerank</title>
+<meta name="description" content="Статьи о C++: от прагматичных основ языка до низкоуровневой производительности и «ненормальных» трюков с компилятором." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/cpp.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/cpp.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Статьи</a>
+      <a href="../index.html#books">Книги</a>
+      <a href="../index.html#topics">Темы</a>
+      <a href="../about.html">Обо мне</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a class="on" href="cpp.html">RU</a><i>/</i><a href="../en/topics/cpp.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag">Тема</span>
+    <h1>C++</h1>
+    <div class="ameta"><span>Язык, производительность и трюки с компилятором</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Статьи о <strong>C++</strong>: от прагматичных основ языка и регулярных типов до низкоуровневой производительности, работы с кэшем и «ненормальных» трюков с компилятором.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../articles/swizzle-cpp.html"><span class="tag">C++</span><h3>Магия swizzle из шейдеров в C++</h3><p>Как реализовать swizzle (vec.xxy, vec.zx) в C++ через union и шаблоны — без накладных расходов по памяти и быстрее glm и CxxSwizzle.</p><div class="pmeta"><span>10 декабря 2023</span><span>Ненормальное программирование</span></div></a></li>
+    <li><a href="../articles/pragmatic-fundamentals.html"><span class="tag">C++</span><h3>Обобщения, значения и объекты в C++</h3><p>Сущности, виды и роды, значения и их представление, объекты, процедуры, вычислительная база и регулярность — фундамент языка.</p><div class="pmeta"><span>PragmatiC++ · глава 1</span></div></a></li>
+    <li><a href="../articles/spinlocks.html"><span class="tag">C++</span><h3>Торопиться не надо… (Про спинлоки)</h3><p>Реализации спинлоков — от наивной TAS до тикет-спинлока — с бенчмарками, кэш-миссами и нюансами приоритезации потоков.</p><div class="pmeta"><span>27 сентября 2022</span><span>Производительность</span></div></a></li>
+    <li><a href="../articles/cache-pollution.html"><span class="tag">C++</span><h3>Cache pollution? Запасайтесь тестами</h3><p>Как кэш, ассоциативность, когерентность и выравнивание данных влияют на производительность — с бенчмарками.</p><div class="pmeta"><span>9 сентября 2022</span><span>Производительность</span></div></a></li>
+    <li><a href="../articles/enum-name-runtime.html"><span class="tag">C++</span><h3>Имя enum'a C++ в рантайме</h3><p>Как достать имя типа и значения enum'а в рантайме без RTTI — через __PRETTY_FUNCTION__, шаблоны и constexpr-магию.</p><div class="pmeta"><span>7 ноября 2022</span><span>Ненормальное программирование</span></div></a></li>
+    <li><a href="../articles/private-but-want-public.html"><span class="tag">C++</span><h3>Когда private, но очень хочется public</h3><p>Как тестировать приватные члены C++-класса без правки хедеров: от friend-ов и #define private public до шаблонного хака.</p><div class="pmeta"><span>21 сентября 2023</span><span>Ненормальное программирование</span></div></a></li>
+    <li><a href="../articles/switch-sdk-three-sin.html"><span class="tag">C++</span><h3>Зачем в Switch SDK три разных sin?</h3><p>Как при портировании игр обнаружились три реализации sin — и что показал дизасм для разных уровней оптимизации.</p><div class="pmeta"><span>11 июня 2023</span><span>Ненормальное программирование</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

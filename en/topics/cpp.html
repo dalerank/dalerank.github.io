@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++ — dalerank</title>
+<meta name="description" content="Articles on C++: from the pragmatic fundamentals of the language to low-level performance and 'abnormal' compiler tricks." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/cpp.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/cpp.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../topics/cpp.html">RU</a><i>/</i><a class="on" href="cpp.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag">Topic</span>
+    <h1>C++</h1>
+    <div class="ameta"><span>The language, performance, and compiler tricks</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Articles on <strong>C++</strong>: from the pragmatic fundamentals of the language and regular types to low-level performance, cache behavior, and "abnormal" compiler tricks.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../articles/swizzle-cpp.html"><span class="tag">C++</span><h3>The magic of shader swizzle in C++</h3><p>Implementing swizzle (vec.xxy, vec.zx) in C++ with unions and templates — with no memory overhead and faster than glm and CxxSwizzle.</p><div class="pmeta"><span>Dec 10, 2023</span><span>Abnormal programming</span></div></a></li>
+    <li><a href="../articles/pragmatic-fundamentals.html"><span class="tag">C++</span><h3>Generalizations, Values, and Objects in C++</h3><p>Entities, kinds and genera, values and their representation, objects, procedures, the computational basis, and regularity — the language's foundation.</p><div class="pmeta"><span>PragmatiC++ · chapter 1</span></div></a></li>
+    <li><a href="../articles/spinlocks.html"><span class="tag">C++</span><h3>No need to rush… (On spinlocks)</h3><p>Spinlock implementations — from naive TAS to a ticket spinlock — with benchmarks, cache misses, and thread-prioritization nuances.</p><div class="pmeta"><span>Sep 27, 2022</span><span>Performance</span></div></a></li>
+    <li><a href="../articles/cache-pollution.html"><span class="tag">C++</span><h3>Cache pollution? Stock up on tests</h3><p>How cache, associativity, coherence, and data alignment affect performance — with benchmarks.</p><div class="pmeta"><span>Sep 9, 2022</span><span>Performance</span></div></a></li>
+    <li><a href="../articles/enum-name-runtime.html"><span class="tag">C++</span><h3>A C++ enum's name at runtime</h3><p>Getting a type's and an enum value's name at runtime without RTTI — via __PRETTY_FUNCTION__, templates, and constexpr magic.</p><div class="pmeta"><span>Nov 7, 2022</span><span>Abnormal programming</span></div></a></li>
+    <li><a href="../articles/private-but-want-public.html"><span class="tag">C++</span><h3>When it's private but you really want public</h3><p>Testing private members of a C++ class without editing headers: from friends and #define private public to a template hack.</p><div class="pmeta"><span>Sep 21, 2023</span><span>Abnormal programming</span></div></a></li>
+    <li><a href="../articles/switch-sdk-three-sin.html"><span class="tag">C++</span><h3>Why are there three different sin in the Switch SDK?</h3><p>How porting games surfaced three sin implementations — and what the disassembly showed for different optimization levels.</p><div class="pmeta"><span>Jun 11, 2023</span><span>Abnormal programming</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

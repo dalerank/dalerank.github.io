@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The magic of shader swizzle in C++ — dalerank</title>
+<meta name="description" content="Implementing shader swizzle (vec.xxy, vec.zx, vec.rgb) in C++ with unions and templates: from a first copy-pasted version to a single constexpr solution, a bug with the default operator= and benchmarks against glm and CxxSwizzle." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/swizzle-cpp.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/swizzle-cpp.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/swizzle-cpp.html">RU</a><i>/</i><a class="on" href="swizzle-cpp.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>The magic of shader swizzle in C++</h1><div class="ameta"><span>Dec 10, 2023</span><span>9 min</span></div></div>
+  <article class="prose">
+    <p>Swizzle is one of the nicest little things in shader languages: you can address any vector by reordering or duplicating its components — <code>vec.xxy</code>, <code>vec.zx</code>, <code>vec.rgb</code>. C++ has nothing like it out of the box, but you really want to write engine and game code as tersely as in GLSL. In this article — how we added swizzle to the engine's vector math via unions and templates, with no overhead in memory or in speed.</p>
+    <hr />
+    <h2>What's in a swizzle…</h2>
+    <p>The best way to understand how swizzle works is to show it by example:</p>
+    <pre style="margin:1.4rem 0"><code>vec3 vec{1.0, 2.0, 3.0};
+vec4 a;
+vec3 b;
+vec2 c;
+float d;
+
+b = vec.xyz;  // b is now (1.0, 2.0, 3.0)
+d = vec[2];   // d is now 3.0
+a = vec.xxxx; // a is now (1.0, 1.0, 1.0, 1.0)
+c = vec.zx;   // c is now (3.0, 1.0)
+b = vec.rgb;  // b is now (1.0, 2.0, 3.0)
+a = vec.yy;   // error; incostistent size</code></pre>
+    <p>There are several ways to solve this: use the code from the glm library, from CxxSwizzle, or write your own implementation. I recommend glm to everyone who is starting to write their own engine or wants to get a feel for game engines. That said, in my opinion its code is very specific and verbose — it's a legacy of the rough '90s (the first code was written in June 1992, that's more than 31 years ago).</p>
+    <p>You can also look at the implementation <a href="https://github.com/gwiazdorrr/CxxSwizzle" target="_blank" rel="noopener">here</a>. It implements a lot of extra functions, but a game engine usually already has most of that logic, even if in a different form. It's a good solution, but, again, the code there is very verbose. We, on the other hand, wanted a simple and elegant solution that fits in five lines of code.</p>
+    <p>The swizzling task isn't very hard in itself and is usually included in the list of interview questions not only at game companies, though in a somewhat different form. Before we get to the code, I want to draw your attention to a few points we kept in mind while building our solution:</p>
+    <ol>
+      <li><strong>Execution speed.</strong> The solution must not add any computational cost compared to equivalent scalar operations, must not sacrifice computational efficiency for the sake of swizzling, and where possible should use SSE intrinsics.</li>
+      <li><strong>Use of non-adjacent vector components</strong>, e.g. <code>v0.xxy + v1.xzy</code>. This requires being able to access and operate on a vector's components in a custom order.</li>
+      <li><strong>Writing into a swizzled vector, with constraints</strong> (we later dropped this so as not to bloat the logic; in 99% of cases it isn't used): e.g. <code>v1.yxwy = v0;</code>, on the condition that repeated elements are explicitly forbidden, i.e. each element must be assigned a value exactly once, and no element may receive multiple assignments.</li>
+      <li><strong>No additional memory overhead</strong>: the base type must not change in size. This means <code>vec3</code> will occupy the space equivalent to storing three elements of its data type, with no extra overhead.</li>
+    </ol>
+    <p>There are several different ways to achieve the syntax <code>v1.yxwz = v0;</code> without parentheses: macros, the use of unions, and proxy objects. With macros you can hide functions, for example:</p>
+    <pre style="margin:1.4rem 0"><code>#define yxwz _yxwz()   vec4 vecb = veca.yxwz</code></pre>
+    <p>The problem with any macros in general is that they make debugging harder, clutter the code, and have usage quirks. You can try to solve this with proxy objects that hold a reference to the source vector, but the solution already looks complicated. On top of that, operations on them may go through a pointer, which lowers overall performance when working with such data. And besides, I just don't like using macros when I can get by with code.</p>
+    <p>So after a discussion in the smoking room we settled on a union-based implementation — the pseudocode for such a union looks like this:</p>
+    <pre style="margin:1.4rem 0"><code>union {
+    float v[2];
+    ??? xx;
+    ??? xy;
+    ??? yx;
+    ??? yy;
+    ...
+};</code></pre>
+    <p>So as not to write a lot of wrappers and to fit the new data types into a union, they must be plain old data — that makes it easier to pull off the swizzling trick. All that's left is to build it so that we don't have to write these classes by hand — let the compiler do the work. It will look something like this (pseudocode):</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;T, X, Y&gt;
+struct proxy {
+    template&lt;T, X2, Y2&gt;
+    proxy operator = (const SwizzleProxy2&lt;T, X2, Y2&gt; &amp;o) {
+        ((T*)this)[X] = ((T*)&amp;o)[X2];
+        ((T*)this)[Y] = ((T*)&amp;o)[Y2];
+        return this;
+    }
+};</code></pre>
+    <p>Here we reference <code>this</code>, i.e. the start of the class, implying that swizzling won't exist as a standalone data type but will only map onto the base class's memory. A naive implementation, it turned out, triggers fits of warnings in almost every compiler and false-positive hits in static analyzers. But the pseudocode above demonstrates the core idea of implementing swizzling operators with two elements: <code>xx</code>, <code>xy</code>, <code>wx</code>, and so on. The template arguments <code>X</code> and <code>Y</code> can be any indices of the vector's elements.</p>
+    <p>As you may have noticed, the class has no data of its own, and such free handling of the pointer to the class's start caused not only a heap of warnings when compiling the first versions under ps5 clang, but also increased compile time by almost 10% — from a notional 5 to six minutes. But if you give the class at least a minimal object, compile time went back to normal.</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;T, int X, int Y&gt;
+struct proxy {
+	byte v;
+    ...
+};</code></pre>
+    <p>In the end a local array was added to the class, matching the base type in size. Since all the main operators were already implemented in the vec2/3/4 classes, the swizzle class is left with only the cast-to-vector operator and the basic logic. So here's the first implementation, the way it shipped into the engine:</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;template&lt;typename&gt; class TT, typename T, size_t X, size_t Y&gt;
+struct swizzle_vec2{
+  	T v[2];
+	inline TT&lt;T&gt;&amp; operator=	(const TT&lt;T&gt;&amp; rhs) {
+		v[X]				= rhs[0];
+		v[Y]				= rhs[1];
+		return				*(TT&lt;T&gt;*)this;
+	}
+	inline auto &amp;operator=	(const swizzle_vec2&amp; rhs) {
+		v[X]				= rhs.v[X];
+		v[Y]				= rhs.v[Y];
+		return				*this;
+	}
+	inline operator TT&lt;T&gt;	() const { return TT&lt;T&gt;{v[X], v[Y]}; }
+};</code></pre>
+    <p>And copy-paste for each of the vec3/vec4 classes. The engine sticks to the DRY principle, but to road-test the feature and ship quickly we decided to postpone the cleanup, gathering feedback on working with the new functionality.</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;template&lt;typename&gt; class TT, typename T, size_t X, size_t Y, size_t Z&gt;
+struct swizzle_vec3{
+	T v[3];
+	inline TT&lt;T&gt;&amp; operator=	(const TT&lt;T&gt;&amp; rhs) {
+		v[X]				= rhs[0];
+		v[Y]				= rhs[1];
+		v[Z]				= rhs[2];
+		return				*(TT&lt;T&gt;*)this;
+	}
+  ...
+
+	inline operator TT&lt;T&gt;	() const { return TT&lt;T&gt;{v[X], v[Y], v[Z]}; } 	// unpack
+};</code></pre>
+    <p>For swizzling to work transparently in code, each class also needed union structures that provide it:</p>
+    <pre style="margin:1.4rem 0"><code>// v2 swizzles
+#define swizzle_v2      \
+swizzle_vec2&lt;T, 2, 0, 0&gt; xx; \
+swizzle_vec2&lt;T, 2, 0, 1&gt; xy; \
+swizzle_vec2&lt;T, 2, 1, 0&gt; yx; \
+swizzle_vec2&lt;T, 2, 1, 1&gt; yy; \
+...
+
+template &lt;class T&gt;
+struct vec2 {
+	union {
+		struct { T		x, y; };
+		swizzle_v2
+	};
+};</code></pre>
+    <h2>The final version</h2>
+    <pre style="margin:1.4rem 0"><code>template&lt;template&lt;typename&gt; class TT, typename T, size_t X, size_t Y&gt;
+struct swizzle_vec2 {
+	T v[2];
+	inline TT&lt;T&gt;&amp; operator=	(const TT&lt;T&gt;&amp; rhs) {
+		v[X]				= rhs[0];					// access pack element 0
+		v[Y]				= rhs[1];					// access pack element 1
+		return				*(TT&lt;T&gt;*)this;
+	}
+	inline auto &amp;operator=	(const swizzle_vec2&amp; rhs) {
+		v[X]				= rhs.v[X];
+		v[Y]				= rhs.v[Y];
+		return				*this;
+	}
+
+	inline operator TT&lt;T&gt;	() const { return TT&lt;T&gt;{v[X], v[Y]}; } 	// unpack
+};
+
+#define swizzle_v2(TT)      \
+swizzle_vec2&lt;TT, T, 0, 0&gt; xx; \
+swizzle_vec2&lt;TT, T, 0, 1&gt; xy; \
+swizzle_vec2&lt;TT, T, 1, 0&gt; yx; \
+swizzle_vec2&lt;TT, T, 1, 1&gt; yy;
+
+template &lt;class T&gt;
+struct vec2 {
+	union {
+		struct { T		x, y; };
+            swizzle_v2(vec2)
+	};
+};
+
+int main() {
+    vec2&lt;float&gt; veca{0, 1};
+    printf("veca{%f, %f}\n", veca.x, veca.y);
+
+    vec2&lt;float&gt; vecb = veca.yx;
+    printf("vecb{%f, %f}", vecb.x, vecb.y);
+    return 0;
+}</code></pre>
+    <p>You can try it <a href="https://godbolt.org/z/rhcocMods" target="_blank" rel="noopener">here</a>.</p>
+    <p>The implementation for vec3/vec4 didn't differ much in anything except the big macro of the final swizzle structures, but that was the price — we wanted to make our colleagues' lives easier, so more logic in the code.</p>
+    <pre style="margin:1.4rem 0"><code>#define swizzle_v4      \
+Swizzle_vec2&lt;TT, T, 0, 0&gt; xx; \
+Swizzle_vec2&lt;TT, T, 0, 1&gt; xy; \
+Swizzle_vec2&lt;TT, T, 0, 2&gt; xz; \
+Swizzle_vec2&lt;TT, T, 0, 3&gt; xw; \
+....
+Swizzle_vec3&lt;TT, T, 0, 0, 0&gt; xxx; \
+Swizzle_vec3&lt;TT, T, 0, 0, 1&gt; xxy; \
+Swizzle_vec3&lt;TT, T, 0, 0, 2&gt; xxz; \
+Swizzle_vec3&lt;TT, T, 0, 0, 3&gt; xxw; \
+Swizzle_vec3&lt;TT, T, 0, 1, 0&gt; xyx; \
+.....
+Swizzle&lt;TT, T, 0, 0, 0, 0&gt; xxxx; \
+Swizzle&lt;TT, T, 0, 0, 0, 1&gt; xxxy; \
+Swizzle&lt;TT, T, 0, 0, 0, 2&gt; xxxz; \
+Swizzle&lt;TT, T, 0, 0, 0, 3&gt; xxxw; \
+Swizzle&lt;TT, T, 0, 0, 1, 0&gt; xxyx; \</code></pre>
+    <p>Copy-paste is a very bad solution in any case, but it let us ship this functionality quickly and gather feedback. The solution worked, but the knowledge that it could be done better with less code, and that the copy-paste could be removed, wouldn't let me sleep peacefully. Later, during a refactor, a generic solution was built and the walls of macros removed.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/ca9/a78/e39/ca9a78e39055654ba45615f3f793d375.png" alt="The cat does not approve of copy-paste!" class="post-image" loading="lazy" />
+    <p class="cap">The cat does not approve of copy-paste!</p>
+    <h2>Mornings are never good</h2>
+    <p>One morning the tests started failing. They began failing at this point:</p>
+    <pre style="margin:1.4rem 0"><code>...
+vec3&lt;float&gt; vecc{1, 2, 3};
+printf("vecc{%f, %f, %f}\n", vecc.x, vecc.y, vecc.z);
+
+vec3&lt;float&gt; vecd{0, 0, 0};
+vecd.xz = vecc.xz;
+printf("vecd{%f, %f, %f}\n", vecd.x, vecd.y, vecd.z); &lt;&lt;&lt;&lt;&lt;&lt;&lt;
+...
+
+output:
+	vecc{1.000000, 2.000000, 3.000000}
+	vecd{1.000000, 2.000000, 0.000000} -&gt; vecd should be {1.0, 0.0, 2.0}</code></pre>
+    <p>Blaming the sources led to this change in the code:</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;template&lt;typename&gt; class TT, typename T, size_t X, size_t Y&gt;
+struct swizzle_vec2{
+	T v[2];
+	inline TT&lt;T&gt;&amp; operator=	(const TT&lt;T&gt;&amp; rhs) {
+		v[X]				= rhs[0];
+		v[Y]				= rhs[1];
+		return				*(TT&lt;T&gt;*)this;
+	}
+
+	!!!! inline auto &amp;operator=	(const swizzle_vec2&amp; rhs) = default; !!!!
+
+    inline operator TT&lt;T&gt;	() const { return TT&lt;T&gt;{v[X], v[Y]}; }
+};</code></pre>
+    <p>At first glance everything's fine — this code is correct if <code>swizzle_vec2</code> were a full-fledged class with its own data, rather than a mapping onto someone else's memory. As it turns out, the default copy operator does what it's meant to — copies memory from one place to another.</p>
+    <pre style="margin:1.4rem 0"><code>inline auto &amp;operator=	(const swizzle_vec2&amp; rhs) = default;
+-&gt;
+call    memset@PLTS						// vecd.xz = vecc.xz
+mov     rax, qword ptr [rbp - 36]			// vecd.xz = vecc.xz
+mov     qword ptr [rbp - 48], rax			// vecd.xz = vecc.xz</code></pre>
+    <p>The bug was fixed quickly, and at the same time we set aside time for a code refactor. In the end all the classes could be reduced to a single template:</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T, int RSIZE, int... INDEXES&gt;
+struct swizzle {
+	T v[RSIZE];
+	static constexpr int indexes[] = {INDEXES...};
+
+    template &lt;int... INDEXES2&gt;
+    inline auto &amp;operator=(const swizzle&lt;T, RSIZE, INDEXES2...&gt; &amp;rhs) {
+		static_assert(sizeof...(INDEXES) == RSIZE, "error: assigning swizzle of different dimensions");
+		constexpr int rindexes[] = {INDEXES2...};
+		for(int i = 0; i &lt; sizeof...(INDEXES); ++i) { v[indexes[i]] = rhs.v[rindexes[i]]; }
+		return *this;
+	}
+
+	inline auto &amp;operator=(const swizzle &amp;rhs) {
+		for(int i = 0; i &lt; sizeof...(INDEXES); ++i) { v[indexes[i]]	= rhs.v[indexes[i]]; }
+		return *this;
+	}
+};</code></pre>
+    <p>And for the concrete vector implementations only the cast to the specific type was left:</p>
+    <pre style="margin:1.4rem 0"><code>template&lt;class T&gt; struct vec2;
+template&lt;class T&gt; struct vec3;
+
+template &lt;typename T, int RSIZE, int... SWIZZLES&gt;
+struct swizzle2	: public swizzle&lt;T, RSIZE, SWIZZLES...&gt; {
+    inline auto &amp;operator=	(const vec2&lt;T&gt;&amp; l) {
+		static_assert		(sizeof...(SWIZZLES) == 2, "error: assigning swizzle2 not from vec2f");
+		v[indexes[0]] = l.x;
+		v[indexes[1]] = l.y;
+		return				*this;
+	}
+	inline operator vec2&lt;T&gt; () const {
+		static_assert(sizeof...(SWIZZLES) &gt; 1, "error: no data that convert to vec2");
+		return vec2&lt;T&gt;{v[indexes[0]], v[indexes[1]]};
+	}
+};
+
+template &lt;typename T, int RSIZE, int... SWIZZLES&gt;
+struct swizzle3 : public swizzle&lt;T, RSIZE, SWIZZLES...&gt; {
+    inline auto &amp;operator=	(const vec3&lt;T&gt;&amp; l) {
+		static_assert		(sizeof...(SWIZZLES) == 3, "error: assigning swizzle3 not from vec3f");
+		v[indexes[0]] = l.x;
+		v[indexes[1]] = l.y;
+            v[indexes[2]] = l.z;
+		return				*this;
+	}
+	inline operator vec3&lt;T&gt; () const {
+		static_assert(sizeof...(SWIZZLES) &gt; 2, "error: no data that convert to vec3");
+		return vec3&lt;T&gt;{v[indexes[0]], v[indexes[1]], v[indexes[2]]};
+	}
+};</code></pre>
+    <p>For complete happiness, all that remains is to fold up the wall of proxy structures that's still present in every vec2/3/4 class:</p>
+    <pre style="margin:1.4rem 0"><code>#define _(x) $(x ## xx) $(x ## xy) $(x ## xz) $(x ## yx) $(x ## yy) $(x ## yz) $(x ## zx) $(x ## zy) $(x ## zz)
+		_(x) _(y) _(z) _(w)</code></pre>
+    <p>The final vector-class code then looks like this:</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+struct vec2 {
+	union {
+		  struct { T x, y; };
+		  #define $(name) swizzle2&lt;T, 2, swizzle_idx__(#name, 0), swizzle_idx__(#name, 1)&gt; name;
+          		$(xx) $(xy) $(yx) $(yy)
+              #undef $
+	};
+};</code></pre>
+    <p>I'll put the example code under a spoiler — it's not very interesting, just a working implementation (<a href="https://godbolt.org/z/Pnq9654bW" target="_blank" rel="noopener">godbolt</a>).</p>
+    <details class="code"><summary>The full example</summary>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T, int SIZE, int... INDEXES&gt;
+struct swizzle {
+	T v[SIZE];
+	static constexpr int indexes[] = {INDEXES...};
+
+	template &lt;int RSIZE, int... INDEXES2&gt;
+    inline auto &amp;operator=	(const swizzle&lt;T, RSIZE, INDEXES2...&gt;&amp; rhs) {
+		static_assert		(SIZE == RSIZE, "error: assigning swizzle of different dimensions");
+		constexpr int rindexes[] = {INDEXES2...};
+
+		for(int i = 0; i &lt; SIZE; ++i) {
+			v[indexes[i]]	= rhs.v[rindexes[i]];
+		}
+
+		return				*this;
+	}
+
+	inline auto &amp;operator=	(const swizzle&amp; rhs) {
+		for(int i = 0; i &lt; SIZE; ++i) {
+			v[indexes[i]]	= rhs.v[indexes[i]];
+		}
+		return				*this;
+	}
+};
+
+template&lt;class T&gt; struct vec2;
+template&lt;class T&gt; struct vec3;
+
+template &lt;typename T, int... SWIZZLES&gt;
+struct swizzle2	: public swizzle&lt;T, SWIZZLES...&gt; {
+    inline swizzle&lt;T, SWIZZLES...&gt; &amp;operator=	(const vec2&lt;T&gt;&amp; l) {
+		static_assert		(sizeof...(SWIZZLES) &gt; 1, "error: assigning swizzle2 not from vec2f");
+		this-&gt;v[this-&gt;indexes[0]]	= l.x;
+		this-&gt;v[this-&gt;indexes[1]]	= l.y;
+		return				*this;
+	}
+
+	inline operator vec2&lt;T&gt; () const {
+		static_assert(sizeof...(SWIZZLES) &gt; 1, "error: no data that convert to vec2");
+		return vec2&lt;T&gt;{this-&gt;v[this-&gt;indexes[0]], this-&gt;v[this-&gt;indexes[1]]};
+	}
+};
+
+template &lt;typename T, int SIZE, int... SWIZZLES&gt;
+struct swizzle3				: public swizzle&lt;T, SIZE, SWIZZLES...&gt; {
+	inline swizzle&lt;T, SIZE, SWIZZLES...&gt; &amp;operator=	(const vec3&lt;T&gt;&amp; l) {
+		static_assert		(SIZE == 3, "error: assigning swizzle3 not from vec3f");
+		this-&gt;v[this-&gt;indexes[0]] = l.x;
+		this-&gt;v[this-&gt;indexes[1]] = l.y;
+		this-&gt;v[this-&gt;indexes[2]] = l.z;
+		return				*this;
+	}
+
+	inline operator vec3&lt;T&gt; () const {
+		static_assert		(SIZE &gt; 2, "error: no data that convert to vec3");
+		return				vec3&lt;T&gt;{this-&gt;v[this-&gt;indexes[0]], this-&gt;v[this-&gt;indexes[1]], this-&gt;v[this-&gt;indexes[2]]};
+	}
+};
+
+constexpr int inline swizzle_idx__(const char *x, int offset) { switch(*(x+offset)) { case 'x': return 0; case 'y': return 1; case 'z': return 2;  case 'w': return 3; } return -1; }
+
+template &lt;class T&gt;
+struct vec2 {
+	union {
+		  struct { T		x, y; };
+		  #define $(name) swizzle2&lt;T, 2, swizzle_idx__(#name, 0), swizzle_idx__(#name, 1)&gt; name;
+          		$(xx) $(xy) $(yx) $(yy)
+              #undef $
+	};
+};
+
+template &lt;class T&gt;
+struct vec3 {
+	union {
+		struct { T		x, y, z; };
+
+            #define $(name) swizzle2&lt;T, 2, swizzle_idx__(#name, 0), swizzle_idx__(#name, 1)&gt; name;
+          		$(xx) $(xy) $(xz) $(yx) $(yy) $(yz) $(zx) $(zy) $(zz)
+              #undef $
+
+            #define $(name) swizzle3&lt;T, 3, swizzle_idx__(#name, 0), swizzle_idx__(#name, 1),  swizzle_idx__(#name, 2)&gt; name;
+            #define _(x) $(x ## xx) $(x ## xy) $(x ## xz) $(x ## yx) $(x ## yy) $(x ## yz) $(x ## zx) $(x ## zy) $(x ## zz)
+    		    _(x) _(y) _(z) _(w)
+            #undef  _
+            #undef  $
+	};
+};
+
+int main() {
+    vec2&lt;float&gt; veca{0, 1};
+    printf("veca{%f, %f}\n", veca.x, veca.y);
+
+    vec2&lt;float&gt; vecb = veca.yx;
+    printf("vecb{%f, %f}\n", vecb.x, vecb.y);
+
+    vec3&lt;float&gt; vecc{1, 2, 3};
+    printf("vecc{%f, %f, %f}\n", vecc.x, vecc.y, vecc.z);
+
+    vec3&lt;float&gt; vecd{0, 0, 0};
+    vecd.xz = vecc.xz;
+    printf("vecd{%f, %f, %f}\n", vecd.x, vecd.y, vecd.z);
+    return 0;
+}</code></pre>
+    </details>
+    <h2>Benchmarks</h2>
+    <p>If we look at what our swizzling does in asm, it does exactly what we wrote — it shuffles bytes from one place to another (<a href="https://godbolt.org/z/9EPe3q4EE" target="_blank" rel="noopener">godbolt</a>).</p>
+    <p>For the implemented class, the difference between 2/3-swizzling is entirely expected and depends only on the number of operations inside (<a href="https://quick-bench.com/q/MhxnpfYU9-wTWiXqlTiCONujBJA" target="_blank" rel="noopener">quick-bench</a>).</p>
+    <p>Unfortunately, the web version doesn't let you pull in the code from glm and CxxSwizzle, so I had to set it up locally. The <strong>volatile</strong> here is there so the compiler can't cheat with constant assignment.</p>
+    <pre style="margin:1.4rem 0"><code>float volatile xx;
+float volatile x = xx + 1;
+float volatile y = xx + 2;
+float volatile z = xx + 3;
+
+static void Vec3Swizzling(benchmark::State&amp; state) {
+  for (auto _ : state) {
+    vec3&lt;float&gt; veca{x, y, z};
+	vec3&lt;float&gt; vecb{1, 2, 3};
+	vecb.xz = veca.xz;
+        benchmark::DoNotOptimize(veca);
+	benchmark::DoNotOptimize(vecb);
+      }
+    }
+
+    BENCHMARK(Vec3Swizzling);
+
+    static void Vec3SwizzlingGlm(benchmark::State&amp; state) {
+      for (auto _ : state) {
+        glm::vec3&lt;float&gt; vecc{x, y, z};
+    	glm::vec3&lt;float&gt; vecd{0, 0, 0};
+    	vecd.xz = vecc.xz;
+    	benchmark::DoNotOptimize(vecc);
+    	benchmark::DoNotOptimize(vecd);
+      }
+    }
+    BENCHMARK(Vec3SwizzlingGlm);
+
+    static void Vec3SwizzlingCxxSwizzle(benchmark::State&amp; state) {
+      for (auto _ : state) {
+        cxx::vec3&lt;float&gt; vecc{x, y, z};
+    	cxx::vec3&lt;float&gt; vecd{0, 0, 0};
+    	vecd.xz = vecc.xz;
+    	benchmark::DoNotOptimize(vecc);
+    	benchmark::DoNotOptimize(vecd);
+      }
+    }
+    BENCHMARK(Vec3SwizzlingCxxSwizzle);</code></pre>
+    <p>By the benchmarks, the current implementation is 1.2x faster than the one in <strong>glm</strong> and 2x faster than <strong>CxxSwizzle</strong>. The speedup comes from the absence of the extra checks present in those libs, and from better adaptation to the engine's data structures.</p>
+    <p>You can speed swizzling up further by using SSE intrinsics for shuffling — then in asm it'll be a single operation altogether. There's the question of how it all lays out in memory, but that'll be the topic of the next refactor.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
