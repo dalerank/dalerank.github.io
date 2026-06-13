@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What should a game programmer read? — dalerank</title>
+<meta name="description" content="A reading list of books, blogs and repos worth a game programmer's time: from Code Complete and Effective C++ to Game Engine Architecture, Game AI Pro, GDC and awesome-lists on GitHub." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/what-to-read-game-programmer.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/what-to-read-game-programmer.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/what-to-read-game-programmer.html">RU</a><i>/</i><a class="on" href="what-to-read-game-programmer.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>What should a game programmer read?</h1><div class="ameta"><span>Feb 11, 2024</span><span>6 min</span></div></div>
+  <article class="prose">
+    <h2>Retrospective</h2>
+    <p>The amount of specialized knowledge required of an ordinary game programmer, even one who has only just started their career, gives me a "mild" melancholy. It's one of the reasons most of the people who "burn to make games" get filtered out at the technical interview stage (usually there's more than one). That's normal and sad. Add to that the fact that non-fundamental knowledge — tools, libraries, engines — has to be refreshed roughly once every 5-7 years. I don't see game development being very different here from other areas of development. If, some 15 years ago, "kind me" had emailed myself the list of books I'd have to read and digest, the army of rakes I stepped on wouldn't have been so large and varied, and without half-length handles. Careful: at the end of the article there's a super-long picture (taken from github <a href="https://github.com/miloyip/game-programmer" target="_blank" rel="noopener">here</a>, with the author's permission).</p>
+    <hr />
+    <p>All the books and resources listed here can be split into several types (this is a personal opinion, open to discussion).</p>
+    <h2>Documentation and samples</h2>
+    <p>Advising here can only make things worse — no one will write documentation better than a tool's creators. So my practice is to read the manual and the samples before I start coding. Many start doing this much later, when bugs have already crept in or something doesn't work.</p>
+    <h2>Best practices</h2>
+    <p>Out of the sea of books on programming (mostly C++) and development in general, not all that many remain on my desk.</p>
+    <h3>Code Complete: A Practical Handbook of Software Construction (Steve McConnell)</h3>
+    <p>More and more often I come back to this book to find arguments and the right words to talk colleagues out of dragging a new trendy framework into the engine while the current one still works. The book describes the basic principles of software development — modularity, code readability, reuse — as well as various aspects affecting the quality of the resulting "product": design, testing, debugging, analysis, and so on. It all seems written simply and clearly, yet how hard it is to write simple, clean code in a real project.</p>
+    <h3>Effective C++ (Scott Meyers)</h3>
+    <p>The whole trilogy (there's also Effective Modern C++ / More Effective C++) by Meyers, about how to "nicely" write spherical horses in a vacuum, I'd assign in the first years of university, in parallel with learning the language itself. The book offers practical advice and recommendations on using C++ to write efficient, performant, and clean code. Sure, the books are fairly old and don't match modern standards, but they're none the worse for it.</p>
+    <h3>Robert Nystrom, "Game Programming Patterns"</h3>
+    <p>The only decent book (and portal) dedicated to practical patterns and programming examples used, or once used, in computer game development. The author was a game developer for a long time, but then went over to the dark side and started building Dart.</p>
+    <p>I was recently delighted by another book — I recognized myself in a couple of the bits of advice. I felt ashamed; I need to work on myself. <a href="https://habr.com/ru/users/andrey2008" target="_blank" rel="noopener">@Andrey2008</a>, thanks for the book, it was interesting.</p>
+    <h2>Books fundamental to development</h2>
+    <h3>"Game Engine Architecture"</h3>
+    <p>Written by Jason Gregory, it's a comprehensive overview of the principles, concepts, and practices involved in developing game engines. It covers the theory and various aspects of game engine architecture, from basic design principles to real-world examples. This is a book about how game engines should be made; how they're made in reality you can see in a mass of examples on GitHub. "Game Engine Architecture" is required reading for game developers, designers, and engineers. You're unlikely to find a more thorough description gathered in one place and in accessible language.</p>
+    <h3>Jeannie Novak, "Game Development Essentials"</h3>
+    <p>Unlike many other books about the process of making a game, Game Development Essentials shows the difficulties that can arise during development. Throughout the book the main idea is conveyed to the reader: that making your dream game takes more than a good idea, and programming a game is hard work, not entertainment. I'd recommend it both to those headed into game development in general and to those thinking of "getting into IT". Game development is just a special case of the software industry, where certain of its traits are maximized.</p>
+    <h3>Eric Lengyel, "Mathematics for 3D Game Programming and Computer Graphics"</h3>
+    <p>Eric Lengyel is the founder of Terathon Software and the creator of the C4 Engine, and formerly a developer at Naughty Dog, Sierra Studios, and Apple. It's intended mainly for programmers who want a deeper understanding of the processes inside a game and the math behind it all. However, in most cases the book is too technical and difficult for beginners, especially in the area of 3D graphics. Basic math knowledge won't cut it here; you need an understanding of mathematical concepts at the level of the 2nd-3rd year of university. Besides, the book focuses mainly on the mathematical aspects of development, without examples of how it can affect overall architecture, design, mechanics, and so on.</p>
+    <h2>The game AI developer's library (programmer + designer)</h2>
+    <h3>Game AI Pro (Steven Rabin)</h3>
+    <p>This is a series of books edited by Steven Rabin, dedicated to AI in computer games. Each book in the series is a collection of articles and materials from real developers who share their experience and knowledge.</p>
+    <h3>Making Deep Games (Doris C. Rusch)</h3>
+    <p>Written by Doris C. Rusch, the author promotes the concept of the "deep game" and gives practical recommendations for making them. Very little technical detail; the author mostly muses on concepts and mechanics that <strong>can</strong> evoke emotional changes and experiences in players, and on the principles of sustaining a game's atmosphere. Not a very interesting book, in my view — lots of filler to stretch it to 200 pages — but in places it's useful, and I've spotted some of the practices in various projects.</p>
+    <h3>Game Engine Gems</h3>
+    <p>A book series on the specifics of already-released games, something like a paper podcast of valuable advice, techniques, and best practices from experienced developers. The format is short pieces by specialists from the game development industry. Interesting reading as a retrospective of mistakes and how to do things "right", and especially "wrong". Don't be fooled by the title — it's not only about game engines; over time the volumes started covering a bit of everything.</p>
+    <h3>The Pyramid of Game Design (Nicholas Lovell)</h3>
+    <p>The book describes a conceptual model of computer game design. The described model is meant to help game developers connect various aspects of game design — again, the model is theoretical, and I haven't seen practical examples of its use over years of development. As theory it looks fairly good; as practice I wouldn't give such ideas free rein in a real project, given how heavily they're oriented toward emotion.</p>
+    <h2>Dev blogs</h2>
+    <p>Besides books, to keep up with what's happening in the industry I occasionally look at what's new from the people moving the industry forward. In first place, of course, is GDC and the videos from across the conference's entire run, as well as smaller conferences. Next is a list of personal blogs where interesting articles and game breakdowns appear from time to time.</p>
+    <ul>
+      <li><a href="https://www.gdcvault.com/" target="_blank" rel="noopener">gdcvault.com</a></li>
+      <li><a href="https://fabiensanglard.net/" target="_blank" rel="noopener">fabiensanglard.net</a></li>
+      <li><a href="https://simonschreibt.de/game-art-tricks/" target="_blank" rel="noopener">simonschreibt.de</a></li>
+      <li><a href="https://oddtales.net/blog/" target="_blank" rel="noopener">oddtales.net/blog</a></li>
+      <li><a href="http://blog.thomaspoulet.fr" target="_blank" rel="noopener">blog.thomaspoulet.fr</a></li>
+      <li><a href="https://www.froyok.fr/" target="_blank" rel="noopener">froyok.fr</a></li>
+      <li><a href="https://www.adriancourreges.com/" target="_blank" rel="noopener">adriancourreges.com</a></li>
+      <li><a href="https://www.elopezr.com/" target="_blank" rel="noopener">elopezr.com</a></li>
+      <li><a href="https://gen-graphics.blogspot.com/" target="_blank" rel="noopener">gen-graphics.blogspot.com</a></li>
+      <li><a href="https://astralcode.blogspot.com/" target="_blank" rel="noopener">astralcode.blogspot.com</a></li>
+      <li><a href="http://morad.in/" target="_blank" rel="noopener">morad.in</a></li>
+      <li><a href="https://alain.xyz/" target="_blank" rel="noopener">alain.xyz</a></li>
+      <li><a href="https://kosmonautblog.wordpress.com/" target="_blank" rel="noopener">kosmonautblog.wordpress.com</a></li>
+      <li><a href="https://cookieplmonster.github.io/" target="_blank" rel="noopener">cookieplmonster.github.io</a></li>
+      <li><a href="https://www.factorio.com/blog/" target="_blank" rel="noopener">factorio.com/blog</a></li>
+      <li><a href="https://aschrein.github.io/" target="_blank" rel="noopener">aschrein.github.io</a></li>
+      <li><a href="https://mamoniem.com/" target="_blank" rel="noopener">mamoniem.com</a></li>
+      <li><a href="https://simoncoenen.com/blog" target="_blank" rel="noopener">simoncoenen.com/blog</a></li>
+      <li><a href="https://acko.net/" target="_blank" rel="noopener">acko.net</a></li>
+      <li><a href="https://bartwronski.com/" target="_blank" rel="noopener">bartwronski.com</a></li>
+      <li><a href="http://icculus.org/" target="_blank" rel="noopener">icculus.org</a></li>
+    </ul>
+    <h2>GitHub / Assetstore</h2>
+    <p>Knowledge, articles, and developments in general tend to flow onto specialized platforms. Asset stores, in this respect, have become a good opportunity to roll out a prototype or MVP to quickly gauge people's reaction to one idea or another. What used to be the prerogative of big companies and shown at GDC as hard-won experience and know-how now lies around by the ton as plugins for a buck, or even free. The flip side of this approach is a sharp drop in the quality of solutions: 80% of libraries and plugins are abandoned within a year of development, so you have to approach with caution any lib you pull from GitHub or a store. Even 1k stars don't guarantee that a lib and its project will be supported for a long time.</p>
+    <ul>
+      <li><a href="https://github.com/fffaraz/awesome-cpp" target="_blank" rel="noopener">github.com/fffaraz/awesome-cpp</a> — the repo can be useful for anyone interested in programming in general and C++ in particular; it's updated fairly often. Lots of links for every occasion, but not all the projects are alive.</li>
+      <li><a href="https://github.com/Caerind/AwesomeCppGameDev" target="_blank" rel="noopener">github.com/Caerind/AwesomeCppGameDev</a> — a great many links to engines and game-adjacent tools, again not all alive. But the collection is extensive, and just being aware of what exists and what doesn't is quite telling. Even skimming the links to see what can be implemented and how is useful too.</li>
+      <li><a href="https://github.com/skywind3000/awesome-gamedev" target="_blank" rel="noopener">github.com/skywind3000/awesome-gamedev</a> — assorted game-adjacent things.</li>
+    </ul>
+    <h2>Instead of conclusions</h2>
+    <p>These days people regard books with a fair amount of skepticism, preferring more interactive means of learning, like video courses or mentorship. Video courses and online tutorials, because of their format, greatly simplify the delivery of information; they can be useful for visualizing complex concepts, but a book gives you the chance to think — there's no one between you and the book. Books are better read in the original, because translations don't always fully convey the author's assessment, or replace it with adapted variants, which doesn't always benefit the translation.</p>
+    <p>And of course, theory without practice is dead. To learn to make games, you have to make them constantly.</p>
+    <h2>That very picture</h2>
+    <p>The information from two thirds of the books here was of no use to me at all over the whole time I've been developing, but maybe that's just a consequence of the industry's "progressive differentiation".</p>
+    <a href="https://github.com/miloyip/game-programmer" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/miloyip/game-programmer/master/game-programmer.png" alt="A reading roadmap for a game programmer (miloyip/game-programmer)" class="post-image" loading="lazy" /></a>
+    <p class="cap">A game programmer's reading roadmap — <a href="https://github.com/miloyip/game-programmer" target="_blank" rel="noopener">github.com/miloyip/game-programmer</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
