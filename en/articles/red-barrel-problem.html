@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Red Barrel Problem — dalerank</title>
+<meta name="description" content="What a 'red barrel' is in game design: how exploding barrels became a shooter cliché and why inherited mechanics pile up questions yet end up unused by players." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/red-barrel-problem.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/red-barrel-problem.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/red-barrel-problem.html">RU</a><i>/</i><a class="on" href="red-barrel-problem.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Game design</span><h1>The Red Barrel Problem</h1><div class="ameta"><span>Mar 27, 2024</span><span>4 min</span></div></div>
+  <article class="prose">
+    <p>You've probably heard of a poet's fear of the blank page — the psychological state of someone who has to start something new. It can show up in all sorts of situations, from drawing to making music — in any activity that demands creativity and a start with no prompts. Hiding behind that fear are the reluctance to make a mistake or inflated expectations, the fear of criticism and negative judgment, and the lack of a clear idea of where to begin.</p>
+    <p>Game development has a similar problem, but with respect to things that already exist, and it's called the "red barrel" — a term I've heard a few times from my English-speaking game-designer colleagues. The fears are the same: criticism, a negative attitude toward changes, the absence of a clear plan of action.</p>
+    <p>If, in the heat of battle — in a shooter, say — you spot a red barrel, you'll definitely shoot it, because 9 games out of 10 offer exactly this behavior: red barrels explode. The barrel blows up and deals damage to enemies who (utter fools) have not only scattered fuel barrels around the level, but are also smoking next to them (everyone knows smoking kills). Why barrels became a problem — I'll explain below.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/362/f85/42d/362f8542da3131ff8bcdbad7a0c698e0.png" alt="A red exploding barrel in a shooter" class="post-image" loading="lazy" />
+    <hr />
+    <h2>A history of red barrels</h2>
+    <p>The barrel mechanic is simple and clear, but it wasn't always so. Red fuel barrels look roughly the same the world over — you'll recognize them instantly by their appearance. From childhood, we humans associate the color red with danger, with fire. So red barrels read easily in a fight and fit perfectly into a shooter's environment. In the '80s and '90s, riding the success of the James Bond and Rambo films (License to Kill and Rambo III), barrels showed up in games too — scattered around the level, serving decorative functions.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/657/327/895/6573278956b7bbc03aa1dd2e632de2ae.png" alt="Barrels as a decorative level element" class="post-image" loading="lazy" />
+    <p>In their search for new gameplay solutions, designers dragged all sorts of things onto the level — from wooden crates to Godzilla. But for now the barrels still aren't red and don't explode. In 1986 the racing arcade Speed Rumbler came out, inspired by the Mad Max universe and a post-apocalypse, where barrels exploded beautifully, and a lot of people liked the idea. So within a year this mechanic starts appearing in every more-or-less well-known project, though still as inactive objects.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/e50/342/003/e50342003cf29f7958e5a02158beb0c1.png" alt="Speed Rumbler (1986)" class="post-image" loading="lazy" />
+    <p>From the early '90s, barrels began to be used often as an element of game mechanics. Especially after the release of Doom in 1993, where barrels are thoughtfully placed at mob spawn points and explode from a single pellet, mowing down a handful of enemies around them. Other developers, trying to repeat Doom's success, copied this mechanic — somewhere successfully, somewhere not so much. It was precisely after Doom that barrels became an integral part of most shooters.</p>
+    <p>And of course Half-Life 2, which not only provided the barrels themselves as a gameplay element but also let you interact with them through a physics model. There was a special pleasure in hurling a barrel into a crowd of enemies with the gravity gun. Over time, game developers tried everything imaginable with this mechanic. Barrels became a cliché, and interaction with them rolled back to the level of "shoot it — it explodes".</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/5c2/71a/288/5c271a28807b0c912594fd5dfa3eefb8.png" alt="Barrels in Doom and Half-Life 2" class="post-image" loading="lazy" />
+    <h2>More doesn't mean better. Better means better.</h2>
+    <p>Coming back to the "red barrel problem": that's the name for a mechanic or a stock game object, a cliché, that's long since become a fixture in games and is hard to improve without breaking the overall perception, yet whose absence would be even more noticeable. Trying to do it "differently" or to spice it up with new ideas doesn't always work out. In the end, when a designer comes face to face with their "red barrel", the list of questions they'll have to resolve grows exponentially.</p>
+    <p>Often such "red barrels" are unsuccessful mechanics from earlier games in the series: they migrate from game to game, people try to dress them up and fit them in better, but if the mechanic was a flop to begin with, no amount of changes will fix it. Several times I've been present at a conversation like this between game designers trying to change such a mechanic.</p>
+    <ul>
+      <li><em>Do we even need barrels in the game?</em> — Of course, red barrels were in every game.</li>
+      <li><em>Can the player throw them, blow them up?</em> — Both throw and blow up.</li>
+      <li><em>Can the player throw any barrel?</em> — No, our physics won't handle it, only the red ones.</li>
+      <li><em>So some barrels can't be thrown (concrete ones, nailed to the floor)?</em> — Yep, let's have concrete ones.</li>
+      <li><em>How will the player know a barrel is concrete?</em> — Let's make it a different color, green.</li>
+      <li><em>And if the barrel is yellow?</em> — Let it explode with a delay.</li>
+      <li><em>Does the player know how to blow up a barrel: shoot it, throw a knife, kick it, wait for a script?</em> — We need to put that in the tutorial.</li>
+      <li><em>What do the enemies near the barrels do? Smoke? Just stand there?</em> — We'll decide later, we'll load it onto the level designers.</li>
+      <li><em>How does the player blow up barrels? Can enemies blow up barrels?</em> — Both options, but we need to ask the physics folks, we might not handle both.</li>
+      <li><em>Do barrels damage the player?</em> — We need to check with the gameplay people, the player dying to a barrel might be a bad call.</li>
+      <li><em>And what should the enemies do? Should they run away from the barrel or hide behind it?</em> — Well, they were smoking there, so let them hide already.</li>
+      <li><em>And how do barrels affect the level — they can damage the geometry. What do we do then?</em> — We'll ask the lead.</li>
+      <li><em>What size are the barrels?</em> — Let the environment concept artists decide.</li>
+      <li><em>Should a barrel block passage? And what if you're out of ammo?</em> — We need to let the player push it.</li>
+      <li><em>What about enemies, can they move barrels too?</em> — No, let them not move them for now.</li>
+      <li><em>What about companions, can they move barrels?</em> — Yes, but only for story reasons.</li>
+      <li><em>For bosses, will we come up with special barrel mechanics, throwing them, say?</em> — Now that's interesting, let's push it to the next milestone.</li>
+    </ul>
+    <p>The fellows left the office well past midnight, the sheet of ideas covered in writing on both sides.</p>
+    <p>But the most interesting part begins afterward, once the designer has sold their idea to the team: this red barrel starts doing good to everyone indiscriminately. The team, working through the technical problems, rewrites half the engine and adds support for this mechanic — and in the end the players simply don't use it.</p>
+    <p>If you remember which "red barrels" were in the games you played, write about them in the comments.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
