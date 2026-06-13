@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Performance — dalerank</title>
+<meta name="description" content="Articles on performance: caches, spinlocks, data alignment and benchmarks in C++." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/performance.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/performance.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../topics/performance.html">RU</a><i>/</i><a class="on" href="performance.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag gold">Topic</span>
+    <h1>Performance</h1>
+    <div class="ameta"><span>Squeezing the most out of the hardware</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Notes on what happens below the level of algorithms — CPU caches, data coherence, synchronization primitives and alignment. All with benchmarks and C++ examples.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../articles/spinlocks.html"><span class="tag gold">Performance</span><h3>No need to rush… (About spinlocks)</h3><p>C++ spinlock implementations — from the naive TAS to a ticket spinlock — with benchmarks, cache misses and the nuances of thread prioritization.</p><div class="pmeta"><span>Sep 27, 2022</span><span>13 min</span></div></a></li>
+    <li><a href="../articles/cache-pollution.html"><span class="tag gold">Performance</span><h3>Cache pollution? Stock up on tests</h3><p>How caches, associativity, coherence and data alignment affect performance — with benchmarks.</p><div class="pmeta"><span>Sep 9, 2022</span><span>12 min</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

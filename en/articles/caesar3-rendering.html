@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reverse-engineering Caesar III: City Rendering (Part 2) — dalerank</title>
+<meta name="description" content="Caesar III map format, tile selection and draw order, drawing the city — part two of the reverse-engineering series." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-rendering.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/caesar3-rendering.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/caesar3-rendering.html">RU</a><i>/</i><a class="on" href="caesar3-rendering.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head">
+    <span class="tag">Reverse-engineering</span>
+    <h1>Reverse-engineering Caesar III: City Rendering</h1>
+    <div class="ameta"><span>May 15, 2014</span><span>Part 2</span><span>9 min</span></div>
+  </div>
+  <article class="prose">
+
+
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-10.jpg" alt="Caesar III city rendering" class="post-image" loading="lazy" />
+
+    <p>
+      I hope the previous post about reverse-engineering Caesar III, which described the algorithm for extracting textures from the original game's resources, was well received. In this article, I will describe the map format, the algorithm for selecting and ordering tiles for rendering, and the formation of the final texture.
+    </p>
+
+    <h2>Tiles</h2>
+    <p>
+      If you know what a tile is, you can skip this section. A tile is a fixed-size image formed so that when drawn next to other tiles, it creates a continuous image without "seams." Here's an example of grass textures from Caesar III:
+    </p>
+    <p style="line-height: 0;">
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-23.jpg" alt="Grass tile 1" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-20.jpg" alt="Grass tile 2" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-25.jpg" alt="Grass tile 3" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-2.jpg" alt="Grass tile 4" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-6.jpg" alt="Grass tile 5" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-16.jpg" alt="Grass tile 6" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-9.jpg" alt="Grass tile 7" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-4.jpg" alt="Grass tile 8" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+    </p>
+
+    <p>
+      If you arrange them side by side in a certain order and add some tree textures, you get a certain area of land. And if you add another type of tile to this picturesque scene, for example, with a road image, you can already create a primitive map.
+    </p>
+    <p>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-1.jpg" alt="Terrain example" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-12.jpg" alt="Map with roads" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+    </p>
+
+    <h2>Isometric Perspective</h2>
+    <p>
+      You've probably noticed that the presented images are not square, but diamond-shaped. This is done to give the image a sense of volume (depth). Such a tile looks turned with one corner towards the viewer and as if going into the depth, the two-dimensional picture acquired a third dimension. To create the effect of volume, the width should be about half the length. The tile base in Caesar III is 58×30 pixels, this is the minimum tile size that the game engine operates with.
+    </p>
+    <p>
+      In the early stages of the remake development, one unpleasant effect occurred: the textures in the game were created without transparency, and displaying them on the screen without additional processing led to the following result:
+    </p>
+    <p>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-5.jpg" alt="Rendering without transparency" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+    </p>
+    <p>
+      The solution to this situation is as follows: either use a mask, for example, the color of the leftmost pixel is accepted as transparent, or add an alpha channel to the textures. The first option was used in the original game, the second is used in the remake: textures are prepared at the resource loading stage.
+    </p>
+
+    <h2>Map Format</h2>
+    <p>
+      A map is an array that defines the position of tiles on a layer and their parameters. In the simplest case, a map is an M×N matrix, where each element contains an identifier (number) from a conditional "tile palette." Tiles don't necessarily have sequential numbers; tile numbers are divided into several intervals and named spaces. For example, tiles of earth, trees, water, faults, and grass have indices from land1a_00001 to land1a_00303. Caesar III allows the use of square maps ranging from 30×30 to 160×160 tiles. A tile is positioned on the map so that its upper boundary is "north."
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-18.jpg" alt="Map orientation" class="post-image" loading="lazy" />
+
+    <h2>Rendering Order</h2>
+    <p>
+      To draw tiles on the screen, you need to consider the distance to them. If you simply draw tiles in the order they are placed on the map, you get gibberish, as some tiles were drawn at the wrong time.
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-8.jpg" alt="Incorrect rendering order" class="post-image" loading="lazy" />
+
+    <p>
+      The following image shows the sequence in which tiles should be drawn:
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-19.jpg" alt="Correct rendering order diagram" class="post-image" loading="lazy" />
+
+    <p>
+      1. The first figure shows the order of rendering tiles on a 2D map to create a depth effect.<br/>
+      2. The second figure shows the order of rendering tiles on a 2.5D map, considering that the higher the tile is located, the earlier it should be rendered.
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-22.jpg" alt="Rendered terrain example" class="post-image" loading="lazy" />
+
+    <p>
+      This image is formed from the following tiles, rendered in the correct order:
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-15.jpg" alt="Individual tiles breakdown" class="post-image" loading="lazy" />
+
+    <h2>Rendering Algorithm</h2>
+    <p>
+      In general, the code for generating tile indices for rendering will be as follows:
+    </p>
+    <pre><code>// Form the upper part of the rendering "diamond"
+tilemap map;  // surface map
+tilearray tiles;  // rendering order
+for( j=0; y &lt; map_size; j++ )
+{
+   for( t=0; t &lt;= j; t++ )
+    {
+       tiles.append( map[ t , map_size - 1 - ( j - t )  ];
+   }
+}
+
+// Form the lower part of the rendering "diamond"
+for( i=1; i &lt; map_size; i++ )
+{
+   for( int t=0; t &lt; map_size-i; t++ )
+   {
+        tiles.append( map[ i + t, t ] );
+   }
+}</code></pre>
+
+    <h2>Drawing the City</h2>
+    <p>
+      Additional conditions that arise when rendering a city:
+    </p>
+    <ol>
+      <li>The map contains not only static tiles of land, grass, and buildings, but also moving objects (people, animals, animations)</li>
+      <li>There are objects that can be passed through (arch, gates, barn)</li>
+      <li>Additional animation of tiles and objects</li>
+      <li>Non-square objects</li>
+    </ol>
+
+    <p>
+      These conditions complicate the rendering process and create additional rendering rules:
+    </p>
+    <ol>
+      <li>The movement of characters on an isometric map doesn't happen just like that. The map is turned "into depth" and its absolute size vertically doesn't match the size horizontally. Therefore, any walking object should move "up" accordingly; in the simplest case, two steps to the side equals one step into depth.</li>
+      <li>A moving object can be in different parts of a tile and is drawn after displaying the main tile image, which can cause display artifacts, for example: a chariot rides over gates. This is bypassed by drawing additional sprites that will be shown after rendering moving objects.</li>
+    </ol>
+
+    <p style="line-height: 0;">
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-21.jpg" alt="Gate base texture" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <span> + </span>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-3.jpg" alt="Gate overlay texture" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <span> = </span>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-11.jpg" alt="Complete gate rendering" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+    </p>
+
+    <ol start="3">
+      <li>Animation can go beyond the main image size; here you should consider such a feature that it (animation) can go up and to the right, but not down and to the left, otherwise it will be covered by the following tiles.</li>
+      <li>For the most part, the game uses square objects, but there are also extended ones; to simplify the rendering algorithm, they are broken into smaller (square) parts, for example, a hippodrome.</li>
+    </ol>
+
+    <p style="line-height: 0;">
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-7.jpg" alt="Hippodrome full texture" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <span> = </span>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-14.jpg" alt="Hippodrome part 1" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <span> + </span>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-24.jpg" alt="Hippodrome part 2" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+      <span> + </span>
+      <img src="../../assets/articles/caesar2-en/caesar3-rendering-17.jpg" alt="Hippodrome part 3" style="image-rendering: pixelated; image-rendering: crisp-edges;" />
+    </p>
+
+    <h2>Rendering Passes</h2>
+    <ol>
+      <li>In the first pass, "flat" tiles and moving objects on them are drawn</li>
+      <li>In the second pass, tiles whose images can extend beyond the tile base are drawn</li>
+      <li>Additional animation is drawn for tiles that have such a flag</li>
+    </ol>
+    <p>
+      <em>Anticipating possible questions: This algorithm was restored from the original game, as far as I could understand it; it may be changed in later versions. Advice on organizing the rendering cycle is welcome.</em>
+    </p>
+
+    <h2>Caesar III Map File Format</h2>
+    <p>
+      Directly related to the objects that will be displayed in the city, the first five data blocks in the *.map file. We read from the beginning of the file, reading data one after another without gaps:
+    </p>
+    <ul>
+      <li><strong>short tile_id[26244]</strong> — contains element identifiers, each identifier corresponds to its texture. For example, the group of identifiers 246-548 corresponds to textures land1a_00001-land1a_00303, these are textures of earth, trees, etc., which were described above.</li>
+      <li><strong>byte edge_data[26244]</strong> — the array contains information about the size of the object for which the texture was selected in the tile_id array</li>
+      <li><strong>short terrain_info[26244]</strong> — the array contains surface characteristics for a specific tile: earth, water, road, wall, etc. (<a href="http://pecunia.nerdcamp.net/projects/citybuilding/caesar3-terrain" target="_blank">full information on these flags</a>)</li>
+      <li><strong>byte minimap_info[26244]</strong> — basic information for building a minimap, also participates in some calculations during the game, acting as a kind of "random numbers" array.</li>
+      <li><strong>byte height_info[26244]</strong> — this array describes the height of the tile above the surface: 0 for ground, 1 for 15 pixels, 2 for 30 pixels, etc.</li>
+    </ul>
+
+    <h2>Practical Application</h2>
+    <p>
+      More detailed information about Caesar III and the progress of the remake development can be found in our <a href="https://bitbucket.org/dalerank/caesaria/wiki/Home" target="_blank">wiki on bitbucket.org</a>.
+    </p>
+    <p>
+      Special thanks to <a href="http://caesar.biancavanschaik.nl/" target="_blank">Bianca van Schaik</a> for help in writing the article and providing materials.
+    </p>
+    <p>
+      And finally, a small test screenshot: Etruscan spearmen are rampaging in the city of fountains:
+    </p>
+    <img src="../../assets/articles/caesar2-en/caesar3-rendering-13.jpg" alt="Etruscan spearmen in the city" class="post-image" loading="lazy" />
+
+    
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

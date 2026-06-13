@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dalerank — notes on code & craft</title>
+<meta name="description" content="Essays on software craft, reverse-engineering and the long game — plus the books I write." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/" />
+<link rel="alternate" hreflang="x-default" href="https://dalerank.github.io/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="./">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="#writing">Articles</a>
+      <a href="#books">Books</a>
+      <a href="#projects">Projects</a>
+      <a href="#topics">Topics</a>
+      <a href="about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../">RU</a><i>/</i><a class="on" href="./">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="eyebrow reveal d1">Code · Craft · Reverse-engineering</div>
+      <h1 class="reveal d2">I love <em>old code</em>,<br>games and <span class="u">algorithms</span></h1>
+      <p class="lead reveal d3">Notes on craft, programming and game internals.</p>
+      <div class="cta reveal d4">
+        <a class="btn" href="#writing">Read the blog</a>
+        <a class="btn ghost" href="#books">See the books</a>
+      </div>
+      <div class="meta reveal d5">
+        <span><b>42</b> essays</span>
+        <span><b>2</b> books</span>
+        <span>since <b>2014</b></span>
+      </div>
+    </div>
+    <div class="sphere reveal d3">
+      <a class="s3" href="articles/should-players-be-hand-held.html">Should players be hand-held?</a>
+      <a class="s1" href="articles/cache-pollution.html">cache pollution</a>
+      <a class="s1" href="articles/spinlocks.html">spinlocks</a>
+      <a class="s2" href="topics/reverse-engineering.html">reverse-engineering</a>
+      <a class="book" href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">Game++</a>
+      <a class="s1" href="articles/how-caesar-draws-city.html">Caesar III: textures</a>
+      <a class="s1" href="articles/caesar3-rendering.html">city rendering</a>
+      <a class="book" href="../assets/books/zapiski-ezdovogo-kota.pdf">Notes of a Traveling Cat</a>
+      <a class="s1" href="articles/caesar3-game-logic.html">game logic</a>
+      <a class="s2" href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">PragmatiC++</a>
+      <a class="s1" href="articles/caesar3-city-model.html">city model</a>
+      <a class="book" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Playing Games</a>
+    </div>
+  </section>
+
+  <!-- WRITING -->
+  <section class="sec" id="writing">
+    <div class="sec-head">
+      <h2><span class="n">01</span>Latest writing</h2>
+      <a class="more" href="articles/index.html">All articles →</a>
+    </div>
+    <div class="grid">
+      <a class="post reveal d1" href="articles/pharaoh-map-rendering.html">
+        <span class="arrow">↗</span>
+        <span class="tag">Reverse-engineering</span>
+        <h3>How the map is drawn in Pharaoh</h3>
+        <p>The algorithm for rendering the isometric map, city and animation in Pharaoh: diagonal-path and zig-zag, depth sorting, layers and the map format.</p>
+        <div class="pmeta"><span>Oct 17, 2023</span><span>10 min</span></div>
+      </a>
+      <a class="post reveal d2" href="articles/private-but-want-public.html">
+        <span class="arrow">↗</span>
+        <span class="tag">Abnormal programming</span>
+        <h3>When it's private but you really want public</h3>
+        <p>Testing a C++ class's private members without touching the headers: from a hundred friends and #define private public to a template hack.</p>
+        <div class="pmeta"><span>Sep 21, 2023</span><span>8 min</span></div>
+      </a>
+      <a class="post reveal d3" href="articles/should-players-be-hand-held.html">
+        <span class="arrow">↗</span>
+        <span class="tag clay">Game design</span>
+        <h3>Should players be hand-held?</h3>
+        <p>Level-design techniques from Witcher 3, Zelda and Metro Exodus — guiding players without leading them by the hand.</p>
+        <div class="pmeta"><span>Apr 2025</span><span>10 min</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- BOOKS -->
+  <section class="sec" id="books">
+    <div class="books">
+      <div class="sec-head">
+        <h2><span class="n">02</span>The books</h2>
+        <a class="more" href="#">All titles →</a>
+      </div>
+      <div class="booklist">
+        <article class="book">
+          <div class="bookcol">
+            <div class="cover"><img src="../assets/covers/game-engine-bhv.jpg" alt="Game++. Building and Optimizing a Game Engine" /></div>
+            <a class="btn buy" href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">Buy</a>
+            <a class="btn ghost" href="game-plus-chapters.html">Read</a>
+            <a class="alt" href="game-plus-reviews.html">Reviews</a>
+          </div>
+          <div>
+            <h3>Game++. Building &amp; Optimizing a Game Engine</h3>
+            <p>How a modern game engine works under the hood: architecture, subsystems and real-world optimization. Published in Russian by BHV.</p>
+            <div class="price"><s>PDF + EPUB</s> · coming soon</div>
+          </div>
+        </article>
+        <article class="book">
+          <div class="bookcol">
+            <div class="cover"><img src="../assets/covers/cat-notes.jpg" alt="Notes of a Traveling Cat" /></div>
+            <a class="btn buy" href="../assets/books/zapiski-ezdovogo-kota.pdf" download="Notes of a Traveling Cat.pdf">Download PDF</a>
+            <a class="btn ghost" href="cat-notes-chapters.html">Read</a>
+            <a class="alt" href="../assets/books/zapiski-ezdovogo-kota.epub" download="Notes of a Traveling Cat.epub">or EPUB</a>
+          </div>
+          <div>
+            <h3>Notes of a Traveling Cat</h3>
+            <p>A free book — download it in PDF or EPUB. (In Russian.)</p>
+            <div class="price">Free · PDF + EPUB</div>
+          </div>
+        </article>
+        <article class="book">
+          <div class="bookcol">
+            <div class="cover draft"><div class="ct"><small>dalerank · draft</small><span>PragmatiC++</span></div><span class="stamp">draft</span></div>
+            <a class="btn buy" href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">Read the draft</a>
+          </div>
+          <div>
+            <h3>PragmatiC++</h3>
+            <p>A work-in-progress book on pragmatic C++ that still makes sense a year later.</p>
+            <div class="price">Draft · in progress</div>
+          </div>
+        </article>
+        <article class="book">
+          <div class="bookcol">
+            <div class="cover draft"><div class="ct"><small>dalerank · draft</small><span>Playing Games</span></div><span class="stamp">draft</span></div>
+            <a class="btn buy" href="mailto:dalerankn8@gmail.com?subject=Access%20to%20the%20draft%20%E2%80%9CPlaying%20Games%E2%80%9D&body=Hi%21%20I%20would%20like%20to%20request%20access%20to%20the%20draft%20of%20%E2%80%9CPlaying%20Games%E2%80%9D.%20A%20bit%20about%20me%3A%20">Request access</a>
+          </div>
+          <div>
+            <h3>Playing Games</h3>
+            <p>A work-in-progress book — access on request.</p>
+            <div class="price">Draft · on request</div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section class="sec" id="projects">
+    <div class="sec-head">
+      <h2><span class="n">03</span>Projects</h2>
+      <a class="more" href="https://github.com/dalerank" target="_blank" rel="noopener">All GitHub →</a>
+    </div>
+    <div class="projects-stack">
+
+      <a class="project reveal d1" href="https://dalerank.github.io/Akhenaten/about.html">
+        <div class="project-shot pixel">
+          <span class="badge">Open source</span>
+          <img src="https://dalerank.github.io/Akhenaten/images/pharaoh_oss.png" alt="Akhenaten screenshot — a Pharaoh-style city" loading="lazy" />
+        </div>
+        <div class="project-body">
+          <span class="eyebrow">Game engine · C++</span>
+          <h3>Akhenaten</h3>
+          <p>A modern open-source reimplementation of the classic city-builder <b>Pharaoh (1999)</b> by Impressions Games. Full savegame compatibility with the original, cross-platform, and clean, readable code.</p>
+          <div class="project-tags">
+            <span class="chip">C++</span>
+            <span class="chip">SDL2</span>
+            <span class="chip">Reverse engineering</span>
+            <span class="chip">AGPL-3.0</span>
+          </div>
+          <span class="project-cta">About the game →</span>
+        </div>
+      </a>
+
+      <a class="project rev reveal d2" href="https://github.com/dalerank/imspinner" target="_blank" rel="noopener">
+        <div class="project-shot">
+          <span class="badge">Header-only</span>
+          <img src="../assets/projects/imspinner.gif" alt="imspinner animated spinners demo for Dear ImGui" loading="lazy" />
+        </div>
+        <div class="project-body">
+          <span class="eyebrow">Library · Dear ImGui</span>
+          <h3>imspinner</h3>
+          <p>A collection of dozens of animated loading indicators for <b>Dear ImGui</b> — spinners, progress bars and dots in a single header. Just include <code>imspinner.h</code> and call the spinner you need.</p>
+          <div class="project-tags">
+            <span class="chip">C++</span>
+            <span class="chip">ImGui</span>
+            <span class="chip">single-header</span>
+            <span class="chip">MIT</span>
+          </div>
+          <span class="project-cta">Open on GitHub →</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- TOPICS -->
+  <section class="sec" id="topics">
+    <div class="sec-head"><h2><span class="n">04</span>Browse by topic</h2></div>
+    <div class="topics">
+      <span class="chip">Architecture <b>9</b></span>
+      <a class="chip" href="topics/reverse-engineering.html">Reverse-engineering <b>7</b></a>
+      <span class="chip">C++ <b>11</b></span>
+      <span class="chip">Game internals <b>6</b></span>
+      <span class="chip">Craft &amp; habits <b>8</b></span>
+      <span class="chip">Tooling <b>5</b></span>
+      <span class="chip">Open source <b>4</b></span>
+      <a class="chip" href="topics/performance.html">Performance <b>2</b></a>
+      <a class="chip" href="topics/abnormal-programming.html">Abnormal programming <b>3</b></a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="#">RSS</a>
+    </span>
+  </div>
+</footer>
+
+<script src="../sphere.js"></script>
+</body>
+</html>

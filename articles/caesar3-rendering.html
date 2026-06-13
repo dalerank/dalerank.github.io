@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Реверс-инжиниринг Caesar III: отрисовка города (Часть 2) — dalerank</title>
+<meta name="description" content="Формат карт Caesar III, выбор и порядок отрисовки тайлов, рисование города — вторая часть реверс-инжиниринга." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-rendering.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/caesar3-rendering.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="caesar3-rendering.html">RU</a><i>/</i><a href="../en/articles/caesar3-rendering.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head">
+    <span class="tag">Реверс-инжиниринг</span>
+    <h1>Реверс-инжиниринг Caesar III: отрисовка города</h1>
+    <div class="ameta"><span>15 мая 2014</span><span>Часть 2</span><span>12 мин</span></div>
+  </div>
+  <article class="prose">
+    <p>Надеюсь, предыдущий пост Back-инжиниринг Caesar III, где был описан алгоритм получения текстур из ресурсов оригинальной игры, был благосклонно встречен хабражителями. В этой статье я опишу формат карт, алгоритм выбора и порядок тайлов для отрисовки, формирование итоговой текстуры.</p>
+    <img src="../assets/articles/caesar2/c-01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Если знаете, что такое тайл (tile), тогда следующий раздел можно пропустить. Тайлы Тайл это картинка фиксированного размера, сформированное так, чтобы при рисовании рядом с другими тайлами получалось сплошное изображение без “швов”. Вот пример текстур травы из игры Caesar III</p>
+    <img src="../assets/articles/caesar2/c-02.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-03.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-04.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-05.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-06.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-07.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-08.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-09.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Если составить их рядом в определенном порядке и добавить немного текстур с деревьями, то получится некоторая область земли.А если внести в эту живописную картину еще один вид тайла, например, с изображением дороги, то можно уже составить примитивную карту.</p>
+    <img src="../assets/articles/caesar2/c-10.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-11.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Вы, наверно заметили, что представленные изображения не квадратные, а ромбовидные. Сделано это для того, чтобы придать изображению ощущение объема( глубины ). Такой тайл выглядит повернутым одним углом к зрителю и как бы уходящим вглубь, двухмерная картинка приобрела третье измерение. Для создания эффекта объема ширина должны быть меньше длины примерно в два раза. База тайла в игре Caesar III составляет 58х30 пикселей, это минимальный размер тайла, которым оперирует движок игры. На первых этапах разработки ремейка получился один неприятный эффект, текстуры в игре созданы без учета прозрачности и вывод их на экран без дополнительной обработки приводил к следующему результату.</p>
+    <img src="../assets/articles/caesar2/c-12.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Выход из этой ситуации следующий: либо использовать маску, например цвет крайнего левого символа принимается как прозрачный, либо текстуры дополнять альфаканалом. В оригинальной игре использовался первый вариант, в ремейке используется второй: текстуры подготавливаются на этапе загрузки ресурсов.</p>
+    <p>Карта Карта — это массив, определяющий положение тайлов на слое и их параметры. В самом простом случае карта представляет собой матрицу MxN, где каждый ее элемент содержит идентификатор(номер, число) из условной «палитры тайлов». Тайлы не обязательно имеют последовательный порядковый номер, номера тайлов разбиты на несколько интервалов и именованных пространств. Так например тайлы земли, деревьев, воды, разломов и травы имеют индексы от land1a_00001 до land1a_00303. В игре Caesar III допускается использование квадратных карт размеров от 30х30 до 160х160 тайлов. Тайл располагается на карте так, что его верхняя границы является «севером».</p>
+    <img src="../assets/articles/caesar2/c-13.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Для того, чтобы нарисовать тайлы на экране, нужно учитывать расстояние до него, если просто нарисовать тайлы в порядке их размещения на карте, то получится абракадабра, так как часть тайлов была нарисована не в свое время.</p>
+    <img src="../assets/articles/caesar2/c-14.jpg" alt="" class="post-image" loading="lazy" />
+    <p>В какой последовательности нужно рисовать тайлы показывает следующее изображение.</p>
+    <img src="../assets/articles/caesar2/c-15.jpg" alt="" class="post-image" loading="lazy" />
+    <p>1. В первой фигуре показан порядок отрисовки тайлов на 2D карте, для создания эффекта глубины. 2. Во второй фигуре показан порядок отрисовки тайлов на 2.5D карте, учитывая, что чем выше расположен тайл, тем раньше он должен быть отрисован.</p>
+    <img src="../assets/articles/caesar2/c-16.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Это изображение сформировано из следующих тайлов, отрисованных в правильном порядке.</p>
+    <img src="../assets/articles/caesar2/c-17.jpg" alt="" class="post-image" loading="lazy" />
+    <p>В общем случае код формирования индексов тайлов для отрисовки будет следующим:</p>
+    <details class="code" open><summary>Код формирования порядка отрисовки</summary><pre><code>// Формируем верхнюю часть «ромба» отрисовки
+tilemap   map;     // карта поверхности
+tilearray tiles;   // порядок отрисовки
+for( j = 0; j &lt; map_size; j++ ) {
+    for( t = 0; t &lt;= j; t++ ) {
+        tiles.append( map[ t, map_size - 1 - ( j - t ) ] );
+    }
+}
+// Формируем нижнюю часть «ромба» отрисовки
+for( i = 1; i &lt; map_size; i++ ) {
+    for( int t = 0; t &lt; map_size - i; t++ ) {
+        tiles.append( map[ i + t, t ] );
+    }
+}</code></pre></details>
+    <p>Рисование города Дополнительные условия, которые возникают при отрисовке города. 1. На карте расположены не только статические тайлы земли, травы, зданий, а также присутствуют подвижные объекты (люди, животные, анимация) 2. Есть объекты, через которые можно пройти (арка, ворота, амбар) 3. Дополнительная анимация тайлов и объектов 4. Неквадратные объекты</p>
+    <p>Эти условия усложняют процесс отрисовки и порождают дополнительные правила отрисовки. 1. Перемещение персонажей по изометрической карте происходит не просто так. Карта повернута “вглубь” и абсолютный ее размер по вертикали не совпадает с размером по горизонтали. Поэтому и “вверх” любой ходячий предмет должен двигаться соответствующим образом, в простейшем случае на два шага в сторону приходится один шаг вглубь. 2. Подвижный объект может находиться в разных частях тайла и рисуется он после отображения основного изображения тайла, что может вызвать артефакты отображения, например такие: колесница едет поверх ворот. Это обходится рисованием дополнительных спрайтов, которые будут показаны после отрисовки подвижных объектов.</p>
+    <img src="../assets/articles/caesar2/c-18.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-19.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-20.jpg" alt="" class="post-image" loading="lazy" />
+    <p>3. Анимация может выходить за размеры основного изображения, здесь следует учитывать такую особенность, что она(анимация) может уходить вверх и вправо, но не вниз и влево, иначе она будет перекрыта следующими тайлами. 4. В большинстве своем в игре используются квадратные объекты, но есть и протяженные, для упрощения алгоритма отрисовки, их бьют на более мелкие (квадратные) части, например ипподром.</p>
+    <img src="../assets/articles/caesar2/c-21.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-22.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-23.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar2/c-24.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Как рисовать 1. За первый проход рисуются «плоские» тайлы и подвижные объекты на них 2. За второй проход рисуются тайлы, изображения которых может выходить за базу тайла 3. Рисуется дополнительная анимация для тайлов, которые имеют такой флаг Предваряя возможные вопросы. Этот алгоритм был восстановлен из оригинальной игры, настолько, насколько я смог его понять, возможно он будет изменен в более поздних версиях. Советы по организации цикла отрисовки приветствуются</p>
+    <p>Формат карты игры Caesar III Непосредственно к объектам, которые будут отображены в городе, в файле *.map относятся первые пять блоков данных. Читаем с начала файла, вычитываем данные друг за другом без пропусков.</p>
+    <p>short tile_id[26244] — содержит идентификаторы элементов, каждый идентификатор соотносится со своей текстурой. Например группа идентификаторов 246-548, соответствует текстурам land1a_00001-land1a_00303, это текстуры земли, деревьев и др., которые были описаны выше. byte edge_data[26244] — массив содержит информацию о размерах объекта, для которого выбрана текстура в массиве tile_id short terrain_info[26244] — массив содержит характеристики поверхности для конкретного тайла, земля, вода, дорога, стена и др. (полная информация по этим флагам) byte minimap_info[26244] — базовая информация для построения миникарты, также участвует в некоторых вычислениях в ходе игры, выступая своего рода массивом «случайных чисел». byte height_info[26244] — этот массив описывает высоту тайла над поверхностью, 0 — для земли, 1 — 15 пикселей, 2 — 30 пикселей и тд.</p>
+    <p>Практическое применение Более подробную информацию об игре Caesar III и ходе разработки ремейка вы можете найти в нашей вики на bitbucket.org. Отдельное спасибо Bianca van Schaik за помощь в написании статьи и предоставленные материалы.</p>
+    <p>И напоследок небольшой тестовый скриншот, этрусские копьеносцы бесчинствуют в городе фонтанов:</p>
+    <img src="../assets/articles/caesar2/c-25.jpg" alt="" class="post-image" loading="lazy" />
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>No need to rush… (About spinlocks) — dalerank</title>
+<meta name="description" content="Walking through C++ spinlock implementations — from the naive TAS to a ticket spinlock — with benchmarks, cache misses and the nuances of thread prioritization." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/spinlocks.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/spinlocks.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/spinlocks.html">RU</a><i>/</i><a class="on" href="spinlocks.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Performance</span><h1>No need to rush… (About spinlocks)</h1><div class="ameta"><span>Sep 27, 2022</span><span>13 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/spinlocks/s-01.jpg" alt="From the film “Kidnapping, Caucasian Style”" class="post-image" loading="lazy" />
+    <p>From the film “Kidnapping, Caucasian Style”.</p>
+    <p>After a <a href="cache-pollution.html">small article</a> about the quirks of working with the cache, I got a few comments in my DMs about how spinlocks work — plus an interview invite. It's nice that purely technical articles are read not only by techies. Back to spinlocks: since the discussion spilled beyond Habr and there's interest, why not write about working with these synchronization primitives. The topic really is interesting, and developers have come up with more than a dozen kinds of spinlocks for different tastes and needs. Again, everything comes with tests and worked examples. @tbl Linus is indeed right — in userspace spinlocks are &quot;evil incarnate&quot;, but there are nuances...</p>
+    <hr />
+    <p>My first encounter with a spinlock in real life (not really, but I'd never thought about it that way before) happened in the laundry room of my alma mater's dorm (ITMO) — it was a cross between a lottery and the tactics of a desert gopher scanning for predators. There were 5 washing machines and two dryers, plus a sign-up sheet for time slots. First you put yourself at the end of the queue and write down when you'll come, then you show up at that time (which didn't always work out), but arriving on time you realize all the machines are still (already) stuffed with someone's clothes, and there may be a few people ahead of you, give or take. You can sit and wait while <s>the strange guys from the room across the hall</s> your neighbors pull their stuff out, or you can go back to your room and come down ten minutes later, hoping no &quot;smart&quot; person jumped the queue. On the third attempt a machine is free and your clothes finally go in; now you can go back to your room for half an hour and wait for the wash to finish, or wait right here playing Snake on a brand-new Nokia 3310. Going back to your room might end with your damp clothes dumped in the communal &quot;freshly washed&quot; basket. The same quest awaits you with the dryer — except there are two, and the number of checks is random, because there's no sign-up sheet for dryers. We check the dryers every half hour and voilà... after three hours and a bunch of trips the laundry is clean, and as compensation for the lost time you get someone's yellow sock with a little elephant on it, discovered back in your room. That's how you can feel like a human spinlock with a polling interval of plus-or-minus ten minutes, with the washing machine as the resource.</p>
+    <p>There are two kinds of waiting on a resource: blocking and non-blocking.</p>
+    <p>Blocking waiting (mutex, critical section) suspends the thread until the resource is freed at the OS level. This is useful, because the lock is implemented by the OS itself and consumes negligible machine resources. The scheduler can also account for the priority of such waits, or the priorities of the threads using them. Such a lock leaves the CPU free for other tasks — including any other task, even ones that directly hold the lock. However, all of this is expensive in time, mostly because of blocking contending threads at the OS level. Such locks — mutexes / critical sections — should be used when the work takes significantly longer than the cost of suspending the thread, e.g. I/O operations, calls into OS kernel functions, or doing laundry in a university dorm. If there's interest, we can discuss how mutexes work a bit later; for now, spinlocks.</p>
+    <p>Non-blocking waiting (spinlock) checks some condition in an infinite loop. This is also useful, because it can resume the thread on the very next CPU cycle, it costs the OS nothing and takes minimal effort from the developer — and it's completely opaque to the scheduler, which only sees a bunch of threads doing active work. An even bigger drawback is that, in the worst case, an active thread can prevent the CPU from doing other work. If a thread's task requires lengthy computation, the other threads will spend disproportionately more time waiting than working, all while occupying the CPU like ordinary threads. As a rule, a spinlock is used for short critical sections, e.g. reading or writing a critical data structure.</p>
+    <p>Developers have come up with quite a few spinlocks — let's see how it all works.</p>
+    <h2>The naive implementation</h2>
+    <p>Let's start with a simple implementation; an atomic variable guarantees the wait (you can actually write code that breaks this assumption and the spinlock won't work, but that's another story). Using an atomic variable makes the read-modify-write of the current lock state indivisible (i.e. reading the variable's state, changing it to another, and writing it back to memory is a single operation during which the thread cannot be interrupted). Without an atomic variable, the constituent read-modify-write steps could be paused, leading to the lock being acquired by several threads at once. In C++ any operation is generally considered non-atomic until explicitly stated otherwise by the compiler and hardware vendor — even a plain assignment of POD types.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct naive_spinlock_tas {
+  std::atomic&lt;bool&gt; locked{false};
+
+#define do_nothing
+  void lock() { for (; locked.exchange(true) ;) do_nothing; }
+  void unlock() { locked.store(false); }
+};</code></pre></details>
+    <details class="code"><summary>Benchmark code</summary><pre><code>void naive_spinlock_inc(naive_spinlock_tas &amp;s, s64 &amp;val) {
+   for (int i = 0; i &lt; 100000; i++) {
+     s.lock();
+     val++;
+     s.unlock();
+   }
+ }
+
+static void naive_spinlock_bench(benchmark::State &amp;s) {
+   const u32 bench_threads = s.range(0);
+
+   s64 val = 0;
+   std::vector&lt;std::thread&gt; thread_pool;
+   thread_pool.reserve(bench_threads);
+
+   naive_spinlock_tas sl;
+
+   for (auto stage : s) {
+     for (u32 i = 0u; i &lt; bench_threads; i++) {
+       thread_pool.emplace_back([&amp;] { naive_spinlock_inc(sl, val); });
+     }
+
+     for (auto &amp;thread : thread_pool)
+        thread.join();
+
+     thread_pool.clear();
+   }
+ }
+ BENCHMARK(naive_spinlock_bench)
+     -&gt;RangeMultiplier(2)
+     -&gt;Range(1, std::thread::hardware_concurrency())
+     -&gt;UseRealTime()
+     -&gt;Unit(benchmark::kMillisecond);</code></pre></details>
+    <details class="code"><summary>Results</summary><pre><code>----------------------------------------------------------------------------
+Benchmark                                 Time             CPU    Iterations
+----------------------------------------------------------------------------
+naive_spinlock_bench/1/real_time        1.49 ms        0.066 ms          471
+naive_spinlock_bench/2/real_time        6.31 ms        0.143 ms          109
+naive_spinlock_bench/4/real_time        23.7 ms        0.000 ms           28
+naive_spinlock_bench/8/real_time        86.4 ms        0.000 ms            9
+naive_spinlock_bench/16/real_time        349 ms        0.000 ms            2
+naive_spinlock_bench/24/real_time        670 ms        0.000 ms            1
+
+// Just counting twice as much is faster than doing it in two threads
+---------------------------------------------------------------------------
+Benchmark                                 Time             CPU   Iterations
+---------------------------------------------------------------------------
+naive_spinlock_bench/1/real_time       2.46 ms        0.053 ms          294</code></pre></details>
+    <p>If we wanted to get some work done and hoped that doubling the thread count would cut the runtime, we see that didn't happen. Instead, the 2-thread test takes 3× longer than the single-threaded one. With a caveat, of course — the test is very synthetic, but it shows a likely trend when working with data that parallelizes poorly. I covered the reasons for this behavior in the previous article: updating an atomic variable flushes and refreshes the cache line in the other cores working with it. With this spinlock implementation, 2 out of 3 cache requests miss.</p>
+    <details class="code"><summary>perf stat</summary><pre><code>124,334,591      L1-dcache-loads           #   14.438 M/sec
+ 78,181,819      L1-dcache-load-misses     #   62.88% of all L1-dcache hits</code></pre></details>
+    <h2>A better spinlock</h2>
+    <details class="code"><summary>Show code</summary><pre><code>struct better_naive_spinlock_ttas {
+  std::atomic&lt;bool&gt; locked{false};
+
+#define do_nothing
+  void lock() {
+     while (true) {
+       if (!locked.exchange(true)) return;
+
+       while (locked.load()) do_nothing;
+     }
+  }
+  void unlock() { locked.store(false); }
+};</code></pre></details>
+    <p>Let's try to get rid of the cache misses and increase the lock's useful work. To do that, instead of constantly trying to change the variable, we'll wait for it to be released. Once it's free we try again, because someone else might lock it first. All we did was replace the atomic write attempt with a read. The nice thing is that read-only cache copies can coexist in several different cores at no extra cost. The core reads its local copy of the atomic variable from its own L1 cache, the lock-release ordering becomes advisory, and the number of cache misses drops.</p>
+    <details class="code"><summary>Results</summary><pre><code>-----------------------------------------------------------------------------------
+Benchmark                                         Time             CPU   Iterations
+-----------------------------------------------------------------------------------
+better_naive_spinlock_bench/1/real_time        1.53 ms        0.066 ms          475
+better_naive_spinlock_bench/2/real_time        6.79 ms        0.267 ms          117
+better_naive_spinlock_bench/4/real_time        18.9 ms        0.000 ms           36
+better_naive_spinlock_bench/8/real_time        44.5 ms        0.000 ms           16
+better_naive_spinlock_bench/16/real_time        106 ms        0.000 ms            7
+better_naive_spinlock_bench/24/real_time        246 ms        0.000 ms            3</code></pre></details>
+    <details class="code"><summary>perf stat</summary><pre><code>1,296,553,727      L1-dcache-loads           #  253.267 M/sec
+   80,252,055      L1-dcache-load-misses     #    6.22% of all L1-dcache hits</code></pre></details>
+    <p>This also helped the runtime; you don't see it at two threads, but from 4 threads and up we see a significant drop in per-thread runtime. A relatively small code change brought a performance gain — yet there's still room for improvement.</p>
+    <h2>Hurrying is harmful</h2>
+    <p>Looking at the wait implementation, I realize there's no point reading the lock value every cycle — the thread does some work that takes time. Take a notional 24 cores, assume the thread does heavy computation (iterating an array), and don't poll the lock during that time.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct waiting_spinlock_ttas {
+  std::atomic&lt;bool&gt; locked{false};
+
+#define do_nothing
+  void lock() {
+     for (;;) {
+       if (!locked.exchange(true)) return;
+
+       for (; locked.load();){
+         for (volatile s32 i = 0; i &lt; 24 * 100 ; i += 1) do_nothing;
+       }
+     }
+  }
+  void unlock() { locked.store(false); }
+};</code></pre></details>
+    <p>This optimization significantly cuts the thread's runtime — we gave the CPU a chance to do what it's good at: compute... volatile is needed here so the compiler doesn't throw away this loop, which just waits and burns electricity.</p>
+    <details class="code"><summary>Results</summary><pre><code>-----------------------------------------------------------------------------------
+Benchmark                                         Time             CPU   Iterations
+-----------------------------------------------------------------------------------
+waiting_spinlock_ttas_bench/1/real_time        1.50 ms        0.000 ms          477
+waiting_spinlock_ttas_bench/2/real_time        3.34 ms        0.224 ms          209
+waiting_spinlock_ttas_bench/4/real_time        8.01 ms        0.000 ms           84
+waiting_spinlock_ttas_bench/8/real_time        26.5 ms        0.000 ms           26
+waiting_spinlock_ttas_bench/16/real_time       73.0 ms        0.000 ms            9
+waiting_spinlock_ttas_bench/24/real_time        116 ms        0.000 ms            6</code></pre></details>
+    <p>Instead of <strong>do_nothing</strong> you can substitute the <em>_mm_pause()</em> instruction and drop volatile as no longer needed; then the wait will be even less aggressive, which of course helps performance. The less work we do, the more work we do :)</p>
+    <details class="code"><summary>Results</summary><pre><code>-----------------------------------------------------------------------------------
+Benchmark                                         Time             CPU   Iterations
+-----------------------------------------------------------------------------------
+waiting_spinlock_mmps_bench/1/real_time        1.50 ms        0.000 ms          460
+waiting_spinlock_mmps_bench/2/real_time        2.95 ms        0.135 ms          231
+waiting_spinlock_mmps_bench/4/real_time        5.59 ms        0.124 ms          126
+waiting_spinlock_mmps_bench/8/real_time        11.3 ms        0.504 ms           62
+waiting_spinlock_mmps_bench/16/real_time       22.9 ms         1.01 ms           31
+waiting_spinlock_mmps_bench/24/real_time       34.9 ms        0.781 ms           20</code></pre></details>
+    <p>Understanding how our threads interact with each other is crucial for finding optimization opportunities. But even the current implementation has room to improve. Let's check the cache misses — under one percent, and all we did was remove the aggressive reads from the cache.</p>
+    <details class="code"><summary>perf stat</summary><pre><code>16,743,277,459      L1-dcache-loads           # 1266.561 M/sec
+    86,735,606      L1-dcache-load-misses     #     0.51% of all L1-dcache hits</code></pre></details>
+    <p>Compilers are very smart, but they won't do the domain analysis for us, and there are instructions they insert very rarely, like _mm_pause().</p>
+    <h2>Can we do better?</h2>
+    <p>We can, but nuances start to appear — you have to look at the actual algorithm where the spinlock is used. For the specific case of incrementing a variable it helps to spread the lock checks out in time. What happens if two threads try to acquire the lock at the same moment? Both see the lock is held and back off for the same duration, and with high probability they'll come out at the same time and collide again. The more such threads, the lower the chance of normal operation. This can be avoided by picking a random wait time.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct random_spinlock_ttas {
+  std::atomic&lt;bool&gt; locked{false};
+  std::uniform_int_distribution&lt;int&gt; dist;
+  std::mt19937 rng;
+
+  random_spinlock_ttas() {
+    rng.seed(std::random_device()());
+    dist = std::uniform_int_distribution&lt;int&gt;(1024, 2048);
+  }
+
+  void lock() {
+     for (;;) {
+       if (!locked.exchange(true)) return;
+
+       for (; locked.load();){
+         s32 backoff_iters = dist(rng);
+         for (int i = 0; i &lt; backoff_iters; ++i) _mm_pause();
+       }
+     }
+  }
+  void unlock() { locked.store(false); }
+};</code></pre></details>
+    <p>The benchmark shows we won another 10% of runtime. But benchmarks and tests don't guarantee the same result in a real application. I gave this example to show that knowing the lock's domain points to optimization opportunities for specific cases — but there's no guarantee that using such a lock in general algorithms will give a similar result.</p>
+    <details class="code"><summary>Results</summary><pre><code>------------------------------------------------------------------------------------
+Benchmark                                        Time            CPU   Iterations
+------------------------------------------------------------------------------------
+random_spinlock_ttas_bench/1/real_time        1.52 ms        0.028 ms          568
+random_spinlock_ttas_bench/2/real_time        2.80 ms        0.157 ms          274
+random_spinlock_ttas_bench/4/real_time        5.63 ms        0.131 ms          135
+random_spinlock_ttas_bench/8/real_time        10.5 ms        0.414 ms           73
+random_spinlock_ttas_bench/16/real_time       19.5 ms        0.434 ms           36
+random_spinlock_ttas_bench/24/real_time       29.9 ms         1.04 ms           23</code></pre></details>
+    <p>Analyzing the cache-miss data tells us why the per-thread runtime dropped. Updating the variable in L1 cache is even less aggressive (0.42% misses), with less overhead and latency, so the CPU does more work. It's not as obvious with a small number of threads, but it becomes increasingly noticeable as their count grows.</p>
+    <details class="code"><summary>perf stat</summary><pre><code>17,543,234,558      L1-dcache-loads           # 1296.631 M/sec
+    74,638,504      L1-dcache-load-misses     #     0.42% of all L1-dcache hits</code></pre></details>
+    <h2>What's wrong with this spinlock</h2>
+    <p>Chasing the best runtime, you can spoil the overall picture, since the threads are doing some useful work. Attempts to lower a thread's wait time lead to &quot;unintended prioritization&quot; of the threads that got a shorter wait. For example, in the spinlock with a random wait time, priority goes to the threads whose wait is shorter. With a constant wait time, priority goes to the threads that arrived earlier — this effect is called &quot;starvation&quot;: some threads get significantly less runtime. In any spinlock based on busy-waiting this effect shows up more or less, and some threads will idle. You can partially fix this by taking the scheduler's job on yourself, but again, these are nuances and you have to understand WHAT we're doing and what behavior we want in the end. To keep threads from migrating, you need to pin a thread to a specific core. If the scheduler is free to pick the core for a thread, then while a spinlock is held on one core several threads can spin one after another, increasing total runtime. When threads are distributed across cores, they get their timeframe roughly in queue order on that core, with less cost for moving context between cores. A downside of this approach is crudely interfering with the scheduler's work (which isn't always bad — colleagues say the PS5 has a terrible scheduler).</p>
+    <p>In most game engines the audio, render and I/O threads are pinned to specific cores to avoid migration side effects.</p>
+    <p>Rewriting the benchmark code to set thread affinity:</p>
+    <details class="code"><summary>Show code</summary><pre><code> for (auto stage : s) {
+   for (u32 i = 0u; i &lt; bench_threads; i++) {
+     thread_pool.emplace_back([&amp;] { waiting_spinlock_affn_inc(sl, val); });
+     SetThreadAffinityMask(thread_pool.back().native_handle(), DWORD_PTR(1) &lt;&lt; i);
+   }
+
+   for (auto &amp;thread : thread_pool)
+      thread.join();
+
+   thread_pool.clear();
+ }</code></pre></details>
+    <p>we get the following result: total runtime dropped for a large number of threads. But there the cache-update effects across core caches show up (compare these numbers with waiting_spinlock_mmps_bench), which offset the benefit of spreading threads across cores.</p>
+    <details class="code"><summary>Results</summary><pre><code>-----------------------------------------------------------------------------------
+Benchmark                                         Time             CPU   Iterations
+-----------------------------------------------------------------------------------
+waiting_spinlock_affn_bench/1/real_time        1.59 ms        0.000 ms          580
+waiting_spinlock_affn_bench/2/real_time        2.70 ms        0.000 ms          254
+waiting_spinlock_affn_bench/4/real_time        6.18 ms        0.138 ms          113
+waiting_spinlock_affn_bench/8/real_time        9.81 ms        0.781 ms           80
+waiting_spinlock_affn_bench/16/real_time       19.9 ms        0.000 ms           34
+waiting_spinlock_affn_bench/24/real_time       30.7 ms        0.710 ms           22</code></pre></details>
+    <h2>Not all spinlocks are equally useful</h2>
+    <p>There's a class of tasks where using a busy-wait spinlock is harmful or outright unacceptable (e.g. parallel data-loading tasks), where the next stage depends on the results of the previous one (spread across several threads). To ensure fair access to a resource (e.g. a file system), you need a spinlock that doesn't depend on how fast it locks, but instead provides sequential access to the resource for each thread. The <strong>_ReadWriteBarrier()</strong> call is needed so the compiler is guaranteed to call unlock() after lock() and doesn't mess things up with optimizations enabled.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct ticket_spinlock_ttas {
+  std::atomic&lt;u16&gt; waiter{0};
+  volatile u16 dish{0};
+
+  void lock() {
+     auto my_dish = waiter.fetch_add(1);
+
+#define do_nothing _mm_pause()
+     while (dish != my_dish) do_nothing;
+  }
+  void unlock() {
+    _ReadWriteBarrier();
+    dish = dish + 1;
+  }
+};</code></pre></details>
+    <p>A ticket-based spinlock lets threads wait for the lock calmly. Overall performance suffers, of course, compared to any other implementation, but every thread gets its timeframe to work. Runtime isn't the only metric to aim for; in many tasks you need a compromise between runtime and overall progress, which is especially apparent in coupled tasks where the start of some depends on the completion of others.</p>
+    <details class="code"><summary>Results</summary><pre><code>-----------------------------------------------------------------------------
+Benchmark                                   Time             CPU   Iterations
+-----------------------------------------------------------------------------
+ticket_spinlock_bench/1/real_time        1.45 ms        0.024 ms          651
+ticket_spinlock_bench/2/real_time        11.9 ms        0.000 ms           67
+ticket_spinlock_bench/4/real_time        53.5 ms        0.000 ms           10
+ticket_spinlock_bench/8/real_time         220 ms        0.000 ms            3
+ticket_spinlock_bench/16/real_time        635 ms        0.000 ms            1
+ticket_spinlock_bench/24/real_time        905 ms        0.000 ms            1</code></pre></details>
+    <h2>The pthread implementation</h2>
+    <p>For comparison with the world of honest OS locks, let's take the standard pthread implementation (Windows) (<a href="https://github.com/GerHobbelt/pthread-win32" target="_blank" rel="noopener">https://github.com/GerHobbelt/pthread-win32</a>) and run the benchmark. The pthread spinlock is implemented via the Windows CRITICAL_SECTION, so all the joys of overhead — context switches, thread parking and scheduler work — are present in full.</p>
+    <details class="code"><summary>Show code</summary><pre><code>pthread_spinlock_t sl;
+pthread_spin_init(&amp;sl, PTHREAD_PROCESS_PRIVATE);
+
+void pthread_spinlock_inc(pthread_spinlock_t &amp;sl, s64 &amp;val) {
+  for (int i = 0; i &lt; 100000; i++) {
+    pthread_spin_lock(&amp;sl);
+    val++;
+    pthread_spin_unlock(&amp;sl);
+  }
+}</code></pre></details>
+    <p>The low time on a single thread I can't explain. Apparently some OS trick when there are no contenders for the critical section. On two or more threads the result is close to the simplest implementation, except there's no CPU load — which I wrote about at the start of the article.</p>
+    <details class="code"><summary>Results</summary><pre><code>------------------------------------------------------------------------------
+Benchmark                                    Time             CPU   Iterations
+------------------------------------------------------------------------------
+pthread_spinlock_bench/1/real_time        0.70 ms        0.147 ms          826
+pthread_spinlock_bench/2/real_time        6.07 ms        0.000 ms          115
+pthread_spinlock_bench/4/real_time        22.3 ms        0.504 ms           31
+pthread_spinlock_bench/8/real_time         119 ms        0.000 ms            6
+pthread_spinlock_bench/16/real_time        341 ms        0.000 ms            2
+pthread_spinlock_bench/24/real_time        606 ms        0.000 ms            1</code></pre></details>
+    <h2>Instead of conclusions</h2>
+    <p>Writing a functionally correct spinlock doesn't take much code, but you need to carefully think through where it will be used to make it perform well and/or with guaranteed latencies. A library implementation (or general implementations) isn't always a good choice for boosting performance. I'm sure that, having studied a specific domain, you'll be able to write your own implementation that best fits the particular situation.</p>
+    <ul>
+      <li>a simple no-wait spinlock — grabs the resource as fast as possible and is free of the prioritization effect;</li>
+      <li>a spinlock with a constant wait lets the thread do more work without loading the CPU much;</li>
+      <li>spinlocks with backoff and random waits let you write simple prioritization;</li>
+      <li>a ticket spinlock distributes the resource fairly among threads.</li>
+    </ul>
+    <h2>P.S.</h2>
+    <ul>
+      <li><a href="https://www.realworldtech.com/forum/?threadid=189711&amp;curpostid=189723" target="_blank" rel="noopener">Torvalds rages about using spinlocks in userspace — &quot;just bugs, nothing more&quot;</a>.</li>
+      <li><a href="http://locklessinc.com/articles/locks/" target="_blank" rel="noopener">More reading on spinlock implementations</a>.</li>
+      <li>Articles on Habr:
+        <ul>
+          <li><a href="https://habr.com/ru/post/278685/" target="_blank" rel="noopener">An overview of synchronization primitives — spinlocks and the secrets of the CPU core</a></li>
+          <li><a href="https://habr.com/ru/post/130123/" target="_blank" rel="noopener">mutex, spinlock, buslock. Overhead</a></li>
+        </ul>
+      </li>
+      <li><a href="https://patents.google.com/patent/US9378069B2" target="_blank" rel="noopener">And a spinlock can even be patented</a>.</li>
+    </ul>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

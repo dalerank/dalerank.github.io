@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reverse-engineering — dalerank</title>
+<meta name="description" content="Разбор внутренностей классических игр: серия про реверс-инжиниринг Caesar III." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/reverse-engineering.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/reverse-engineering.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Статьи</a>
+      <a href="../index.html#books">Книги</a>
+      <a href="../index.html#topics">Темы</a>
+      <a href="../about.html">Обо мне</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a class="on" href="reverse-engineering.html">RU</a><i>/</i><a href="../en/topics/reverse-engineering.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag">Тема</span>
+    <h1>Reverse-engineering</h1>
+    <div class="ameta"><span>Разбор внутренностей классических игр</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Цикл статей о том, как устроены изнутри классические градостроители <strong>Caesar III</strong> (1998) и <strong>Pharaoh</strong> (1999) — от распаковки текстур до игровой логики. На основе этого разбора выросли открытые ремейки.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../articles/pharaoh-map-rendering.html"><span class="tag">Реверс-инжиниринг</span><h3>Как рисуется карта в Фараоне</h3><p>Отрисовка изометрической карты, города и анимации в Pharaoh: diagonal-path и zig-zag, сортировка по глубине, слои и формат карты.</p><div class="pmeta"><span>17 октября 2023</span><span>Pharaoh</span></div></a></li>
+    <li><a href="../articles/how-caesar-draws-city.html"><span class="tag">Реверс-инжиниринг</span><h3>Извлечение текстур</h3><p>Формат .sg2/.555, палитра RGB555, IDA и Hex-Rays — и как хобби превратилось в ремейк.</p><div class="pmeta"><span>5 мая 2014</span><span>Часть 1</span></div></a></li>
+    <li><a href="../articles/caesar3-rendering.html"><span class="tag">Реверс-инжиниринг</span><h3>Отрисовка города</h3><p>Формат карт, выбор и порядок отрисовки тайлов, рисование города.</p><div class="pmeta"><span>15 мая 2014</span><span>Часть 2</span></div></a></li>
+    <li><a href="../articles/caesar3-game-logic.html"><span class="tag">Реверс-инжиниринг</span><h3>Игровая логика</h3><p>Симуляция жителей, ходьба, очереди событий.</p><div class="pmeta"><span>9 июня 2014</span><span>Часть 3</span></div></a></li>
+    <li><a href="../articles/caesar3-generation.html"><span class="tag">Реверс-инжиниринг</span><h3>Генерация мира</h3><p>Процедурная генерация мира и карт.</p><div class="pmeta"><span>23 июля 2014</span><span>Часть 4</span></div></a></li>
+    <li><a href="../articles/caesar3-city-model.html"><span class="tag">Реверс-инжиниринг</span><h3>Модель города</h3><p>Внутренняя модель города: данные, слои, состояние.</p><div class="pmeta"><span>15 сентября 2014</span><span>Часть 5</span></div></a></li>
+    <li><a href="../articles/caesar3-part6.html"><span class="tag">Реверс-инжиниринг</span><h3>Игровой цикл</h3><p>Расчёт одного дня города: цикл симуляции, боги, налоги, здоровье.</p><div class="pmeta"><span>20 октября 2014</span><span>Часть 6</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

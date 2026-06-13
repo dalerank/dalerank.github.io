@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Why does the Switch SDK have three different sin functions? — dalerank</title>
+<meta name="description" content="While porting games to the Nintendo Switch I found three different sin implementations in the SDK — and what the disassembly showed for -O1, -O3 -math:precise and -O3 -math:fast." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/switch-sdk-three-sin.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/switch-sdk-three-sin.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/switch-sdk-three-sin.html">RU</a><i>/</i><a class="on" href="switch-sdk-three-sin.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>Why does the Switch SDK have three different sin functions?</h1><div class="ameta"><span>Jun 11, 2023</span><span>8 min</span></div></div>
+  <article class="prose">
+    <p>A few years ago, while working at Gaijin, I got to take part in porting a couple of the company's games to the Nintendo Switch, which was rapidly conquering new markets at the time. For me it was the first major project on the platform. And since neither the team nor the engine developers were familiar with the platform, the build system, or the Nintendo ecosystem in general, we had to find every rake and carefully step on it. To kick the tires of the new platform, alongside porting the game we wrote an internal middleware layer (dagor engine + nxsdk + jam), and the code grew all sorts of tests, build matrices, benchmarks, stability soak runs and other internal checks. It's worth noting that as of 2018, the Switch SDK itself hadn't implemented some POSIX functions like poll and send/receive, and most of the file I/O functions; we had to write the POSIX shim ourselves. At some point we also got around to writing various benchmarks for the standard-library functions, and we noticed some anomalies in the behavior of a few trigonometric functions across different build configurations. For reference, the SDK uses a trimmed-down variant of musl libc (<a href="https://www.musl-libc.org/" target="_blank" rel="noopener">musl-libc.org</a>); everything is statically linked into one big binary by Nintendo's clang version 9 (2018), which then runs on the console. We didn't have access to the sources of Nintendo's own libc, but you can always look at the disassembly and get a more-or-less clear picture of what's going on.</p>
+    <img src="../../assets/articles/switch-sdk-three-sin/cover.png" alt="To sine or not to sine?" class="post-image" loading="lazy" />
+    <hr />
+    <p>I'll describe my actions in the present tense — just remember that it was 2018. The benchmark code is utterly childish: we spin <code>sin</code> in a loop on the console (in the SDK all the trigonometry lived in tr1).</p>
+    <details class="code"><summary>Show code</summary><pre><code>static void nxsdk_sin(benchmark::State&amp; state) {
+    // Code inside this loop is measured repeatedly
+    float i = 0;
+    for( auto _ : state) {
+        float p = tr1::sin(p);
+
+        i += 0.1f;
+        benchmark::DoNotOptimize(p);
+    }
+}
+BENCHMARK(nxsdk_sin);</code></pre></details>
+    <p>We get the following results (lower time is better).</p>
+    <details class="code"><summary>Benchmark output (-O1)</summary><pre><code>-----------(lower is better)--------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+nxsdk_sin         8.68 ns         8.58 ns     74666667 &lt;&lt;&lt; https://git.musl-libc.org/cgit/musl/tree/src/math/sin.c
+nxsdk_sin_vec     8.35 ns         8.30 ns     75825003 &lt;&lt;&lt; sin(vec4f)
+dagor_sin         5.48 ns         5.47 ns    102504001
+glibc_sin         8.28 ns         8.08 ns     77623654 &lt;&lt;&lt; https://github.com/lattera/glibc/blob/master/sysdeps/ieee754/dbl-64/s_sin.c</code></pre></details>
+    <p>So far so good — the formulas for computing sin in musl are roughly the same as in glibc, and the timings come out roughly equal. But once we turn on <code>-O3 + -math:precise</code>, Nintendo's sine becomes almost a third faster. Either the compiler is too clever, or the benchmark is lying and the moon is in the wrong phase, or something else is going on. Actually, when my colleague first showed me these numbers, that's exactly what I told him — your bench is broken, go re-check it — and forgot about the whole thing. The next day we looked at the test together, because there really is nowhere for that performance to come from (or so I thought at first). As expected, you can see a small reduction in glibc_sin's time thanks to clang's aggressive optimizations.</p>
+    <details class="code"><summary>Benchmark output (-O3 + -math:precise)</summary><pre><code>-----------(lower is better)--------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+nxsdk_sin         6.03 ns         6.00 ns     87625024
+nxsdk_sin_vec     5.82 ns         5.78 ns     90022043
+dagor_sin         5.38 ns         5.27 ns    104602002
+glibc_sin         8.08 ns         8.05 ns     78214356</code></pre></details>
+    <p>An even more "different" result came when the test was run with <code>-O3 + -math:fast</code>. This one genuinely surprised me, because at the time nothing was faster than dagor_sin at comparable precision, and all the sines passed the correctness tests equally well — the divergence from std::sin never exceeded 1e-6.</p>
+    <details class="code"><summary>Benchmark output (-O3 + -math:fast)</summary><pre><code>-----------(lower is better)--------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+nxsdk_sin         4.03 ns         3.99 ns    132307692
+nxsdk_sin_vec     4.09 ns         4.08 ns    131403251
+dagor_sin         5.13 ns         5.10 ns    110400021
+glibc_sin         7.43 ns         7.16 ns     79544722</code></pre></details>
+    <p>And this is where I had to dig into the disassembly to understand what those geniuses at Nintendo cooked up to hit such impressive numbers in the benchmark.</p>
+    <h2>The -O1 (speed) mode</h2>
+    <p>Let's start with <code>-O1</code> (speed). I'll post only the important bits, so it's clear what's happening, and I'll try not to dump the whole disassembly — who knows what IP might be in there. The <code>sin</code> function shipped with the NX SDK is an alias for <strong>__sin_nx_502</strong> (2018, current SDK 4.0 and 5.0); apparently the function name is generated from those numbers.</p>
+    <details class="code"><summary>Disassembly of __sin_nx_502</summary><pre><code>__sin_nx_502(double):
+        sub     sp, sp, #32
+        stp     x29, x30, [sp, #16]
+        add     x29, sp, #16
+        fmov    x8, d0
+        mov     w9, #8699
+        ubfx    x8, x8, #32, #31
+        movk    w9, #16361, lsl #16
+        cmp     w8, w9
+        b.hi    .ERIT1_3                // .ERITX_X -> .BBX_X arm
+        lsr     w9, w8, #20
+        cmp     w9, #996
+        b.hi    .ERIT1_5
+        mov     x9, #4066750463515557888
+        mov     x10, #5147614374084476928
+        fmov    d1, x9
+        fmov    d2, x10
+        fmul    d1, d0, d1
+        fadd    d2, d0, d2
+        cmp     w8, #256, lsl #12
+        fcsel   d1, d1, d2, lo
+        str     d1, [sp]
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret
+.ERIT1_3:
+        lsr     w8, w8, #20
+        cmp     w8, #2047
+        b.lo    .ERIT1_6
+        fsub    d0, d0, d0
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret
+.ERIT1_5:
+        adrp    x8, .ERIT1_0
+        ... uninteresting code
+        add     sp, sp, #32
+        ret
+.ERIT1_6:
+        mov     x0, sp
+        bl      __rem_pio2_nx_502(double, double*) // call to __rem_pio2
+        and     w8, w0, #0x3
+        ... uninteresting code
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret
+.ERIT1_10:
+        ldp     d1, d0, [sp]
+        ...
+        fadd    d2, d2, d3
+        fmov    d5, #0.50000000
+        ldr     d3, [x8, :lo12:.ERIT1_5]
+        ...
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret
+.ERIT1_11:
+        ldp     d0, d1, [sp]
+        bl      __cos_nx_502(double, double)  // call to __cos
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret
+.ERIT1_12:
+        ldp     d0, d1, [sp]
+        bl      __cos_nx_502(double, double) // call to __cos
+        fneg    d0, d0
+        ldp     x29, x30, [sp, #16]
+        add     sp, sp, #32
+        ret</code></pre></details>
+    <p>Let's quickly run through the structure of the code — it almost entirely mirrors the standard musl function; you can see the <code>__rem_pio2</code>/<code>__cos</code> call signatures.</p>
+    <details class="code"><summary>Show code (musl sin)</summary><pre><code>double sin(double x) {
+    double y[2];
+    uint32_t ix;
+    unsigned n;
+
+    /* High word of x. */
+    GET_HIGH_WORD(ix, x);
+    ix &amp;= 0x7fffffff;
+
+    /* |x| ~&lt; pi/4 */
+    if (ix &lt;= 0x3fe921fb) {
+        if (ix &lt; 0x3e500000) {  /* |x| &lt; 2**-26 */
+            /* raise inexact if x != 0 and underflow if subnormal*/
+            FORCE_EVAL(ix &lt; 0x00100000 ? x/0x1p120f : x+0x1p120f);
+            return x;
+        }
+        return __sin(x, 0.0, 0);
+    }
+
+    /* sin(Inf or NaN) is NaN */
+    if (ix &gt;= 0x7ff00000)
+        return x - x;
+
+    /* argument reduction needed */
+    n = __rem_pio2(x, y);
+    switch (n&amp;3) {
+    case 0: return  __sin(y[0], y[1], 1);
+    case 1: return  __cos(y[0], y[1]);
+    case 2: return -__sin(y[0], y[1], 1);
+    default:
+        return -__cos(y[0], y[1]);
+    }
+}</code></pre></details>
+    <h2>The -O3 + -math:precise mode</h2>
+    <p>But no matter how clever the compiler is, it won't give us more than 10–15% here, whatever modes you enable. We dig deeper, turn on <code>-O3 + -math:precise</code> and look at what it generated this time. Now we got an alias to a different function called <strong>__sin_dorf_nx_502</strong> — the code is very linear, few branches, just additions and multiplications.</p>
+    <details class="code"><summary>Disassembly of __sin_dorf_nx_502</summary><pre><code>__sin_dorf_nx_502(float):
+        push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+        add     r11, sp, #28
+        sub     sp, sp, #4
+        ldr     r1, .EVRT0_0
+        mov     r4, r0
+        bl      __aeabi_fmul
+        and     r1, r4, #-2147483648
+        orr     r1, r1, #1056964608
+        bl      __aeabi_fadd
+        bl      __aeabi_f2uiz
+        mov     r9, r0
+        bl      __aeabi_ui2f
+        ldr     r8, .EVRT0_1
+        mov     r5, r0
+        mov     r1, r5
+        ldr     r0, [r8, #24]
+        bl      __aeabi_fmul
+        mov     r1, r0
+        mov     r0, r4
+        bl      __aeabi_fsub
+        mov     r4, r0
+        ldr     r0, [r8, #28]
+        mov     r1, r5
+        bl      __aeabi_fmul
+        mov     r1, r0
+        mov     r0, r4
+        bl      __aeabi_fsub
+        mov     r1, r0
+        mov     r7, r0
+        bl      __aeabi_fmul
+        mov     r5, r0
+        mov     r0, r7
+        mov     r1, r5
+        bl      __aeabi_fmul
+        mov     r6, r0
+        ldr     r0, [r8, #8]
+        ldm     r8, {r4, r10}
+        mov     r1, r5
+        str     r0, [sp]
+        ldr     r0, [r8, #12]
+        bl      __aeabi_fmul
+        ldr     r1, [r8, #16]
+        bl      __aeabi_fadd
+        mov     r1, r0
+        mov     r0, r5
+        bl      __aeabi_fmul
+        ldr     r1, [r8, #20]
+        bl      __aeabi_fadd
+        mov     r1, r0
+        mov     r0, r6
+        bl      __aeabi_fmul
+        mov     r1, r0
+        mov     r0, r7
+        bl      __aeabi_fadd
+        mov     r7, r0
+        mov     r0, r4
+        mov     r1, r5
+        bl      __aeabi_fmul
+        mov     r1, r0
+        mov     r0, r10
+        bl      __aeabi_fadd
+        mov     r1, r0
+        mov     r0, r5
+        bl      __aeabi_fmul
+        mov     r1, r0
+        ldr     r0, [sp]
+        bl      __aeabi_fadd
+        mov     r1, r0
+        mov     r0, r5
+        bl      __aeabi_fmul
+        mov     r1, #1065353216
+        bl      __aeabi_fadd
+        tst     r9, #1
+        moveq   r0, r7
+        tst     r9, #2
+        eorne   r0, r0, #-2147483648
+        sub     sp, r11, #28
+        pop     {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+        bx      lr
+.EVRT0_0:
+        .long   1059256694              @ 0x3f22f976
+.EVRT0_1:
+        .long   .KI_MergedGlobals
+        ...
+.KI_MergedGlobals: // here is the block of polynomial coefficients, somewhere in the data section
+        .long   3132246419              @ float -0.001360224
+        .long   1026203702              @ float 0.04165669
+        .long   3204448223              @ float -0.4999990
+        .long   3108801646              @ float -1.950727E-4
+        .long   1007190850              @ float 0.008332075
+        .long   3190467233              @ float -0.1666665
+        .long   1070141402              @ float 1.570796 /// this is Pi/2
+        .long   866263401               @ float 7.549790E-8</code></pre></details>
+    <p>This looks a lot like approximating sine with some polynomial. If we try to reconstruct the rough logic in pseudocode, it would look like the code below. And that already matches what the benchmark shows.</p>
+    <details class="code"><summary>Pseudocode for __sin_dorf_nx_502</summary><pre><code>float __sin_dorf_nx_502(float x) {
+    const float EVRT0_0 = 0.636618972f;
+    const float EVRT0_1 = 1.0f;
+
+    const float KI_MergedGlobals[8] = {
+        -0.001360224f,
+        0.04165669f,
+        -0.4999990f,
+        -1.950727E-4f,
+        0.008332075f,
+        -0.1666665f,
+        1.570796f, // PI / 2
+        7.549790E-8f
+    };
+
+    float result;
+
+    float temp = EVRT0_0 * x;
+    temp = temp + 1056964608.0f;
+
+    int intTemp = (int)temp;
+    float floatTemp = (float)intTemp;
+
+    float r5 = floatTemp;
+    floatTemp = r5 * KI_MergedGlobals[0];
+    float r4 = x - floatTemp;
+    floatTemp = r5 * KI_MergedGlobals[1];
+    r4 = r4 - floatTemp;
+
+    float r7 = r4 * r4;
+    floatTemp = r7 * KI_MergedGlobals[2];
+    floatTemp = floatTemp + KI_MergedGlobals[3];
+    floatTemp = floatTemp * r7;
+    floatTemp = floatTemp + KI_MergedGlobals[4];
+    floatTemp = floatTemp * r7;
+    floatTemp = floatTemp + KI_MergedGlobals[5];
+    floatTemp = floatTemp * r7;
+    floatTemp = floatTemp + EVRT0_1;
+
+    if (intTemp &amp; 1) {
+        floatTemp = floatTemp * r4;
+    } else {
+        floatTemp = -floatTemp * r4;
+    }
+
+    result = floatTemp;
+
+    return result;
+}</code></pre></details>
+    <h2>The -O3 + -math:fast mode</h2>
+    <p>I think you can already guess what happens when we build the sample with <code>-O3 + -math:fast</code>? Right — an alias to yet another function. The final variant, the one used in the release build, the one games were shipped to certification with.</p>
+    <details class="code"><summary>Disassembly of __sin_corf_nx_502</summary><pre><code>__sin_corf_nx_502(float):
+        push    {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+        add     r11, sp, #28
+        sub     sp, sp, #4
+        bl      __aeabi_f2d
+        ldr     r2, .DUIE0_0
+        ldr     r3, .DUIE0_1
+        mov     r5, r0
+        mov     r6, r1
+        bl      __aeabi_dmul
+        bl      __aeabi_d2iz
+        mov     r10, r0
+        bl      __aeabi_i2d
+        ldr     r3, .DUIE0_2
+        mov     r2, #1610612736
+        bl      __aeabi_dmul
+        mov     r2, r0
+        mov     r3, r1
+        mov     r0, r5
+        mov     r1, r6
+        bl      __aeabi_dadd
+        bl      __aeabi_d2f
+        ldr     r1, .DUIE0_3
+        mov     r7, r0
+        and     r0, r10, #255
+        ldr     r8, [r1]
+        ldr     r0, [r8, r0, lsl #2]
+        bl      __aeabi_f2d
+        mov     r3, #266338304
+        mov     r2, #0
+        str     r0, [sp]
+        mov     r9, r1
+        orr     r3, r3, #-1342177280
+        bl      __aeabi_dmul
+        mov     r5, r0
+        mov     r0, r7
+        mov     r6, r1
+        bl      __aeabi_f2d
+        mov     r7, r0
+        mov     r4, r1
+        mov     r0, r5
+        mov     r1, r6
+        mov     r2, r7
+        mov     r3, r4
+        bl      __aeabi_dmul
+        mov     r5, r0
+        add     r0, r10, #64
+        mov     r6, r1
+        and     r0, r0, #255
+        ldr     r0, [r8, r0, lsl #2]
+        bl      __aeabi_f2d
+        mov     r2, r5
+        mov     r3, r6
+        bl      __aeabi_dadd
+        mov     r2, r7
+        mov     r3, r4
+        bl      __aeabi_dmul
+        ldr     r2, [sp]
+        mov     r3, r9
+        bl      __aeabi_dadd
+        bl      __aeabi_d2f
+        sub     sp, r11, #28
+        pop     {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+        bx      lr
+.DUIE0_0:
+        .long   1682373044              @ 0x6446f9b4
+.DUIE0_1:
+        .long   1078222640              @ 0x40445f30
+.DUIE0_2:
+        .long   3214483963              @ 0xbf9921fb
+.DUIE0_3:
+        .long   __sin_corf_duie_nx_502</code></pre></details>
+    <p>The pseudocode for this assembly section is below, and judging by the logic this is sine computed via a lookup table. The fastest of them all, with precision that doesn't suffer much.</p>
+    <details class="code"><summary>Pseudocode for __sin_corf_nx_502</summary><pre><code>float __sin_corf_nx_502(float x) {
+    const double DUIE0_0 = 1.4636916370976118;
+    const double DUIE0_1 = 3.141592653589793; // PI
+    const double DUIE0_2 = -0.0009424784718423055;
+
+    const float* DUIE0_3 = __sin_corf_duie_nx_502;
+
+    double temp = x * DUIE0_0;
+    temp = temp + DUIE0_1;
+
+    int intTemp = static_cast&lt;int&gt;(temp);
+    float floatTemp = static_cast&lt;float&gt;(intTemp);
+
+    float r5 = floatTemp;
+    floatTemp = r5 * DUIE0_2;
+    float r4 = x - floatTemp;
+
+    double r7 = r4 * r4;
+    floatTemp = static_cast&lt;float&gt;(r7);
+
+    int index = intTemp &amp; 255;
+    float floatTemp2 = *(DUIE0_3 + index);
+
+    double r2 = floatTemp2;
+    double r3 = static_cast&lt;double&gt;(intTemp &gt;&gt; 8);
+    double r0 = static_cast&lt;double&gt;(r5);
+    double r1 = static_cast&lt;double&gt;(r4);
+    r0 = r0 + r1;
+    r0 = r0 * r2;
+    r0 = r0 + r3;
+
+    float result = static_cast&lt;float&gt;(r0);
+
+    return result;
+}</code></pre></details>
+    <p>If you dig around the internet on the topic of fast sine, you can find, for example, another approximation — <a href="https://en.wikipedia.org/wiki/Bhaskara_I%27s_sine_approximation_formula" target="_blank" rel="noopener">Bhaskara I's sine approximation formula</a> — whose error stays within 0.001, which is often good enough for most tasks.</p>
+    <p>Or take a look at <a href="https://www.researchgate.net/publication/2930018_Fast_Trigonometric_Functions_Using_Intel's_Sse2" target="_blank" rel="noopener">the paper by Lars Nyland (nVidia)</a>, one of the authors of CUDA.</p>
+    <p>For sines, the Dagor engine uses its own implementation that behaves equally well and fast on all platforms; <a href="https://github.com/GaijinEntertainment/vecmath/blob/master/dag_vecMath_trig.h" target="_blank" rel="noopener">you can find it here</a>. Don't take it as advertising — I left the company long ago, maybe it'll be useful to someone. Warmest regards to my former colleagues.</p>
+    <h2>Conclusions</h2>
+    <p>We got no practical benefit out of this, but it was interesting to dig into the quirks of the SDK. All honor and praise to the Japanese engineers who gave the world this wonderful console. I only have one question: why three?</p>
+    <p><strong>UPD:</strong> a fellow wrote to me in DMs that this is how Nintendo tracked the use of old and pirated SDKs — without an active developer key the first implementation was always called, so a build trying to pass certification helped detect stolen accounts and keys. I can't verify this, so I'll just have to take their word for it :)</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

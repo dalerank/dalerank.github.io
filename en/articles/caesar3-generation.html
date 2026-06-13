@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reverse-engineering Caesar III: world generation (Part 4) — dalerank</title>
+<meta name="description" content="Generating large Caesar III maps with diamond-square terrain and coastline tiling." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-generation.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/caesar3-generation.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/caesar3-generation.html">RU</a><i>/</i><a class="on" href="caesar3-generation.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Reverse-engineering</span><h1>Reverse-engineering Caesar III: world generation</h1>
+  <div class="ameta"><span>Jul 23, 2014</span><span>Part 4</span><span>6 min</span></div></div>
+  <article class="prose">
+    <p>If you're a fan of Caesar III, you've surely noticed the care and attention to detail in the campaign maps — and the free-play ones too. The natural landscapes on which the player builds a “new Rome” look quite realistic (within the game): streams flow into rivers and lakes, rivers run across the whole map, “immortal” sheep wander the forests and occasionally stray onto meadows and get in the way of building farms, gulls circle over fishing spots, and now and then an unlucky sailor drifts down the river on the wreck of a ship. Rocky massifs are ringed with trees, and the ground is carpeted with lush green grass. This lovely picture has one drawback: the map size never exceeds 160×160 tiles. In this article I'll describe how I generated much larger maps.</p>
+    <img src="../../assets/articles/caesar4/c-01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The original game doesn't support large maps, so all the experiments were done within CaesarIA (an open-source clone of Caesar III©). Large-map support was in the remake from the start, but until I read a good article about using the “diamond-square” method for building landscapes, loading any maps beyond those shipped with the game or made by fans wasn't possible. Once I understood the direction to take, I stumbled on another article about terrain generation that fully convinced me this method was viable for creating a map automatically.</p>
+    <p>The output of the base algorithm is an array of points with heights; mapping height to color gives a map like this.</p>
+    <img src="../../assets/articles/caesar4/c-02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The colors mean: blue is deep water; lighter blue is water near the shore; yellow is the coastline; green is grass and flatlands; saturated green is forest; grey and dark grey are low and high mountains respectively.</p>
+    <p>Adapting the output to the game's terrain specifics required rethinking how some values and settings are interpreted, but overall the data is suitable for further processing. Now I can paint the values onto the city map; to start, I'll change only the water tiles and leave the rest unpainted.</p>
+    <img src="../../assets/articles/caesar4/c-03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>After filling the water tiles, I can fill in grass, forest and mountains. Now the generated map looks more like a normal one.</p>
+    <img src="../../assets/articles/caesar4/c-04.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Most of the remaining map should, in theory, be covered with high mountains — but then it would be impassable for people, so instead of high mountains I again use flatland tiles. The generated map still has unfilled areas adjacent to water.</p>
+    <img src="../../assets/articles/caesar4/c-06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Filling those areas means accounting for the neighbours, to pick the right texture for each tile. The game has these coastline textures, oriented to the north:</p>
+    <img src="../../assets/articles/caesar4/c-07.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-08.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-09.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-10.jpg" alt="" class="post-image" loading="lazy" />
+    <p>to the east:</p>
+    <img src="../../assets/articles/caesar4/c-11.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-12.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-13.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-14.jpg" alt="" class="post-image" loading="lazy" />
+    <p>to the south:</p>
+    <img src="../../assets/articles/caesar4/c-15.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-16.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-17.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-18.jpg" alt="" class="post-image" loading="lazy" />
+    <p>and to the west:</p>
+    <img src="../../assets/articles/caesar4/c-19.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-20.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-21.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-22.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Such tiles are determined by the position of the water tiles relative to the tile being computed. For example, a north-facing coast tile can only have water tiles to the north, north-east and north-west, and their combinations. We do the same for the other coast tiles and leave the rest alone. The result is a coastline without corner tiles.</p>
+    <img src="../../assets/articles/caesar4/c-23.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The next step is finding the corner tiles that were skipped in the previous step. Such tiles have triples of neighbours (water) in the directions north→north-east→east, east→south-east→south and so on. For the corners the game has these textures:</p>
+    <img src="../../assets/articles/caesar4/c-24.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-25.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-26.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-27.jpg" alt="" class="post-image" loading="lazy" />
+    <p>and placing them gives an almost-finished map.</p>
+    <img src="../../assets/articles/caesar4/c-28.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Now the only tiles left are the water and land tiles that weren't handled in the previous steps. Tiles surrounded by land on all sides are treated as land, those surrounded by water — as water. Coast tiles count as both water and land at once. What remains is to add a road, so settlers can arrive, and rivers to vary the overall landscape.</p>
+    <img src="../../assets/articles/caesar4/c-29.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-30.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Generating a 500×500-tile map takes a little time — still noticeably more than loading a ready-made map. Below is a screenshot of a large map, 3800×1880 pixels. You can add various objects, settlements and even a city to such a map in single-player mode, but I think it's better suited to multiplayer. Another upside of the chosen algorithm is scalability: you can save the computation results and, if needed, reuse them to compute an adjacent territory.</p>
+    <img src="../../assets/articles/caesar4/c-31.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Of course, a generated map can't compare with a hand-made one, but being able to create maps automatically is one more step toward building a sequel and developing the ideas of the original game. You can also follow and contribute to the Caesar III remake on the project page; the map-generator source code is there too.</p>
+    <p><strong>Bonus.</strong> Screenshots from the remake.</p>
+    <img src="../../assets/articles/caesar4/c-32.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-33.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-34.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar4/c-35.jpg" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

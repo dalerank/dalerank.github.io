@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A C++ enum's name at runtime — dalerank</title>
+<meta name="description" content="Getting a type's name and enum values at runtime in C++ without RTTI — via __PRETTY_FUNCTION__, templates and constexpr magic." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/enum-name-runtime.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/enum-name-runtime.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/enum-name-runtime.html">RU</a><i>/</i><a class="on" href="enum-name-runtime.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>A C++ enum's name at runtime</h1><div class="ameta"><span>Nov 7, 2022</span><span>10 min</span></div></div>
+  <article class="prose">
+    <p>Getting a type's name — whether it's a struct or an enum — in C++ is a problem. What is trivially known to the compiler while it parses the sources can't easily be turned into a human-readable form at runtime. You can use std::type_info::name, which isn't a portable solution because it depends on the compiler's name-mangling implementation. Some compilers (e.g. MSVC, IBM, Oracle) produce a "convenient" type name, while gcc and clang return a mangled name that can be turned into a readable form with extra functions such as abi::__cxa_demangle. For all that magic to work you need RTTI enabled, which isn't always available either — and is sometimes outright harmful, because it eats precious performance.</p>
+    <img src="../../assets/articles/enum-name-runtime/cover.jpg" alt="A C++ enum's name at runtime" class="post-image" loading="lazy" />
+    <hr />
+    <p>The C++ language has no real form of reflection; only in C++20 did proposals appear (<a href="https://en.cppreference.com/w/cpp/keyword/reflexpr" target="_blank" rel="noopener">reflexpr</a>) to add native facilities for it. Here's roughly how clang reports class data.</p>
+    <details class="code"><summary>Show code</summary><pre><code>#include &lt;iostream&gt;
+#include &lt;typeinfo&gt;
+#include &lt;cxxabi.h&gt;
+
+struct Simple { };
+struct Base { virtual ~Base() = default; };
+struct Derived : Base {};
+enum Enum { one = 4, two = 2 };
+
+int main() {
+    Base b1;
+    Derived d1;
+    Simple c1;
+    Enum eenum;
+
+    const Base *pb = &amp;b1;
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; '\n';
+    pb = &amp;d1;
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; '\n';
+
+    std::cout &lt;&lt; typeid(eenum).name() &lt;&lt; '\n';
+
+    std::cout &lt;&lt; typeid(c1).name() &lt;&lt; '\n';
+
+    int     status;
+    char   *realname;
+
+    realname = abi::__cxa_demangle(typeid(*pb).name(), 0, 0, &amp;status);
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; "\t=&gt; " &lt;&lt; realname &lt;&lt; "\t: " &lt;&lt; status &lt;&lt; '\n';
+}
+
+$&gt; 4Base
+   7Derived
+   4Enum
+   6Simple
+   7Derived        =&gt; Derived      : 0</code></pre></details>
+    <p>So the compiler keeps all this data in memory, and we can use it — pull it out and process it however we like.</p>
+    <h2>Can we get the type via a macro?</h2>
+    <p>In principle yes, but it won't be very useful. To repeat: there are no explicit language constructs that give a type's name outside of <strong>typeid</strong>, so we have to look for other options. The simplest solution is to stringify the type itself.</p>
+    <details class="code"><summary>Show code</summary><pre><code>#define TYPE_NAME(x) #x
+std::cout &lt;&lt; TYPE_NAME(std::string) &lt;&lt; std::endl;</code></pre></details>
+    <p>You can guess, of course, what gets printed to the console — only it works for explicitly named types. A macro doesn't care what it stringifies, an elephant or a pug. So it already breaks on a slightly more complex example.</p>
+    <details class="code"><summary>Show code</summary><pre><code>template &lt;typename T&gt;
+void print(int x) {
+  std::cout &lt;&lt; TYPE_NAME(T) &lt;&lt; std::endl;
+  std::cout &lt;&lt; TYPE_NAME(decltype(x)) &lt;&lt; std::endl;
+}
+
+$&gt; T
+   decltype(x)</code></pre></details>
+    <h2>Can we get the type via a template?</h2>
+    <details class="code"><summary>Show code</summary><pre><code>template &lt;typename T&gt;
+void bad_function();</code></pre></details>
+    <p>If you've ever made a typo in a template, you've surely seen a giant wall of error text that ended with something about <code>bad_function&lt;foo&gt;()</code> — i.e. the compiler pulled out both the template function's name and the name of its parameter.</p>
+    <img src="../../assets/articles/enum-name-runtime/joke.jpg" alt="There was a joke about C++ here." class="post-image" loading="lazy" />
+    <p>There was a joke about C++ here.</p>
+    <p>Can this work outside compiler error output? While investigating how to pull out a type's name, an enum's name, or an enum value's name at compile time, I stumbled onto the service variable <strong>__function__</strong>. What does the documentation say about it? The compiler fills its contents, in a form convenient to itself, at the point of declaration — e.g. for error or warning output.</p>
+    <details class="code"><summary>Documentation</summary><pre><code>__FUNCTION__ Defined as a string literal that contains the undecorated name of the
+enclosing function. The macro is defined only within a function. The __FUNCTION__
+macro isn't expanded if you use the /EP or /P compiler option. For an example of
+usage, see the __FUNCNAME__ macro.
+
+__PRETTY_FUNCTION__ is a gcc extension that is mostly the same as __FUNCTION__,
+except that for C++ functions it contains the "pretty" name of the function including
+the signature of the function. Visual C++ has a similar (but not quite identical)
+extension, __FUNCSIG__ .</code></pre></details>
+    <p>(<a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2004/n1642.html" target="_blank" rel="noopener">n1642</a>) This is a hidden variable that exists inside the call site as a <strong>const char*</strong>. It also contains extra information about overloads and templates — let's see what we can do with it.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct Simple { };
+
+template &lt;typename T&gt;
+std::string test() {
+  return __PRETTY_FUNCTION__;
+}
+
+int main() {
+    std::cout &lt;&lt; test&lt;std::string&gt;() &lt;&lt; std::endl;
+    std::cout &lt;&lt; test&lt;Simple&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; std::string test() [with T = std::__cxx11::basic_string&lt;char&gt;; std::string = std::__cxx11::basic_string&lt;char&gt;]
+   std::string test() [with T = Simple; std::string = std::__cxx11::basic_string&lt;char&gt;]</code></pre></details>
+    <p>Now we have something to work with. Let's try writing a simple parser that extracts the data we need from this string. For that we can use the <strong>string</strong> class's substring-search functions. The search looks a bit heavy and doesn't work at compile time yet, but we'll get there.</p>
+    <details class="code"><summary>Show code</summary><pre><code>struct Simple { };
+
+template &lt;typename T&gt;
+struct TypeNameHelper {
+    static std::string TypeName(void) {
+        const auto prefix   = std::string{"[with T = "};
+        const auto suffix   = std::string{";"};
+        const auto function = std::string{__PRETTY_FUNCTION__};
+
+        const auto start    = function.find(prefix) + prefix.size();
+        const auto end      = function.rfind(suffix);
+
+        const auto result   = function.substr(start, (end - start));
+
+        return result;
+    }
+};
+
+template &lt;typename T&gt;
+std::string TypeName(void) {
+    return TypeNameHelper&lt;T&gt;::TypeName();
+}
+
+$&gt; std::__cxx11::basic_string&lt;char&gt;
+Simple</code></pre></details>
+    <p>It's also worth making sure the compiler doesn't strip the full function name when building with optimizations, otherwise we may get empty strings with -O2/3. With optimizations all the strings are in place; with -O3 (<a href="https://onlinegdb.com/cjE1_rU9I" target="_blank" rel="noopener">example</a>) too. Let's tweak the code a little so we can inspect the output for different data types and save it for later use.</p>
+    <details class="code"><summary>Show code</summary><pre><code>enum test_enum { te_first, te_second, te_third, te_count };
+int main() {
+   std::cout &lt;&lt; TypeName&lt;test_enum&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; test_enum</code></pre></details>
+    <p>Now the output has a readable enum type; all that's left is to pull out its value. For that we add one more parameter to the template — the enum value. There's no template magic yet, that comes a bit later.</p>
+    <details class="code"><summary>Show code</summary><pre><code>template &lt;typename T, T V&gt;
+struct TypeNameHelper {
+    static const char* TypeName(void) {
+        static const size_t size = sizeof(__PRETTY_FUNCTION__);
+        static char typeName[size] = {};
+        memcpy(typeName, __PRETTY_FUNCTION__ , size - 1u);
+        return typeName;
+    }
+};
+
+template &lt;typename T, T V&gt;
+const char* TypeName(void) {
+    return TypeNameHelper&lt;T, V&gt;::TypeName();
+}
+
+enum test_enum { te_first, te_second, te_third, te_count };
+int main() {
+   std::cout &lt;&lt; TypeName&lt;test_enum, te_second&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; test_enum; T V = te_first</code></pre></details>
+    <p>Now, coming back to the task in the title — besides the type itself we also need all the values. To build a sequence and turn it into an array you usually use <strong>std::integer_sequence</strong> and fold expressions; that's how you can, for example, fill an array with the natural numbers. Of course this breaks a little if the enum has "holes".</p>
+    <details class="code"><summary>Show code</summary><pre><code>template&lt;typename T, T... ints&gt;
+void print_sequence(std::integer_sequence&lt;T, ints...&gt; int_seq) {
+    std::cout &lt;&lt; "The sequence of size " &lt;&lt; int_seq.size() &lt;&lt; ": ";
+    ((std::cout &lt;&lt; ints &lt;&lt; ' '), ...);
+    std::cout &lt;&lt; '\n';
+}
+
+int main() {
+     print_sequence(std::make_integer_sequence&lt;int, 20&gt;{});
+}
+
+$&gt; The sequence of size 20: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</code></pre></details>
+    <p>Pulling all the thoughts together, we start sketching out a possible solution:</p>
+    <ol>
+      <li>expand the enum from the first to the last element into an array via <strong>std::integer_sequence</strong>;</li>
+      <li>walk the resulting array and call the parameterized <strong>TypeName</strong> for each element, saving or processing the output;</li>
+      <li>build a set of { name, value } structs to iterate over the elements.</li>
+    </ol>
+    <h2>Expanding the enum values into an array (easy)</h2>
+    <p>So as not to bore the reader with the design and debugging, I'll just post the finished classes and explain individual points. As it turned out, convincing the compiler to turn an enum into a string isn't so much hard as slow — in terms of threading parameters through a dozen templates-of-templates. In the end I got it working, but only for clang and Visual Studio; with gcc, alas, it didn't work out.</p>
+    <ul>
+      <li><strong>count_values</strong> — a simple recursive count of the number of values in the enum;</li>
+      <li><strong>make_tokens</strong> — builds the array of values from the enum and copies them into a { name, value } representation;</li>
+      <li><strong>tokens</strong> — holds all the enum values and their textual representation;</li>
+      <li><strong>make_name</strong> — uses __PRETTY_FUNCTION__ to turn a value into a string;</li>
+      <li><strong>token_holder</strong> — a service class to hide the template work.</li>
+    </ul>
+    <details class="code"><summary>Show code</summary><pre><code>struct token {
+    const char * name;
+    s32 id;
+};
+
+template&lt;typename enum_type, enum_type begin, enum_type end&gt;
+struct token_holder {
+    constexpr static inline int count_values(enum_type type) {
+        return (type != end)
+            ? count_values((enum_type)(s32(type)+1))
+            : (s32(type)+1);
+    }
+
+    static constexpr u32 N = count_values(begin);
+    using tokens = std::array&lt;token, N+1&gt;; // because have {0, 0} in last element
+
+    template&lt;typename e_enum_type, e_enum_type enum_value&gt;
+    constexpr token make_name() {
+        return { enum_name&lt;e_enum_type, enum_value&gt;().name(), enum_value };
+    }
+
+    template&lt;typename e_enum_type, u32... Indices&gt;
+    constexpr tokens make_tokens_helper(std::integer_sequence&lt;u32, Indices...&gt;) {
+        tokens ts = { make_name&lt;e_enum_type, (e_enum_type)Indices&gt;()... };
+        ts[N] = {0, 0};
+        return ts;
+    }
+
+    template&lt;typename e_enum_type&gt;
+    constexpr tokens make_tokens() {
+        return make_tokens_helper&lt;e_enum_type&gt;( std::make_integer_sequence&lt;u32, N&gt;{});
+    }
+
+
+    constexpr operator const token *() const { return values.unsafe_ptr(); }
+    constexpr token *data() const { return values.unsafe_ptr(); }
+    constexpr token_holder() : values{make_tokens&lt;enum_type&gt;()} {}
+
+    tokens values;
+};</code></pre></details>
+    <h2>Turning an enum value into a string (a bit harder)</h2>
+    <p>Let's look at what a template-wrapped enum turns into, for example something like this</p>
+    <details class="code"><summary>Compiler output</summary><pre><code>static const char *enum_name&lt;test_enum, te_first&gt;::helper_name()
+  [enum_type = test_enum, enum_value = te_first, value = te_first]</code></pre></details>
+    <p>and we look for the last occurrence of the <strong>"="</strong> character and copy everything to the end. The static qualifiers here are needed so the values stay in memory after the function returns.</p>
+    <details class="code"><summary>Show code</summary><pre><code>template&lt;typename enum_type, enum_type enum_value&gt;
+class enum_name final {
+    // Helper function that directly takes an enum_type value template parameter to get the name of the classes template enum type value as a string.
+    template &lt;enum_type value&gt;
+    static const char* helper_name() {
+        // Clang compiler format:   __PRETTY_FUNCTION__
+        // = static const char *enum_name&lt;ENUM_TYPE_NAME, ENUM_TYPE_NAME::ENUM_VALUE_NAME&gt;::helper_value() [enum_type = ENUM_TYPE_NAME, enum_value = ENUM_TYPE_NAME::ENUM_VALUE_NAME, value = ENUM_TYPE_NAME::ENUM_VALUE_NAME]
+        // static const char *enum_name&lt;test_enum, te_first&gt;::helper_name() [enum_type = test_enum, enum_value = te_first, value = te_first]
+
+        // MSVC compiler format:    __FUNCSIG__
+        // = const char *__cdecl enum_name&lt;enum ENUM_TYPE_NAME,ENUM_VALUE&gt;::helper_value&lt;ENUM_TYPE_NAME::ENUM_VALUE_NAME&gt;(void)
+        // const char *__cdecl enum_name&lt;enum test_enum,0&gt;::helper_name&lt;te_first&gt;(void)
+
+        static const unsigned long long function_name_length = sizeof(__PRETTY_FUNCTION__);
+        static const std::string function_name(__PRETTY_FUNCTION__);
+        static const unsigned long long type_name_start  = function_name.rfind('=') + 2;
+        static const unsigned long long type_name_end    = function_name_length - 2;
+        static const unsigned long long type_name_length = type_name_end - type_name_start;
+        static const std::string type_name_string = function_name.substr((size_t)type_name_start, (size_t)type_name_length);
+        return type_name_string.c_str();
+    }
+
+public:
+    static const char* name() { return helper_name&lt;enum_value&gt;(); }				// Get the name of the classes template enum type and value as a string.
+};</code></pre></details>
+    <p>In this form the code already prints enum values (<a href="https://onlinegdb.com/YpqJ1byp5" target="_blank" rel="noopener">example</a>).</p>
+    <img src="../../assets/articles/enum-name-runtime/output.png" alt="Printing the enum values" class="post-image" loading="lazy" />
+    <h2>Getting rid of string (not too hard)</h2>
+    <p>You could do it with std::string_view, but that would be less interesting. From the <strong>string</strong> class we only needed character storage, <strong>rfind</strong> and <strong>substr</strong>. <strong>__PRETTY_FUNCTION__</strong> exists at compile time, so we can write a small service class that a) stores the string and b) does no dynamic allocation, plus write the functions we need to work with a substring. memcpy or loops in constexpr won't work for copying and searching data, but a loop can be turned into recursion with a parameter, implementing <strong>rfind</strong> that way (it's compile time — who's counting the time spent expanding the template). substr, though, I couldn't manage; I had to google a solution (<a href="https://stackoverflow.com/questions/56471708/c-compile-time-substring" target="_blank" rel="noopener">compile-time substring</a>) and look at how std::string_view does it. And of course we add <strong>c_str()</strong> — where would C++ be without that legendary function. <strong>constexpr</strong> in the calls is needed so the compiler can compute the array sizes when instantiating templates, at the call sites at compile time.</p>
+    <details class="code"><summary>Show code</summary><pre><code>template &lt;unsigned long long length&gt;
+class string_literal final {
+	const char string[length];
+
+public:
+	template&lt;unsigned long long... indexes&gt;
+  	const string_literal(const char(&amp;raw_string)[sizeof...(indexes)], std::integer_sequence&lt;unsigned long long, indexes...&gt; index_sequence) : string{ raw_string[indexes]... } {
+		static_cast&lt;void&gt;(index_sequence);
+	}
+
+	constexpr const char* c_str() const { return this-&gt;string; }
+
+	template&lt;unsigned long long substring_start, unsigned long long substring_length, unsigned long long... substring_indexes&gt;
+	constexpr const string_literal&lt;substring_length + 1&gt; substr(std::integer_sequence&lt;unsigned long long, substring_indexes...&gt; substring_index_sequence) const {
+		static_cast&lt;void&gt;(substring_index_sequence);
+		return string_literal&lt;substring_length + 1&gt;({ this-&gt;string[substring_start + substring_indexes]..., '\0' }, std::make_integer_sequence&lt;unsigned long long, substring_length + 1&gt;{});
+	}
+
+	constexpr unsigned long long find(const char character, const unsigned long long starting_index = 0) const {
+		return						((starting_index &gt;= length)
+										? 0xFFFFFFFFFFFFFFFF
+										: ((this-&gt;string[starting_index] == character)
+											? starting_index
+											: this-&gt;find(character, starting_index + 1)));
+	}
+
+	constexpr unsigned long long rfind(const char character, const unsigned long long starting_index = length - 1) const {
+		return				((starting_index == 0)
+								? ((this-&gt;string[starting_index] == character)
+									? starting_index
+									: 0xFFFFFFFFFFFFFFFF)
+  							    : ((this-&gt;string[starting_index] == character)
+									? starting_index
+									: this-&gt;rfind(character, starting_index - 1)));
+	}
+};</code></pre></details>
+    <p>Now, putting all the puzzle pieces together, we can write a solution that turns an enum into a string. The output is an array you can iterate over to find the value you need, and it also holds the string representation of its name.</p>
+    <details class="code"><summary>Show code</summary><pre><code>enum test_enum { te_first, te_second, te_third, te_count };
+
+int main() {
+    const token_holder&lt;test_enum, te_first, te_count&gt; test_tokens;
+
+    for (auto &amp;s: test_tokens.values)
+        std::cout &lt;&lt; "{" &lt;&lt; (s.name ? s.name : "null")
+                  &lt;&lt; ", " &lt;&lt; s.id &lt;&lt; " }"
+                  &lt;&lt; std::endl;
+}
+
+$&gt;  {te_first, 0 }
+    {te_second, 1 }
+    {te_third, 2 }
+    {te_count, 3 }
+    {null, 0 }</code></pre></details>
+    <h2>Instead of conclusions</h2>
+    <p>No cheating, only black magic. Although there may be no built-in way to get an object's full type name at compile time, you can hack the language itself (I love C++ for letting you pull off this kind of madness) to reach the result you want. Was it useful, and will I drag it into production — hardly; was it interesting — absolutely. If you need a ready-made solution, look up magic_enum on GitHub, but it needs C++17 to work, whereas I'm not done roaming the lands of the C++11/14 dragons yet.</p>
+    <p>P.S. the code is here — <a href="https://github.com/dalerank/tokenum" target="_blank" rel="noopener">github.com/dalerank/tokenum</a>.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

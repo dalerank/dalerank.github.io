@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Имя enum'a C++ в рантайме — dalerank</title>
+<meta name="description" content="Как достать имя типа и значения enum'а в рантайме на C++ без RTTI — через __PRETTY_FUNCTION__, шаблоны и constexpr-магию." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/enum-name-runtime.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/enum-name-runtime.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="enum-name-runtime.html">RU</a><i>/</i><a href="../en/articles/enum-name-runtime.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Имя enum'a C++ в рантайме</h1><div class="ameta"><span>7 ноября 2022</span><span>10 мин</span></div></div>
+  <article class="prose">
+    <p>Получение имени типа, не важно это структура или перечисление, в C++ — проблема. То, что тривиально известно компилятору на этапе парсинга исходников, не получится перевести в человеко-читаемый вид в рантайме. Можно использовать std::type_info::name, который не является переносимым решением, потому что зависит от реализации манглинга в компиляторе. Некоторые компиляторы (например, MSVC, IBM, Oracle) создают «удобное» имя типа, а вот gcc и clang возвращают искаженное имя, котороe можно преобразовать в удобочитаемую форму с помощью дополнительных функций, например abi::__cxa_demangle. Чтобы вся эта магия работала, нужно подключить RTTI, который тоже не всегда доступен, а иногда и вообще-то вреден, потому что сжирает драгоценную производительность.</p>
+    <img src="../assets/articles/enum-name-runtime/cover.jpg" alt="Имя enum'a C++ в рантайме" class="post-image" loading="lazy" />
+    <hr />
+    <p>В языке программирования C++ отсутствует какая-либо реальная форма рефлексии, и только в C++20 появились пропозалы (<a href="https://en.cppreference.com/w/cpp/keyword/reflexpr" target="_blank" rel="noopener">reflexpr</a>), чтобы добавить в язык нативные средства для этого. Вот как-то так выдает clang данные по классам.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>#include &lt;iostream&gt;
+#include &lt;typeinfo&gt;
+#include &lt;cxxabi.h&gt;
+
+struct Simple { };
+struct Base { virtual ~Base() = default; };
+struct Derived : Base {};
+enum Enum { one = 4, two = 2 };
+
+int main() {
+    Base b1;
+    Derived d1;
+    Simple c1;
+    Enum eenum;
+
+    const Base *pb = &amp;b1;
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; '\n';
+    pb = &amp;d1;
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; '\n';
+
+    std::cout &lt;&lt; typeid(eenum).name() &lt;&lt; '\n';
+
+    std::cout &lt;&lt; typeid(c1).name() &lt;&lt; '\n';
+
+    int     status;
+    char   *realname;
+
+    realname = abi::__cxa_demangle(typeid(*pb).name(), 0, 0, &amp;status);
+    std::cout &lt;&lt; typeid(*pb).name() &lt;&lt; "\t=&gt; " &lt;&lt; realname &lt;&lt; "\t: " &lt;&lt; status &lt;&lt; '\n';
+}
+
+$&gt; 4Base
+   7Derived
+   4Enum
+   6Simple
+   7Derived        =&gt; Derived      : 0</code></pre></details>
+    <p>Т.е. компилятор все эти данные хранит в памяти, и мы можем использовать их, чтобы достать и обработать нужным нам образом.</p>
+    <h2>Можно ли получить тип через макрос?</h2>
+    <p>Ну в принципе можно, только пользы от этого будет немного. Повторюсь, не существует каких-либо явных языковых конструкций, дающих имя типа вне <strong>typeid</strong>, поэтому придется искать другие возможности. Простейшее решение будет превратить в строку сам тип.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>#define TYPE_NAME(x) #x
+std::cout &lt;&lt; TYPE_NAME(std::string) &lt;&lt; std::endl;</code></pre></details>
+    <p>Вы понимаете, конечно, что будет напечатано в консоль, только это все будет работать для явно указанных типов. Макросу все равно, что превращать в строку, хоть слона, хоть моську. Поэтому ломается уже на примере чуть посложнее.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>template &lt;typename T&gt;
+void print(int x) {
+  std::cout &lt;&lt; TYPE_NAME(T) &lt;&lt; std::endl;
+  std::cout &lt;&lt; TYPE_NAME(decltype(x)) &lt;&lt; std::endl;
+}
+
+$&gt; T
+   decltype(x)</code></pre></details>
+    <h2>Можно ли получить тип через шаблон?</h2>
+    <details class="code"><summary>Показать код</summary><pre><code>template &lt;typename T&gt;
+void bad_function();</code></pre></details>
+    <p>Если вы когда-нибудь ошибались в написании шаблона, то наверняка видели большую простыню текста ошибки, в конце которой было про <code>bad_function&lt;foo&gt;()</code>, т.е. компилятор достал и имя шаблонной функции, и имя её параметра.</p>
+    <img src="../assets/articles/enum-name-runtime/joke.jpg" alt="Здесь была шутка про плюсы." class="post-image" loading="lazy" />
+    <p>Здесь была шутка про плюсы.</p>
+    <p>Может ли это работать вне вывода ошибок компилятора? Исследуя возможность достать имя типа, или энама, или значения энама в процессе компиляции, я наткнулся на сервисную переменную <strong>__function__</strong>. Что по этой функции говорит документация? Компилятор определяет в удобном для него виде содержимое в месте объявления, например для вывода ошибок или предупреждений.</p>
+    <details class="code"><summary>Документация</summary><pre><code>__FUNCTION__ Defined as a string literal that contains the undecorated name of the
+enclosing function. The macro is defined only within a function. The __FUNCTION__
+macro isn't expanded if you use the /EP or /P compiler option. For an example of
+usage, see the __FUNCNAME__ macro.
+
+__PRETTY_FUNCTION__ is a gcc extension that is mostly the same as __FUNCTION__,
+except that for C++ functions it contains the "pretty" name of the function including
+the signature of the function. Visual C++ has a similar (but not quite identical)
+extension, __FUNCSIG__ .</code></pre></details>
+    <p>(<a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2004/n1642.html" target="_blank" rel="noopener">n1642</a>) Эта скрытая переменная, которая существует внутри места вызова как <strong>const char*</strong>. Она также содержит дополнительную информацию о перегрузке и шаблонах, давайте посмотрим, что можно с этим сделать.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>struct Simple { };
+
+template &lt;typename T&gt;
+std::string test() {
+  return __PRETTY_FUNCTION__;
+}
+
+int main() {
+    std::cout &lt;&lt; test&lt;std::string&gt;() &lt;&lt; std::endl;
+    std::cout &lt;&lt; test&lt;Simple&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; std::string test() [with T = std::__cxx11::basic_string&lt;char&gt;; std::string = std::__cxx11::basic_string&lt;char&gt;]
+   std::string test() [with T = Simple; std::string = std::__cxx11::basic_string&lt;char&gt;]</code></pre></details>
+    <p>C такой логикой уже можно работать. Попробуем написать простой парсер, который вытаскивает из этой строки нужные данные. Для этого можно использовать функции класса <strong>string</strong> для поиска подстроки. Поиск выглядит немного тяжеловатым и пока не работает на этапе компиляции, но мы обязательно к этому придем.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>struct Simple { };
+
+template &lt;typename T&gt;
+struct TypeNameHelper {
+    static std::string TypeName(void) {
+        const auto prefix   = std::string{"[with T = "};
+        const auto suffix   = std::string{";"};
+        const auto function = std::string{__PRETTY_FUNCTION__};
+
+        const auto start    = function.find(prefix) + prefix.size();
+        const auto end      = function.rfind(suffix);
+
+        const auto result   = function.substr(start, (end - start));
+
+        return result;
+    }
+};
+
+template &lt;typename T&gt;
+std::string TypeName(void) {
+    return TypeNameHelper&lt;T&gt;::TypeName();
+}
+
+$&gt; std::__cxx11::basic_string&lt;char&gt;
+Simple</code></pre></details>
+    <p>Еще стоит убедиться, что компилятор не убирает полное имя функции при сборке с оптимизациями, иначе можем получить пустые строки с ключами -O2/3. На сборке с оптимизациями все строки на месте, с -O3 (<a href="https://onlinegdb.com/cjE1_rU9I" target="_blank" rel="noopener">пример</a>) тоже. Немного изменим код, чтобы можно было просматривать вывод для разных типов данных и сохранять его для работы.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>enum test_enum { te_first, te_second, te_third, te_count };
+int main() {
+   std::cout &lt;&lt; TypeName&lt;test_enum&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; test_enum</code></pre></details>
+    <p>Вот в выводе уже появился читаемый тип энама, осталось вытащить его значение. Для этого надо добавить в шаблон еще один параметр со значением энама, магии шаблонов еще нет, она будет чуть позже.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>template &lt;typename T, T V&gt;
+struct TypeNameHelper {
+    static const char* TypeName(void) {
+        static const size_t size = sizeof(__PRETTY_FUNCTION__);
+        static char typeName[size] = {};
+        memcpy(typeName, __PRETTY_FUNCTION__ , size - 1u);
+        return typeName;
+    }
+};
+
+template &lt;typename T, T V&gt;
+const char* TypeName(void) {
+    return TypeNameHelper&lt;T, V&gt;::TypeName();
+}
+
+enum test_enum { te_first, te_second, te_third, te_count };
+int main() {
+   std::cout &lt;&lt; TypeName&lt;test_enum, te_second&gt;() &lt;&lt; std::endl;
+}
+
+$&gt; test_enum; T V = te_first</code></pre></details>
+    <p>Теперь, возвращаясь к задаче из заголовка, кроме самого типа нужно получить и все значения; обычно чтобы сформировать некоторую последовательность и привести её к массиву используется <strong>std::integer_sequence</strong> и fold expressions. Так, например, можно заполнить массив натуральными числами. Конечно, это немного ломается, если энам сделан с «дырками».</p>
+    <details class="code"><summary>Показать код</summary><pre><code>template&lt;typename T, T... ints&gt;
+void print_sequence(std::integer_sequence&lt;T, ints...&gt; int_seq) {
+    std::cout &lt;&lt; "The sequence of size " &lt;&lt; int_seq.size() &lt;&lt; ": ";
+    ((std::cout &lt;&lt; ints &lt;&lt; ' '), ...);
+    std::cout &lt;&lt; '\n';
+}
+
+int main() {
+     print_sequence(std::make_integer_sequence&lt;int, 20&gt;{});
+}
+
+$&gt; The sequence of size 20: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19</code></pre></details>
+    <p>Собирая все мысли в кучу, начинаем продумывать возможное решение:</p>
+    <ol>
+      <li>развернуть энам от первого до последнего элемента в массив через <strong>std::integer_sequence</strong>;</li>
+      <li>пройти по полученному массиву и вызвать параметризированный <strong>TypeName</strong> для каждого элемента, сохранить или обработать вывод;</li>
+      <li>сформировать набор структур { имя, значение } для итерации по элементам.</li>
+    </ol>
+    <h2>Разворачиваем значения энама в массив (несложно)</h2>
+    <p>Чтобы не утомлять читателя проектированием и отладкой, буду выкладывать уже готовые классы и пояснять отдельные моменты. Как оказалось, убедить компилятор превратить энам в строку не столько сложно, сколько долго в плане протаскивания параметров через десяток шаблонов от шаблонов. В конечном итоге я добился работы, но только для кланга и студии, c gcc, увы, не получилось.</p>
+    <ul>
+      <li><strong>count_values</strong> — простой рекурсивный подсчет числа значений в энаме;</li>
+      <li><strong>make_tokens</strong> — формирует массив значений из энама и копирует их в представление вида { имя, значение };</li>
+      <li><strong>tokens</strong> — содержит все значения из энама и их текстовое представление;</li>
+      <li><strong>make_name</strong> — c помощью __PRETTY_FUNCTION__ превращает значение в строку;</li>
+      <li><strong>token_holder</strong> — сервисный класс, чтобы скрыть работу с шаблонами.</li>
+    </ul>
+    <details class="code"><summary>Показать код</summary><pre><code>struct token {
+    const char * name;
+    s32 id;
+};
+
+template&lt;typename enum_type, enum_type begin, enum_type end&gt;
+struct token_holder {
+    constexpr static inline int count_values(enum_type type) {
+        return (type != end)
+            ? count_values((enum_type)(s32(type)+1))
+            : (s32(type)+1);
+    }
+
+    static constexpr u32 N = count_values(begin);
+    using tokens = std::array&lt;token, N+1&gt;; // because have {0, 0} in last element
+
+    template&lt;typename e_enum_type, e_enum_type enum_value&gt;
+    constexpr token make_name() {
+        return { enum_name&lt;e_enum_type, enum_value&gt;().name(), enum_value };
+    }
+
+    template&lt;typename e_enum_type, u32... Indices&gt;
+    constexpr tokens make_tokens_helper(std::integer_sequence&lt;u32, Indices...&gt;) {
+        tokens ts = { make_name&lt;e_enum_type, (e_enum_type)Indices&gt;()... };
+        ts[N] = {0, 0};
+        return ts;
+    }
+
+    template&lt;typename e_enum_type&gt;
+    constexpr tokens make_tokens() {
+        return make_tokens_helper&lt;e_enum_type&gt;( std::make_integer_sequence&lt;u32, N&gt;{});
+    }
+
+
+    constexpr operator const token *() const { return values.unsafe_ptr(); }
+    constexpr token *data() const { return values.unsafe_ptr(); }
+    constexpr token_holder() : values{make_tokens&lt;enum_type&gt;()} {}
+
+    tokens values;
+};</code></pre></details>
+    <h2>Превращаем значение энама в строку (посложнее)</h2>
+    <p>Смотрим, во что превращается завернутый в шаблон энам, например вот такое</p>
+    <details class="code"><summary>Вывод компилятора</summary><pre><code>static const char *enum_name&lt;test_enum, te_first&gt;::helper_name()
+  [enum_type = test_enum, enum_value = te_first, value = te_first]</code></pre></details>
+    <p>и ищем последнее вхождение символа <strong>«=»</strong>, копируем все содержимое до конца. static-квалификаторы тут нужны, чтобы значения оставались в памяти после выхода из функции.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>template&lt;typename enum_type, enum_type enum_value&gt;
+class enum_name final {
+    // Helper function that directly takes an enum_type value template parameter to get the name of the classes template enum type value as a string.
+    template &lt;enum_type value&gt;
+    static const char* helper_name() {
+        // Clang compiler format:   __PRETTY_FUNCTION__
+        // = static const char *enum_name&lt;ENUM_TYPE_NAME, ENUM_TYPE_NAME::ENUM_VALUE_NAME&gt;::helper_value() [enum_type = ENUM_TYPE_NAME, enum_value = ENUM_TYPE_NAME::ENUM_VALUE_NAME, value = ENUM_TYPE_NAME::ENUM_VALUE_NAME]
+        // static const char *enum_name&lt;test_enum, te_first&gt;::helper_name() [enum_type = test_enum, enum_value = te_first, value = te_first]
+
+        // MSVC compiler format:    __FUNCSIG__
+        // = const char *__cdecl enum_name&lt;enum ENUM_TYPE_NAME,ENUM_VALUE&gt;::helper_value&lt;ENUM_TYPE_NAME::ENUM_VALUE_NAME&gt;(void)
+        // const char *__cdecl enum_name&lt;enum test_enum,0&gt;::helper_name&lt;te_first&gt;(void)
+
+        static const unsigned long long function_name_length = sizeof(__PRETTY_FUNCTION__);
+        static const std::string function_name(__PRETTY_FUNCTION__);
+        static const unsigned long long type_name_start  = function_name.rfind('=') + 2;
+        static const unsigned long long type_name_end    = function_name_length - 2;
+        static const unsigned long long type_name_length = type_name_end - type_name_start;
+        static const std::string type_name_string = function_name.substr((size_t)type_name_start, (size_t)type_name_length);
+        return type_name_string.c_str();
+    }
+
+public:
+    static const char* name() { return helper_name&lt;enum_value&gt;(); }				// Get the name of the classes template enum type and value as a string.
+};</code></pre></details>
+    <p>В таком виде этот код уже выводит значения энамов (<a href="https://onlinegdb.com/YpqJ1byp5" target="_blank" rel="noopener">пример</a>).</p>
+    <img src="../assets/articles/enum-name-runtime/output.png" alt="Вывод значений enum'а" class="post-image" loading="lazy" />
+    <h2>Избавляемся от string (не очень сложно)</h2>
+    <p>Можно сделать через std::string_view, но это будет не так интересно. От класса <strong>string</strong> понадобились только функции хранения символов, <strong>rfind</strong> и <strong>substr</strong>. <strong>__PRETTY_FUNCTION__</strong> существует на момент компиляции, так что мы можем написать небольшой сервисный класс, который а) хранит строку и б) без динамической аллокации, ну и напишем нужные функции для работы с подстрокой. Воспользоваться memcpy или циклами в constexpr для копирования и поиска данных не получится, но цикл можно превратить в рекурсию с параметром, реализовав таким образом функцию <strong>rfind</strong> (это ж компайл-тайм, кто его считает, это время на разворачивание шаблона). А вот substr я сделать не смог, пришлось гуглить решение (<a href="https://stackoverflow.com/questions/56471708/c-compile-time-substring" target="_blank" rel="noopener">compile-time substring</a>) и смотреть, как сделано в std::string_view. Ну и добавим <strong>c_str()</strong>, куда же без этой легендарной функции в плюсах. <strong>constexpr</strong> в вызовах нужен, чтобы компилятор смог подсчитать размеры массивов при инстанциации шаблонов, в местах вызова на этапе компиляции.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>template &lt;unsigned long long length&gt;
+class string_literal final {
+	const char string[length];
+
+public:
+	template&lt;unsigned long long... indexes&gt;
+  	const string_literal(const char(&amp;raw_string)[sizeof...(indexes)], std::integer_sequence&lt;unsigned long long, indexes...&gt; index_sequence) : string{ raw_string[indexes]... } {
+		static_cast&lt;void&gt;(index_sequence);
+	}
+
+	constexpr const char* c_str() const { return this-&gt;string; }
+
+	template&lt;unsigned long long substring_start, unsigned long long substring_length, unsigned long long... substring_indexes&gt;
+	constexpr const string_literal&lt;substring_length + 1&gt; substr(std::integer_sequence&lt;unsigned long long, substring_indexes...&gt; substring_index_sequence) const {
+		static_cast&lt;void&gt;(substring_index_sequence);
+		return string_literal&lt;substring_length + 1&gt;({ this-&gt;string[substring_start + substring_indexes]..., '\0' }, std::make_integer_sequence&lt;unsigned long long, substring_length + 1&gt;{});
+	}
+
+	constexpr unsigned long long find(const char character, const unsigned long long starting_index = 0) const {
+		return						((starting_index &gt;= length)
+										? 0xFFFFFFFFFFFFFFFF
+										: ((this-&gt;string[starting_index] == character)
+											? starting_index
+											: this-&gt;find(character, starting_index + 1)));
+	}
+
+	constexpr unsigned long long rfind(const char character, const unsigned long long starting_index = length - 1) const {
+		return				((starting_index == 0)
+								? ((this-&gt;string[starting_index] == character)
+									? starting_index
+									: 0xFFFFFFFFFFFFFFFF)
+  							    : ((this-&gt;string[starting_index] == character)
+									? starting_index
+									: this-&gt;rfind(character, starting_index - 1)));
+	}
+};</code></pre></details>
+    <p>Теперь, собрав все части головоломки вместе, можно написать решение для превращения enum'а в строку. На выходе получается массив, по которому можно поитерироваться в поисках нужного значения, и также он содержит строковое представление его имени.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>enum test_enum { te_first, te_second, te_third, te_count };
+
+int main() {
+    const token_holder&lt;test_enum, te_first, te_count&gt; test_tokens;
+
+    for (auto &amp;s: test_tokens.values)
+        std::cout &lt;&lt; "{" &lt;&lt; (s.name ? s.name : "null")
+                  &lt;&lt; ", " &lt;&lt; s.id &lt;&lt; " }"
+                  &lt;&lt; std::endl;
+}
+
+$&gt;  {te_first, 0 }
+    {te_second, 1 }
+    {te_third, 2 }
+    {te_count, 3 }
+    {null, 0 }</code></pre></details>
+    <h2>Вместо выводов</h2>
+    <p>Никакого мошенничества, только черная магия. Хотя может не быть какого-либо встроенного средства для получения полного имени типа объекта во время компиляции, можно подхачить сам язык (я обожаю плюсы за то, что можно творить такую дичь), чтобы достигнуть нужного результата. Было ли это полезно и потащу ли это в прод — вряд ли; было ли это интересно — однозначно. Если нужно готовое решение, поищите magic_enum на гитхабе, но ему будет нужен C++17 для работы, я же пока не нагулялся по землям драконов 11/14 стандарта.</p>
+    <p>З.Ы. код тут — <a href="https://github.com/dalerank/tokenum" target="_blank" rel="noopener">github.com/dalerank/tokenum</a>.</p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

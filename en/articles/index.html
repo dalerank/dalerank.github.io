@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Articles — dalerank</title>
+<meta name="description" content="Articles on code, reverse-engineering and game design." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/index.html">RU</a><i>/</i><a class="on" href="index.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag clay">Blog</span>
+    <h1>Articles</h1>
+    <div class="ameta"><span>on code, reverse-engineering and game design</span></div>
+  </div>
+
+  <ul class="artlist">
+    <li>
+      <a href="pharaoh-map-rendering.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>How the map is drawn in Pharaoh</h3>
+        <p>The algorithm for rendering the isometric map, city and animation in Pharaoh: diagonal-path and zig-zag, depth sorting, layers and the original map format.</p>
+        <div class="pmeta"><span>Oct 17, 2023</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="private-but-want-public.html">
+        <span class="tag">Abnormal programming</span>
+        <h3>When it's private but you really want public</h3>
+        <p>Testing a C++ class's private members without touching the headers: from 100+ friends and #define private public to a template hack that swaps a pointer-to-member type.</p>
+        <div class="pmeta"><span>Sep 21, 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="switch-sdk-three-sin.html">
+        <span class="tag">Abnormal programming</span>
+        <h3>Why does the Switch SDK have three different sin functions?</h3>
+        <p>Porting games to the Nintendo Switch, I found three sin implementations in the SDK — and what the disassembly showed for -O1, -O3 -math:precise and -O3 -math:fast.</p>
+        <div class="pmeta"><span>Jun 11, 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="enum-name-runtime.html">
+        <span class="tag">Abnormal programming</span>
+        <h3>A C++ enum's name at runtime</h3>
+        <p>Getting a type's name and enum values at runtime in C++ without RTTI — via __PRETTY_FUNCTION__, templates and constexpr magic.</p>
+        <div class="pmeta"><span>Nov 7, 2022</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="should-players-be-hand-held.html">
+        <span class="tag clay">Game design</span>
+        <h3>Should players be hand-held?</h3>
+        <p>Level-design techniques from Witcher 3, Zelda and Metro Exodus — guiding players without leading them by the hand.</p>
+        <div class="pmeta"><span>Apr 2025</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="spinlocks.html">
+        <span class="tag gold">Performance</span>
+        <h3>No need to rush… (About spinlocks)</h3>
+        <p>C++ spinlock implementations — from the naive TAS to a ticket spinlock — with benchmarks, cache misses and the nuances of thread prioritization.</p>
+        <div class="pmeta"><span>Sep 27, 2022</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="cache-pollution.html">
+        <span class="tag gold">Performance</span>
+        <h3>Cache pollution? Stock up on tests</h3>
+        <p>How caches, associativity, coherence and data alignment affect performance — with benchmarks.</p>
+        <div class="pmeta"><span>Sep 9, 2022</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="how-caesar-draws-city.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: extracting textures</h3>
+        <p>The .sg2/.555 texture format, RGB555 palette, IDA and Hex-Rays — and how a hobby grew into a remake. Part 1.</p>
+        <div class="pmeta"><span>May 5, 2014</span><span>Part 1</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-rendering.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: City Rendering</h3>
+        <p>Map format, tile selection and draw order, drawing the city. Part 2.</p>
+        <div class="pmeta"><span>May 15, 2014</span><span>Part 2</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-game-logic.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: game logic</h3>
+        <p>Simulating citizens, walking, event queues.</p>
+        <div class="pmeta"><span>Jun 9, 2014</span><span>Part 3</span><span>18 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-generation.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: world generation</h3>
+        <p>Procedural generation of the world and maps.</p>
+        <div class="pmeta"><span>Jul 23, 2014</span><span>Part 4</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-city-model.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: the city model</h3>
+        <p>The internal city model: data, layers, state.</p>
+        <div class="pmeta"><span>Sep 15, 2014</span><span>Part 5</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-part6.html">
+        <span class="tag">Reverse-engineering</span>
+        <h3>Reverse-engineering Caesar III: the game loop</h3>
+        <p>Computing one city day: the simulation loop, gods, sentiment, taxes, health and data structures.</p>
+        <div class="pmeta"><span>Oct 20, 2014</span><span>Part 6</span><span>20 min</span></div>
+      </a>
+    </li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

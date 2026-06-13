@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Статьи — dalerank</title>
+<meta name="description" content="Статьи о коде, реверс-инжиниринге и геймдизайне." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Статьи</a>
+      <a href="../index.html#books">Книги</a>
+      <a href="../index.html#topics">Темы</a>
+      <a href="../about.html">Обо мне</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a class="on" href="index.html">RU</a><i>/</i><a href="../en/articles/index.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag clay">Блог</span>
+    <h1>Статьи</h1>
+    <div class="ameta"><span>о коде, реверс-инжиниринге и геймдизайне</span></div>
+  </div>
+
+  <ul class="artlist">
+    <li>
+      <a href="pharaoh-map-rendering.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Как рисуется карта в Фараоне</h3>
+        <p>Алгоритм отрисовки изометрической карты, города и анимации в Pharaoh: diagonal-path и zig-zag, сортировка по глубине, слои и формат карты оригинала.</p>
+        <div class="pmeta"><span>17 октября 2023</span><span>10 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="private-but-want-public.html">
+        <span class="tag">Ненормальное программирование</span>
+        <h3>Когда private, но очень хочется public</h3>
+        <p>Как тестировать приватные члены C++-класса без правки хедеров: от 100+ friend-ов и #define private public до шаблонного хака с подменой типа.</p>
+        <div class="pmeta"><span>21 сентября 2023</span><span>8 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="switch-sdk-three-sin.html">
+        <span class="tag">Ненормальное программирование</span>
+        <h3>Зачем в Switch SDK три разных sin?</h3>
+        <p>Как при портировании игр на Nintendo Switch обнаружились три реализации sin — и что показал дизасм для -O1, -O3 -math:precise и -O3 -math:fast.</p>
+        <div class="pmeta"><span>11 июня 2023</span><span>8 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="enum-name-runtime.html">
+        <span class="tag">Ненормальное программирование</span>
+        <h3>Имя enum'a C++ в рантайме</h3>
+        <p>Как достать имя типа и значения enum'а в рантайме на C++ без RTTI — через __PRETTY_FUNCTION__, шаблоны и constexpr-магию.</p>
+        <div class="pmeta"><span>7 ноября 2022</span><span>10 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="should-players-be-hand-held.html">
+        <span class="tag clay">Геймдизайн</span>
+        <h3>Надо ли вести игрока за ручку?</h3>
+        <p>Приёмы левел-дизайна из Witcher 3, Zelda и Metro Exodus — как направлять игрока, не ведя его за руку.</p>
+        <div class="pmeta"><span>Апр 2025</span><span>14 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="spinlocks.html">
+        <span class="tag gold">Производительность</span>
+        <h3>Торопиться не надо… (Про спинлоки)</h3>
+        <p>Реализации спинлоков на C++ — от наивной TAS до тикет-спинлока — с бенчмарками, кэш-миссами и нюансами приоритезации потоков.</p>
+        <div class="pmeta"><span>27 сентября 2022</span><span>13 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="cache-pollution.html">
+        <span class="tag gold">Производительность</span>
+        <h3>Cache pollution? Запасайтесь тестами</h3>
+        <p>Как кэш, ассоциативность, когерентность и выравнивание данных влияют на производительность — с бенчмарками.</p>
+        <div class="pmeta"><span>9 сентября 2022</span><span>12 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="how-caesar-draws-city.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: извлечение текстур</h3>
+        <p>Формат текстур .sg2/.555, палитра RGB555, IDA и Hex-Rays — и как хобби превратилось в ремейк. Часть 1.</p>
+        <div class="pmeta"><span>5 мая 2014</span><span>Часть 1</span><span>14 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-rendering.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: отрисовка города</h3>
+        <p>Формат карт, выбор и порядок отрисовки тайлов, рисование города. Часть 2.</p>
+        <div class="pmeta"><span>15 мая 2014</span><span>Часть 2</span><span>12 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-game-logic.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: игровая логика</h3>
+        <p>Игровая логика: симуляция жителей, ходьба, очереди событий.</p>
+        <div class="pmeta"><span>9 июня 2014</span><span>Часть 3</span><span>18 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-generation.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: генерация мира</h3>
+        <p>Процедурная генерация мира и карт.</p>
+        <div class="pmeta"><span>23 июля 2014</span><span>Часть 4</span><span>6 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-city-model.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: модель города</h3>
+        <p>Внутренняя модель города: данные, слои, состояние.</p>
+        <div class="pmeta"><span>15 сентября 2014</span><span>Часть 5</span><span>9 мин</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="caesar3-part6.html">
+        <span class="tag">Реверс-инжиниринг</span>
+        <h3>Реверс-инжиниринг Caesar III: игровой цикл</h3>
+        <p>Расчёт одного игрового дня: цикл симуляции, боги, настроения, налоги, здоровье, структуры данных.</p>
+        <div class="pmeta"><span>20 октября 2014</span><span>Часть 6</span><span>20 мин</span></div>
+      </a>
+    </li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

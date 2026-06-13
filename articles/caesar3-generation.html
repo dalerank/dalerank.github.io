@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Реверс-инжиниринг Caesar III: генерация мира — dalerank</title>
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-generation.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="caesar3-generation.html">RU</a><i>/</i><a href="../en/articles/caesar3-generation.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Реверс-инжиниринг</span><h1>Реверс-инжиниринг Caesar III: генерация мира</h1>
+  <div class="ameta"><span>23 июля 2014</span><span>Часть 4</span><span>6 мин</span></div></div>
+  <article class="prose">
+    <p>Если вы любитель игры «Caesar III», то наверняка замечали то, с каким старанием и вниманием к мелочам сделаны карты кампании, да и свободного режима тоже. Природные пейзажи, на которых игрок возводит «новый Рим», выглядят вполне реалистично (в рамках игры): ручейки впадают в реки и озера, реки текут через всю карту, а в лесах бродят «бессмертные» овцы, иногда забредая на луга и мешая строить фермы, чайки кружат над местами скопления рыбы, а иногда по реке проплывает неудачливый моряк на останках корабля. Скальные массивы окружены деревьями, а земля покрыта ковром сочной зеленой травы. У всей этой чудной картинки есть недостаток, размер карты не превышает 160х160 тайлов, в статье я расскажу как сделал генерацию карт больших размеров.</p>
+    <img src="../assets/articles/caesar4/c-01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Оригинальная игра не поддерживает больших карт, так что все опыты проводились в рамках проекта CaesarIA (open-source клона Caesar III(с)). Поддержка больших карт в ремейке была с самого начала, но до прочтения хорошей статьи об использовании метода «diamond-square» при построении ландшафтов, грузить какие-либо карты, помимо шедших с игрой или сделанных поклонниками, не представлялось возможным. Поняв в каком направлении нужно двигаться, я набрел еще на одну статью о генерации ландшафтов, которая окончательно меня убедила в реальности использования этого метода для автоматического создания карты.</p>
+    <p>Результатом работы исходного алгоритма будет массив точек с высотами, связав высоту с цветом получим такую карту.</p>
+    <img src="../assets/articles/caesar4/c-02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Цвета имеют соответствующие значения: — синий цвет соответствует воде с большой глубиной, — посветлее будет означать воду возле берегов, — желтый будет побережье, — зеленый означает траву и равнинные территории, — насыщенным зеленым будет отображаться лес, — серым и темно-серым мелкие и высокие горы соответственно.</p>
+    <p>При адаптации результатов работы к специфике ландшафта игры, пришлось пересмотреть интерпретацию некоторых значений и настроек, но в целом эти данные подходят для дальнейшей обработки. Теперь можно отобразить полученные значения на карте города, для начала я изменю только тайлы воды и оставлю остальные незакрашеными.</p>
+    <img src="../assets/articles/caesar4/c-03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>После заливки тайлов воды, можно заполнять траву, лес и горы. Теперь сгенерированная карта уже больше походит на обычную.</p>
+    <img src="../assets/articles/caesar4/c-04.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Оставшаяся большая часть карты по идее должна быть покрыта высокими горами, но тогда она станет непроходима для людей, поэтому я вместо высоких гор опять использую тайлы равнины. На полученной карте остались незаполненными области, прилегающие к воде.</p>
+    <img src="../assets/articles/caesar4/c-06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>При заполнении этих областей придется учитывать положение соседей, чтобы выбрать правильную текстуру для конкретного тайла. Игра располагает следующими видами текстур для берега, ориентированного: — на север:</p>
+    <img src="../assets/articles/caesar4/c-07.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-08.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-09.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-10.jpg" alt="" class="post-image" loading="lazy" />
+    <p>— на восток:</p>
+    <img src="../assets/articles/caesar4/c-11.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-12.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-13.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-14.jpg" alt="" class="post-image" loading="lazy" />
+    <p>— на юг:</p>
+    <img src="../assets/articles/caesar4/c-15.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-16.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-17.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-18.jpg" alt="" class="post-image" loading="lazy" />
+    <p>— на запад:</p>
+    <img src="../assets/articles/caesar4/c-19.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-20.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-21.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-22.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Такие тайлы определяются по расположению тайлов с водой относительно тайла, для которого проводится вычисление. Например, тайл побережья, ориентированный на север, может иметь тайл воды только по направлениям север, северо-восток и северо-запад и их комбинации. Аналогично проводим вычисления для остальных тайлов побережья и не трогаем другие. Результатом будет линия побережья без угловых тайлов.</p>
+    <img src="../assets/articles/caesar4/c-23.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Следующий этап состоит в поиске угловых тайлов, которые были пропущены на предыдущем шаге. Такие тайлы имеют тройки соседей (воду) в по направления север-&gt;северо-восток-&gt;восток, восток -&gt; юго-восток -&gt; юг и аналогиные. Для отображения углов берега в игре есть следующие текстуры:</p>
+    <img src="../assets/articles/caesar4/c-24.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-25.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-26.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-27.jpg" alt="" class="post-image" loading="lazy" />
+    <p>, разместив их мы получим практически завершенную карту.</p>
+    <img src="../assets/articles/caesar4/c-28.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Теперь остались тайлы на воде и на земле, которые не были обработаны на предыдущих этапах. Тайлы которые окружены землей со всех сторон также отнесем к земле, а те что окружены водой — соответственно к воде. Тайлы побережья одновременно считаются и водой и землей. Теперь остается дополнить карту дорогой, чтобы могли приходить поселенцы, и реками, чтобы разнообразить общий пейзаж.</p>
+    <img src="../assets/articles/caesar4/c-29.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-30.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Генерация карты размером 500х500 тайлов занимает немного времени, но все-таки существенно больше чем загрузка уже готовых карт. Ниже я разместил скриншот большой карты, размером 3800х1880 пикселей. На такую карту можно добавить разных объектов, поселений и даже город в режиме одиночной игры, но мне видится, что она больше подойдет для сетевой. Еще один из положительных сторон выбранного алгоритма состоит в масштабируемости, можно сохранить результаты вычислений и при необходимости использовать их для расчета соседней территории.</p>
+    <img src="../assets/articles/caesar4/c-31.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Конечно, сгенерированная карта не сравнится со сделанной человеком, но возможность создавать карты в автоматическом режиме, позволяет еще на шаг продвинуться в создании продолжения и развитии идей заложенных в оригинальной игре. Вы также можете посмотреть и поучаствовать в развитии ремейка «Caesar III» на странице проекта. Исходный код генератора карт находится здесь.</p>
+    <p>Бонус. Скриншоты из ремейка</p>
+    <img src="../assets/articles/caesar4/c-32.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-33.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-34.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/caesar4/c-35.jpg" alt="" class="post-image" loading="lazy" />
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

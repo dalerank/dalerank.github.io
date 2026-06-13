@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Когда private, но очень хочется public — dalerank</title>
+<meta name="description" content="Как тестировать приватные члены C++-класса без правки хедеров: от 100+ friend-ов и #define private public до шаблонного хака с подменой типа указателя на член." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/private-but-want-public.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/private-but-want-public.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="private-but-want-public.html">RU</a><i>/</i><a href="../en/articles/private-but-want-public.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Когда private, но очень хочется public</h1><div class="ameta"><span>21 сентября 2023</span><span>8 мин</span></div></div>
+  <article class="prose">
+    <p>В 2016 году меня пригласили помочь с разработкой экшн-очков «ORBI» — это такие водонепроницаемые очки с несколькими камерами, которые могут стримить 360-видео сразу на смартфон, ну а если с ними поплавать, тоже ничего сломаться не должно (<a href="https://www.indiegogo.com/projects/orbi-prime-the-first-360-video-recording-eyewear#/" target="_blank" rel="noopener">страница проекта на Indiegogo</a>). Собственно, моей задачей было написать алгоритм склейки видеопотока с четырёх камер в одно большое 360°-видео — на тот момент задача не очень сложная, но требующая немного специфичных знаний OpenCV и окружения. Но статья не об этом, потому что теперь это всё оберегаемое IP, а про то как мы легальными и не очень средствами языка С++ писали тестовое окружение для используемых классов и соответственно алгоритмов. Да, вы скажете, что там такого — сделал геттеры да тестируй себе на здоровье. А если геттера нет или переменная класса спрятана в private-секцию и возможности изменить хедер нет? Или вендор либы забыл положить хедеры и прислал только скан исходников (китайские друзья они такие), а тестировать это надо? Помножив желание написать тесты на утренний кофе и приплюсовав дикий энтузиазм, можно получить очень много <s>ошибок компиляции</s> интересного опыта. Если нельзя, но очень хочется, то можно. Как говорил один мой знакомый лид: «Нет такого кода, который мы не сможем порефакторить, особенно за утренним кофе».</p>
+    <img src="../assets/articles/private-but-want-public/cover.jpg" alt="Когда private, но очень хочется public" class="post-image" loading="lazy" />
+    <hr />
+    <p>На начальном этапе разработки особо не задумывались над общей архитектурой, собрали прототип из <s>свободного софта и какой-то матери</s> OpenCV + Hugin + stitchEm, поэтому и тесты были раскиданы по всему проекту, включениями разной степени вредности. Ну, главное что они хотя бы были и запускались.</p>
+    <p>К моменту презентации прототипа в конце 2016 года, один из основных классов девайса, который собирал 4 фрейма в один, был обвешан тестами по самое не могу — точно не помню, но что-то около 50 френдов для тестов. Повторюсь, сделано это было не специально, так исторически сложилось, а потом стало общей практикой. Каждая неделя разработки добавляла ещё пару тестовых друзей в этот класс, и в какой-то момент решили, что надо эту порочную практику убирать.</p>
+    <img src="../assets/articles/private-but-want-public/friends.jpg" alt="Я сейчас вам его покажу. Вот он, этот коварный тип гражданской наружности!" class="post-image" loading="lazy" />
+    <p>Я сейчас вам его покажу. Вот он, этот коварный тип гражданской наружности!</p>
+    <details class="code"><summary>Показать код (OrbiVideo421)</summary><pre><code>class OrbiVideo421 : public orbi::intrusive_ptr {
+
+	friend struct TestVideoStream;
+	friend struct TestVideoFrame;
+	friend struct TestVideoStitcher;
+	friend struct TestVideoPlayer;
+	friend struct TestVideoTest;
+	friend struct TestVideoStreamProcessor;
+	friend struct TestVideoCapture;
+	friend struct TestVideoWriter;
+	friend struct TestVideoProcessor;
+	friend struct TestVideoTestSuite;
+	friend struct TestVideoAnalyzer;
+	friend struct TestVideoConfiguration;
+	friend struct TestVideoBuffer;
+	friend struct TestVideoRenderer;
+	friend struct TestAudioStream;
+	friend struct TestAudioFrame;
+	friend struct TestAudioStitcher;
+	friend struct TestAudioPlayer;
+	friend struct TestPerformanceAnalyzer;
+	friend struct TestErrorLogger;
+	friend struct TestVideoFrameAnalyzer;
+	friend struct TestVideoSynchronization;
+	friend struct TestVideoMetadataExtractor;
+	friend struct TestVideoComparison;
+	friend struct TestVideoStreamController;
+	friend struct TestVideoStreamEncoder;
+	friend struct TestVideoStreamDecoder;
+	friend struct TestVideoStreamRouter;
+	friend struct TestVideoEffect;
+	friend struct TestVideoSegmentation;
+	friend struct TestVideoStreamRecorder;
+	friend struct TestVideoCompression;
+	friend struct TestVideoStreamSplitter;
+	friend struct TestVideoStreamSwitcher;
+	friend struct TestVideoStreamMetadataEditor;
+	friend struct TestVideoStreamAnalyzer;
+	// ниже ещё около 40 френдов для тестов
+}</code></pre></details>
+    <h2>Правильно, долго и дорого</h2>
+    <details class="code"><summary>Показать код (OrbiMemoryUnit)</summary><pre><code>class	OrbiMemoryUnit : orbi::vtable_at_top {
+  friend MemoryTestRead;
+  friend MemoryTestWrite;
+
+  private:
+    nobject *_object;
+    uint32_t _reserved_memory;
+}</code></pre></details>
+    <p>Всё было спрятано во внутренние структуры, отдельные друзья-тесты использовали их по своему усмотрению. Но тут появились красивые мы и решили сделать по науке, добавив геттеры к нужным мемберам класса. Конечно, народ полез не только добавлять геттеры, но и немножко рефакторить код и имена. На горизонте замаячили пара недель мартышкиной работы, и не факт что она окажется полезной, потому что начинает меняться интерфейс класса в угоду тестам. К тому же нарушается правило «breaking changes» — менять без веской причины устоявшийся API значит получить себе проблемы в будущем с совместимостью и сайд-эффектами, которые фиг отловишь. Когда на ревью прилетает рефактор пополам с изменёнными именами переменных на 300+ строчек, то смотреть это было очень больно. И в итоге после пары созвонов практику эту прекратили, изменения откатили и сели думать как сделать по-другому.</p>
+    <details class="code"><summary>Показать код (геттеры)</summary><pre><code>class	OrbiMemoryUnit : orbi::vtable_at_top {
+  private:
+    nobject *_object;
+    uint32_t _reserved_memory;
+
+  public:
+  	inline	nobject					*object					() const	{ return _object; }
+	inline	uint32_t				reserved_capacity 		() const	{ return _reserved_memory; }
+}</code></pre></details>
+    <p>Плюсы такого подхода очевидны: всё в рамках языковой модели, понятно новичкам на проекте. Минусы не так очевидны — а может это и не минусы даже — самый явный это необходимость продумывать нормальный API, что на небольших проектах с ограниченным ресурсом и временем растягивает выкатывание фич и отнимает время у команды, о чём мне и было заявлено ПМом на одном из совещаний. В общем, правильно — но долго и дорого, поэтому неправильно.</p>
+    <h2>Чёрная магия макросов, но иногда не компилится</h2>
+    <img src="../assets/articles/private-but-want-public/table.jpg" alt="Странная у вас какая-то настроечная таблица — кругами!" class="post-image" loading="lazy" />
+    <p>Странная у вас какая-то настроечная таблица — кругами!</p>
+    <p>Так мы и жили с этим наследием, пока в одно прекрасное утро на один из классов не наткнулся наш коллега из солнечной Катании, который недавно подключился к этому модулю проекта, решив там чего-то дописать. Он был очень unittest-friendly погромистом, поэтому число тестов за утро увеличилось в полтора раза. А уже в обед на почту билд-инженеру прилетело поздравление с тем, что число френдов в классе <strong>OrbiDeviceBattery</strong> превысило 100 штук (это мы потом уже выяснили, опытным путём) и компилятор Keil-C ниасилил это скомпилить, вывалив в лог вот такую ошибку.</p>
+    <details class="code"><summary>Вывод компилятора</summary><pre><code>C:\ent\orbi\prod\KeilMDK\INCLUDE\keillex\xstring(25) : error C2146: syntax error : missing ';' before identifier 'friend'
+C:\ent\orbi\prod\KeilMDK\INCLUDE\keillex\xstring(597) : see reference to class template instantiation 'OrbiDeviceBattery&lt;_E,_Tr,_A&gt;' being compiled
+C:\ent\orbi\prod\core\battery\device.cc(655) : error C2838: illegal qualified name in member declaration</code></pre></details>
+    <p>Каким боком нешаблонный класс <strong>OrbiDeviceBattery</strong> стал шаблонным, и почему он задел xstring — непонятно. Слова в логе об ошибке имеют мало отношения к самой ошибке, мы просто сломали компилятор. Написал саппорту разработчика компилятора и не получил внятного ответа, а побродив по форуму увидел, что подобные жалобы в кор-команду компилятора имеют среднее время закрытия от полугода и больше — если зайдёте на форум Keil, то можно найти парочку, которые были открыты ещё в 2017 и до сих пор в статусе «незафикшено». Видимо, пять лет полежало, и ещё пять полежит. На 655-й строке ожидаемо был ещё один френд класса.</p>
+    <img src="../assets/articles/private-but-want-public/malovato.png" alt="Маловато будет!" class="post-image" loading="lazy" />
+    <p>Поскрипев недолго серыми клеточками, которые не восстанавливаются, нашли вполне себе рабочий хак для тестового окружения. Можно переопределить private/class на public/struct. Вроде бы вот оно «щастье» — пиши тесты сколько душе угодно, безо всяких френдов. Но и тут нас ждал розовый птиц обломинго: то, что собирается на clang-е, не обязательно будет работать на другом clang-е. Keil-компилятор радостно сообщил, что мы пытаемся переопределить ключевые слова, что как бы делать не стоит, от слова совсем.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>#define private public // illegal
+#define class struct // illegal
+
+#include "core/view_direction.h"
+#include "core/view_vec2i.h"
+#include "core/view_point.h"</code></pre></details>
+    <p>А вот gcc/clang такое вполне позволяют (<a href="https://onlinegdb.com/pag5bTK2Yv" target="_blank" rel="noopener">пример</a>). Но вообще не стоит так делать — всё равно что растить Пабликов Морозовых в своём проекте. Это мы от безысходности таким страдали. Делайте нормальные решения в рамках языковой модели, это вернётся меньшим техдолгом, поверьте моему опыту.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+#define private public
+#define class struct
+
+class A { int l; };
+
+int main() {
+    A a;
+    cout &lt;&lt; a.l;
+    return 0;
+}</code></pre></details>
+    <h2>Дедушка Паблика Морозова</h2>
+    <p>Но задачка уже не хотела отпускать беспокойный мозг, тем более что стартап получил следующий раунд финансирования и можно было немного расслабиться и, разогнув спину, заняться чем-то более полезным, кроме написания этих ненавистных тестов да придумывания алгоритмов склейки. О проблеме нарушения прав доступа при работе с шаблонами писал Herb Sutter ещё в 2010 году (<a href="http://www.gotw.ca/gotw/076.htm" target="_blank" rel="noopener">GotW #76</a>), но считал её скорее фичей языка на всякий пожарный.</p>
+    <p>У него даже появилось отдельное правило по этому случаю:</p>
+    <blockquote>never subvert the language; for example, never attempt to break encapsulation by copying a class definition and adding a friend declaration, or by providing a local instantiation of a template member function (GotW #76), Herb Sutter</blockquote>
+    <p>Вот пример от самого Саттера (<a href="https://onlinegdb.com/cn7bOdWdn" target="_blank" rel="noopener">ссылка</a>), как можно сломать механизм инкапсуляции плюсов, с одной оговоркой — у класса должна быть свободная шаблонная функция в public-зоне. Работает всё достаточно просто: инстанцирование шаблонной функции класса даёт нам доступ к приватным данным класса, потому что по факту она является функцией класса со всеми правами.</p>
+    <details class="code"><summary>Показать код (пример Саттера)</summary><pre><code>class X {
+public:
+  X() : private_(1) { /*...*/ }
+
+  template&lt;class T&gt;
+  void f( const T&amp; t ) { /*...*/ }
+
+  int Value() { return private_; }
+
+private:
+  int private_;
+};
+
+namespace {
+  struct Y {};
+}
+
+template&lt;&gt;
+void X::f( const Y&amp; ) {
+  private_ = 2; // evil laughter here
+}
+
+int main() {
+  X x;
+  cout &lt;&lt; x.Value() &lt;&lt; endl; // prints 1
+  x.f( Y() );
+  cout &lt;&lt; x.Value() &lt;&lt; endl; // prints 2
+}</code></pre></details>
+    <p>В принципе на этом можно было и остановиться, потому что для 90% случаев это покрывает необходимости тестирования, и наши френды становятся просто свободными классами, которые будут параметром для вот такой прокси-функции. Минимум изменения функционала, максимум пользы, т.е. минус все тестовые френды из хедера. Если бы не одно НО… не везде мы могли добавить такую шаблонную функцию, чтобы провернуть этот фокус.</p>
+    <h2>Всех убил садовник</h2>
+    <p>Ещё немного поэкспериментировав с получением приватных членов класса, стало понятно что ни один из существующих компиляторов не палит получение адреса члена класса, если он будет приведён к другому типу данных, который не является приватным. Если мы попробуем получить адрес приватной переменной, то получим ошибку компилятора, что логично — компилятор-то умнее нас и оберегает от выстрелов в разные части тела.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>struct A {
+private:
+  char const* x = "private data";
+};
+
+int main() {
+  auto ptr = &amp;A::x;
+}
+
+...
+
+main.cpp: In function ‘int main()’:
+main.cpp:46:19: error: ‘const char* A::x’ is private within this context
+   46 |    auto ptr = &amp;A::x;
+      |                   ^</code></pre></details>
+    <img src="../assets/articles/private-but-want-public/posylka.jpg" alt="Я вам посылку принёс. Ток я вам её не отдам, потому что у вас докУментов нет." class="post-image" loading="lazy" />
+    <p>Но если мы аккуратно попросим компилятор дать <s>возможность стрелять куда хочется</s> адрес этой переменной в качестве параметра шаблона, то всё будет хорошо. Мы ведь ничего далее с ним не делаем, так — плюшками балуемся.</p>
+    <details class="code"><summary>Показать код</summary><pre><code>struct A {
+private:
+  char const* x = "private data";
+};
+
+template &lt;class Stub, typename Stub::type x&gt;
+struct private_member_x {
+    private_member_x() { auto ptr = x; }
+};
+
+// так мы просим компилятор не обращать внимания на реальный тип переменной
+struct A_x { typedef char const *(A::*type); };
+
+// и теперь компилятор считает, что работает с другим типом (подменным)
+template struct private_member_x&lt;A_x, &amp;A::x&gt;;
+
+int main()
+{}
+
+// всё чисто, никаких ошибок компиляции</code></pre></details>
+    <p>Итак, адрес приватной переменной у нас есть, остаётся совсем немного, чтобы написать обёртку для хранения и работы с этими адресами. Например, как-то так (компилябельно — <a href="https://onlinegdb.com/-am_9JCwR" target="_blank" rel="noopener">пример</a>).</p>
+    <details class="code"><summary>Показать код</summary><pre><code>// шаблон для класса-заглушки, который будет хранить адрес переменной
+template &lt;class Stub&gt;
+struct member { static typename Stub::type value; };
+
+// статик-переменная для общего шаблона
+template &lt;class Stub&gt;
+typename Stub::type member&lt;Stub&gt;::value;
+
+// подмена типа и получение адреса приватной переменной
+// stub уйдёт дальше в класс member, чтобы иметь статик-переменную для этого типа
+template &lt;class Stub, typename Stub::type x&gt;
+struct private_member {
+  private_member() { member&lt;Stub&gt;::value = x; } // сохранение адреса переменной
+  static private_member instance;
+};
+// thanks to @mr_Ulman
+template &lt;class Stub, typename Stub::type x&gt;
+private_member&lt;Stub, x&gt; private_member&lt;Stub, x&gt;::instance;
+
+// тест-кейс
+struct PapaPavlica {
+private:
+  char const* papini_dengi = "papini dengi";
+};
+
+// подменный тип, чтобы компилятор не пугался нарушением прав доступа
+struct A_x { typedef char const *(PapaPavlica::*type); };
+
+// магия, здесь живут драконы
+template struct private_member&lt;A_x, &amp;PapaPavlica::papini_dengi&gt;;
+
+int main() {
+   PapaPavlica papa;
+   std::cout &lt;&lt; papa.*member&lt;A_x&gt;::value &lt;&lt; std::endl; // papini_dengi
+   // разворачиваем обратно полученный адрес в переменную
+   // получаем *(papa).(&amp;PapaPavlica::papini_dengi) = "deneg net"
+   papa.*member&lt;A_x&gt;::value = "deneg net";
+   std::cout &lt;&lt; papa.*member&lt;A_x&gt;::value &lt;&lt; std::endl; // deneg net
+}</code></pre></details>
+    <p>Этот код мы в прод не пустили, он так и остался уделом тестового окружения, но вписался там прекрасно. Ну и конечно, я не оставлю вас без работающей либы (<a href="https://github.com/altamic/privablic" target="_blank" rel="noopener">altamic/privablic</a>) — купите при встрече нашему любителю юнит-тестов из солнечной Катании пива.</p>
+    <img src="../assets/articles/private-but-want-public/mozhno.jpg" alt="Если нельзя, но очень хочется, то можно" class="post-image" loading="lazy" />
+    <p>Если нельзя, но очень хочется, то можно.</p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

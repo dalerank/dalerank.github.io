@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reverse-engineering Caesar III: extracting textures (Part 1) — dalerank</title>
+<meta name="description" content="Extracting textures from Caesar III: the .sg2/.555 format, RGB555 palette, IDA and Hex-Rays — and how a hobby grew into a remake." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/how-caesar-draws-city.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/how-caesar-draws-city.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/how-caesar-draws-city.html">RU</a><i>/</i><a class="on" href="how-caesar-draws-city.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap article">
+
+  <div class="article-head">
+    <span class="tag">Reverse-engineering</span>
+    <h1>Reverse-engineering Caesar III: extracting textures</h1>
+    <div class="ameta"><span>May 5, 2014</span><span>Part 1</span><span>14 min</span></div>
+  </div>
+
+  <article class="prose">
+    <p>I love playing games, especially economic strategies, and I want to tell you about a city-builder from my childhood — Caesar III, a warm and cozy classic. The game was released in 1998 by the masters of their craft, Impressions Games. It's a real-time economic simulator of running an ancient Roman city. Years later I decided to play through it again, and then to prolong the pleasure: to look inside its resources and dig into the game logic from a programmer's point of view.</p>
+    <p>Below I describe the process of extracting textures, the hunt for the game's algorithms, and how a hobby turned into a project of its own. There will also be an RGB555 palette, IDA, Hex-Rays and a little code.</p>
+    <img src="../../assets/articles/caesar/c-01.jpg" alt="" class="post-image" loading="lazy" />
+
+    <p><strong>Music.</strong> I won't write anything about the music — it sits on the game disc unpacked, in plain .wav format.</p>
+
+    <h2>Graphics</h2>
+    <p>Graphics (textures) are much more involved. The textures are split across several pseudo-archives with the extensions .sg2 and .555.</p>
+    <p>The file with the .sg2 extension — let's call it the “table of contents” — holds texture parameters: sizes, offset in the atlas, name and number, identifier and various flags.</p>
+    <p>The file with the .555 extension — let's call it the “atlas” — holds the images themselves, in a custom format, divided into three types: simple (bmp), isometric, and with an alpha channel. Each type uses its own “compression” format. The “table of contents” can reference several atlases, and the atlas name must match the name of the texture group it contains. Simple textures are read as an array of colors and can be drawn to the screen with almost no processing; the “processing” is converting a BGR555 color with 5 bits per channel into the more convenient ARGB32. Caesar III doesn't use textures with transparency — those appear later in the series (Pharaoh, Cleopatra, etc.).</p>
+    <p>The file C3.SG2 contains descriptions of image groups. If you open it in a hex editor, you'll see the following block of data:</p>
+    <img src="../../assets/articles/caesar/c-02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>It describes a group of 44 (n_images: 0x0000002C) images named “plateau”, whose information starts at index 201 (start_index: 0x000000C9). The “table of contents” has room for 100 such groups. After the group descriptions come the descriptions of individual images; by iterating over them you can restore the images themselves. All that's left is to read the table of contents, unpack the compressed textures, and assemble them into complete images. Here's what unpacking the “plateau” group produced:</p>
+    <img src="../../assets/articles/caesar/c-03.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-04.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-05.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-06.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-07.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-08.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-09.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-10.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-11.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-12.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-13.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-14.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-15.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Here are a few more restored textures, in their native format, as close as I could get, without filters.</p>
+    <img src="../../assets/articles/caesar/c-16.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-17.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-18.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-19.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-20.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-21.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And here are processed textures with an alpha channel.</p>
+    <img src="../../assets/articles/caesar/c-22.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-23.jpg" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/caesar/c-24.jpg" alt="" class="post-image" loading="lazy" />
+
+    <p>While the texture atlas and its data structures can be figured out with some ingenuity, a hex editor and a bit of luck, the texture-restoration algorithms won't yield to that approach. This is where Ilfak comes to the rescue with the indispensable IDA debugger and the no-less-useful Hex-Rays decompiler. We open c3.exe in the debugger and the picture is far from rosy — I mostly program in Java or C++, and for me this is, if not a dark forest, then certainly thick undergrowth.</p>
+    <img src="../../assets/articles/caesar/c-25.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Here IDA's ability to turn asm into plain-C pseudocode helps. We press F5 and get human-readable code we can actually work with.</p>
+    <img src="../../assets/articles/caesar/c-26.jpg" alt="" class="post-image" loading="lazy" />
+    <p>With functions and variables and a tidied-up structure — and the sharp-eyed reader has surely already noticed a certain pattern in the code above — let's make it more readable. We press N, enter a sensible name for the function, and the code looks much simpler.</p>
+    <img src="../../assets/articles/caesar/c-27.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And after a while (a day, a week, a month, etc.) it becomes like this. You'll agree it's now much easier to look for algorithms.</p>
+    <img src="../../assets/articles/caesar/c-28.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The Caesar III executable was built with debug information by Visual C++ 5.0, which also makes it more productive to restore the application's logic. Using the debugger, the decompiler and your own grey matter, you can reach the function that reads images from the archive:</p>
+    <details class="code"><summary>Show code — fun_drawGraphic</summary><pre><code>int __cdecl fun_drawGraphic(signed int graphicId, int xOffset, int yOffset)
+{
+  int result; // eax@2
+  LONG v4; // [sp+50h] [bp-8h]@43
+  drawGraphic_graphicId = graphicId;
+  drawGraphic_xOffset = xOffset;
+  drawGraphic_yOffset = yOffset;
+  if ( graphicId &lt;= 0 ) return 0;
+  if ( graphicId &gt;= 10000 ) return 0;
+  drawGraphic_fileOffset = c3_sg2[graphicId].offset;
+  if ( drawGraphic_fileOffset &lt;= 0 ) return 0;
+  LOWORD(drawGraphic_width)  = c3_sg2[graphicId].width;
+  LOWORD(drawGraphic_height) = c3_sg2[graphicId].height;
+  drawGraphic_type = c3_sg2[graphicId].type;
+  graphic_xOffset = xOffset;
+  graphic_yOffset = yOffset;
+  /* ... full clipping / compression / isometric branches ... */
+  return result;
+}</code></pre></details>
+    <p>On the basis of this code you can build an application capable of displaying the textures used by the game.</p>
+
+    <h2>The hobby</h2>
+    <p>It would be strange if a post about reverse-engineering a game ended with a link to someone else's program. My hobby of modding the game's resources first grew into a series of fixes for some bugs, and now into a full-blown remake. If you're not too interested in musings about the project's goals and copyright, you can jump straight to the downloads section and see how close I managed to get to the original.</p>
+    <p><strong>What are the goals of the remake?</strong> Let people play a forgotten game, and not only on Windows. Play Caesar III without emulators, dancing with a tambourine or fiddling with Wine and a wild-by-today's-standards 800×600 resolution. Improve texture quality, fonts and game speed. And get pleasure from the development itself — I love playing games, especially economic ones, and I really dislike it when a game glitches, crashes or behaves incorrectly. It's easier for me to make a remake than to write my own game. Also: finally add the multiplayer I missed so much as a kid; beat the barbarians on a tablet while stuck in traffic; and make a good translation — not only for Russian speakers, but, say, for the French, who only got the game in English.</p>
+    <p><strong>What to do about copyright?</strong> There aren't many options: 1) ignore it and do whatever you want — not our way, we're civilized people. 2) Email the rights holders and ask permission — even worse, civilized authors or rights holders (currently Activision) usually hold on to them to the last, even if the game brings no profit. 3) Position the game as a mod that needs the original game — honestly bought on GOG.com — to run, as Corsix did with their Theme Hospital remake. The most justified and safe path.</p>
+    <blockquote class="quote">Old games aren't necessarily bad games. Many old games — dust them off, clean them up, patch and glue them — will run rings around plenty of modern creations. — Vadim Balashov</blockquote>
+    <p>Thanks for reading to the end!</p>
+    <p>P.S. Special thanks to the people who help develop the remake: Bianca van Schaik (reverse-engineering the original game), Gregoire Athanase (author of the renderer and many algorithms), George Gaal (reverse-engineering the saves) and many other committers.</p>
+    <p>If you're interested in the reverse-engineering results (exe + idb), it's better to get in touch by email or PM — it's a “grey legal area.” IDA 5.5 + Hex-Rays 1.01 were used. Files and materials are published with Bianca van Schaik's permission.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

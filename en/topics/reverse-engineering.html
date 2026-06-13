@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reverse-engineering — dalerank</title>
+<meta name="description" content="Taking apart classic games: a series on reverse-engineering Caesar III." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/reverse-engineering.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/reverse-engineering.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../topics/reverse-engineering.html">RU</a><i>/</i><a class="on" href="reverse-engineering.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag">Topic</span>
+    <h1>Reverse-engineering</h1>
+    <div class="ameta"><span>Taking apart classic games</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    A series on how the classic city-builders <strong>Caesar III</strong> (1998) and <strong>Pharaoh</strong> (1999) work under the hood — from unpacking textures to game logic. Open-source remakes grew out of this study.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../articles/pharaoh-map-rendering.html"><span class="tag">Reverse-engineering</span><h3>How the map is drawn in Pharaoh</h3><p>Rendering the isometric map, city and animation in Pharaoh: diagonal-path and zig-zag, depth sorting, layers and the map format.</p><div class="pmeta"><span>Oct 17, 2023</span><span>Pharaoh</span></div></a></li>
+    <li><a href="../articles/how-caesar-draws-city.html"><span class="tag">Reverse-engineering</span><h3>Extracting textures</h3><p>The .sg2/.555 format, RGB555 palette, IDA and Hex-Rays — and how a hobby became a remake.</p><div class="pmeta"><span>May 5, 2014</span><span>Part 1</span></div></a></li>
+    <li><a href="../articles/caesar3-rendering.html"><span class="tag">Reverse-engineering</span><h3>City rendering</h3><p>Map format, tile selection and draw order, drawing the city.</p><div class="pmeta"><span>May 15, 2014</span><span>Part 2</span></div></a></li>
+    <li><a href="../articles/caesar3-game-logic.html"><span class="tag">Reverse-engineering</span><h3>Game logic</h3><p>Simulating citizens, walking, event queues.</p><div class="pmeta"><span>Jun 9, 2014</span><span>Part 3</span></div></a></li>
+    <li><a href="../articles/caesar3-generation.html"><span class="tag">Reverse-engineering</span><h3>World generation</h3><p>Procedural generation of the world and maps.</p><div class="pmeta"><span>Jul 23, 2014</span><span>Part 4</span></div></a></li>
+    <li><a href="../articles/caesar3-city-model.html"><span class="tag">Reverse-engineering</span><h3>City model</h3><p>The internal city model: data, layers, state.</p><div class="pmeta"><span>Sep 15, 2014</span><span>Part 5</span></div></a></li>
+    <li><a href="../articles/caesar3-part6.html"><span class="tag">Reverse-engineering</span><h3>The game loop</h3><p>Computing one city day: the simulation loop, gods, taxes, health, data structures.</p><div class="pmeta"><span>Oct 20, 2014</span><span>Part 6</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
