@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What else should a game programmer read? — dalerank</title>
+<meta name="description" content="A follow-up reading list for a game programmer: Joel on Software, Blood, Sweat, and Pixels, the Doom 3 source code, MISRA C++, EASTL, daScript, GDC talks and blogs worth reading." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/what-else-to-read-game-programmer.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/what-else-to-read-game-programmer.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/what-else-to-read-game-programmer.html">RU</a><i>/</i><a class="on" href="what-else-to-read-game-programmer.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>What else should a game programmer read?</h1><div class="ameta"><span>Feb 15, 2024</span><span>6 min</span></div></div>
+  <article class="prose">
+    <h2>Instead of a preface</h2>
+    <p>This is a sequel to the previous list. Here I've gathered the things I read and re-read while working at game companies — books, articles, conference talks, and just good blogs. A game programmer has to swallow a lot of varied literature, and far from all of it is about code. Some of the material below has no direct bearing on C++ or engines, but without it the overall picture doesn't come together.</p>
+    <hr />
+    <h3>"Dead Souls", Gogol</h3>
+    <p>Let me start with something unexpected. Good literature stays relevant for centuries, and the classics are worth rereading if only to see how little people change. In the novel, a young man arrives in a provincial town with an unusual proposal — buying up "dead souls" to take out loans and gain privileges against them. Two hundred years have passed, and Chichikov's schemes are alive and well in modern gamedev, and in IT in general. The ability to notice such things helps in working with people no less than knowing your patterns.</p>
+    <h3>Joel on Software</h3>
+    <p>The blog of Joel Spolsky (one of the creators of Stack Overflow) — <a href="https://www.joelonsoftware.com/" target="_blank" rel="noopener">joelonsoftware.com</a>. There's also a book, essentially a collection of his articles: practical, sometimes biting notes on software development and project management. A lot of it is dated in terms of technology, but not in substance — about people, deadline estimates, and how teams work, it's all still true.</p>
+    <h3>Blood, Sweat, and Pixels</h3>
+    <p>Jason Schreier's 2017 book about how video games are actually made and the hell teams sometimes go through to make them. Inside are the stories behind The Witcher 3, Destiny, Uncharted 4, Stardew Valley, and other projects. It reads easily, with the emphasis on the human side of development, though some events were of course left off the page. A good cure for the illusion that gamedev is all fun and games.</p>
+    <h3>The Doom 3 source code</h3>
+    <p>The classic write-up on why Doom 3's code is considered <a href="https://kotaku.com/the-exceptional-beauty-of-doom-3s-source-code-5975610" target="_blank" rel="noopener">exceptionally beautiful</a>. At the time I was struck by how few comments there are, given how well the code reads. The main rule worth taking away: if a method does too much to fit into a sensible name, you should reduce the amount of code inside the method, not pile on comments.</p>
+    <h3>MISRA C++</h3>
+    <p>This is a set of standards and guidelines for developing safe and reliable software in C++. The goal of MISRA C++ was to improve software quality, safety, and reliability through a set of rules that help avoid typical mistakes and problems. During my work on sonar software, this was the primary development guideline. How do you like, for example, the absence of free <code>new</code>/<code>delete</code> in a program? If a program can only allocate memory at startup (or can't allocate at all, and works only with the memory it was given), the approach to design and development becomes radically different. A great many of the practices and rules carry over nicely into gamedev — it certainly doesn't make things worse.</p>
+    <h3>"Profiling, Measurement, and Analysis" by Riot Games</h3>
+    <p><a href="https://technology.riotgames.com/news/profiling-measurement-and-analysis" target="_blank" rel="noopener">An article on the Riot Games site</a>, from the masters of multiplayer and creators of League of Legends. Two old hands walk you through the basics of profiling and give a few code examples in C++. The article is from 2018, but for getting started with profiling methods and principles, it's just right.</p>
+    <h3>EASTL</h3>
+    <p><a href="https://github.com/electronicarts/EASTL" target="_blank" rel="noopener">github.com/electronicarts/EASTL</a> — one of the three alternatives to the standard library that most game developers (grudgingly) acknowledge as more or less working and general-purpose. It appeared back when the 98/03 standard was still in proposals and Folly wasn't even a thing. It's still being developed, and some of its solutions have been pulled into the standard. Don't know what to do on the weekend? Take a look at these folks' repo — there's a lot of interesting stuff. And the EASTL sources open with this introduction:</p>
+    <blockquote>
+      <p>Game platforms and game designs place requirements on game software which differ from the requirements of other platforms. Most significantly, game software requires large amounts of memory but has a limited amount to work with. Gaming software is also faced with other limitations such as weak hardware caches and less-capable CPUs, and alignment requirements that differ from the defaults. As a result, game software needs to be careful about its use of memory and the CPU.</p>
+      <p>The C++ standard library's containers, iterators, and algorithms are potentially useful for a variety of game programming needs. However, weaknesses and omissions of the standard library prevent it from being ideal for high performance game software. Foremost among these weaknesses is the allocator model.</p>
+      <p>An extended and partially redesigned replacement (EASTL) for the C++ standard library was implemented at Electronic Arts in order to address these weaknesses in a portable and <strong>readable</strong> manner.</p>
+    </blockquote>
+    <h3>Mikhail Kadikov's blog</h3>
+    <p><a href="https://level-design.ru/" target="_blank" rel="noopener">level-design.ru</a> — about games, with interesting breakdowns of various mechanics, written in simple, clear language. I'm not sure how this site even crossed my path; the first articles didn't impress me at all — probably because of the author's tendency to oversimplify concepts and explain obvious things three times over. But with each new article they get better and more interesting.</p>
+    <h3>Joel Burgess</h3>
+    <p><a href="http://blog.joelburgess.com/" target="_blank" rel="noopener">blog.joelburgess.com</a> — Joel Burgess, a gamedev veteran who worked on The Elder Scrolls V: Skyrim and Fallout 3/4. Lots of material with musings on game design and its evolution, on programming and development. From his articles and GDC talks you could assemble a separate book on game development (about just one game, of course — Fallout 3), there are that many interesting moments and bits of advice.</p>
+    <h3>SPIIIN'S BLOG</h3>
+    <p><a href="https://spiiin.github.io/" target="_blank" rel="noopener">spiiin.github.io</a> — I recently met Sasha Boyko (<a href="https://habr.com/ru/users/spiiin" target="_blank" rel="noopener">@spiiin</a>) and regret not finding his site sooner. Lots of useful and interesting information. As it turned out, we both worked at Gaijin for a while, but never crossed paths on projects. He also made a great level editor for NES games and beyond — <strong>CadEditor</strong>, a level editor for many games across different platforms (NES, Sega Mega Drive, GBA), available <a href="https://github.com/spiiin/CadEditor" target="_blank" rel="noopener">here</a>.</p>
+    <h3>"For the Win", Kevin Werbach and Dan Hunter</h3>
+    <p>One of the best books on gamification and applying the principles and techniques of design outside the world of game development. The authors explain how game elements can be broken down into components and used in all sorts of fields. Lots of valuable ideas on how game mechanics can be used for motivation, user engagement, and gathering feedback — in education, marketing, and generally any field tied to human attention. Read it: it's quite amusing afterward to notice when someone is trying to play you.</p>
+    <h3>Can a scripting language run faster than C++?</h3>
+    <p>A talk by Anton Yudintsev (Gaijin) about daScript — a scripting language that's faster than C++. Don't believe it? Why I believe it is a separate question: I had the chance to dig around inside the Dagor/War Thunder engine and its tools and to port them to the Nintendo Switch and Apple TV. Cramming the War Thunder engine onto 6 iPhones, which is essentially what the 4th-gen Apple TV was, and making it run was very, very hard.</p>
+    <h3>"The Art of Game Design", Jesse Schell</h3>
+    <p>Good material for those who want to get acquainted with the principles of game design at a basic level and understand what it's all about. It helps you grasp, in simple terms, which aspects and mechanics of games evoke emotions and impressions in players, how to understand their needs and interests, and how to use level-design elements, objects, and even phrasing to achieve the desired emotional response. Experienced designers are unlikely to find anything new — time-honed practices are fairly hard to shake.</p>
+    <h3>AI in games</h3>
+    <p><a href="https://www.youtube.com/playlist?list=PLokhY9fbx05eq8SvcNOxYRquYMzMjF9Ok" target="_blank" rel="noopener">A constantly growing playlist of AI breakdowns in various games</a>: over nine years it has accumulated nearly eighty episodes on AI implementation in well-known games — from F.E.A.R. to Spider-Man.</p>
+    <h2>More links</h2>
+    <ul>
+      <li><a href="https://cpp-optimizations.netlify.app/" target="_blank" rel="noopener">A collection of useful C++ optimization tips</a> — better used as a reference than read end to end.</li>
+      <li><a href="https://www.aristeia.com/TalkNotes/codedive-CPUCachesHandouts.pdf" target="_blank" rel="noopener">In plain words on why you should care about cache locality</a> — or how to tank performance 27x on an array traversal.</li>
+      <li><a href="https://gdcvault.com/play/1022375/World-of-Tanks-Blitz-Postmortem" target="_blank" rel="noopener">A talk by Vitaly Borodovsky (WoT)</a> on how to design top-tier MMO projects.</li>
+      <li><a href="https://gdkeys.com/game-design-dirty-little-secrets/" target="_blank" rel="noopener">A great article by Nicolas Kraj on game designers' secrets</a> — so you'll believe in the game more.</li>
+      <li><a href="https://habr.com/ru/companies/playrix/articles/" target="_blank" rel="noopener">Playrix's company blog on Habr</a> — empty since 2022, but the value of the articles hasn't diminished; the series about their own VSO engine was especially good.</li>
+      <li><a href="https://www.gdcvault.com/play/1022186/Parallelizing-the-Naughty-Dog-Engine" target="_blank" rel="noopener">A very interesting Naughty Dog talk</a> on fibers and their implementation in the engine — I'd call it probably the ideal implementation for the PlayStation.</li>
+    </ul>
+    <p>That's all for now — I hope it was interesting and useful!</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
