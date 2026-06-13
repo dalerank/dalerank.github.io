@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Not Unity alone… — dalerank</title>
+<meta name="description" content="A tour of 50+ game engines and frameworks beyond Unity: from nCine, RayLib and SDL2 to Godot, CryEngine, Unreal and DagorEngine — with links, languages, licenses and hands-on notes." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/not-unity-alone.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/not-unity-alone.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/not-unity-alone.html">RU</a><i>/</i><a class="on" href="not-unity-alone.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Tools</span><h1>Not Unity alone…</h1><div class="ameta"><span>Nov 4, 2023</span><span>15 min</span></div></div>
+  <article class="prose">
+    <p>Games come in all shapes and sizes — big and small, AAA and super-indie, made by companies with hundreds of developers and by lone wizards. They're rarely written from scratch with only the game's own code; more often you write the game tools and the editor while building the game itself in parallel. Behind this multi-billion-dollar industry there is code, a lot of code, a whole lot of code. Game engines and frameworks are powerful tools that help a developer give shape to their ideas and build captivating game worlds. They are the framework on which all game universes are built — bundling hundreds of tools, libraries and resources, letting developers turn lines of code into a theatre for a single spectator.</p>
+    <p>There are well over a hundred game engines, and each one has at least one feature that no other has. No single engine has all of them combined, and that's wonderful — otherwise such an engine would conquer the world. Hmm, Unreal 5, is that you? It's sometimes useful to skim an engine's release notes to stay on top of the latest news. Maybe you're building your own solution and this article will spark some new ideas. Ready to learn that your favourite game was made not in Unity, but in the holy SDL?</p>
+    <p>When I worked at the EA St. Petersburg studio, there was a dedicated engineer who tracked changes across new versions and maintained a HUUUUGE table of which feature lives in which engine. Unfortunately the table really was enormous — something like 800+ description columns across more than a hundred engines — and there was no way to copy it. A pity, because the work behind it was truly titanic. Keeping it up to date took no less effort, which is why it warranted a separate position. But the list of engines was freely available, and if you have the time you can put one together yourself. I won't describe the specifics of each engine — obviously every one of them is powerful, versatile, packed with features, and so on. I'll just drop a link to GitHub and a couple of games; if something catches your eye you can follow the links and dig into the details yourself. I keep a small table of game engines and the games made with them. If you don't see something, add it in the comments. The principle behind this list: I've touched each of these with my own hands — somewhere there was an interesting game, somewhere I tried to build an example, somewhere I fixed a bug or added a feature.</p>
+    <p>Engines usually support bindings to other languages or scripts; next to each name I'll note the license and the main language it's written in. Keep in mind that a binding or a script is a trade-off between the engine's own performance and the speed of developing the game/app — and the latter often wins.</p>
+
+    <h2>nCine (MIT / C++)</h2>
+    <p><a href="https://ncine.github.io/" target="_blank" rel="noopener">ncine.github.io</a></p>
+    <p>An open-source game engine that gives developers the means to build 2D and 3D games across various platforms. It offers an extensive toolset for game development, including support for many operating systems, graphics, audio, animation and physics. Worth studying for its component system and its event system.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/Lw4sD3Onjhc" title="Video demo: nCine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>MonoGame (MPL / C#)</h2>
+    <p><a href="https://github.com/MonoGame/MonoGame" target="_blank" rel="noopener">github.com/MonoGame/MonoGame</a> · alternative <a href="https://fna-xna.github.io/" target="_blank" rel="noopener">FNA</a></p>
+    <p>A development framework built on top of the Microsoft XNA platform. It provides tools and libraries for building cross-platform games, supporting several operating systems including Windows, macOS, Android, iOS and Linux. I studied this engine alongside C#, as practice in using the language. And the projects built on it are popular and well known.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/qHLizp8fARo" title="Video demo: MonoGame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/ot7uXNQskhs" title="Video demo: MonoGame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>RayLib (zlib / C / Lua)</h2>
+    <p><a href="https://github.com/raysan5/raylib" target="_blank" rel="noopener">github.com/raysan5/raylib</a></p>
+    <p>A lightweight, easy-to-use library for building games and applications. Written in C and supporting several platforms (Windows, macOS, Linux), it provides access to graphics, audio and input resources. A great tool for beginning game developers. It supports several programming languages (C, C++, C#, Python). I didn't find any well-known games made with it, but there's a good game-development tutorial. The engine was interesting for how it implements the Lua–C binding.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/2LX6QMBjPAg" title="Video demo: RayLib" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Love2d (MIT / C++ / Lua)</h2>
+    <p><a href="https://github.com/love2d/love" target="_blank" rel="noopener">github.com/love2d/love</a> · <a href="https://gitlab.com/stone-kingdoms/stone-kingdoms" target="_blank" rel="noopener">StoneKingdoms</a></p>
+    <p>A minimalist but powerful framework for building 2D games. It has an active community and lots of available libraries and plugins. The community keeps extending the engine's functionality and helps create a wide variety of games. I ran into this engine while helping develop StoneKingdoms (an open-source Stronghold clone, made with the blessing of the original game's authors).</p>
+    <img src="../../assets/articles/not-unity-alone/nua-01.png" alt="A collage of games and projects built on 2D engines" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/7IP6Qz8G-CM" title="Video demo: Love2d" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>LWJGL3 (Apache 2.0 / Java)</h2>
+    <p><a href="https://github.com/LWJGL/lwjgl3" target="_blank" rel="noopener">github.com/LWJGL/lwjgl3</a> · <a href="https://libgdx.com/" target="_blank" rel="noopener">libGDX</a> · <a href="https://jmonkeyengine.org/" target="_blank" rel="noopener">jMonkeyEngine</a></p>
+    <p>A library for building cross-platform 2D and 3D applications and games in Java. It gives access to low-level libraries such as OpenGL, OpenAL and GLFW, supports multithreading and broad capabilities for graphics, audio and input. I dug into the Mindustry sources, and looked at the library itself in parallel.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/9SZUtyYSOjQ" title="Video demo: LWJGL3" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/EM6AyS8ZNzg" title="Video demo: LWJGL3" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Cocos-Engine (Proprietary / C++)</h2>
+    <p><a href="https://github.com/cocos/cocos-engine" target="_blank" rel="noopener">github.com/cocos/cocos-engine</a> · <a href="https://github.com/cocos2d/cocos2d-x" target="_blank" rel="noopener">cocos2d-x</a></p>
+    <p>It offers a rich asset library, animation and physics tools, and support for various programming languages including C++, JavaScript and Lua; it's widely used for building colourful, interactive games on many platforms. I first ran into the engine back in 2014 at EA — several of the St. Petersburg studio's projects were built on it.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/pSat_gLDXPc" title="Video demo: Cocos-Engine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Phaser (MIT / JS)</h2>
+    <p><a href="https://github.com/photonstorm/phaser" target="_blank" rel="noopener">github.com/photonstorm/phaser</a></p>
+    <p>It supports sprites, tilemaps, animations, parallax backgrounds and other graphical elements, making visual creation relatively easy and efficient. It includes the Arcade Physics engine for handling collisions, gravity and other physical effects in a game. Very simple to develop with, especially if you don't know HTML — in one evening, just for fun, I knocked together a clone of the Chrome dino with asteroids and Neanderthal-eating :)</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/3kWA4SNMfls" title="Video demo: Phaser" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Babylon.js (Apache 2.0 / TypeScript)</h2>
+    <p><a href="https://github.com/BabylonJS/Babylon.js" target="_blank" rel="noopener">github.com/BabylonJS/Babylon.js</a></p>
+    <p>It uses WebGL to render 3D scenes, delivering good performance. It supports rendering with PBR and lighting, including real-time ray tracing. It has an active, extensive developer community that writes plugins and extends its functionality. As with the next entry on the list, I used it to learn JS for self-development.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/IztRI8hf95U" title="Video demo: Babylon.js" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>PixiJS (MIT / TypeScript)</h2>
+    <p><a href="https://github.com/pixijs/pixijs" target="_blank" rel="noopener">github.com/pixijs/pixijs</a></p>
+    <p>It's widely used for building web games, interactive animations, ad banners and other visual applications. Thanks to its performance and flexibility, it remains popular among web developers.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/WcJDJSJx4Wo" title="Video demo: PixiJS" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>The Forge (Apache 2.0 / C++)</h2>
+    <p><a href="https://github.com/ConfettiFX/The-Forge" target="_blank" rel="noopener">github.com/ConfettiFX/The-Forge</a></p>
+    <p>It supports several platforms including Windows, Linux, Android, iOS and the new generation of consoles. The engine is built for maximum performance, with optimised algorithms to keep games running smoothly even on weak devices (according to the authors). It gives access to modern graphics APIs such as Vulkan and DirectX 12. I noticed this engine after the team was mentioned among the developers of one of the Spider-Man games. I tried to build the examples from their site, but it didn't work out.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/rXCAQ9HSne8" title="Video demo: The Forge" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>HaxeFlixel (MIT / Haxe)</h2>
+    <p><a href="https://github.com/HaxeFlixel/flixel" target="_blank" rel="noopener">github.com/HaxeFlixel/flixel</a></p>
+    <p>Although it provides powerful development tools, it's fairly hard for game-dev beginners. It will definitely take time to get comfortable with the framework and its architecture (which isn't exactly absent, but isn't always present either). Despite its popularity, it has relatively limited resources and documentation compared to other game engines. The community has been developing slowly of late.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/1H3O7km0K_4" title="Video demo: HaxeFlixel" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Kha (zlib / Haxe)</h2>
+    <p><a href="https://github.com/Kode/Kha" target="_blank" rel="noopener">github.com/Kode/Kha</a></p>
+    <p>A low-level library for building games and multimedia applications, focused on portability. You can think of it as a more powerful version of the SDL library. I was looking for a framework to replace SDL2 — everything's great, tons of features. If it were written in C++ it would be priceless.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/g-oFpLKJmKg" title="Video demo: Kha" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>PixelBox.js (MIT / JS)</h2>
+    <p><a href="https://github.com/cstoquer/pixelbox" target="_blank" rel="noopener">github.com/cstoquer/pixelbox</a></p>
+    <p>A library for building pixel-art and retro-styled games and apps in the browser using JavaScript. It gives developers a toolset (not a very large one, honestly) for working with pixel graphics, audio and input, suited to making games in the style of 8-bit and 16-bit consoles. A relatively new and little-known library, but it offers good tools for retro-style games. I built a game from the examples and realised eight-bit games just aren't for me.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/Qidi6r3MNZU" title="Video demo: PixelBox.js" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>OpenFL (MIT / Haxe)</h2>
+    <p><a href="https://github.com/openfl/openfl" target="_blank" rel="noopener">github.com/openfl/openfl</a></p>
+    <p>A framework for building multimedia and interactive applications, including 2D and 3D games, animations, visualisations and much more. It's a modern alternative to Adobe Flash and lets you build cross-platform applications using the Haxe language. I really enjoyed Papers, Please back in the day and went to see what and how this little marvel was made — and picked up a bit of Haxe along the way.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/BJPy4BGRoPI" title="Video demo: OpenFL" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/_QP5X6fcukM" title="Video demo: OpenFL" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>SFML (zlib / C++)</h2>
+    <p><a href="https://github.com/SFML/SFML" target="_blank" rel="noopener">github.com/SFML/SFML</a> · <a href="https://github.com/ObEngine/ObEngine" target="_blank" rel="noopener">ObEngine</a></p>
+    <p>SFML (Simple and Fast Multimedia Library) is a free, open-source library for building multimedia applications and games. Written in C++, it offers a simple, clear interface for working with graphics, audio, networking and input — a good choice for beginners to get acquainted with a well-designed API. There are a couple of good projects, but alas their sources are closed.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/cmCcExZzzQw" title="Video demo: SFML" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>SDL2 (zlib / C)</h2>
+    <p><a href="https://github.com/libsdl-org" target="_blank" rel="noopener">github.com/libsdl-org</a></p>
+    <p>I've used this library since 2009 and have never found a real alternative for its simplicity and pluggable modules. It's used mostly not as a standalone framework but as an addition to existing ones to ease porting — it lets you spin up a minimal application for almost any platform from Windows to HaikuOS, on top of which you can then add the functionality you need. Games built with SDL2 include well-known projects: "Hearthstone: Heroes of Warcraft" by Blizzard Entertainment, "Stardew Valley" by ConcernedApe, "Terraria" by Re-Logic and many others. These games use different engines and frameworks, but rely on SDL to open a window, render and handle input. It's supported by the folks at Valve.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/MeMPCSqQ-34" title="Video demo: SDL2" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <p>Even though SDL isn't a full-blown game engine, building games with it is fairly simple. This is my weekend project, made with SDL + C++ + JS as configs (<a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">github.com/dalerank/Akhenaten</a>).</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/uwxYgSR3VZ8" title="Video demo: Akhenaten" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Flame (MIT / Dart)</h2>
+    <p><a href="https://github.com/flame-engine/flame" target="_blank" rel="noopener">github.com/flame-engine/flame</a></p>
+    <p>Flame Engine is a game-building engine written entirely in Dart. It lets you build colourful games that (per the developers) can run on various platforms, including mobile devices and web browsers. It's designed to integrate with the Flutter ecosystem, making it handy for mobile developers. I spotted it on my kid's phone — some run-of-the-mill idler about ants that shamelessly begged for money and showed an ad every five seconds; I weaned it off the ads and handed it a pill for greed. Along the way I learned there's this interesting Dart engine. I tried running the examples: on Windows it didn't work (about a year and a half ago), on Linux and Android it launched.</p>
+    <p>It's not all as rosy as the examples suggest, though. See the comment from <a href="https://habr.com/ru/users/ASGAlex/" target="_blank" rel="noopener">ASGAlex</a> in the <a href="https://habr.com/ru/articles/770244/#comment_26124798" target="_blank" rel="noopener">discussion</a>.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/tEqVyJNOroI" title="Video demo: Flame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/RKTkt1ZXThM" title="Video demo: Flame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Allegro (zlib / plain C)</h2>
+    <p><a href="https://github.com/liballeg/allegro5" target="_blank" rel="noopener">github.com/liballeg/allegro5</a></p>
+    <p>A cross-platform library aimed at building games. It's low-level enough to deliver good performance under large volumes of data. On the whole it abstracts the developer away from routine chores without closing off the option of reworking everything to your own taste. That said, Allegro isn't a game engine — more of a Swiss-army harvester of features; you'll have to write the game yourself. The most famous example of its use is Factorio, but for over a year now the author has been moving away from Allegro toward their own home-grown solutions.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/J8SBp4SyvLc" title="Video demo: Allegro" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>AndEngine (Apache 2.0 / Java)</h2>
+    <p><a href="https://github.com/nicolasgramlich/AndEngine" target="_blank" rel="noopener">github.com/nicolasgramlich/AndEngine</a></p>
+    <p>An ancient engine, no longer in development. Some of its games: "Cannon Ball", "Zombie Dash", "Plumber". The dawn, so to speak, of mobile game development — it gave a start to other popular engines, and individual borrowed pieces of its source code and architecture show up in LibGDX, Cocos2d, Godot Engine, Panda3D, Phaser. It had a good API, which made it a decent choice for prototyping and trialling small features. I used it in a couple of small Android games when I needed to build and show an MVP "yesterday".</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/zuPIHFL3iis" title="Video demo: AndEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/23GLK5nAsys" title="Video demo: AndEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>GameMaker (Licensed)</h2>
+    <p>Even the greenest developer can make a game; it's so popular that schools have started using it in programming classes — I did a lab assignment on it with my son. Hotline Miami it was not, but in a week we managed to put together a bare-bones Angry Birds clone. Visual programming is, of course, a convenient thing up to a point, but I still prefer C++ and proper code. Somewhere on a forum I found a slogan for the engine: once upon a time a game was created here, then a second, and a third… and so it went, every time someone opened GameMaker. Personally I didn't like the engine for being over-simplified, though to each their own.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/2n_BinoS1Ug" title="Video demo: GameMaker" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <img src="../../assets/articles/not-unity-alone/nua-02.png" alt="A collage of well-known games made on various engines" class="post-image" loading="lazy" />
+
+    <h2>Defold (Apache 2.0 / C++)</h2>
+    <p><a href="https://github.com/defold/defold" target="_blank" rel="noopener">github.com/defold/defold</a></p>
+    <p>The engine itself is written in C++, very well optimised, with a good Lua binding. It supports iOS, Android, HTML5, Windows and macOS. It makes heavy use of a component architecture — almost every system in the engine is built as a component and can be swapped for your own or rewritten, which makes creating and managing components very convenient. It's one of the engines that supports collaborative work through plugins. I haven't seen any famous games on it; the engine drew my interest mainly for its hot-reload of (Lua) scripts, achieved through a sandbox for each running script. It uses a lightweight Lua VM that's restarted on the fly when the script's code changes.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/9KGpHVgKF4M" title="Video demo: Defold" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>GB-Studio (MIT / C)</h2>
+    <p><a href="https://github.com/chrismaltby/gb-studio" target="_blank" rel="noopener">github.com/chrismaltby/gb-studio</a></p>
+    <p>The project was born at the "Bored Pixels 3" game jam in a week, and then grew into a full-fledged engine for building GameBoy-style mini-games. Simple, intuitive and easy to use. It really can build a ROM for the GBA — that's actually how I got acquainted with it, when I was trying to make a simple application for that platform.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/jIMT3oz773U" title="Video demo: GB-Studio" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>TileEngine (MIT / C)</h2>
+    <p><a href="https://github.com/megamarc/Tilengine" target="_blank" rel="noopener">github.com/megamarc/Tilengine</a></p>
+    <p>An open-source graphics engine for building 2D games using tile maps, sprites and palettes, letting you make games stylistically similar to late-90s NES/Sega titles. The engine also reimplements, in software, various hardware tricks of the consoles of that era. Per-Column Offset — a wobble effect often associated with old TVs and monitors, though it was first implemented on the Sega MD. Per-Pixel Displacement — shifts pixels on screen, creating distortion and the illusion of image deformation; it was used in 2D games to create water-surface effects and other distortions. And many others. These days the repo is barely updated — the author is writing a second version of the engine. The engine drew my interest above all for how it implements various sprite effects, all sorts of overlays, mosaics and layers.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/WLhqazQGrGw" title="Video demo: TileEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Godot (MIT / C++)</h2>
+    <p><a href="https://github.com/godotengine/godot" target="_blank" rel="noopener">github.com/godotengine/godot</a></p>
+    <p>Godot's story began in 2007, when the Argentine developer Juan Linietsky started working on a game engine called "D.". At the time he also worked at Square Enix's Argentine office on the team building the studio's in-house engine. In 2014 the engine was first published on GitHub and within a month gathered its first thousand stars; that same year the author received a grant from Mozilla to continue development, a year later GitHub and Microsoft also handed out grants, and the repo crossed its first 10k stars. Godot became the platform for a multitude of games, including indie projects and major commercial titles, and is interesting — again — for its component-based approach to development. In terms of components, assets, tutorials and community size it can genuinely compete with Unity/Unreal. There are many interesting editor features that are absent or limited in other editors — for example, the ability to configure anything and everything through internal scripts, from the game to the editor itself.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/YtpHhlbiNtM" title="Video demo: Godot" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>CryEngine (Proprietary)</h2>
+    <p><a href="https://github.com/CRYTEK/CRYENGINE_ReadMe" target="_blank" rel="noopener">CRYENGINE</a> · <a href="https://github.com/ValtoGameEngines/CryEngine" target="_blank" rel="noopener">mirror</a> · <a href="https://aws.amazon.com/lumberyard/" target="_blank" rel="noopener">Lumberyard</a> · <a href="https://github.com/o3de/o3de/" target="_blank" rel="noopener">O3DE</a></p>
+    <p>For a while the engine sources were available on GitHub, but now, to access the current sources, you have to request credentials on a site that's been down for over half a year. The engine is very interesting for its use of cutting-edge tech (as of late 2017). It shipped with a powerful editor called Sandbox that let you create and edit levels, add objects and textures, and tweak logic right during gameplay in active-pause mode — one of the first engines to apply BT (Behavior Tree) to any object on the scene. The immersiveness of Prey and the ability to interact with objects amazed me back then, so as soon as the engine became publicly available I started figuring out how it works. Amazon forked it in 2015 for their LumberYard and continued development, and it eventually turned into O3DE.</p>
+    <img src="../../assets/articles/not-unity-alone/nua-03.png" alt="A screenshot from a game built on CryEngine" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/LNHZ9WAertc" title="Video demo: CryEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/M7jgxJ_4TJs" title="Video demo: CryEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Flax (MIT / C++)</h2>
+    <p><a href="https://github.com/FlaxEngine/FlaxEngine" target="_blank" rel="noopener">github.com/FlaxEngine/FlaxEngine</a></p>
+    <p>An engine from one of the architects of Frostbite; its key feature is the ability to write scripts in "C++" — it's not real C++, of course, but it's very close. If, like me, you're comfortable using curly braces, you should like this engine. As long as you don't ask it for templates, it's almost C++. It recently gained hot-reload for C++ scripts too, which really speeds up development. The engine is fairly mature — development has gone on since 2012 — but the sources used to cost money. I noticed it because of its syntax: C++ isn't very popular as a scripting language in game engines.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/_KCl_m1IGp4" title="Video demo: Flax" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Panda3D (MIT / C++)</h2>
+    <p><a href="https://github.com/panda3d/panda3d" target="_blank" rel="noopener">github.com/panda3d/panda3d</a></p>
+    <p>Panda3D's development started in the early 2000s as a project of New York University under Dr. David Fox and Disney Interactive Studios. The engine was built for multimedia applications and presentations, and was later opened to the community. It's interesting above all for its shader library, most of which are patented by Disney — though nothing stops you from peeking at the implementation.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/jID2u758Qgs" title="Video demo: Panda3D" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>OGRE (MIT / C++)</h2>
+    <p><a href="https://github.com/OGRECave/ogre" target="_blank" rel="noopener">github.com/OGRECave/ogre</a> · <a href="https://www.ambiera.com/coppercube/" target="_blank" rel="noopener">CopperCube</a> (paid support)</p>
+    <p>I worked with this engine at Transas, where it powered a video-surveillance system and an operator's workstation. Not only with it, of course — paired with Qt. At the time the engine was fairly powerful, with support for newfangled features, good documentation and a friendly community. These days the authors highlight the ability to compile it for the web in a couple of clicks (<a href="https://ogrecave.github.io/ogre/emscripten/" target="_blank" rel="noopener">ogre/emscripten</a>).</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/HH_sGQRSpzo" title="Video demo: OGRE" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>DagorEngine (now BSD / C++)</h2>
+    <p><a href="https://github.com/GaijinEntertainment/DagorEngine" target="_blank" rel="noopener">github.com/GaijinEntertainment/DagorEngine</a></p>
+    <p>Well, what can I say — a good engine from an equally well-known studio. Four years went into adapting it for the Switch and Apple TV. War Thunder and Cuisine Royale ran on it. Fairly hard to learn — clearly written by programmers for programmers. It rewards those who master it with the ability to run on any iron with hardware vaguely resembling a CPU and a GPU. My opinion: it should have been opened up 8 years earlier — back then there was a chance to compete with Unreal. Big platforms — everything available, they even built it for Baikal CPUs. Mobile platforms, judging by mobile War Thunder, are supported too. The snails did great, while the potato folks are in no hurry to open-source anything.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/i135o2djHdY" title="Video demo: DagorEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Irrlicht (C++)</h2>
+    <p><a href="https://sourceforge.net/p/irrlicht/code/HEAD/tree/" target="_blank" rel="noopener">Irrlicht</a> · <a href="https://github.com/skylicht-lab/skylicht-engine" target="_blank" rel="noopener">Skylicht</a></p>
+    <p>This is the engine I started my game-dev acquaintance with; for a while I supported the NerpaGUI UI framework, which was almost "official" for the engine. It had a full UI editor in the style of Qt, with reflection and scripts inside the widgets (that was 2008–09). Surprisingly, the engine is still maintained — the last commit was a couple of weeks ago. Maintained, but not developed or changed; everything stayed at the level of the late 2000s.</p>
+    <img src="../../assets/articles/not-unity-alone/nua-04.png" alt="A screenshot from a game built on the Irrlicht engine" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/b52i_tpet8k" title="Video demo: Irrlicht" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Unreal (C++)</h2>
+    <p><a href="https://github.com/EpicGames/UnrealEngine" target="_blank" rel="noopener">github.com/EpicGames/UnrealEngine</a></p>
+    <p>A magnificent engine, a true gem among game engines! This engine can breathe life into the most ambitious projects — you just need to scrounge up 64 GB of RAM somewhere, since 32 no longer cuts it. Blueprints is a brilliant solution for code-free programming that opened the doors of game dev to anyone who wanted in. And the Unreal C++ dialect, it seems, will soon be the new standard. The number of plugins written for the engine will soon top a million — it's probably easier to say what plugins haven't been written, and usually it all gets open-sourced, or a nominal five bucks for access to the code.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/gBmfACCvbqI" title="Video demo: Unreal" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>X-Ray (MIT / C++)</h2>
+    <p><a href="https://github.com/OpenXRay/xray-16" target="_blank" rel="noopener">github.com/OpenXRay/xray-16</a></p>
+    <p>The sources of the first S.T.A.L.K.E.R., partially leaked online, plus the community's huge effort reversing the original, have led to the game on this engine looking better than the original today. Features? Its own memory allocator, its own vector math, its own strings, its own containers — the only thing not home-grown is DX9, a classic of 2000s game dev. That's roughly how it was all done in the early 2000s, with varying degrees of zeal, and there really were reasons for it.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/5yee1fFbLSg" title="Video demo: X-Ray" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Unity (Proprietary / C++ / C#)</h2>
+    <p><a href="https://unity.com/" target="_blank" rel="noopener">unity.com</a></p>
+    <p>A powerful engine, but plain hell for a programmer. I worked with it in 2014 on the optimisation team and supported the shader compiler. Hard for both beginners and seniors — probably one of the hardest I've encountered (to maintain). Tons of legacy code that nobody wanted to fix or change (2014–16), while new features got piled on at the snap of a finger. Many tools were missing at the time — the shader editor appeared much later. Performance was probably the engine's sorest spot, especially when a device was short on memory. For instance, Sims Mobile on Android with 2 GB of RAM loaded in 30 seconds, while on a similar device with 1 GB it took 4 minutes. Loads of memory reallocations on internal structures, where needed and where not. In the end I had to write a callback-storage array from scratch — the old version, when adding a single element (one element, to be precise), would lock the whole engine, make a copy of itself and delete the old one. For Sims Mobile, where every chair could have up to a hundred callbacks for different actions (and they could be added or removed too), this was a real problem. And there could be hundreds of such objects on a level. In the end our version of the array made it into the master branch. Even minor updates managed to break the engine's internal API, and it was all smeared with some unimaginable amount of crutches to keep things working for users.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/bmNVt5B4rSY" title="Video demo: Unity" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <p>Memory leaks are their own saga too — they were there, they're still there, and most likely they'll never be fixed. No surprise why Cities devours 32 GB on my laptop and then dips a bit into swap.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/CpWe03NhXKs" title="Video demo: Unity" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Conclusion</h2>
+    <p>That turned out to be quite a hodgepodge of memories — each engine has its own quirks, each is interesting, each has hundreds, if not thousands, of person-hours of development poured into it. And each has found its own niche.</p>
+    <p>Other engines I've run into, but never went beyond a look:</p>
+    <ul>
+      <li><a href="https://github.com/bevyengine/bevy" target="_blank" rel="noopener">Bevy</a> (Rust)</li>
+      <li><a href="https://github.com/ceramic-engine/ceramic" target="_blank" rel="noopener">Ceramic</a> (MIT/Haxe)</li>
+      <li><a href="https://github.com/pygame/pygame" target="_blank" rel="noopener">Pygame</a> (LGPL/Python)</li>
+      <li><a href="https://github.com/domeengine/dome" target="_blank" rel="noopener">Dome</a> (MIT/C)</li>
+      <li><a href="https://github.com/hexops/mach" target="_blank" rel="noopener">Mach</a> (MIT/Zig)</li>
+      <li><a href="https://github.com/pythonarcade/arcade" target="_blank" rel="noopener">PythonArcade</a> (MIT/Python)</li>
+      <li><a href="https://github.com/sphair/ClanLib" target="_blank" rel="noopener">ClanLib</a> (zlib/C++)</li>
+      <li><a href="https://github.com/jhasse/jngl" target="_blank" rel="noopener">Just a Neat Game Library</a> (zlib/C++)</li>
+      <li><a href="https://github.com/17cupsofcoffee/tetra" target="_blank" rel="noopener">Tetra</a> (MIT/Rust)</li>
+      <li><a href="https://github.com/pokepetter/ursina" target="_blank" rel="noopener">Ursina</a> (MIT/Python)</li>
+      <li><a href="https://github.com/tofuengine/tofu" target="_blank" rel="noopener">Tofu</a> (MIT/C/Lua)</li>
+      <li><a href="https://github.com/UltravioletFramework/ultraviolet" target="_blank" rel="noopener">Ultraviolet</a> (MIT/C#)</li>
+      <li><a href="https://github.com/not-fl3/macroquad" target="_blank" rel="noopener">Macroquad</a> (MIT/Rust)</li>
+      <li><a href="https://github.com/4ian/GDevelop" target="_blank" rel="noopener">GDevelop</a> (MIT/Java)</li>
+      <li><a href="https://github.com/Stencyl/stencyl-engine" target="_blank" rel="noopener">Stencyl</a> (Haxe)</li>
+      <li><a href="https://github.com/HeapsIO/heaps" target="_blank" rel="noopener">Heaps</a> (Haxe)</li>
+      <li><a href="https://github.com/pmgl/microstudio" target="_blank" rel="noopener">MicroStudio</a> (MIT/JS)</li>
+      <li><a href="https://github.com/nesbox/TIC-80" target="_blank" rel="noopener">TIC-80</a> (MIT/C)</li>
+      <li><a href="https://github.com/adventuregamestudio/ags" target="_blank" rel="noopener">AGS</a> (C++)</li>
+      <li><a href="https://github.com/oxygine/oxygine-framework" target="_blank" rel="noopener">Oxygine</a> (C++)</li>
+      <li><a href="https://github.com/vchelaru/flatredball" target="_blank" rel="noopener">FlatRedBall</a> (C#)</li>
+      <li><a href="https://github.com/Gamua/Starling-Framework" target="_blank" rel="noopener">Starling</a> (ActionScript)</li>
+      <li><a href="https://github.com/gurkenlabs/litiengine" target="_blank" rel="noopener">LITIengine</a> (Java)</li>
+      <li><a href="https://github.com/AdamsLair/duality" target="_blank" rel="noopener">Duality</a> (C#)</li>
+      <li><a href="https://github.com/stride3d/stride" target="_blank" rel="noopener">Stride</a> (C#)</li>
+      <li><a href="https://github.com/NeoAxis/NeoAxisEngine" target="_blank" rel="noopener">NeoAxis</a> (C#)</li>
+      <li><a href="https://github.com/turanszkij/WickedEngine" target="_blank" rel="noopener">WickedEngine</a> (C++)</li>
+      <li><a href="https://github.com/jMonkeyEngine/jmonkeyengine" target="_blank" rel="noopener">jMonkeyEngine</a> (Java)</li>
+      <li><a href="https://github.com/FyroxEngine/Fyrox" target="_blank" rel="noopener">Fyrox</a> (Rust)</li>
+      <li><a href="https://github.com/mosra/magnum" target="_blank" rel="noopener">Magnum</a> (C++)</li>
+      <li><a href="https://github.com/nem0/LumixEngine" target="_blank" rel="noopener">Lumix</a> (MIT/C++)</li>
+      <li><a href="https://github.com/castle-engine/castle-engine" target="_blank" rel="noopener">CastleGame</a> (Pascal)</li>
+    </ul>
+    <p>Updated, engines suggested by readers:</p>
+    <ul>
+      <li><a href="https://github.com/DragonRuby" target="_blank" rel="noopener">DragonRuby</a></li>
+      <li><a href="https://github.com/cocos/example-projects" target="_blank" rel="noopener">Cocos example-projects</a></li>
+      <li><a href="https://github.com/OGRECave/ogre-next" target="_blank" rel="noopener">ogre-next</a></li>
+      <li><a href="https://unigine.com/" target="_blank" rel="noopener">UNIGINE</a> (Proprietary / No Sources)</li>
+      <li><a href="https://github.com/UPBGE/upbge" target="_blank" rel="noopener">UPBGE</a></li>
+      <li><a href="https://threejs.org/" target="_blank" rel="noopener">ThreeJS</a> (MIT/JS)</li>
+      <li><a href="https://github.com/study-game-engines" target="_blank" rel="noopener">study-game-engines</a></li>
+      <li><a href="https://www.construct.net/en" target="_blank" rel="noopener">Construct3</a> (Proprietary / No Sources)</li>
+      <li><a href="https://github.com/zenkovich/o2" target="_blank" rel="noopener">o2</a> (MIT/C++)</li>
+      <li><a href="https://ebitengine.org/" target="_blank" rel="noopener">ebitengine</a> (MIT/Go)</li>
+      <li><a href="https://github.com/korlibs/korge" target="_blank" rel="noopener">KorGE</a> (MIT/Kotlin)</li>
+      <li><a href="https://hackage.haskell.org/package/helm" target="_blank" rel="noopener">Helm</a> (Haskell)</li>
+    </ul>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

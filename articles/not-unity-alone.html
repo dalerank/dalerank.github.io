@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Не Unity единым… — dalerank</title>
+<meta name="description" content="Обзор более 50 игровых движков и фреймворков, кроме Unity: от nCine, RayLib и SDL2 до Godot, CryEngine, Unreal и DagorEngine — с ссылками, языками, лицензиями и личным опытом." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/not-unity-alone.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/not-unity-alone.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="not-unity-alone.html">RU</a><i>/</i><a href="../en/articles/not-unity-alone.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Инструменты</span><h1>Не Unity единым…</h1><div class="ameta"><span>4 ноября 2023</span><span>15 мин</span></div></div>
+  <article class="prose">
+    <p>Игры бывают разные, большие и маленькие, триА и супер инди, в компаниях с сотнями разработчиков и что создаются самородками-одиночками. Редко их делают с нуля и пишут код только игры, чаще пишут игровые тулы, редактор и параллельно пишут саму игру. За всей этой многомиллиардной индустрией стоит код, много кода, очень много кода. Игровые движки и фреймворки — мощные инструменты, которые помогают разработчику творить его идеи и создавать увлекательные игровые миры. Это каркас, на котором строятся все игровые вселенные, они включают в себя сотни инструментов, библиотек и ресурсов, позволяя разработчикам превратить строчки кода в театр для одного зрителя.</p>
+    <p>Существует более сотни игровых движков, каждый из них содержит как минимум одну фичу которой нет ни в каком другом. Всех возможностей вместе нет ни в одном, и это прекрасно — иначе бы такой движок захватил мир. Хм, Unreal5 ты ли это? Иногда полезно пробежать по release notes движка, чтобы оставаться в курсе последних новостей. Возможно вы разрабатываете свое решение и эта статья натолкнет вас на новые идеи. Готовы узнать что ваша любимая игра была сделана не на Unity, а на православном SDL?</p>
+    <p>Когда я работал в студии EA Spb, там был отдельный инженер, который отслеживал изменения в новых версиях и вел бААААльшую такую таблицу какие возможности в каком движке есть. К сожалению таблица была действительно большая, что-то около 800+ столбцов-описаний на больше чем сотню движков, и скопировать её возможности не было. А жаль, работа была проведена поистине титаническая. Не меньше тратилось времени на её поддержание в актуальном состоянии, раз для этого потребовалась отдельная позиция. Но список движков был в свободном доступе, да и вы можете при наличии времени составить его сами. Я не буду расписывать особенности каждого движка, понятно что каждый из них это мощный, универсальный, с кучей возможностей и тд и т.п. Просто приведу ссылку на гитхаб и пару-тройку игр, если вас что заинтересует вы сможете сами пройти по ним и детально ознакомиться что к чему. Я веду небольшую таблицу с игровыми движками и играми, которые были на них сделаны. Если что-то не увидели, добавляйте в комментах. По какому принципу движки попали в этот список — с каждым из них я столкнулся и что называется потрогал руками, где-то были интересные игры, где-то попробовал собрать пример, а где-то починить баг или добавить фичу.</p>
+    <p>Движки обычно поддерживают биндинги на другие языки или скрипты, рядом с названием будет указана лицензия и основной язык, на котором он написан. Надо понимать, что биндинг или скрипты это компромисс между производительностью самого движка и скоростью разработки игры/приложения, что зачастую перевешивает.</p>
+
+    <h2>nCine (MIT / C++)</h2>
+    <p><a href="https://ncine.github.io/" target="_blank" rel="noopener">ncine.github.io</a></p>
+    <p>Игровой движок с открытым исходным кодом, предоставляющий разработчикам средства для создания 2D и 3D игр на различных платформах. Предлагает обширный набор инструментов для разработки игр, включая поддержку множества операционных систем, графику, аудио, анимации и физику. Интересен для изучения компонентной системы и системы ивентов.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/Lw4sD3Onjhc" title="Видео-демо: nCine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>MonoGame (MPL / C#)</h2>
+    <p><a href="https://github.com/MonoGame/MonoGame" target="_blank" rel="noopener">github.com/MonoGame/MonoGame</a> · аналог <a href="https://fna-xna.github.io/" target="_blank" rel="noopener">FNA</a></p>
+    <p>Фреймворк для разработки, созданный на основе платформы Microsoft XNA. Предоставляет инструменты и библиотеки для создания кросс-платформенных игр, поддерживая несколько операционных систем, включая Windows, macOS, Android, iOS, Linux. Этот движок я изучал параллельно с шарпом, в качестве практики применения языка. Ну а проекты на нем, популярны и известны.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/qHLizp8fARo" title="Видео-демо: MonoGame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/ot7uXNQskhs" title="Видео-демо: MonoGame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>RayLib (zlib / C / Lua)</h2>
+    <p><a href="https://github.com/raysan5/raylib" target="_blank" rel="noopener">github.com/raysan5/raylib</a></p>
+    <p>Легковесная и простая в использовании библиотека для разработки игр и приложений. Написана на C и поддерживает несколько платформ (Windows, macOS, Linux), обеспечивает доступ к графическим, звуковым и input ресурсам. Отличный инструмент для начинающих разработчиков игр. Поддерживает несколько языков программирования (C, C++, C#, Python). Каких то известных игр я на нем не нашел, но есть хороший туториал по разработке игры. Движок был интересен в плане реализации биндинга lua-c.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/2LX6QMBjPAg" title="Видео-демо: RayLib" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Love2d (MIT / C++ / Lua)</h2>
+    <p><a href="https://github.com/love2d/love" target="_blank" rel="noopener">github.com/love2d/love</a> · <a href="https://gitlab.com/stone-kingdoms/stone-kingdoms" target="_blank" rel="noopener">StoneKingdoms</a></p>
+    <p>Минималистичный, но мощный фреймворк для создания 2D игр. Обладает активным сообществом и множеством доступных библиотек и плагинов. Сообщество развивает функциональность движка и помогает создавать разнообразные игры. C этим движком я столкнулся когда помогал с разработкой игры StoneKingdoms (это такой клон Stronghold'a с открытыми исходниками и благословением на разработку от авторов оригинальной игры).</p>
+    <img src="../assets/articles/not-unity-alone/nua-01.png" alt="Коллаж из игр и проектов, сделанных на 2D-движках" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/7IP6Qz8G-CM" title="Видео-демо: Love2d" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>LWJGL3 (Apache 2.0 / Java)</h2>
+    <p><a href="https://github.com/LWJGL/lwjgl3" target="_blank" rel="noopener">github.com/LWJGL/lwjgl3</a> · <a href="https://libgdx.com/" target="_blank" rel="noopener">libGDX</a> · <a href="https://jmonkeyengine.org/" target="_blank" rel="noopener">jMonkeyEngine</a></p>
+    <p>Библиотека для разработки кроссплатформенных 2D и 3D приложений и игр на языке Java. Предоставляет доступ к низкоуровневым библиотекам, таким как OpenGL, OpenAL и GLFW, поддерживает многозадачность и широкие возможности для реализации графики, звука и ввода. Разбирался с исходниками mindustry, и параллельно смотрел саму либу.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/9SZUtyYSOjQ" title="Видео-демо: LWJGL3" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/EM6AyS8ZNzg" title="Видео-демо: LWJGL3" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Cocos-Engine (Proprietary / C++)</h2>
+    <p><a href="https://github.com/cocos/cocos-engine" target="_blank" rel="noopener">github.com/cocos/cocos-engine</a> · <a href="https://github.com/cocos2d/cocos2d-x" target="_blank" rel="noopener">cocos2d-x</a></p>
+    <p>Предоставляет богатую библиотеку ресурсов, инструменты для анимации и физики, поддержку различных языков программирования, включая C++, JavaScript и Lua, широко используется для создания красочных и интерактивных игр на множестве платформ. С движком столкнулся еще в 2014 в EA, на нем было сделано несколько проектов питерской студии.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/pSat_gLDXPc" title="Видео-демо: Cocos-Engine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Phaser (MIT / JS)</h2>
+    <p><a href="https://github.com/photonstorm/phaser" target="_blank" rel="noopener">github.com/photonstorm/phaser</a></p>
+    <p>Поддерживает спрайты, тайлмапы, анимации, параллакс-фоны и другие графические элементы, делая создание визуально относительно легким и эффективным. Включает физический движок Arcade Physics для управления столкновениями, гравитацией и другими физическими эффектами в игре. Очень простой для разработки особенно если не знаешь html, за вечер в свое удовольствие накидал клон динозаврика из хрома, с астероидами и поеданием неандертальцев :)</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/3kWA4SNMfls" title="Видео-демо: Phaser" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Babylon.js (Apache 2.0 / TypeScript)</h2>
+    <p><a href="https://github.com/BabylonJS/Babylon.js" target="_blank" rel="noopener">github.com/BabylonJS/Babylon.js</a></p>
+    <p>Использует WebGL для отображения трехмерных сцен, обеспечивая хорошую производительность. Поддерживает рендеринг с использованием PBR и освещения, включая рейтрейсинг в реальном времени. Имеет активное и обширное сообщество разработчиков, которые пишет плагины и расширяет функциональность. Как и следующий в списке изучал на нем JS для саморазвития.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/IztRI8hf95U" title="Видео-демо: Babylon.js" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>PixiJS (MIT / TypeScript)</h2>
+    <p><a href="https://github.com/pixijs/pixijs" target="_blank" rel="noopener">github.com/pixijs/pixijs</a></p>
+    <p>Широко используется для создания веб-игр, интерактивных анимаций, рекламных баннеров и других визуальных приложений. Благодаря своей производительности и гибкости, остается популярным среди веб-разработчиков.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/WcJDJSJx4Wo" title="Видео-демо: PixiJS" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>The Forge (Apache 2.0 / C++)</h2>
+    <p><a href="https://github.com/ConfettiFX/The-Forge" target="_blank" rel="noopener">github.com/ConfettiFX/The-Forge</a></p>
+    <p>Поддерживает несколько платформ, включая Windows, Linux, Android, iOS и консоли нового поколения. Движок разработан с учетом максимальной производительности и оптимизированные алгоритмы для обеспечения плавной работы игр даже на слабых устройствах (по заявлениям авторов). Обеспечивает доступ к современным графическим API, таким как Vulkan и DirectX 12. Обратил внимание на этот движок, после того как ребят упомянули среди разработчиков одной из игр про SpiderMan. Попробовал собрать примеры с их сайта, но не получилось.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/rXCAQ9HSne8" title="Видео-демо: The Forge" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>HaxeFlixel (MIT / Haxe)</h2>
+    <p><a href="https://github.com/HaxeFlixel/flixel" target="_blank" rel="noopener">github.com/HaxeFlixel/flixel</a></p>
+    <p>Хотя и предоставляет мощные инструменты для разработки, достаточно сложный для новичков в разработке игр. Точно потребуется время, чтобы освоиться с фреймворком и его архитектурой (которой не то чтобы нет, но она не всегда есть). Несмотря на популярность, у него относительно ограниченное количество ресурсов и документации по сравнению с другими игровыми движками. Сообщество последнее время слабо развивается.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/1H3O7km0K_4" title="Видео-демо: HaxeFlixel" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Kha (zlib / Haxe)</h2>
+    <p><a href="https://github.com/Kode/Kha" target="_blank" rel="noopener">github.com/Kode/Kha</a></p>
+    <p>Низкоуровневая либа для создания игр и мультимедийных приложений, ориентированная на переносимость. Можно представить его как более мощную версию библиотеки SDL. Искал фреймворк на замену SDL2, все хорошо, куча возможностей. Если бы был написан на плюсах, вообще бы цены не было.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/g-oFpLKJmKg" title="Видео-демо: Kha" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>PixelBox.js (MIT / JS)</h2>
+    <p><a href="https://github.com/cstoquer/pixelbox" target="_blank" rel="noopener">github.com/cstoquer/pixelbox</a></p>
+    <p>Библиотека для создания пиксельных и ретро-стильных игр и приложений в браузере с использованием JavaScript. Предоставляет разработчикам набор инструментов (не очень большой на самом деле) для работы с пиксельной графикой, звуком и управлением, подходит для создания игр в стиле 8-битных и 16-битных консолей. Относительно новая и малоизвестная библиотека, но предоставляет хорошие инструменты для создания ретро-стильных игр. Собрал по примерам игру и понял, что восьмибитные игры не моё.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/Qidi6r3MNZU" title="Видео-демо: PixelBox.js" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>OpenFL (MIT / Haxe)</h2>
+    <p><a href="https://github.com/openfl/openfl" target="_blank" rel="noopener">github.com/openfl/openfl</a></p>
+    <p>Фреймворк для разработки мультимедийных и интерактивных приложений, включая 2D и 3D игры, анимации, визуализации и многое другое. Является современной альтернативой Adobe Flash и предоставляет возможность создавать кроссплатформенные приложения, используя язык программирования Haxe. Очень понравилась в свое время игра Papers, Please и пошел смотреть на чем и как это чудо сделали, заодно немного подучил Haxe.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/BJPy4BGRoPI" title="Видео-демо: OpenFL" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/_QP5X6fcukM" title="Видео-демо: OpenFL" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>SFML (zlib / C++)</h2>
+    <p><a href="https://github.com/SFML/SFML" target="_blank" rel="noopener">github.com/SFML/SFML</a> · <a href="https://github.com/ObEngine/ObEngine" target="_blank" rel="noopener">ObEngine</a></p>
+    <p>SFML (Simple and Fast Multimedia Library) — это бесплатная и opensource библиотека для разработки мультимедийных приложений и игр. Написана на C++, предоставляет простой и понятный интерфейс для работы с графикой, аудио, сетью и инпутом, хороший выбор для начинающих разработчиков, чтобы познакомиться с хорошо спроектированным API. Есть пара хороших проектов, но они увы с закрытыми сорцами.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/cmCcExZzzQw" title="Видео-демо: SFML" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>SDL2 (zlib / C)</h2>
+    <p><a href="https://github.com/libsdl-org" target="_blank" rel="noopener">github.com/libsdl-org</a></p>
+    <p>Либой пользуюсь с 2009 года, реальной альтернативы по простоте и подключаемым модулям не нашел. Используется в основном не как самостоятельный фреймворк, а в качестве дополнения к уже существующим для облегчения процесса портирования, позволяет запустить минимальное приложение для почти любой платформы от Винды до HaikuOS, на которое уже можно добавить нужный функционал. Игры, созданные с использованием SDL2, это известные проекты: «Hearthstone: Heroes of Warcraft» от Blizzard Entertainment, «Stardew Valley» от ConcernedApe, «Terraria» от Re-Logic и множество других. Эти игры используют разные движки и фреймворки, но используют SDL для старта окна, рендера и обработки ввода. Сапортится ребятами из Valve.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/MeMPCSqQ-34" title="Видео-демо: SDL2" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <p>Хоть SDL и не является полноценным игровым движком, игры на нем разрабатывать достаточно просто. Это мой проект выходного дня, сделан на SDL + C++ + Js в качестве конфигов (<a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">github.com/dalerank/Akhenaten</a>).</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/uwxYgSR3VZ8" title="Видео-демо: Akhenaten" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Flame (MIT / Dart)</h2>
+    <p><a href="https://github.com/flame-engine/flame" target="_blank" rel="noopener">github.com/flame-engine/flame</a></p>
+    <p>Flame Engine — это движок для создания игр, полностью на Dart. Обеспечивает создание красочных игр, которые (по словам разработчиков) можно запускать на разных платформах, включая мобильные устройства и веб-браузеры. Создан с учетом возможности интеграции с экосистемой Flutter, делая его удобным для мобильных разработчиков. Увидел у ребенка на телефоне, какой-то очередной идлер про муравьев, который бесстыдно просил деняк и показывал рекламу каждые пять секунд, от рекламы отучил и выдал таблетку от жадности. Заодно узнал, что есть вот такой интересный движок на дарте. Попробовал запустить примеры: на винде не работало (года полтора назад), на линуксе и андроиде запустилось.</p>
+    <p>Не все однако так радужно, как было в примерах. Коментарий от <a href="https://habr.com/ru/users/ASGAlex/" target="_blank" rel="noopener">ASGAlex</a> в <a href="https://habr.com/ru/articles/770244/#comment_26124798" target="_blank" rel="noopener">обсуждении</a>.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/tEqVyJNOroI" title="Видео-демо: Flame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/RKTkt1ZXThM" title="Видео-демо: Flame" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Allegro (zlib / plain C)</h2>
+    <p><a href="https://github.com/liballeg/allegro5" target="_blank" rel="noopener">github.com/liballeg/allegro5</a></p>
+    <p>Кросс-платформенная либа, ориентированная на создание игр. Достаточно низкоуровневая, чтобы обеспечивать хорошую производительность при большом объеме данных. В целом абстрагирует разработчика от рутинных вещей но не закрывает возможности переделать все под себя. Тем не менее, Allegro не является игровым движком, скорее комбайн с кучей возможностей, игру придется писать самим. Самый известный пример использования это игра Factorio, но уже больше года автор отказывается от Allegro в сторону своих велосипедов.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/J8SBp4SyvLc" title="Видео-демо: Allegro" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>AndEngine (Apache 2.0 / Java)</h2>
+    <p><a href="https://github.com/nicolasgramlich/AndEngine" target="_blank" rel="noopener">github.com/nicolasgramlich/AndEngine</a></p>
+    <p>Древний движок, сейчас не развивается. Некоторые из игр «Cannon Ball», «Zombie Dash», «Plumber». Заря так сказать мобильного игростроя, дал старт другим популярным движкам, отдельные заимствованные части исходного кода и архитектуры встречаются в LibGDX, Cocos2d, Godot Engine, Panda3D, Phaser. Имел хороший API, что делало его неплохим выбором для прототипирования и обкатки разных мелких фич. Использовал его в паре мелких игр для ведроида, когда надо было сделать и показать MVP «уже вчера».</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/zuPIHFL3iis" title="Видео-демо: AndEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/23GLK5nAsys" title="Видео-демо: AndEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>GameMaker (Licensed)</h2>
+    <p>Даже самый начинающий разработчик может сделать игру, популярен настолько, что его начали использовать в школах на уроках программирования, с сыном делал на нем лабу, Hotline Miami конечно не вышло, но за неделю удалось сделать аналог angry birds на минималках. Визуальное программирование это, конечно, штука удобная до поры до времени, но я все же больше предпочитаю плюсы и нормальный код. Где то на форуме я нашел слоган к движку: однажды здесь была создана игра, а потом и вторая, и третья… и так каждый раз, когда кто-то заходил в GameMaker. Лично мне движок не понравился свой переупрощенностью, хотя кому как.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/2n_BinoS1Ug" title="Видео-демо: GameMaker" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <img src="../assets/articles/not-unity-alone/nua-02.png" alt="Коллаж из известных игр на разных движках" class="post-image" loading="lazy" />
+
+    <h2>Defold (Apache 2.0 / C++)</h2>
+    <p><a href="https://github.com/defold/defold" target="_blank" rel="noopener">github.com/defold/defold</a></p>
+    <p>Сам движок написан на C++, очень хорошо оптимизирован, есть хороший биндинг для Lua. Поддерживает iOS, Android, HTML5, Windows и macOS. Широко использует компонентную архитектуру, почти все системы в движке выполнены в виде компонент и могут быть заменены своими или переписаны, что делает создание и управление компонентов очень удобным. Один из движков, который поддерживает совместную работу через плагины. Каких известных игр я на нем не видел, движок заинтересовал в первую очередь реализацией hotreload скриптов (lua), достигается это за счет песочницы для каждого запущенного скрипта. Используется легковесная lua vm, которую перезапускают на лету при изменении кода в скрипте.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/9KGpHVgKF4M" title="Видео-демо: Defold" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>GB-Studio (MIT / C)</h2>
+    <p><a href="https://github.com/chrismaltby/gb-studio" target="_blank" rel="noopener">github.com/chrismaltby/gb-studio</a></p>
+    <p>Проект родился на gamejam «Bored Pixels 3» за неделю, а потом перерос в полноценный движок для создания мини игр в стиле GameBoy. Простой, интуитивным и легкий в использовании. Действительно умеет делать ROM для GBA, собственно так я с ним и познакомился, когда пытался сделать простенькое приложение для этой платформы.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/jIMT3oz773U" title="Видео-демо: GB-Studio" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>TileEngine (MIT / C)</h2>
+    <p><a href="https://github.com/megamarc/Tilengine" target="_blank" rel="noopener">github.com/megamarc/Tilengine</a></p>
+    <p>Графический движок с открытым исходным кодом для создания 2D-игр с использованием тайловых карт, спрайтов и палитр, что позволяет делать игры похожие по стилистике на NES/Sega конца 90-х. Также в движке реализованы на софтовом уровне разные хардварные решения консолей того времени. Per-Column Offset — эффект вибрации, часто ассоциируется с старыми телевизорами и мониторами, хотя был реализован впервые в Sega MD. Per-Pixel Displacement — изменяет положение пикселей на экране, создавая искажения и иллюзию деформации изображения. Использовался в 2д играх для создания эффекта водной поверхности или других искажений. И много других. Сейчас репо почти не обновляется, автор пишет вторую версию движка. Движок заинтересовал в первую очередь реализацией разных эффектов для спрайтов, разного рода наложений, мозаики и слоев.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/WLhqazQGrGw" title="Видео-демо: TileEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Godot (MIT / C++)</h2>
+    <p><a href="https://github.com/godotengine/godot" target="_blank" rel="noopener">github.com/godotengine/godot</a></p>
+    <p>История Godot началась в 2007 году, когда аргентинский разработчик Juan Linietsky начал работать над игровым движком под названием «D.». Также в то время он работал в аргентинском офисе Square Enix в команде по разработке внутреннего движка студии. В 2014 движок был впервые опубликован на гитхабе и через месяц собрал свою первую тысячу звезд, тогда же автор получает грант от Mozilla для продолжения разработки, еще через год гитхаб и Microsoft также выделяют гранты на развитие, а репо разменивает первые 10к звезд. Godot стал платформой для множества игр, включая инди-проекты и крупные коммерческие игры, интересен опять же своим компонентным подходом к разработке. По набору компонентов, ассетов, уроков и размеру сообщества вполне может потягаться с Unity/Unreal. Есть много интересных фичей в редакторе, которые отсутствуют или ограничены в других редакторах, например возможность настраивать все и вся через внутренние скрипты, от игры до самого редактора.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/YtpHhlbiNtM" title="Видео-демо: Godot" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>CryEngine (Proprietary)</h2>
+    <p><a href="https://github.com/CRYTEK/CRYENGINE_ReadMe" target="_blank" rel="noopener">CRYENGINE</a> · <a href="https://github.com/ValtoGameEngines/CryEngine" target="_blank" rel="noopener">зеркало</a> · <a href="https://aws.amazon.com/lumberyard/" target="_blank" rel="noopener">Lumberyard</a> · <a href="https://github.com/o3de/o3de/" target="_blank" rel="noopener">O3DE</a></p>
+    <p>Какое-то время исходники движка были доступны на гитхабе, но теперь для доступа к актуальным сорцам надо запрашивать явки и пароли на сайте, который лежит уже больше полугода. Движок очень интересный в плане применения передовых разработок (на конец 2017 года). Поставлялся с мощным редактором под названием Sandbox, который позволял создавать и редактировать уровни, добавлять объекты, текстуры и настраивать логику прямо во время игры в режиме активной паузы, один из первых движков, которые начали применять BT (Behavior Tree), для любых объектов на сцене. В свое время поражала иммерсивность Prey, и возможность взаимодействия с объектами, поэтому как только движок появился в открытом доступе я стал разбираться как он работает. Amazon форкнули его в 2015 для своего LumberYard и продолжили развитие, в итоге он превратился в O3DE.</p>
+    <img src="../assets/articles/not-unity-alone/nua-03.png" alt="Скриншот из игры на CryEngine" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/LNHZ9WAertc" title="Видео-демо: CryEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/M7jgxJ_4TJs" title="Видео-демо: CryEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Flax (MIT / C++)</h2>
+    <p><a href="https://github.com/FlaxEngine/FlaxEngine" target="_blank" rel="noopener">github.com/FlaxEngine/FlaxEngine</a></p>
+    <p>Движок от одного из архитектов Frostbite, ключевой особенностью возможность писать скрипты на «с++», это конечно не настоящий c++, но очень похож. Если вам, как и мне, комфортно использовать фигурные скобки, то движок должен понравиться. Если не требовать от него шаблонов, то почти c++. Недавно появилась еще и возможность hotreload для с++-скриптов, что очень ускоряет разработку. Движок достаточно взрослый, разработка велась с 2012 года, но исходники стоили денег. Обратил на него внимание из-за его синтаксиса, с++ не очень-то популярен в виде скриптового языка в игровых движках.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/_KCl_m1IGp4" title="Видео-демо: Flax" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Panda3D (MIT / C++)</h2>
+    <p><a href="https://github.com/panda3d/panda3d" target="_blank" rel="noopener">github.com/panda3d/panda3d</a></p>
+    <p>Развитие Panda3D началось в начале 2000-х годов как проект Нью-Йоркского университета под руководством доктора Дэвида Фокса и Disney Interactive Studios. Движок разрабатывался для мультимедиа приложений и презентаций, впоследствии был открыт для сообщества. Интересен прежде всего своей библиотекой шейдеров, большинство из которых запатентованы Диснеем, но никто не мешает подсмотреть реализацию.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/jID2u758Qgs" title="Видео-демо: Panda3D" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>OGRE (MIT / C++)</h2>
+    <p><a href="https://github.com/OGRECave/ogre" target="_blank" rel="noopener">github.com/OGRECave/ogre</a> · <a href="https://www.ambiera.com/coppercube/" target="_blank" rel="noopener">CopperCube</a> (платный саппорт)</p>
+    <p>Работал с этим движком в Transas, на нем была построена система видеонаблюдения и АРМ оператора. Не только конечно на нем, в связке с Qt. Движок на тот момент был достаточно мощный, с поддержкой новомодных фич, хорошей документацией и дружелюбным сообществом. Отличительной возможностью сейчас авторы ставят возможность скомпилить его для web в пару кликов (<a href="https://ogrecave.github.io/ogre/emscripten/" target="_blank" rel="noopener">ogre/emscripten</a>).</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/HH_sGQRSpzo" title="Видео-демо: OGRE" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>DagorEngine (теперь BSD / C++)</h2>
+    <p><a href="https://github.com/GaijinEntertainment/DagorEngine" target="_blank" rel="noopener">github.com/GaijinEntertainment/DagorEngine</a></p>
+    <p>Ну что тут сказать, хороший движок от не менее известной студии. Четыре года положено на его доработку для свича и appletv. На нем бегала Тундра и Cuisine Royale. Достаточно сложный в освоении, явно писался программистами для программистов. Награждает освоивших возможностью запускаться на любом утюге, с железом похожим на проц и видеокарту. Мое мнение — открывать надо было еще 8 лет назад, тогда был шанс потягаться c Unreal. Большие платформы — все что есть в наличии, даже собирали под байкалы его. Мобильные платформы, судя по мобильной тундре, тоже поддерживаются. Улитки молодцы, а картошка вот что-то не торопится ничего выкладывать в опенсорс.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/i135o2djHdY" title="Видео-демо: DagorEngine" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Irrlicht (C++)</h2>
+    <p><a href="https://sourceforge.net/p/irrlicht/code/HEAD/tree/" target="_blank" rel="noopener">Irrlicht</a> · <a href="https://github.com/skylicht-lab/skylicht-engine" target="_blank" rel="noopener">Skylicht</a></p>
+    <p>C этого движка я начинал знакомство с игростроем, некоторое время сапортил UI фреймворк NerpaGUI, который был почти «официальным» для движка. С полноценным ui редактором в стиле Qt, рефлексией и скриптами внутри виджетов (это 2008–09 года). Что удивительно, движок до сих пор поддерживают, последний комит был пару недель назад. Поддерживают, но не развивают и не меняют, все так и осталось на уровне конца нулевых.</p>
+    <img src="../assets/articles/not-unity-alone/nua-04.png" alt="Скриншот из игры на движке Irrlicht" class="post-image" loading="lazy" />
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/b52i_tpet8k" title="Видео-демо: Irrlicht" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Unreal (C++)</h2>
+    <p><a href="https://github.com/EpicGames/UnrealEngine" target="_blank" rel="noopener">github.com/EpicGames/UnrealEngine</a></p>
+    <p>Великолепный движок, настоящая жемчужина среди игровых движков! Этот движок способен вдохнуть жизнь в самые амбициозные проекты, надо только где-то достать 64Гб оперативки, а то 32 уже не вывозят. Blueprints — гениальное решение для программирования без кода, которое открыло двери в игрострой любому желающему. А диалект unreal c++, похоже скоро будет новым стандартом. Количество написаных плагинов для движка скоро перевалит за миллион, проще наверное сказать для чего плагины не написаны, и обычно это все отдается в опенсорс или условные пять баксов за доступ к коду.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/gBmfACCvbqI" title="Видео-демо: Unreal" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>X-Ray (MIT / C++)</h2>
+    <p><a href="https://github.com/OpenXRay/xray-16" target="_blank" rel="noopener">github.com/OpenXRay/xray-16</a></p>
+    <p>Исходники первого Сталкера, частично утекшие в сеть и огромная работа сообщества по реверсу оригинала привела к тому, что сейчас игра на этом движке выглядит лучше оригинала. Особенности? Свой алокатор памяти, своя векторная математика, свои строки, свои контейнеры, не свое только DX9 — классика игростроя нулевых. Примерно так это все и делалось в начале 2000х с разной степенью упоротости, и на это действительно были причины.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/5yee1fFbLSg" title="Видео-демо: X-Ray" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Unity (Proprietary / C++ / C#)</h2>
+    <p><a href="https://unity.com/" target="_blank" rel="noopener">unity.com</a></p>
+    <p>Мощный движок, но просто ад для программиста. Работал с ним в 2014 в команде по оптимизации и сапортил компилятор шейдеров. Сложный как для новичков, так и для сеньоров, наверное один из самых сложных что встречал (для поддержки). Очень много легаси кода, который никто не хотел чинить или менять (2014–16 год), зато наваливали новые фичи по щелчку пальцев. Отсутствие многих инструментов на тот момент — редактор шейдеров появился сильно позже. Производительность, наверное, самое больное место движка было, особенно если на девайсе не хватало памяти. К примеру Sims Mobile на андроиде с 2Гб оперативки грузилась за 30сек, а на похожем устройстве с 1Гб уже 4 минуты. Куча переаллокаций памяти на внутренних структурах, где надо и где не надо. В итоге пришлось написать с нуля массив для хранения колбеков, старая версия при добавлении одного элемента (уточню одного элемента) лочила весь двиг, делала копию себя и удаляла старый. Для Sims Mobile, где каждый стул мог иметь до сотни колбеков на разные действия (а еще добавляться или удаляться) это реально было проблемой. И таких объектов на уровне могли быть сотни. В итоге наша версия массива ушла в мастер ветку. Даже минорные обновления умудрялись ломать внутренний API движка, это все было обмазано каким-то неимоверным количеством костылей, чтобы у пользователей все работало.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/bmNVt5B4rSY" title="Видео-демо: Unity" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+    <p>Мемлики тоже отдельная песня, они были, они есть, и скорее всего их никогда не починят. Не удивлен, почему Cities выжирает 32Гб на моем ноуте и еще немного залазит в своп.</p>
+    <div class="post-video"><iframe src="https://www.youtube.com/embed/CpWe03NhXKs" title="Видео-демо: Unity" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+    <h2>Заключение</h2>
+    <p>Вот такая получилась сборная солянка воспоминаний, в каждом есть свои особенности, каждый интересен, в каждый вложено сотни, если не тысячи человеко-часов разработки. И каждый нашел свою нишу.</p>
+    <p>Другие движки, с которыми я сталкивался, но дальше обзора дело не шло:</p>
+    <ul>
+      <li><a href="https://github.com/bevyengine/bevy" target="_blank" rel="noopener">Bevy</a> (Rust)</li>
+      <li><a href="https://github.com/ceramic-engine/ceramic" target="_blank" rel="noopener">Ceramic</a> (MIT/Haxe)</li>
+      <li><a href="https://github.com/pygame/pygame" target="_blank" rel="noopener">Pygame</a> (LGPL/Python)</li>
+      <li><a href="https://github.com/domeengine/dome" target="_blank" rel="noopener">Dome</a> (MIT/C)</li>
+      <li><a href="https://github.com/hexops/mach" target="_blank" rel="noopener">Mach</a> (MIT/Zig)</li>
+      <li><a href="https://github.com/pythonarcade/arcade" target="_blank" rel="noopener">PythonArcade</a> (MIT/Python)</li>
+      <li><a href="https://github.com/sphair/ClanLib" target="_blank" rel="noopener">ClanLib</a> (zlib/C++)</li>
+      <li><a href="https://github.com/jhasse/jngl" target="_blank" rel="noopener">Just a Neat Game Library</a> (zlib/C++)</li>
+      <li><a href="https://github.com/17cupsofcoffee/tetra" target="_blank" rel="noopener">Tetra</a> (MIT/Rust)</li>
+      <li><a href="https://github.com/pokepetter/ursina" target="_blank" rel="noopener">Ursina</a> (MIT/Python)</li>
+      <li><a href="https://github.com/tofuengine/tofu" target="_blank" rel="noopener">Tofu</a> (MIT/C/Lua)</li>
+      <li><a href="https://github.com/UltravioletFramework/ultraviolet" target="_blank" rel="noopener">Ultraviolet</a> (MIT/C#)</li>
+      <li><a href="https://github.com/not-fl3/macroquad" target="_blank" rel="noopener">Macroquad</a> (MIT/Rust)</li>
+      <li><a href="https://github.com/4ian/GDevelop" target="_blank" rel="noopener">GDevelop</a> (MIT/Java)</li>
+      <li><a href="https://github.com/Stencyl/stencyl-engine" target="_blank" rel="noopener">Stencyl</a> (Haxe)</li>
+      <li><a href="https://github.com/HeapsIO/heaps" target="_blank" rel="noopener">Heaps</a> (Haxe)</li>
+      <li><a href="https://github.com/pmgl/microstudio" target="_blank" rel="noopener">MicroStudio</a> (MIT/JS)</li>
+      <li><a href="https://github.com/nesbox/TIC-80" target="_blank" rel="noopener">TIC-80</a> (MIT/C)</li>
+      <li><a href="https://github.com/adventuregamestudio/ags" target="_blank" rel="noopener">AGS</a> (C++)</li>
+      <li><a href="https://github.com/oxygine/oxygine-framework" target="_blank" rel="noopener">Oxygine</a> (C++)</li>
+      <li><a href="https://github.com/vchelaru/flatredball" target="_blank" rel="noopener">FlatRedBall</a> (C#)</li>
+      <li><a href="https://github.com/Gamua/Starling-Framework" target="_blank" rel="noopener">Starling</a> (ActionScript)</li>
+      <li><a href="https://github.com/gurkenlabs/litiengine" target="_blank" rel="noopener">LITIengine</a> (Java)</li>
+      <li><a href="https://github.com/AdamsLair/duality" target="_blank" rel="noopener">Duality</a> (C#)</li>
+      <li><a href="https://github.com/stride3d/stride" target="_blank" rel="noopener">Stride</a> (C#)</li>
+      <li><a href="https://github.com/NeoAxis/NeoAxisEngine" target="_blank" rel="noopener">NeoAxis</a> (C#)</li>
+      <li><a href="https://github.com/turanszkij/WickedEngine" target="_blank" rel="noopener">WickedEngine</a> (C++)</li>
+      <li><a href="https://github.com/jMonkeyEngine/jmonkeyengine" target="_blank" rel="noopener">jMonkeyEngine</a> (Java)</li>
+      <li><a href="https://github.com/FyroxEngine/Fyrox" target="_blank" rel="noopener">Fyrox</a> (Rust)</li>
+      <li><a href="https://github.com/mosra/magnum" target="_blank" rel="noopener">Magnum</a> (C++)</li>
+      <li><a href="https://github.com/nem0/LumixEngine" target="_blank" rel="noopener">Lumix</a> (MIT/C++)</li>
+      <li><a href="https://github.com/castle-engine/castle-engine" target="_blank" rel="noopener">CastleGame</a> (Pascal)</li>
+    </ul>
+    <p>Обновляется, движки от читателей:</p>
+    <ul>
+      <li><a href="https://github.com/DragonRuby" target="_blank" rel="noopener">DragonRuby</a></li>
+      <li><a href="https://github.com/cocos/example-projects" target="_blank" rel="noopener">Cocos example-projects</a></li>
+      <li><a href="https://github.com/OGRECave/ogre-next" target="_blank" rel="noopener">ogre-next</a></li>
+      <li><a href="https://unigine.com/" target="_blank" rel="noopener">UNIGINE</a> (Proprietary / No Sources)</li>
+      <li><a href="https://github.com/UPBGE/upbge" target="_blank" rel="noopener">UPBGE</a></li>
+      <li><a href="https://threejs.org/" target="_blank" rel="noopener">ThreeJS</a> (MIT/JS)</li>
+      <li><a href="https://github.com/study-game-engines" target="_blank" rel="noopener">study-game-engines</a></li>
+      <li><a href="https://www.construct.net/en" target="_blank" rel="noopener">Construct3</a> (Proprietary / No Sources)</li>
+      <li><a href="https://github.com/zenkovich/o2" target="_blank" rel="noopener">o2</a> (MIT/C++)</li>
+      <li><a href="https://ebitengine.org/" target="_blank" rel="noopener">ebitengine</a> (MIT/Go)</li>
+      <li><a href="https://github.com/korlibs/korge" target="_blank" rel="noopener">KorGE</a> (MIT/Kotlin)</li>
+      <li><a href="https://hackage.haskell.org/package/helm" target="_blank" rel="noopener">Helm</a> (Haskell)</li>
+    </ul>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -133,13 +133,16 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
 .books .sec-head h2{color:var(--paper-2)} .books .sec-head h2 .n{color:var(--gold-soft)}
 .books .sec-head a.more{color:var(--gold-soft)}
 .booklist{display:grid;grid-template-columns:repeat(2,1fr);gap:40px;position:relative;z-index:1}
-.book{display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:start}
+.book{display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:start}
 .bookcol{display:flex;flex-direction:column;gap:14px}
 .bookcol .btn{display:block;width:100%;text-align:center}
+.bookcol .btnrow{display:flex;flex-wrap:nowrap;gap:6px}
+.bookcol .btnrow .btn{width:auto;flex:1 1 auto;min-width:0;white-space:nowrap;
+  font-size:11px;letter-spacing:.02em;padding-left:5px;padding-right:5px}
 .bookcol .alt{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--gold-soft);text-align:center;text-decoration:underline;text-underline-offset:3px;margin-top:-3px}
 .bookcol .alt:hover{color:#fff}
-.cover{aspect-ratio:3/4.2;border-radius:4px 10px 10px 4px;position:relative;
+.cover{aspect-ratio:3/4.2;width:140px;align-self:center;border-radius:4px 10px 10px 4px;position:relative;
   box-shadow:14px 16px 30px rgba(0,0,0,.35);transform:rotate(-3deg);transition:transform .25s}
 .book:hover .cover{transform:rotate(0) translateY(-4px)}
 .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;border-radius:4px 0 0 4px;
@@ -228,6 +231,9 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
   margin:26px 0;display:block;box-shadow:var(--shadow)}
 .post-image + .cap{margin-top:-14px}
 .prose .cap{font-size:14.5px;color:var(--ink-soft);font-style:italic;text-align:center;margin:0 0 26px}
+.post-video{position:relative;width:100%;aspect-ratio:16/9;margin:26px 0;border-radius:14px;
+  border:1.5px solid var(--line-strong);box-shadow:var(--shadow);overflow:hidden;background:#000}
+.post-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
 .backlink{display:inline-block;margin:36px 0 0;font-family:var(--mono);font-size:12px;
   text-transform:uppercase;letter-spacing:.12em;color:var(--rust)}
 .backlink:hover{color:var(--clay)}
