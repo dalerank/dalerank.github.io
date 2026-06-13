@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Why you [don't] need your own game engine — dalerank</title>
+<meta name="description" content="Why studios and indies build their own game engine instead of Unreal/Unity: is it expensive, is it hard, hands-on experience with Frostbite, Unity and Dagor — and why bespoke tech moves the industry forward." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/need-own-game-engine.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/need-own-game-engine.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/need-own-game-engine.html">RU</a><i>/</i><a class="on" href="need-own-game-engine.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>Why you [don't] need your own game engine</h1><div class="ameta"><span>Dec 24, 2023</span><span>15 min</span></div></div>
+  <article class="prose">
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/2ff/53f/351/2ff53f3514d39311004098c6c2430f59.png" alt="Why you [don't] need your own game engine" class="post-image" loading="lazy" />
+    <p>What I like most about gamedev is that most games — and pretty much every custom game engine — challenge the entrenched stereotypes of development. Otherwise, why start building such complex, intricate software when dozens of similar tools are all around you.</p>
+    <p>Of course, monsters like Unreal and Unity, and a dozen smaller monsters of lesser caliber, have substantially simplified development in many respects, drawn thousands of developers into making lots of magnificent games with off-the-shelf tech, freeing them from the pit of despair that is an empty level. But I can't shake the thought that they buried even more games.</p>
+    <p>For all the functionality and power of U/U, people often get stuck inside boundaries they didn't even suspect existed. Over the years I've watched how, in most cases, original content gets killed by asset stores, if there's anything close or similar to the object, feature, or look you need.</p>
+    <p>Don't take my words the wrong way — I'm all for stores of assets and any other resources, scripts, and technologies, but once you grab something from a store for a dollar, you very likely won't make your own anymore. Or you will, of course, but later — and you still have to survive until that "later", while for now you'll have everything everyone else has: the same patterns, the same textures, the same behavior, the same models… and the same games?</p>
+    <p>What's left of your own, then — unique mechanics and experiences. Otherwise there'd be no game; the only problem is that people see the picture first. It's good if a player reaches the unique mechanics within half an hour or an hour; the same picture evokes the memory of games you've already played, while the unique mechanic may never be seen in the game at all.</p>
+    <hr />
+    <p>Something new and unique — be it algorithms, technologies, or games that move the industry — appears thanks to in-house and unusual developments and game ideas. This plays a key role in making a successful game, in its quality and recognizability, attracts and retains players, and possibly future colleagues too.</p>
+    <p>Almost all of the top games of recent years use in-house technology, because they create a unique experience you can't find anywhere else.</p>
+    <ul>
+      <li>RDR 2 / GTA V (RAGE)</li>
+      <li>Starfield (Creation Engine 2)</li>
+      <li>Baldur's Gate 3 (Divinity 4.0)</li>
+      <li>Resident Evil 4 (RE Engine)</li>
+      <li>The Legend of Zelda: Tears of the Kingdom (LunchPack)</li>
+      <li>Elden Ring (Dantelion)</li>
+      <li>Victoria 3 (Clausewitz Engine)</li>
+      <li>Horizon Forbidden West (Decima)</li>
+      <li>A Plague Tale: Requiem (Zouna Engine)</li>
+      <li>The Last of Us: Part I (Custom/?)</li>
+      <li>Syberia: The World Before (Unity)</li>
+      <li>Hogwarts Legacy (Unreal Engine 4)</li>
+      <li>Star Wars Jedi: Survivor (Unreal Engine 4)</li>
+    </ul>
+    <h2>What is a game engine?</h2>
+    <p>It's specialized software, more like a development environment by now. For many game designers the editor is the single environment for developing everything, and often they don't even think to look beyond its capabilities.</p>
+    <p>An engine includes various settings and configurations that optimize and simplify the process of making video games across a completely different set of programming languages. It can include subsystems for rendering 2D or 3D graphics compatible with different import formats, a physics subsystem for simulating interactions, an audio subsystem, subsystems for managing game AI (GOAI/CAI/BAI — don't confuse these with general-purpose AI like neural networks), scripting tools, a level editor, and so on.</p>
+    <p>Many of these subsystems are so complex that they could well be called full-fledged engines themselves.</p>
+    <p>In other words, game engines are the foundation on which developers can work on a game. In the end, the choice will define your project's development process from start to finish.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/37a/aec/ed9/37aaeced9632a207de730d65027a545a.png" alt="" class="post-image" loading="lazy" />
+    <h2>A bit about the blue pill</h2>
+    <p>At 21, Tim Sweeney created ZZT, the first official game from Epic MegaGames. This puzzle game had very simple graphics next to console graphics — after all, it was released in 1991.</p>
+    <p>Although the game wasn't the most modern, the way the framework and the game built on top of it were created separately was revolutionary. A modest commercial — but still — success later led to the appearance of Unreal, a game in which players controlled a lost prisoner on the surface of an alien world.</p>
+    <p>Unreal was one of the best games of its time, with highly detailed indoor and outdoor locations for players. After Unreal's release other studios began using the engine for development, but the cost of licensing it was, of course, sky-high — over $1M.</p>
+    <p>The first version of Epic's Unreal game engine focused on building a toolset and removing technical difficulties. In the decades since, the engine has become a universal development tool, so that today you can develop all kinds of 3D-graphics-oriented software on Unreal.</p>
+    <p>The engine itself has the widest set of import/export plugins and one of the most advanced rendering systems available, including on mobile.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/04f/4e4/b41/04f4e4b418affdbbc84c8148c2bb3275.png" alt="" class="post-image" loading="lazy" />
+    <h2>The other blue pill</h2>
+    <p>In 2004 Nicholas Francis, Joachim Ante, and David Helgason created the Unity game engine in a small apartment in Copenhagen. The platform is very well known, so I won't write about it; I'll just note that roughly half of the world's mobile games are made on it.</p>
+    <p>What started as a hobby project by students soon turned into a top-tier, world-class engine. But we shouldn't forget that the ultimate goal is still the engine's commercial success, and the rest, as they say, is history.</p>
+    <h2>The red pill</h2>
+    <p>When I first came into big game development, one of the studio's main engines was Unity. There was also Frostbite, but first, it was only given out for big projects, and the mobile SimCity BuildIt! / Sims Mobile didn't count as those.</p>
+    <p>Second, the engine was complex: for the team making a game on it, another team was allocated to help tame the "kitty". I won't say Unity is much simpler at the engine level, but at the editor level it was simply a moped versus a Suzuki SGX. From the code side, though, it looked exactly the opposite.</p>
+    <p>Third, "Frosty" was for big PC/console games, and its runtime took up nearly a gigabyte and a half on an empty level.</p>
+    <p>Fourth, the editor would simply crash quietly on Cyrillic characters in file names. The engine was simply written for large-scale games on the level of Battlefield: Bad Company, Dragon Age: Inquisition, Need For Speed: The Run. Heh-heh — the iPhone 4-5, if memory serves, would let you allocate a gigabyte of RAM at best back then.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/4fd/434/a65/4fd434a653a6c70c97937a2f51dd1d61.png" alt="That's the Frostbite editor on the left, by the way" class="post-image" loading="lazy" />
+    <p class="cap">That's the Frostbite editor on the left, by the way</p>
+    <p>But the engine was one of the first to use all the capabilities of DX12, such as compute shaders, thread contexts, or bindless textures.</p>
+    <p>After Plants vs. Zombies: Garden Warfare came out, they tried to port it to mobile, but without success. And only in 2019 did the engine reach the Nintendo Switch (Plants vs. Zombies: Battle for Neighborville).</p>
+    <p>Back to Unity, which is no less well known and seemingly grown-up enough and, in theory, should fit any project. It had problems too, but already at the architecture level. The engine, in complete contrast to Frostbite, is designed for small-scale games.</p>
+    <p>So at some point it had to be forked and adapted to the needs of Sims Mobile. The reason Unity was forked was a large number of small problems that grew into a big snowball and seriously got in the way of development.</p>
+    <p>I remember a problem with handling callbacks that were implemented in the C# layer, but kept part of their runtime as a single shared vector in the C++ layer. Do you know what happened when a new callback was added to an object? The engine locked the old vector, allocated memory for a new callback array, copied everything + 1 into it, and deleted the old one.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/6e3/fc3/11d/6e3fc311df11b9b33acb49d7f77743fa.png" alt="" class="post-image" loading="lazy" />
+    <p>That's how it was implemented from the first version, and everyone was fine with it. It was done for safe work with callbacks, and it worked beautifully on small volumes. In games where one object had 1, 2, 3, or even ten callbacks, changing them caused no problems.</p>
+    <p>But in Sims Mobile a single object could have hundreds of them, and they could change dynamically on top of that. You're probably wondering, "Why so many?" The reason was the need to implement a smart-objects system, i.e. when an object (a chair, say) provided a Sim that walked up to it with the information that it could be sat on — and that was done via a callback.</p>
+    <p>By the way, a similar system was pulled into Unreal 5.1 recently.</p>
+    <p>And you could also stand on the chair, move it, rotate it, lift it, kick it, knock it over, change its color, and so on. Add to that the editor functionality, which was done the same way. And there are four chairs in the room, and besides the chairs there's a TV, a wardrobe, and a cat.</p>
+    <p>In the end, when the total number of callbacks crept toward 10-15 thousand, Unity got tired changing even one, and it was noticeable even without a profiler — you'd just walk around the room as a Sim with stutters every second.</p>
+    <p>We fixed it at the C++ level, replacing the single array with a deque of 64-callback blocks. Nothing complicated, really, but it helped not only the Sims — the fix was backported into Unity's master too, and everyone involved got a certificate and lots of thank-yous in their inbox from overseas colleagues.</p>
+    <h2>And what about building your own?</h2>
+    <p>From my own experience and the game projects I've seen, I'm constantly fed the conviction that building your own technology is a practice that most developers — whether a game studio or an indie hero — should regard as the natural state of a project, if they want to make games that go beyond the ordinary and will be interesting to people.</p>
+    <p>A bit later I got the chance to take part in developing a no-less-interesting game engine — Dagor. What can I say about Dagor Engine? Do you like explosions? Well, Dagor had some of the best explosions I'd seen as of the late 2010s, technically and visually.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/4aa/d84/b69/4aad84b694003db27e769a1a4af96fd3.png" alt="Atomic bomb: shockwave and destruction" class="post-image" loading="lazy" />
+    <p class="cap">Atomic bomb: shockwave and destruction</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/ec1/607/4f2/ec16074f2125e705469172f24c88f3b4.png" alt="Nuke Thunder: math and optimization" class="post-image" loading="lazy" />
+    <p class="cap">Nuke Thunder: math and optimization</p>
+    <p>The engine's source code was closed off from the community for a long time, but rumors of an open-source release were already being discussed inside the company around 2016. You also have to understand that you can't just dump a codebase of that size into open source.</p>
+    <p>In practice, you have to allocate a department or people inside the company who will clean up loose ends, comments, and code, strip out licensed or NDA parts, and extract and tidy up the API. And these people aren't just juniors two months into the company — on the contrary, they're the very backbone of the dev team.</p>
+    <p>And now you can see for yourself how it's all done. Special thanks to the gaijins for finding the strength and time to open-source the engine: <a href="https://github.com/GaijinEntertainment/DagorEngine" target="_blank" rel="noopener">github.com/GaijinEntertainment/DagorEngine</a>.</p>
+    <p>There are my edits in there too. To the code related to the Nintendo Switch and AppleTV, the author lent his own paws.</p>
+    <h2>People and technology</h2>
+    <p>You know what else is good about developing your own engine/technology? It attracts better specialists than developing for well-known, established software. The comparison with drivers probably isn't quite right here, but I heard it from a lead a few times: I see S-class sedans on the roads all the time, but how many Formula 1 cars have you seen in St. Petersburg?</p>
+    <p>Some are driven by the desire to leave their mark on the industry; others like solving new problems or working with cutting-edge technology. Some enjoy building something new more than using something that already exists, even if it's of very, very high quality.</p>
+    <p>Studios that use in-house technology, at the very least, offer a developer a unique opportunity to broaden their experience and do exceptional things. Such developers then attract people with similar ideas and views, and over time this becomes a culture inside the company.</p>
+    <p>And it turns out the team itself creates the atmosphere and the desire to work on the game/engine/technology. Competitor companies that have no such developments hire new people to build them or copy existing ones — either way moving the industry forward.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/861/101/cef/861101cef30887f4da58877c39de91f9.png" alt="" class="post-image" loading="lazy" />
+    <p>There's a flip side too. In a studio there are people who came from off-the-shelf engines like Unreal/Unity/Godot with a different pipeline and development methodology, and discussions about using bespoke technology — related to cost, time, and complexity — arise between us fairly often.</p>
+    <blockquote style="margin:1.6rem 0;padding:2px 0 2px 18px;border-left:3px solid var(--line-strong);color:var(--ink-soft);font-style:italic">"Building your own engine (technology) — is that insane?", "It costs too much", "We haven't even shipped a game yet, but we're spending time reinventing the wheel."</blockquote>
+    <p>There were different variations of these statements from people with different levels of involvement in development and experience in making games.</p>
+    <h2>Expensive?</h2>
+    <p>More yes than no. There's an opinion that building your own engine/technology is very expensive. Building your own game engine or other technology for developing anything — not just games — involves substantial upfront costs.</p>
+    <p>In most cases this investment will bring significant savings in the long run. I'm still more of a developer than an economist, but over a long time in game development you can see how studios' in-house engines evolved over time and what advantages accrue over time.</p>
+    <p>Just don't think the costs of another developer oriented toward licensed technology will be lower. Add to that the cost of support and royalties, especially when the game becomes successful.</p>
+    <p>On top of that, the salaries of programmers capable of digging into Unreal's guts and writing new functionality that goes beyond a new node for a BT, or changing GAS/CAS behavior, shoot up sharply.</p>
+    <p>I won't name the company: the salary of an Unreal/C++ AI "tomato" for an office in Barcelona on the third installment of a well-known project, whose tasks include reworking the engine's BT/AI stack, starts at 2x, whereas an ordinary tomato — just with C++ knowledge and 4+ years of Unreal experience — is offered 1x, and they've been searching for half a year already.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/1d6/fbd/498/1d6fbd498b7d3673b18765009afe3885.png" alt="" class="post-image" loading="lazy" />
+    <p>Of course, the engine you build won't be on the level of Unreal/Unity, at the very least because you don't need 70% of their feature set.</p>
+    <p>Another significant downside of bespoke technology — building a basic game engine of that level takes several years of engineering work, but often the game development cycle and investors' expectations from a new studio demand results sooner, much sooner than it becomes economically justified.</p>
+    <p>Studios often solve this problem by first shipping games on off-the-shelf engines to get a solid material base for growth, and gradually replacing individual parts with their own solutions. The resulting Frunrealstein safely grows into a custom engine. Guess what this popular game, for example, was made on.</p>
+    <p>Unity and Unreal were never cheap for commercial development, especially once a game started making good money. You get access to entry-level game engine technology relatively quickly and cheaply, but you pay more and more for each platform as revenue grows, and for each feature the engine lacks, for the common approaches to implementing features, for a developer who is limited by the chosen engine's stack.</p>
+    <p>Add to that vendor and store commissions, and so on.</p>
+    <p>Royalties always have been and always will be — don't think anyone is willing to give away their work for free. If a thing/film/technology is offered to you for free, then you yourself become the product.</p>
+    <p>I'd venture that the era of fighting for market share between U/U has come to an end, and in the absence of substantial competition from other engines the royalties of the big game multi-combines will only grow.</p>
+    <p>It won't necessarily be direct money per instance or per seat; far worse if mobile models creep into engines in the form of various kinds of ads, paid components or subscriptions, in-place advertising, and so on. Or are they already there? Have you never wondered why any game built on Unreal most actively advertises only the game of one single studio?</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/907/73b/f6c/90773bf6cebd678f8769c4a9079b86bd.png" alt="" class="post-image" loading="lazy" />
+    <p>Electronic Arts and Activision are very profitable companies that figured out long ago that income from games on their own engine is significantly larger, and it also avoids paying to develop an engine for competitors. It's like renting housing versus a mortgage: paying rent doesn't make the apartment yours, and it's only slightly cheaper than a mortgage.</p>
+    <p>Electronic Arts figured this out back in the '90s, which is why you most likely won't hear of any use of third-party engines like Unreal/Unity at these studios; exceptions might be newly acquired studios that haven't yet been moved onto an in-house engine, especially if the game has started bringing in more or less good revenue.</p>
+    <p>Moreover, this makes studios dependent on external technology and the problems of sharing technology: whatever an engine's capabilities, they'll never be convenient for everyone, and again — either you start your own fork with all the bells and whistles, or you look for similar components in the asset store. Either way you don't own the technology.</p>
+    <h2>It has everything — but do you need everything?</h2>
+    <p>Your own engine/technology is an investment in future projects — unless, of course, you intend to ship one game and go downshifting to Goa.</p>
+    <p>The advantages accumulate over time; the downsides you can get rid of here and now, and not depend on the need to maintain a legion of past versions.</p>
+    <p>Off-the-shelf engines ship with a huge amount of features and tools, as well as a huge amount of legacy functionality, just-in-case, even if a particular project never uses it. That 50% of redundancy slows down both development itself and demands more resources, both human and hardware.</p>
+    <p>Would you like to get 20% perf out of thin air, just by removing unnecessary components from the engine code? At 60 fps you'd get 12 free frames, and that's an opportunity to add new mechanics, more NPCs, better textures, beautiful shaders, and a lot more.</p>
+    <p>But you can't do it, because you didn't even know such an option existed — or you do know, but still can't do anything, because it would break an adjacent engine system.</p>
+    <p>It's no big secret that developers usually spend most of their time debugging and polishing functionality, rather than writing new code. Sometimes iterations can run hundreds of times a day.</p>
+    <p>That's why the ability to run debug builds and fast compilation come to the fore; ideally the engine should also support one of the hot-reload mechanisms (changing code or functionality without recompiling), technical saves if you like… saving state between launches, which neither Unreal nor Unity provides out of the box.</p>
+    <p>This fantastically speeds up development and saves hours of a developer's life every day. And it's of course far more pleasant to work at least at 30 fps, not 10 or 5, on a large level.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/841/997/eb0/841997eb0c3d35236e4cec95fa371b18.png" alt="" class="post-image" loading="lazy" />
+    <p>Maybe you've tried building Unreal under debug, at least with -O1? It compiles for almost 20 minutes on a two-year-old 10-core CPU with 32 gigabytes of RAM and dips a little into swap.</p>
+    <p>Although the engine code is relatively clean and modular, there's so much functionality that it builds for a really long time. And the fps will sag quite a bit too — forget about 60 fps under debug, especially with -O0.</p>
+    <p>Another example — a debug version of Godot or of the engine I currently work with builds in about 5 minutes and still lets you work at 60 fps in -O1 mode and at 30 fps in -O0.</p>
+    <p>But I want to caution against simply copying Unreal or Unity — that adds little value, that path has already been walked. You need to build specific solutions for the games the team makes, and for the working style it follows.</p>
+    <p>Building your own solution will take time and money; on the other side of the scale is a developer's valuable experience, which will be interesting to any studio — both those just starting in a garage and big companies with lots of resources between projects but using third-party solutions.</p>
+    <h2>Hard?</h2>
+    <p>One more question is the need to use your own for non-standard tasks. Any game will have complex, problematic moments whose solutions aren't publicly available, or require completely unique approaches. Would off-the-shelf technology help here? Looking back at previous projects, I can answer — no.</p>
+    <p>A small example: while porting a game to the Nintendo Switch we ran into the fact that we needed an audio driver for fmod version 1.4, but in 2011 the Switch simply wasn't on the market, so there are no drivers for it at all, in principle, for that version of fmod.</p>
+    <p>The vendor says, move to version 3.1 — except the move means an API change, because fmod 2.x had breaking changes, re-encoding all sounds into a new format, and royalties for using the new version.</p>
+    <p>Without access to the engine's sources we'd most likely have had to go the second route, but we managed to analyze the driver code from the PlayStation 3 and adapt it for the new platform.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/9f2/f63/d6d/9f2f63d6de58ff73f27c8a0e.png" alt="" class="post-image" loading="lazy" />
+    <p>Another example: in 2016 I got the chance to help develop a game about simulating a large world; from the very start the goal was to create a relatively living world in which the number of active creatures (NPCs) approached 50k.</p>
+    <p>But managing such a large number of creatures within a single level went beyond the capabilities of the well-known game engines. We needed an architecture that could handle that volume of data, while the team didn't want to abandon the chosen development stack.</p>
+    <p>In the end all the necessary code was written in C++ and moved into a separate dll that mapped a fixed chunk of memory into the engine and ran the computations in threads, while the engine itself dealt only with rendering, UI, and input handling.</p>
+    <p>Could this have been done with the engine's native tools without access to the sources? 99% no. Besides the problem of working with a large volume of data, the second huge problem was that the game was procedural.</p>
+    <p>At release, only the renderer remained of the engine — even UI drawing and input handling moved into custom code. There were no middleware or open-source solutions that would solve the tasks at hand or could help in development. Everything is specific to each individual game.</p>
+    <p>Such technical difficulties are only a small part of what a team can face. But it also gives developers the chance to make games that go beyond the ordinary, and offers players memorable experiences.</p>
+    <h2>A look into the future</h2>
+    <p>Off-the-shelf solutions will continue to play a significant role; neither Unity nor Unreal will give up their positions, because it's money — very, very big money.</p>
+    <p>At one of the conferences Tim Sweeney complained that royalties from Unreal are still less than half of Fortnite's revenue, but they're working on it. Unity, up until 2021, earned more than its competitor according to financial reports, so you can imagine the rough scale of the finances.</p>
+    <p>In any case, these engines provide an invaluable starting baggage of knowledge and technology for studios of any size, as well as indie heroes, letting them concentrate on realizing creative ideas without needing serious technical knowledge.</p>
+    <p>But it's important to remember that using off-the-shelf engines puts you within certain technological boundaries.</p>
+    <img src="https://habrastorage.org/r/w1560/getpro/habr/upload_files/a5b/fa0/109/a5bfa01091dd663e543ed865b428f0f2.png" alt="" class="post-image" loading="lazy" />
+    <p>But even when using off-the-shelf engines, we'll often be forced to rework and extend them so they meet the requirements of a specific game. Without that, only yet another copy of Flappy Bird will appear on the market.</p>
+    <p>And this process, in essence, represents a compromise in developing your own solutions within an existing engine.</p>
+    <p>I hope that these, and any other engines, will pay attention to the possibility of using components and embedding bespoke solutions. Even within a large engine, game development can be modular, letting developers pick the best tools for their specific tasks or painlessly add new components.</p>
+    <h2>Instead of conclusions</h2>
+    <p>This article was written more than half a year ago and just sat in the drawer with no ending — I couldn't find the right words to finish it. I asked my friend <a href="https://habr.com/ru/users/sparklone" target="_blank" rel="noopener">@SparkLone</a> to review it. And there, as they say, the ending was found, and the right words too; changing it would only spoil it, so I'm posting it as a quote with permission.</p>
+    <blockquote style="margin:1.6rem 0;padding:2px 0 2px 18px;border-left:3px solid var(--line-strong);color:var(--ink-soft);font-style:italic">Here's the thing. It seems pretty natural to me that if you want it done well — you CAN TRY to do it yourself. If you're cool and generally smart — you'll succeed. But for that you need investment, time, resources (people).<br /><br />I consider the cycle natural — a studio is born, takes some Unity and tries itself out. If it didn't take off — you can try a couple more times; if it didn't take off at all — everyone scatters.<br /><br />But if you sink everything into your own engine right away, there's a 99% chance you won't even reach shipping your first game, and even if you do — what are the odds it'll turn out successful? Because besides the engine there's the idea, the graphics, and a ton of stuff, including marketing.<br /><br />So the most sensible approach is iterative, like teaching kids in school — first you take the known, and once you've toughened up — you invent your own. You invent with understanding, like "this won't <strong>work</strong> on Unity, but I'll do it properly." And if you start making it from scratch right away — there's a big chance you'll make it even worse than in Unity; come on, it's not idiots sitting there either.<br /><br />Sure, there are individuals who solo a Minecraft and so on — but we're talking about the general approach, not the exceptions.</blockquote>
+    <p>And remember that your beloved big and almighty Uniginrealdotmeladegore was also once started by students in a garage.</p>
+    <p>P.S. Frostbite doesn't count — it was made right away to a perfect plan by developers with a thousand years of experience :)</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
