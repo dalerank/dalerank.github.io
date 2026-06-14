@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Boss, it's all gone — dalerank</title>
+<meta name="description" content="A sequel to «Where are your bugs?»: 16 Friday-night bugs from real engines and games — out-of-bounds writes, leaked handles on the Switch, memset on a non-trivial type, =! instead of !=, alloca in a loop. Guess the cause." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/boss-its-all-gone.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/boss-its-all-gone.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/boss-its-all-gone.html">RU</a><i>/</i><a class="on" href="boss-its-all-gone.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap article">
+
+  <div class="article-head">
+    <span class="tag">Abnormal programming</span>
+    <h1>Boss, it's all gone</h1>
+    <div class="ameta"><span>October 7, 2024</span><span>12 min</span></div>
+  </div>
+
+  <article class="prose">
+    <img src="../../assets/articles/boss-its-all-gone/cover.png" alt="" class="post-image" loading="lazy" />
+    <p>C++ programmers' mistakes are an art form of their own — a seemingly simple language, but the moment you step away for a cup of coffee, the compiler starts dumping a wall of warnings mixed with errors, and sometimes it looks more like ancient Egyptian writing than a normal output. You've probably run into a nullptr dereference more than once, or mixed up (= and ==) by oversight. The cause is often laziness or carelessness, or fatigue — it's no accident that superstitions appeared like "don't commit on Friday evening", "don't code in an altered state of consciousness" or "avoid coding on a caffeine high" — that's when you've downed three or four mugs of coffee and gone off spreading good code left and right.</p>
+    <p>Actually this article was planned to be about how you can torment the switch operator — I had a recording of a talk from a St. Petersburg meetup some years ago, where the audience was challenged to write "impossible" but working code with switch. And while looking for that recording I stumbled on a file describing "Friday" bugs and commits that, in a sober mind mid-week, would hardly have slipped into master. There was also <a href="where-are-your-bugs.html">an earlier article about bugs too, "Where are your bugs?"</a>, where the esteemed reader guessed the cause of various mistakes, obvious or not. So I decided to continue in the same style — question, answer — and I invite you to join in guessing the possible causes too. All the examples are from real projects, games, engines and Friday commits.</p>
+    <p>C++ doesn't forgive mistakes, but that's exactly its "charm". In most of the examples below the style and parameter names are preserved; only the comments are slightly cleaned up so as not to out the company.</p>
+
+    <h2>0х10</h2>
+    <p>Ignoring the development rules and reinventing the wheel mostly ends in a bug. So it was here — the engine sometimes crashed while drawing UI widgets, but more often it just corrupted other widgets that were built entirely on POD types.</p>
+    <pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; Widget::DrawElements(Element* p, int n) {
+    std::vector&lt;int&gt; result;
+    result.reserve(n);
+    for (int i = 0; i &lt; n; ++i) {
+        bool r = DrawElement(p[i]);
+        result.push_back(r);
+    }
+    ...
+    return result;
+}
+
+void Widget::Draw(int m) {
+    constexpr int n = 10;
+    Element a[n] = {}; // local buffer, tied to deferred widget rendering
+    // copy elements
+    // ...
+    DrawElements(a, m);
+    // ...
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Here we made a small mistake in Widget::Draw that led to data corruption and, less often, to a program crash. The "pointer, count" style interface leaves DrawElements() practically no way to protect itself from out-of-bounds errors; another array sat right there and took the hit. If we could check indices for going out of bounds, the bug would have been caught much earlier. As it was, the bug lived in the code for about half a year, simply because a widget usually had fewer than 10 elements.</p>
+    </details>
+
+    <h2>0x11</h2>
+    <p>While porting the Dagor engine to the Nintendo Switch we had to write a shim for the file system. After yet another Friday the game started crashing after a few loads, in random places, with an OOM (out of memory), and the cause turned out to be just one line. This one should be easy.</p>
+    <pre style="margin:1.4rem 0"><code>void OsFile::ropen(const NxString &amp;name) {
+    NxFile f = NxFileOpen(name, "r");
+    // ...
+    if (something) return;
+    // ...
+    NxFileClose(f);
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Line 5 was added at some point, after fixing a bug with unsupported file types. But even a slow growth in resource consumption can, over time, exhaust their availability.</p>
+      <p>A memory leak is any resource allocation that was not freed. For example, if an object was allocated on the heap and the pointer to it was lost, those resources can no longer be cleaned up. So on the Nintendo Switch you can have at most 256 files open per process at once; then the kernel descriptors run out, and opening the next file crashes the game with an OOM somewhere deep in musl — but it also happened that the open files ate all available memory and the game crashed with an honest OOM, only in a random place.</p>
+      <p>This rule should not be read as a hard requirement to free every allocated resource on program exit. In some cases you can rely on the OS cleaning up resources automatically, like closing files or freeing memory when the process terminates.</p>
+    </details>
+
+    <h2>0x12</h2>
+    <p>A newcomer joined the team and was given small bugs to get familiar with the codebase. And to make it less boring, he was allowed to refactor a bit in the dev branch, so there'd be commit history and a sense of how onboarding was going. On Tuesday QA filed a complaint that the editor had become an order of magnitude slower at loading levels — small ones still loaded fine, but big ones now took some twenty minutes. And only for the QA department; everyone else was fine. A bit of context here: the testing tool they used also formatted level configs before approval. QA suffered for a day, then decided to write to the programmers after all, who, while the trail was hot, found this:</p>
+    <pre style="margin:1.4rem 0"><code>void lower(xstring &amp;s) {
+    for (int i = 0; i &lt; strlen(s); ++i) {
+        s[i] = tolower(s[i]);
+    }
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Before the fix it looked like this — not great either, but nobody complained about speed:</p>
+      <pre style="margin:1.4rem 0"><code>for (int i = 0, size = (int)strlen(s); i &lt; size; ++i) {
+    s[i] = tolower(s[i]);
+}</code></pre>
+      <p>The condition uses the expression i &lt; strlen(s). This expression is evaluated on every iteration of the loop, which means strlen has to walk the whole string each time to determine its length. Although the string's contents change, tolower is assumed not to affect its length, so it's better to store the length outside the loop to avoid the extra cost on each iteration. Now imagine what happens when the formatter tries to process a 40-megabyte level config.</p>
+    </details>
+
+    <h2>0х13</h2>
+    <p>We sent off another patch for the Xbox, and it doesn't pass the tests. Microsoft first just stonewalled and rejected the builds, then sent a compliance notice about forgotten sensitive data. What the heck "forgotten" data?</p>
+    <blockquote><p>Subject: Urgent Security Alert: Unused Encryption Keys Found in Memory<br /> Hey Team,<br /> Hope you're all doing great! During our recent testing sessions, we came across a serious issue regarding some leftover encryption keys in memory tied to our Secure Layered Login (SLL) system. It looks like these keys were overlooked, and if we don't deal with them quickly, they could potentially expose sensitive data to unauthorized access, approval pipeline will be moved to pre-stage policy after one week.</p></blockquote>
+    <pre style="margin:1.4rem 0"><code>Before: CL125332
+void XBL::UserLogin::requestKey() {
+    char secretKeyPwa[MAX];
+    // ...
+    // something work
+    // ...
+    memset(secretKeyPwa, 0, sizeof buffer);
+    ENSURE(secretKeyPwa[0] == 0);
+}
+&lt;-&gt;
+After: CL127499
+void XBL::UserLogin::requestKey() {
+    char secretKeyPwa[MAX];
+    // ...
+    // something work
+    // ...
+    memset(secretKeyPwa, 0, sizeof buffer);
+    assert(secretKeyPwa[0] == 0);
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>For those who read the previous article, this bug will look familiar. And yes, you're not imagining it — the compiler doesn't care about your sensitive data. The ENSURE() macro compared the variable's value against zero, which forced the memset to run. The assert() macro does nothing in release, so the compiler again removed the memset() call and stripped out the logic that wiped the sensitive data.</p>
+    </details>
+
+    <h2>0x14</h2>
+    <p>A lovely Monday morning, and the designers file a bug: an entity on the level stopped detecting whether it had a right and left hand in its skeleton — bones and locators were pulled from there to attach hands to the corresponding spots on a weapon. Or it detected that the hands were there but mixed them up, which caused various graphical glitches, like a left hand on the stock and so on.</p>
+    <pre style="margin:1.4rem 0"><code>using namespace std;
+
+struct UnitComponent {
+    string name;
+    int number;
+
+    UnitComponent(string nm, int num) : name(nm), number(num) {}
+    virtual bool operator==(const UnitComponent&amp; a) const {
+        return name == a.name &amp;&amp; number == a.number;
+    }
+    // ...
+};
+
+struct UnitHand : public UnitComponent {
+    bool left_hand;
+
+    UnitHand(string nm, int num, char ch) : UnitComponent(nm, num), left_hand(ch) {}
+    virtual bool operator==(const UnitHand&amp; a) const {
+        return UnitComponent::operator==(a) &amp;&amp; left_hand == a.left_hand;
+    }
+    // ...
+};</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>The cause is mundane too: colleagues refactored their code and decided, instead of explicit comparisons of a component's attributes, to write comparison operators and overload them in the relevant classes. They just forgot that you have to be very careful with such overloading, otherwise everyone risks comparing the base class's fields instead of their own. Of course there are ways to make a comparison operator work across the whole inheritance hierarchy, but this naive approach will work incorrectly. Try playing with this code on onlinegdb.</p>
+      <pre style="margin:1.4rem 0"><code>int main() {
+    UnitComponent comp{ "test", 1 };
+    UnitHand hand{ "test", 1, true };
+    printf("comp == hand (%d)\n", comp == hand);    // compares name and number, ignores unit's left_hand
+    UnitHand leg{ "test", 1, false };
+    printf("hand == leg (%d)\n", hand == leg);   // compares name, number, and left_hand
+    UnitComponent &amp;hand_ref = hand;
+    UnitComponent &amp;leg_ref = leg;
+    printf("hand_ref == leg_ref (%d)\n", hand_ref == leg_ref);  // ???
+
+    return 0;
+}</code></pre>
+    </details>
+
+    <h2>0x15</h2>
+    <p>It happens that even rockstar rendering devs make mistakes — chasing performance, on a Friday evening they write all sorts of things. And then on Monday morning, in a panic, they revert a gazillion changes. In theory the texture pool was supposed to hold empty textures that would be taken from it as objects were created. But something went wrong and the engine crashed on the very first access to a texture.</p>
+    <pre style="margin:1.4rem 0"><code>struct TextureBase {
+    virtual void update() = 0;
+    std::shared_ptr&lt;int&gt; sp;
+};
+
+struct TextureDX12 : public TextureBase {
+    void update() override {}
+};
+
+void init(std::vector&lt;TextureDX12&gt; &amp;a) {
+    memset(a.data(), 0, sizeof(TextureDX12) * a.size());
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Attempts to trick the type's instantiation mechanism usually end badly. A class's constructor should create a fully initialized object, and no additional initialization is needed. Using memcpy/memset to modify the data of a class that is not trivially copyable leads to undefined behavior. And this is one of the most common mistakes when working with non-trivial data types, leading to memory corruption. The bug happened because one colleague made a new texture class for DX12, and initially it had no vtbl, while another colleague split out a base class and added virtuality. Both commits formally passed review without errors, but when they overlapped — it turned into junk.</p>
+    </details>
+
+    <h2>0х16</h2>
+    <p>Another example of carelessness, or a chance coincidence: the game ran short of memory on the iPhone 6, where we had to trim the effects pool. As a result, on loaded scenes we got graphical artifacts in random places. But the funny thing is the game didn't crash, and sometimes these bugs went completely unnoticed.</p>
+    <pre style="margin:1.4rem 0"><code>std::array&lt;Particle, 2048&gt; particles;
+std::array&lt;ParticleShader, 2048&gt; shaders;
+
+void updateEffects() {
+    for (int i = 0, size = particles.size(); i &lt; size; ++i) {
+        //
+        if (/* something */) ++i;
+        //
+        ... some logic
+    }
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Loop control should let you correctly understand what's happening inside. Modifying the loop counter both in the iteration expression and inside the loop body caused i to run out of the array's bounds and corrupt memory in shaders (in rare cases), which in turn led to the graphical artifacts. On PC there was no such problem, because the buffer was larger and never got fully filled. On mobile, though, shader data got corrupted, which looked bad if it was rendered. But more often the update of some effects was simply skipped.</p>
+    </details>
+
+    <h2>0х17</h2>
+    <p>You can mess up even in three lines, especially once the code became multithreaded — in some cases a particular unit on the scene wouldn't move. Investigating the bug showed that the Mover (the component responsible for the unit's navigation around the scene) wasn't getting updates because it wasn't in the mover pool. Can you find the bug?</p>
+    <pre style="margin:1.4rem 0"><code>Mover MoverPool::acquire() {
+    static int init = 0;
+    if (!init) {
+        init = 1;
+        create_pool();
+    }
+
+    return create_mover();
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Although the init variable works perfectly in a single-threaded environment, in a multithreaded one the two static variables lead to data races, which causes undefined behavior. In a multithreaded application, if several threads access these static variables simultaneously, they may modify them in an unpredictable order. As a result we got two mover pools — most went into one, and a single loser into the other.</p>
+    </details>
+
+    <h2>0х18</h2>
+    <p>You might think you've fixed the problem, but it comes back after a while. For instance, in this simple bug some extra units sometimes remained on the level, and the engine asserted about it in the log. But since this all happened during level unloading, nobody paid much attention. The person responsible for this system came up with a brilliant fix. When the tests stopped passing, he'd remove or add [volatile] and the tests would start working. The history accumulated a dozen or so commits with such fixes.</p>
+    <pre style="margin:1.4rem 0"><code>[volatile] int free_slots = max_slots;
+
+PathFinder* use()
+{
+    if (int n = free_slots--) return &amp;finders[n];
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>In C++ the volatile keyword does not provide atomicity, does not synchronize between threads, and does not prevent instruction reordering (neither at the compiler nor at the hardware level). It simply has nothing to do with concurrency. The colleague just got lucky, there's no other way to put it; probably by stirring the code around in that spot he shifted the point of failure and the tests didn't catch it for a while. The correct fix was to use atomic&lt;int&gt;.</p>
+    </details>
+
+    <h2>0x19</h2>
+    <p>Not exactly a bug, but it frayed nerves quite a bit too. The price of such code is a few extra seconds on level load. A bit of info on the bug: a unit has components that it loads into itself at level start. It can be anything — a hand, a gun, a grenade and some other attachment, a vision system and so on. Objects can have dozens or hundreds of such components, and there are also dozens or hundreds of objects on the scene — from decals and puddles to cars and buildings.</p>
+    <pre style="margin:1.4rem 0"><code>std::map&lt;ComponentId, Component&gt; components;
+
+bool ComponentVec::add(Component c) {
+    ...
+
+    if (components.find(c.id()) == components.end()) {
+        components.insert({c.id(), c});
+    }
+
+    auto &amp;compc = components[c.id()];
+    ...
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>The bug here is that the lookup in the components map is done THREE times in the worst case: first in find(c.id()), second in insert() if the component isn't there, and third in the index operator.</p>
+    </details>
+
+    <h2>0х1a</h2>
+    <p>And here memory was slowly leaking in the particle manager. Can you find the culprit?</p>
+    <pre style="margin:1.4rem 0"><code>void Particle::CreateVertices(size_t p)
+{
+  std::shared_ptr&lt;Vertex&gt; ss(new Point[p * 3]); // each p is 3 vertex
+  ....
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Probably in the comments :)</p>
+    </details>
+
+    <h2>0х1b</h2>
+    <p>An annoying copy-paste and an annoying bug that existed only in the release build: the engine played only the first sound out of those set for an entity. But since there was usually 1 sound, rarely 2 or more, the bug lived on for a long time.</p>
+    <pre style="margin:1.4rem 0"><code>int Entity::update_sounds(...)
+{
+  sounds.lock();
+  sounds.commit();
+  ...
+  int i, size = sounds.size();
+  ...
+  for(i = 0; i &lt; size; ++i); {
+    sounds[i].pre_update(dt);
+  }
+
+  for(i = 0; i &lt; size; ++i); {
+    sounds[i].update(dt);
+  }
+  ...
+  sounds.unlock();
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Notice that the for loop does no work, but because the variable i is declared outside the loop it has a valid value of 0. The compiler's optimizations threw away both loops and i stayed equal to zero. Only the first sound in the array gets updated. And below, the code was copy-pasted and the bug moved there too.</p>
+    </details>
+
+    <h2>0x1c</h2>
+    <p>Another common, silly, but poorly detectable bug. Models are assigned a shader index; in most cases everything worked, but in rare situations a model rendered with graphical errors. The shader index can't be greater than 65k (the size of the shader cache). There were no errors on the PS5, but on the PS4 the models came out wrong, and the game didn't crash because the renderer handled deferred shaders fine.</p>
+    <pre style="margin:1.4rem 0"><code>using AssignShaderCB = std::function&lt;int()&gt;;
+
+void LoadModel() {
+    BaseModel *model = ...
+    ...
+
+    model.setShader([&amp;] (Model* m) {
+        const uint16_t shaderIndex = dummyShader();
+        return [&amp;] () {
+            shaderIndex = createShader(m);
+            return shaderIndex;
+        };
+    });
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>setShader() set a callback to get the shader index. On the PS5, thanks to a faster CPU and pre-built shaders, this callback was invoked immediately and returned the correct index, which was still on the stack. On the PS4 the callback was deferred under heavy load and invoked later, but the stack where it lived was already gone, and junk was returned. And since any index within the cache was valid, the models got shaders other than the ones they should have. A plain dangling reference.</p>
+    </details>
+
+    <h2>0x1d</h2>
+    <p>And here there was some wild confluence of circumstances — the moon in the wrong phase, a solar storm, and a witches' sabbath in the next room. But the code passed the tests and even worked for a while.</p>
+    <pre style="margin:1.4rem 0"><code>void BaseBehavior::ChaseEnemy(Human *h) {
+    ...
+    HumanType enemy = h-&gt;type();
+    if ( enemy == HumanType::Corpse) {
+        return;
+    }
+
+    if ( (enemy =! HumanType::Friend) || (enemy == HumanType::Follower)) {
+        ...
+    }
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>The author mixed up != and =!, so what happened was that the variable enemy got assigned !HumanType::Friend, which was non-zero, giving 0. And being part of a logical expression hid the mistake — only the right-hand side was checked. The code passed the tests and was only caught during a manual review.</p>
+    </details>
+
+    <h2>0x1e</h2>
+    <p>In one fairly well-known engine, a custom number-to-hex function lived for a long time — apparently the built-in one wasn't good enough in speed or code style. Until one of the maintainers decided, in a fit of unbridled refactoring, that there were too many zeros in this function, and pushed this commit bypassing the tests — well, the changes are the most trivial ones, right.</p>
+    <pre style="margin:1.4rem 0"><code>before the "fix"
+const char buffer[] = "abcdef\0000123456789";
+
+after the "fix"
+const char buffer[] = "abcdef\0123456789";</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>The author of the "fix" just forgot that \0xx in the middle of a string is interpreted as a number, and the unlucky placement of digits after such a zero meant they became part of that number — that is, it used to be \000 (the string terminator) and became \012 (a newline). But this broke the algorithm; good thing it was caught quickly.</p>
+    </details>
+
+    <h2>0x1f</h2>
+    <p>A hard one. This function was used in a well-known physics engine to find an arbitrary volume defined by several planes — potentially any number of planes. It worked great if there were fewer than 16 planes, and could crash if there were more. It has to be fast, because it was called often at runtime for collision checks between objects.</p>
+    <pre style="margin:1.4rem 0"><code>// NOTE! convex volume created in local space, you need apply xform from owner for correct world positions
+template&lt;typename T, typename E, typename V&gt;
+inline bool convex_volume_from_planes(const T &amp;clip_planes, E &amp;out_edges, V *out_vertices) {
+    const u32 num_planes        = clip_planes.size();
+    ...
+
+    for (u32 i = 0; i &lt; num_planes; ++i) {
+        pair&lt;vec, vec&gt; * plane_egdes = alloca (16 * sizeof(vec) * 2);
+        u32 next_plane_start_index = out_vertices ? 0 : (i + 1); // if we want to collect tris from planes, it should check all intersections
+                                                                 // if we need only edges we can skip some checks, because edges was found on previous step
+        for (u32 j = next_plane_start_index; j &lt; num_planes; ++j) {
+            vec line_orig, line_dir;
+            ...
+
+            vec *plane_vectices = alloca(sizeof(vec) * 3); // maybe expanded to 12 later
+            ...
+        }
+    }
+}</code></pre>
+    <details class="code">
+      <summary>So where's the bug?</summary>
+      <p>Allocating memory in a loop is bad in general, and triply bad if it's allocation on the stack, since there the memory is only allocated but never returned. In complex cases this algorithm ate up all of the stack memory and crashed the engine.</p>
+    </details>
+
+    <img src="../../assets/articles/boss-its-all-gone/alloca.png" alt="" class="post-image" loading="lazy" />
+    <p>That's all! May your tickets be bug-free.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built and hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
