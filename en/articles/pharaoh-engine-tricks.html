@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ECS, dynvtbl, logical threads and Pharaoh — dalerank</title>
+<meta name="description" content="Code archaeology of the Pharaoh and Caesar III engine: an ancient-Egyptian ECS on flat arrays, a bare-bones VMT made of callbacks, logical threads from the last century, and a god object for the sake of saving memory." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pharaoh-engine-tricks.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-engine-tricks.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/pharaoh-engine-tricks.html">RU</a><i>/</i><a class="on" href="pharaoh-engine-tricks.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap article">
+
+  <div class="article-head">
+    <span class="tag">Reverse-engineering</span>
+    <h1>ECS, dynvtbl, logical threads and Pharaoh</h1>
+    <div class="ameta"><span>October 8, 2024</span><span>2 min</span></div>
+  </div>
+
+  <article class="prose">
+    <img src="../../assets/articles/pharaoh-engine-tricks/cover.gif" alt="" class="post-image" loading="lazy" />
+    <p>In the late 90s Sierra's historical city-builder series was at the peak of its popularity, getting great reviews and spawning plenty of followers and imitators — from Children of the Nile and on through Banished (2014), Pharaoh: A New Era (2023), Nebuchadnezzar (2021), Builders of Egypt (sadly cancelled) — effectively becoming the granddaddy of the genre. Pharaoh appeared in 1999 after two years of development, following the beloved Caesar III. It was the first game in the series to move the setting from Ancient Rome to Ancient Egypt and offered (though really just repeated — the actual step forward in mechanics was Zeus) a complex gameplay that nonetheless wasn't built on the micromanagement of buildings and citizens. Many people remember these games thanks to hundreds of failed missions, when the emperor angrily sent troops or the kingdom revoked your title over debts. The first "Paradox" game is still a whole year away, and the genres and settings are quite distant, so in 1999 and 2000 Pharaoh reaped the laurels and the cream of the sales, while <a href="https://www.youtube.com/watch?v=m5CI9ch7b0U" target="_blank" rel="noopener">Simon Bradbury</a>, the studio's chief technical genius and the soul of the project, left the team and founded his own Firefly Studios to give us Stronghold.</p>
+    <p>In the course of code-archaeology digs into the Caesar and Pharaoh binaries, I found plenty of interesting <s>legacy fossils</s> technical solutions, many of which I've seen in other projects, and not only in games. This dense legacy (though not as dense as AoE1/2) may look crude, but there's definitely beauty in the solutions — and bear in mind these games launched and delivered decent FPS (15-30) running on all sorts of early Pentiums, 586s and Athlons with just 32 MB of RAM, not cache. And they ran fast, looked good, and did it on a single core.</p>
+    <p>All the screenshots in the article are taken from the open-source version of the game.</p>
+
+    <p>Coming back to the topic of the article: all the newfangled stuff (relatively newfangled, of course — the first open ECS framework implementations became popular somewhere after 2014, and the mainstream EnTT from 2017) was used in games earlier too, but it was usually a feature of in-house engines or studio know-how. Same with the ECS implementation in the Caesar and Pharaoh engine: it wasn't carved out as a separate system or framework, but the working principles were already clearly formed and got massively copied between the game's subsystems, which is what let it pull those 15-20 FPS on the weakest machines. These days, on the GPU, we can afford to render a frame from scratch every time, but that was very expensive on the APIs of the era, and various tricks were used like updating only the changed part of the screen or splitting into work zones with checkerboard updates. That's me grumbling a bit, watching UE5.1 take 2 minutes to open an empty scene across 12 threads and eat 6 gigs of RAM.</p>
+
+    <h2>An ancient-Egyptian ECS</h2>
+    <p>How does all this relate to modern ECS frameworks? Let me explain a bit what the Entity Component System (ECS) idea is — I'm personally a proponent of the classic <a href="https://en.wikipedia.org/wiki/Scene_graph" target="_blank" rel="noopener">SceneGraph</a> approach and believe that, done skillfully, it's in no way slower than ECS, especially if you take care of a proper split across threads.</p>
+    <p>In traditional development, whether it's a game or other software, you use an approach with inheritance of data and logic. For example a porter inherits from a human, who inherits from a movable object, which inherits from another object that knows how to play an animation. A trader inherits from a porter, because the latter already knows how to carry something, and so on.</p>
+    <p>This is the example for the various objects on the map; for the map itself you need to know the tile type (water, land, trees, dunes, etc.), but this approach has problems. The first is inflexible inheritance for combined types and extending the functionality of such objects: if we decide to create rocks on which buildings can stand, the inheritance tree breaks and you have to come up with workarounds — or buildings that can sit on the shore: the shore is water, you can't build on water. But sometimes you can.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/inherit.png" alt="" class="post-image" loading="lazy" />
+    <p>The second is the inefficient use of CPU resources, namely the cache, and on weak devices this is very noticeable. Every frame in the game you'd have to walk all the map tiles to update their state, or the amount of resources in a tile, or other parameters. In the traditional approach we'd have a big tile object with the corresponding fields, states and dependencies. Something like this:</p>
+    <pre style="margin:1.4rem 0"><code>struct Tile {
+    // Main tile parameters
+    int i;                  // Tile coordinates
+    int j;                  // Tile coordinates
+    int resources;          // Amount of resources in the tile
+    int state;              // Tile state
+    bool isOccupied;        // Whether the tile is occupied by a unit
+  ....</code></pre>
+    <p>But when you update such an object, the data next to the needed fields also lands in the cache, taking up space and time to fetch and update. This is enormous waste that can't be beaten by classic means.</p>
+    <p>The point of ECS is to pull those small needed pieces of data out into a separate object that will sit among objects like it and carry no extra cost during processing. Accordingly, to process such objects you'll need some system that knows how to work with them. Continuing the city-map example, you can pull all the trees into one system, the rocks into another, the buildings into a third, the tile animations into a fourth, and so on. This significantly complicates the overall architecture and introduces dependencies between systems that you'll also have to account for during development, but that was a small price for the speed.</p>
+    <p>Here's what the brilliant fathers of game development — though "grandfathers" fits better here — <strong>Saimon Bradbury</strong> and <strong>Mike Gingevich</strong> came up with in 1998. The game entities described above are placed in arrays, with the index being the tile number on the map. The maximum map size is 228×228 and it's always fixed, but visually the map can be smaller, in which case part of the map is stuffed with a notional -1 to know that such data needn't be processed. This is, for example, how the desirability, water and animation processing systems look in the code and in the game.</p>
+    <pre style="margin:1.4rem 0"><code>struct grid_xx {
+    int initialized;
+    e_grid_data_type datatype[2];
+    size_t size_field;
+    int size_total;
+
+    void* items_xx;
+};
+
+void map_grid_init(grid_xx* grid) {
+    grid-&gt;size_field = gr_sizes[grid-&gt;datatype[GAME_ENV]];
+    grid-&gt;size_total = grid-&gt;size_field * GRID_SIZE_TOTAL;
+    grid-&gt;items_xx = malloc(grid-&gt;size_total);
+    grid-&gt;initialized = 1;
+}</code></pre>
+    <p>The map and the data array for land desirability:</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-grid.png" alt="" class="post-image" loading="lazy" />
+    <p>The same array in a more representative form, as it was in the game.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-view.png" alt="" class="post-image" loading="lazy" />
+    <p>The map and the data array for water availability.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/water-grid.png" alt="" class="post-image" loading="lazy" />
+    <p>The same one in a more convenient-to-view form.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/water-view.png" alt="" class="post-image" loading="lazy" />
+    <p>The animation array for each tile. Here we have the inverse situation: when rendering a tile's texture, the information is taken from this array, and by changing these values in the array you can safely and quickly update the data on the map and change how it's displayed.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/anim-grid.png" alt="" class="post-image" loading="lazy" />
+    <p>How the map-update algorithm is implemented (an example for tile desirability, needed to raise a house's level):</p>
+    <pre style="margin:1.4rem 0"><code>grid_xx g_desirability_grid = {0, {FS_INT8, FS_INT8}};
+
+void map_grid_add(grid_xx* grid, uint32_t at, uint32_t v) {
+    if (at &gt;= GRID_SIZE_TOTAL)
+        return;
+
+    ((uint8_t*)grid-&gt;items_xx)[at] += v;
+}
+
+void desirability_t::update_buildings() {
+    int max_id = building_get_highest_id();
+    for (int i = 1; i &lt;= max_id; i++) {
+        building* b = building_get(i);
+        if (b-&gt;state != BUILDING_STATE_VALID) {
+            continue;
+        }
+
+        const model_building* model = model_get_building(b-&gt;type);
+        map_grid_add(&amp;g_desirability_grid, grid_offset, model-&gt;desirabilty);
+        ...
+    }
+}</code></pre>
+    <p>Updating a tile's desirability and accessing the data turn into index access in an array, instead of walking objects and their properties. Another nice property of this solution is fast saving and loading as a binary block that doesn't require walking and updating objects.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-update.png" alt="" class="post-image" loading="lazy" />
+
+    <h2>Ancient DynVMT</h2>
+    <p>As a reminder, the engine was written in pure C; its history traces back to 1991 with the release of Caesar I. Judging by the comments in the resources and various constants from the binary that the community pulled out, by the time Pharaoh was released the engine was at version 6.4 (Caesar had 6.1).</p>
+    <p>There were obviously no goodies like virtual functions (<a href="https://en.wikipedia.org/wiki/Virtual_method_table" target="_blank" rel="noopener">Virtual Method Table</a>), but a similar mechanism was supported by the developers and implemented via callbacks. VMT, or dynamic dispatching, or late binding, in the context of C++ means calling the correct function, which can be defined in several ways for a parent and a child. In the general case, when you define a method inside a class, the compiler remembers its definition (address) and executes it whenever that method is called.</p>
+    <pre style="margin:1.4rem 0"><code>struct A {
+  void foo() { printf("A::foo"); }
+}</code></pre>
+    <p>Here the compiler will create the method A::foo() and remember its address. At this point there is only one implementation of this class method and it is shared across all instances of the class and its descendants. This is called static dispatch or early binding, because the compiler always knows at compile time exactly which method will be called.</p>
+    <pre style="margin:1.4rem 0"><code>struct B {
+  virtual void bar() { printf("B::bar"); }
+  virtual void qux() { printf("B::qux"); }
+}
+
+struct C : public B {
+  virtial void bar() override { printf("C::bar"); }
+}
+
+B* b = new C();
+b-&gt;bar();</code></pre>
+    <p>Once virtual functions appear in a class, the compiler can't know which implementation of the method will be correct at runtime. If we kept using static dispatch, the call <code>b-&gt;bar()</code> would land on <code>B::bar</code>, since from the compiler's point of view that's what the current type of the object points to, even though it's actually a different one.</p>
+    <p>Given that virtual methods can be overridden in descendants, the correct implementation can't be computed at compile time (except in a few explicit cases), so this information has to be found at runtime — and that's what's called dynamic dispatch or late binding.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/vmt.png" alt="" class="post-image" loading="lazy" />
+    <p>Within the game, this mechanism was needed first and foremost to implement the user interface, which had to support "notional" multi-window behavior. In reality the game always showed only one active window; this was due to compute-resource limits — many machines of the era simply couldn't handle drawing all the windows every frame, which would lead to a framerate of 2-3, which you'll agree is utterly unplayable.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/multiwindow.png" alt="" class="post-image" loading="lazy" />
+    <p>The developers of the original game made a bare-bones VMT — a struct of callbacks that were set when a window was initialized (the constructor).</p>
+    <pre style="margin:1.4rem 0"><code>struct window_type {
+    e_window_id id;
+    void (*draw_background)() = nullptr;
+    void (*draw_foreground)() = nullptr;
+    void (*handle_input)(const mouse* m, const hotkeys* h) = nullptr;
+    void (*get_tooltip)(tooltip_context* c) = nullptr;
+    void (*draw_refresh)() = nullptr;
+}</code></pre>
+    <p>This let them get away from bulky switch conditions and spread the implementations across separate files; it also let them make the user interface notionally multi-window and keep a stack of displayed windows with the ability to switch between them.</p>
+    <pre style="margin:1.4rem 0"><code>void window_file_dialog_show(file_type type, file_dialog_type dialog_type) {
+    static window_type window = {       &lt;&lt;&lt; VMT
+        WINDOW_FILE_DIALOG,             &lt;&lt;&lt; header
+        window_draw_underlying_window,  &lt;&lt;&lt; functions
+        draw_foreground,
+        handle_input
+    };
+
+    init(type, dialog_type);     &lt;&lt;&lt; ctor
+    window_show(&amp;window);        &lt;&lt;&lt; new window
+}</code></pre>
+    <p>Another interesting property of this approach is the ability to swap out a "virtual" function's current implementation on the fly without needing a separate class — as was done, for example, for the advisors window, where the same code is responsible for displaying the current advisor, but the concrete implementation is pulled out into separate functions that are swapped on the fly. If you try to do this in C++, you'll need several classes, each using its own implementation of the display function.</p>
+
+    <h2>Logical threads from the last century</h2>
+    <p>Traditionally, in game development over the last twenty years or so, several threads are used to do several tasks, each doing its own work. The OS handles switching between threads and takes on context saving and other "little things". But until the mid-2000s most games didn't have this option, and threads were used mainly for heavy computation like playing sound, loading and decompressing textures, but not for game logic.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/single-thread.png" alt="" class="post-image" loading="lazy" />
+    <p>The single-threaded concurrency model with an event loop lets a program perform various tasks that have been put into a queue; in that case the control of a task's context falls on the developers. This is how the classic keyboard and mouse event handling is done in most games, including modern ones.</p>
+    <p>Meanwhile the need to switch between tasks didn't go anywhere, and it had to be solved either with a task queue or with logical threads, which is what was implemented in Pharaoh. The essence of this solution is that the game loop is broken into steps — for example updating fire probability, tree growth, citizen generation, the influence of wells, and so on.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/logic-threads.png" alt="" class="post-image" loading="lazy" />
+    <p>Each step runs sequentially one after another on each frame (there's also a variant with priorities) until all are done. The game loop is thus stretched across the number of such steps, while execution of each step is guaranteed and the total loop time is smeared between them — and instead of a notional 140ms + render time per frame and 7fps, we get a notional 140ms / 10 = 14ms + render time per frame, or the desired 20-30fps. Over ten frames the game goes through a full game loop, but to the player this split isn't noticeable, because object animations happen at the same speed on every frame — that part can't be moved into a logical thread.</p>
+    <p>Here's how this part was implemented in the game — the code is already slightly changed, but not globally, so the structure should be clear:</p>
+    <pre style="margin:1.4rem 0"><code>void game_t::update_city(int ticks) {
+    g_city.buildings.update_tick(game.paused);
+
+    switch (gametime().tick) {
+    case 1:
+        g_city.religion.update();
+        g_city.coverage_update();
+        break;
+    case 2:
+        g_sound.music_update(false);
+        break;
+    case 3:
+        widget_minimap_invalidate();
+        break;
+    case 4:
+        g_city.kingdome.update();
+        break;
+    case 5:
+        formation_update_all(false);
+        break;
+    case 6:
+        map_natives_check_land();
+        break;
+    ....</code></pre>
+
+    <h2>GodObject and running out of memory</h2>
+    <img src="../../assets/articles/pharaoh-engine-tricks/god-object.gif" alt="" class="post-image" loading="lazy" />
+    <p>In general a <code>god class/object</code> is an anti-pattern in programming that consists of creating a class or data structure that does too many tasks. I haven't yet seen a game engine that managed to avoid such an object appearing; everyone tries to minimize its influence on the architecture, with varying success.</p>
+    <p>Such a class is usually huge, contains many dependencies and manages various objects, performing practically all of the objects' functions. But it had one very significant property for that era — it allowed substantial memory savings and placing objects in one place. On the weak machines of the time, with 32MB of RAM or less, the game launched with cut-down display settings and a limit on the number of citizens in the city; if a normal session allowed 4k figures on the map, a cut-down one only 2k — and that way the developers managed to let more people play.</p>
+    <p>The memory saving lies in the fact that we can lay out sets of data through a <code>union</code>, packing them without the need to bloat the data structures. That's pretty much where the advantages of this approach end, and from there on it's all problems, because a <code>god object</code> is a <code>god</code> precisely in that it really starts doing everything — and at night it also corrupts a little memory.</p>
+    <p>Here's how a city citizen is implemented (an example of how not to do it), but code archaeology sometimes has its own rules, and to avoid breaking the game entirely you have to put up with temporary inconveniences (<a href="https://github.com/dalerank/Akhenaten/blob/master/src/figure/figure.h" target="_blank" rel="noopener">figure.h</a>):</p>
+    <pre style="margin:1.4rem 0"><code>class figure {
+public:
+    e_resource resource_id;
+    uint16_t resource_amount_full; // full load counter
+
+    uint16_t home_building_id;
+    uint16_t immigrant_home_building_id;
+    uint16_t destination_building_id;
+
+    uint16_t id;
+    uint16_t sprite_image_id;
+    uint16_t cart_image_id;
+    animation_context anim;
+    ....
+
+    bool use_cross_country;
+    bool is_friendly;
+    uint8_t state;
+    uint8_t faction_id; // 1 = city, 0 = enemy
+    uint8_t action_state_before_attack;
+    uint8_t direction;
+
+    ...
+
+      union {
+        struct {... } herbalist;
+        struct {... } taxman;
+        struct {... } flotsam;
+        struct {... } fishpoint;
+        ....
+    } local_data;</code></pre>
+
+    <h2>Eternal pyramids</h2>
+    <p>Things are still bad with the pyramids — I just can't find the time to figure out the mess of asm that the logic of building them turns out to be. But with something simpler there's already progress: <a href="https://habr.com/ru/articles/804153/" target="_blank" rel="noopener">the engine can already build mastabas</a>.</p>
+    <img src="../../assets/articles/pharaoh-engine-tricks/mastaba.gif" alt="" class="post-image" loading="lazy" />
+    <p>Thanks for reading to the end! I hope it was interesting. If the project caught your interest, come to the proper <s>telegram channel</s> <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">github repo</a> — let's build pyramids together.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built and hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
