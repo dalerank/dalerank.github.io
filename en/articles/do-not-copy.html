@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Just don't copy that — dalerank</title>
+<meta name="description" content="Pass-by-value vs const&, hidden allocations on strings and vectors, reserve, and a real drop to 10 FPS — with QuickBench benchmarks." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/do-not-copy.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/do-not-copy.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articles</a>
+      <a href="../index.html#books">Books</a>
+      <a href="../index.html#topics">Topics</a>
+      <a href="../about.html">About</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/do-not-copy.html">RU</a><i>/</i><a class="on" href="do-not-copy.html">EN</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap article">
+
+  <div class="article-head">
+    <span class="tag gold">Performance</span>
+    <h1>Just don't copy that</h1>
+    <div class="ameta"><span>September 30, 2024</span><span>5 min</span></div>
+  </div>
+
+  <article class="prose">
+    <img src="../../assets/articles/do-not-copy/copy-01.png" alt="" class="post-image" loading="lazy" />
+    <p>What I'm about to talk about in this article is so trivial that any developer, even a beginner, already knows it — I really do hope so. And yet the code that comes in for review shows that people did, and keep doing, something like this:</p>
+    <pre style="margin:1.4rem 0"><code>bool LoadAnimation(str::string filename);
+void DrawLines(std::vector&lt;Points&gt; path);
+Matrix RotateObject(Matrix m, Angle angle);
+int DrawSprite(Sprite sprite);</code></pre>
+    <p>What do these functions have in common? An argument by value. And every time such functionality is called in the code, a copy of the input data is created in its own temporary context and passed into the function. You can forgive rarely-called code, like loading animations, or hope the compiler's optimizations kick in and eliminate the copy — but as luck would have it, more often than not this approach to development only kills performance and FPS.</p>
+    <p>Any optimization should be approached only! after analyzing it in a profiler — copies, as it turns out, may not be an expensive operation. It depends, for example, on the size of the object: the compiler handles passing objects up to 32 bytes by value just fine; there is some cost, but it's negligible and doesn't show up in benchmarks. A vendor can tweak "something like that into the platform and compiler" so that copying 32 KB from special memory regions is faster than adding a couple of numbers. And in the game itself, optimizing the "hot code," let's be honest, is often not the biggest problem of overall performance. But dynamic memory allocation can spring quite a few surprises, especially when used carelessly.</p>
+    <p>But even if the overhead is small, is there any point in burning CPU cycles when you can avoid it? Those "lost 2–3%" of smeared-out perf, which don't even light up in the profiler, are very hard to catch later and even harder to fix.</p>
+
+    <p><strong>Hidden allocation on strings</strong></p>
+    <pre style="margin:1.4rem 0"><code>#include &lt;string&gt;
+#include &lt;numeric&gt;
+
+size_t PassStringByValueImpl(std::string str) {
+    return std::accumulate(str.begin(), str.end(), 0, [] (size_t v, char a) {
+        return (v += (a == ' ') ? 1 : 0);
+    });
+}
+
+size_t PassStringByRefImpl(const std::string&amp; str) {
+    return std::accumulate(str.begin(), str.end(), 0, [] (size_t v, char a) {
+        return (v += (a == ' ') ? 1 : 0);
+    });
+}
+
+const std::string LONG_STR("a long string that can't use Small String Optimization");
+
+void PassStringByValue(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = PassStringByValueImpl(LONG_STR);
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassStringByValue);
+
+void PassStringByRef(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = PassStringByRefImpl(LONG_STR);
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassStringByRef);
+
+void PassStringByNone(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = 0;
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassStringByNone);</code></pre>
+    <img src="../../assets/articles/do-not-copy/copy-02.png" alt="" class="post-image" loading="lazy" />
+    <p class="cap">QuickBench: <a href="https://quick-bench.com/q/f6sBUE7FdwLdsU47G26yPOnnViY" target="_blank" rel="noopener">f6sBUE7FdwLdsU47G26yPOnnViY</a></p>
+
+    <p><strong>Hidden allocation on arrays</strong></p>
+    <pre style="margin:1.4rem 0"><code>size_t SumValueImpl(std::vector&lt;unsigned&gt; vect)
+{
+    size_t sum = 0;
+    for(unsigned val: vect) { sum += val; }
+    return sum;
+}
+
+size_t SumRefImpl(const std::vector&lt;unsigned&gt;&amp; vect)
+{
+    size_t sum = 0;
+    for(unsigned val: vect) { sum += val; }
+    return sum;
+}
+
+const std::vector&lt;unsigned&gt; vect_in = { 1, 2, 3, 4, 5 };
+
+void PassVectorByValue(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = SumValueImpl(vect_in);
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassVectorByValue);
+
+void PassVectorByRef(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = SumRefImpl(vect_in);
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassVectorByRef);
+
+void PassVectorByNone(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = 0;
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(PassVectorByNone);</code></pre>
+    <img src="../../assets/articles/do-not-copy/copy-03.png" alt="" class="post-image" loading="lazy" />
+    <p class="cap">QuickBench: <a href="https://quick-bench.com/q/GU68xgT0r97eYaCKxMzm9bXJei4" target="_blank" rel="noopener">GU68xgT0r97eYaCKxMzm9bXJei4</a></p>
+    <img src="../../assets/articles/do-not-copy/copy-04.png" alt="" class="post-image" loading="lazy" />
+
+    <h2>The compiler is smarter anyway</h2>
+    <p>In cases where the copied object is smaller than a couple-dozen bytes, we won't notice any difference at all from passing it by reference, to the point that the generated assembly will be "almost identical."</p>
+    <p><strong>There is a copy, but it doesn't matter</strong></p>
+    <pre style="margin:1.4rem 0"><code>struct Vector{
+    double x;
+    double y;
+    double z;
+};
+
+double DotProductObjectImpl(Vector a, Vector p){
+    return (a.x*p.x + a.y*p.y + a.z*p.z);
+}
+
+double DotProductRefImpl(const Vector&amp; a, const Vector&amp; p){
+    return (a.x*p.x + a.y*p.y + a.z*p.z);
+}
+
+void DotProductObject(benchmark::State&amp; state) {
+    Vector in = {1,2,3};
+    for (auto _ : state) {
+        double dp = DotProductObjectImpl(in, in);
+        benchmark::DoNotOptimize(dp);
+    }
+}
+BENCHMARK(DotProductObject);
+
+void DotProductRef(benchmark::State&amp; state) {
+    Vector in = {1,2,3};
+    for (auto _ : state) {
+        double dp = DotProductObjectImpl(in, in);
+        benchmark::DoNotOptimize(dp);
+    }
+}
+BENCHMARK(DotProductRef);
+
+void DotProductNone(benchmark::State&amp; state) {
+    for (auto _ : state) {
+        size_t n = 0;
+        benchmark::DoNotOptimize(n);
+    }
+}
+BENCHMARK(DotProductNone);</code></pre>
+    <img src="../../assets/articles/do-not-copy/copy-05.png" alt="" class="post-image" loading="lazy" />
+    <p class="cap">QuickBench: <a href="https://quick-bench.com/q/drlH-a9o4ejvWP87neq7KAyyA8o" target="_blank" rel="noopener">drlH-a9o4ejvWP87neq7KAyyA8o</a></p>
+    <p>In this example we do, of course, know the size of the struct, and the example is very simple. On the other hand, if passing by reference is clearly no slower than passing by value, using <code>const&amp;</code> is "such best as we can." And passing primitive types by <code>const&amp;</code> has no effect at all when <a href="https://godbolt.org/z/E7K54WY1b" target="_blank" rel="noopener">compiling with the /Ox flag</a>:</p>
+    <img src="../../assets/articles/do-not-copy/copy-06.png" alt="" class="post-image" loading="lazy" />
+    <p>And since there's no advantage, writing something like <code>const int &amp;i</code> is pointless, yet some people still do.</p>
+    <img src="../../assets/articles/do-not-copy/copy-07.png" alt="" class="post-image" loading="lazy" />
+
+    <h2>Reserve my vector</h2>
+    <p>Arrays have a huge advantage over other data structures that often outweighs any conveniences of other containers: their elements sit in memory one after another. You can argue at length about the impact of the chosen algorithm on running time and how it affects performance, but there's nothing faster than the CPU's cache lines, and the more elements that fit in the cache, the faster even the most trivial iteration will run. Any access beyond the L1 cache immediately multiplies the running time.</p>
+    <p>But when working with vectors (dynamic arrays), many forget, or don't remember, what's under the hood. And there, if the allocated space runs out — and it was, say, allocated for 1 (one) element — then:</p>
+    <ul>
+      <li>A new, larger block of memory is allocated.</li>
+      <li>All the stored elements are copied into the new block.</li>
+      <li>The old block of memory is freed.</li>
+    </ul>
+    <p>All these operations are costly — very fast, but costly nonetheless. And they happen under the hood and aren't visible:</p>
+    <ul>
+      <li>if you don't go digging through the standard library code;</li>
+      <li>don't look at allocations with a profiler;</li>
+      <li>trust the code written by the vendor (though here you'll have to take things as they are).</li>
+    </ul>
+    <p><strong>Use reserve, Luke</strong></p>
+    <pre style="margin:1.4rem 0"><code>static void NoReserve(benchmark::State&amp; state)
+{
+  for (auto _ : state) {
+    // create a vector and add 100 elements
+    std::vector&lt;size_t&gt; v;
+    for(size_t i=0; i&lt;100; i++){  v.push_back(i);  }
+    benchmark::DoNotOptimize(v);
+  }
+}
+BENCHMARK(NoReserve);
+
+static void WithReserve(benchmark::State&amp; state)
+{
+  for (auto _ : state) {
+    // create a vector and add 100 elements, but reserve first
+    std::vector&lt;size_t&gt; v;
+    v.reserve(100);
+    for(size_t i=0; i&lt;100; i++){  v.push_back(i);  }
+    benchmark::DoNotOptimize(v);
+  }
+}
+BENCHMARK(WithReserve);
+
+static void CycleNone(benchmark::State&amp; state) {
+  // create the vector only once
+  std::vector&lt;size_t&gt; v;
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(v);
+  }
+}
+BENCHMARK(CycleNone);</code></pre>
+    <img src="../../assets/articles/do-not-copy/copy-08.png" alt="" class="post-image" loading="lazy" />
+    <p class="cap">QuickBench: <a href="https://quick-bench.com/q/OuiFp3VOZKNKaAZgM_0DkJxRock" target="_blank" rel="noopener">OuiFp3VOZKNKaAZgM_0DkJxRock</a></p>
+    <p>And finally, an example of how you can kill perf and get a drop to 10 FPS out of nowhere, just by moving the mouse across the game field. I won't name the engine; the bug is already fixed. Spot the mistake — write it in the comments :)</p>
+    <pre style="margin:1.4rem 0"><code>bool findPath(Vector2 start, Vector2 finish) {
+   ...
+
+   while (toVisit.empty() == false)
+   {
+      ...
+
+      if (result == OBSTACLE_OBJECT_IN_WAY)
+      {
+         ...
+
+         const std::vector&lt;Vector2&gt; directions{ {1.f, 0.f}, {-1.f, 0.f}, {0.f, 1.f}, {0.f, -1.f} };
+         for (const auto&amp; dir : directions)
+         {
+            auto nextPos = currentPosition + dir;
+            if (visited.find(nextPos) == visited.end())
+            {
+               toVisit.push({ nextPos, Vector2::DistanceSq(center, nextPos) });
+            }
+         }
+      }
+   }
+}</code></pre>
+    <img src="../../assets/articles/do-not-copy/copy-09.png" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
