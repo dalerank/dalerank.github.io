@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How Unity gave up on their own strings — dalerank</title>
+<meta name="description" content="The story of Unity's COW strings: copy-on-write with partial buffer sharing, near-zero allocations, the clash with std::string's design, dangling pointers, and why the engine eventually returned to the standard library." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/unity-cow-strings.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/unity-cow-strings.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/unity-cow-strings.html">RU</a><i>/</i><a class="on" href="unity-cow-strings.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>How Unity gave up on their own strings</h1><div class="ameta"><span>Oct 29, 2024</span><span>7 min</span></div></div>
+  <article class="prose">
+    <p>By 2014 the Unity engine had accumulated so many breaking changes and new features that the "5" was effectively a different engine. And though many, behind the identical facade, didn't really notice it, the changes touched every component of the engine, from the file system to the renderer. EA's St. Petersburg office had its own branch of the main repository, lagging behind master by at most a month. I've already written about various implementations and types of <a href="strings-in-engines.html">strings in game engines</a>, but Unity had its own implementation, with both upsides and downsides, that was used in practically every subsystem. People got used to it, knew the weak spots and the bad "use cases" and the good "best practices." So when this system started being ripped out of the engine, a lot broke — and while ordinary users got a straight jump to the new version and only saw echoes of the storm, those of us with access "to the body" caught a lot of fun bugs.</p>
+    <img src="../../assets/articles/unity-cow-strings/01-cow-strings.png" alt="COW strings in Unity" class="post-image" loading="lazy" />
+    <hr />
+    <p>The engine implemented the then-fashionable and convenient COW (copy-on-write) strings, "copy on write." Fashionable, because Qt and GCC also had their own implementations and were pushing them into the standard — which, thankfully, didn't happen; convenient, because when creating and copying such strings the allocations were effectively reduced to zero.</p>
+    <p>The main difference from the general implementation of this mechanism in Qt/GCC was partial sharing of the data. That is, if there were two strings "abcde" and "abc", the second referenced the buffer of the first but had the right length. At the time of profiling a level in <code>Sims Mobile</code>, there were about 3k string allocations at startup, and after that roughly 1 allocation of a new string every 40–50 frames, effectively once a second. All creations and copies of new strings were nullified by this system, and to understand how cool all of this was — for comparison, a similar level on PC in some internal tech demo on a fresh UE4, at the same level, produced close to 200 allocations per frame, just on strings. Every frame! Some not-so-fresh iPhone 5 simply keeled over trying to digest all that on Unreal.</p>
+
+    <h2>Why COW</h2>
+    <p>The core idea of COW (copy-on-write) is to share one and the same data buffer between different string instances and to make a copy only when the data in a particular instance changes. This is called "copy on write," and the main cost of such an implementation is the extra indirection when accessing string values; Unity supported COW implementations from the very first version, judging by the commit history. There were tales that Joachim Ante himself (the company's CTO) personally wrote and designed this class, and the entire localization system in the engine for that matter — the first commits with the implementation really were dated to 2006–2007, but there was no authorship attached, so I'm selling it for what I bought it for.</p>
+
+    <h2>Why it was removed</h2>
+    <p>The reason was the start of rewriting the engine's code to C++11, the partial migration of new code to std::string, and the serious mismatch that arose between the design of std::string and the in-house COW implementation. The standard library came to be used more in the engine, and in places this led to situations where people started working with COW strings as if they were <code>const char*</code> and passing them around as raw data — that is, you effectively passed a raw pointer out of a shared_ptr and worked with it, while the smart pointer itself went on living its own life. When it would fall over was only a matter of a few frames.</p>
+    <p>A COW string has two possible states: exclusive ownership of the buffer, or shared use of the buffer with other COW strings. Assignment and copy operations can move it into the shared state and back. But before performing a "write" operation you have to make sure the string is in the owning state, and that transition leads to creating a new copy and copying the contents of the parent's data buffer into a new, exclusively used buffer.</p>
+    <p>In a string intended for COW, any operation is either non-modifying ("read") or directly modifying ("write"). This makes it easy to determine whether the string needs to be moved into the owning state before performing the operation. In std::string, however, references, pointers and iterators to mutable content are handed out more freely, because every string is in a state of exclusive buffer ownership, to put it in COW-string terms. Even simply indexing values in a non-const string (s[i]) returns a reference that can be used to modify the string.</p>
+    <p>Therefore, for a non-const std::string every such operation can effectively be considered a "write" operation and must be treated as such in a COW implementation. The example below gives the basic code of the class that was used in the engine; I won't touch on the problems of initialization from literals. This code shows how assignment and copying were reduced to almost nothing:</p>
+    <pre style="margin:1.4rem 0"><code>using C_str = const char*;
+using C_ref = const char&amp;;
+
+namespace uengine
+{
+    class UString
+    {
+        using Buffer = vector&lt;char&gt;;
+
+        shared_ptr&lt;Buffer&gt; m_buffer;
+        USize m_length;
+
+        void ensureIsOwning()
+        {
+            if( m_buffer.use_count() &gt; 1 )
+            {
+                m_buffer = make_shared&lt;Buffer&gt;( *m_buffer );
+            }
+        }
+
+    public:
+        C_str c_str() const
+        {
+          return m_buffer-&gt;data();
+        }
+
+        USize length() const
+        {
+          return m_length;
+        }
+
+        C_ref operator[]( const USize i ) const
+        {
+          return (*m_buffer)[i];
+        }
+
+        char&amp; operator[]( const USize i )
+        {
+            ensureIsOwning();
+            return (*m_buffer)[i];
+        }
+
+        template&lt; USize n &gt;
+        UString( Raw_array_of_&lt;n, const char&gt;&amp; literal ):
+            m_buffer( make_shared&lt;Buffer&gt;( literal, literal + n ) ),
+            m_length( n - 1 )
+        {}
+    };
+}</code></pre>
+    <p>Here the default assignment operator is used, which simply copies the m_buffer and m_length data. Copy-on-initialization works exactly the same way. Now let's look at an example of correct use of such strings:</p>
+    <pre style="margin:1.4rem 0"><code>int main()
+{
+    UString str = "Unreal the best engine ever!";
+    C_str cstr = str.c_str();
+
+    // contents of `str` are not modified.
+    {
+        const char first_char = str[0];
+        auto ignore = first_char;
+    }
+
+    cout &lt;&lt; cstr &lt;&lt; endl;
+}</code></pre>
+    <pre style="margin:1.4rem 0"><code>Execution build compiler returned: 0
+Program returned: 0
+Unreal the best engine ever!</code></pre>
+    <p>The COW string is in the owning state, the initialization of the first_char variable simply copies the value of the character — all is well. But if a developer accidentally, as kept happening constantly when working with std::string, adds a logical copy of the string without changing the string's value, the problems begin:</p>
+    <pre style="margin:1.4rem 0"><code>int main()
+{
+    UString str = "Unreal the best engine ever!";
+    C_str cstr = str.c_str();
+
+    // contents of `str` are not modified.
+    {
+        UString other = str;
+        // .... some works
+
+        const char first_char = str[0];
+        auto ignore = first_char;
+        // .... some works
+    }
+
+    cout &lt;&lt; cstr &lt;&lt; endl;      //! Undefined behavior, cstr is dangling.
+}</code></pre>
+    <pre style="margin:1.4rem 0"><code>Execution build compiler returned: 0
+Program returned: 0
+ r({!4uCM&amp;&amp;V^Pt58&gt;~:@|~jk0r/N|YRTM1Fg*&amp;8q#VSyBv6D5/</code></pre>
+    <p>Because the string <code>str</code> is in the shared state, the COW principle forces the <code>str[0]</code> operation to create a copy of the shared buffer in order to move into the owning state. Then, at the end of the block, the only remaining owner of the original buffer — the other string — is destroyed and destroys the buffer. This causes the <code>cstr</code> pointer to become dangling. This is an example close to real cases, which we caught by the dozen during the transition period; the strangest cases were when std::string and UString were mixed and part of the data stayed on the stack — for a while it was still accessible, and at a certain moment it became garbage. In the end the editor, after thinking a bit, produced something in the style of the screenshot below and crashed without dumps.</p>
+    <p><a href="https://godbolt.org/z/fWxsGsvb9" target="_blank" rel="noopener">Godbolt</a> (error example)</p>
+    <img src="../../assets/articles/unity-cow-strings/02-editor-crash.png" alt="Editor crash from a dangling pointer" class="post-image" loading="lazy" />
+    <p>This was treated as a programmer's mistake and ignorance of the engine's basics, but in fact the type was simply badly designed, which is exactly what made it so easy to misuse. To fix such an error, had they started fixing it, in order to avoid the cases mentioned above, it would have been necessary to transition into the owning state on any access to a string element, which would have entailed copying the string's data in every case where a reference, pointer or iterator is handed out, regardless of the string's constness. Attempts to do this in the engine led to all the upsides of using this mechanism disappearing and only the downsides remaining — the need to maintain a not-exactly-simple-to-implement class and a set of algorithms, and the skill of carefully working with this class.</p>
+    <p>Somewhere after 4.3 and closer to 4.6 the tech leads admitted that the maintenance cost had become too high, and the remaining advantages too small, to keep supporting their own COW-string implementation in the engine. And by then <code>string_view</code> and a cheap small-string implementation had arrived in the main compilers anyway.</p>
+
+    <h2>On threads</h2>
+    <p>You can probably recall a fairly widespread misconception that COW strings worked poorly with threads, or that they were inefficient, because with this approach a normal string copy didn't yield an actual copy, and another thread could get free access to the data and change it independently of the main one.</p>
+    <p>To allow the use of string instances shared between different threads while ensuring shared buffer use, almost every access function, including simple indexing via [], would have to use a mutex.</p>
+    <p>In the engine, though, a simple solution was made: a check of the current thread's index in the assignment operator, and if it didn't match, a new copy of the string was created. This of course caused some inconvenience, but such cases were fairly rare, and I can't recall any bugs related to it at all.</p>
+
+    <h2>Immutable strings</h2>
+    <p>This data type showed itself best on immutable strings — like string hashes, identifiers and keys, which made up the overwhelming majority in the engine's code. That's when strings don't assume operations that change the data. Strings can still be assigned, but you can't directly change a string's data — for example, replace "H" with "B" in the word "Hurry." In the case of the engine's COW strings, they supported amortized constant-time initialization from string literals via a hash key for comparison operations, and various constant-time substring operations, for instance as a key in a map. And this was probably the biggest plus of such COW strings — the absence of string-comparison operations when searching in an array or a <code>map</code>. In the "5" development began moving away from home-grown wheels and custom solutions, even when it led to lower performance and higher memory use, as with the standard library's containers. Now the engine relies on the standard library entirely.</p>
+    <p>P.S. Since 2017 I no longer take part in the engine's development, but the adopted course toward unifying software solutions has hardly changed all that much.</p>
+    <p>Thanks for reading!</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

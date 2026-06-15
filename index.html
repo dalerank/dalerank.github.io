@@ -47,12 +47,14 @@
         <a class="btn ghost" href="#books">Смотреть книги</a>
       </div>
       <div class="meta reveal d5">
-        <span><b>57</b> эссе</span>
+        <span><b>58</b> эссе</span>
         <span><b>2</b> книги</span>
         <span>с <b>2014</b></span>
       </div>
     </div>
     <div class="sphere reveal d3">
+      <a class="s3" href="articles/unity-cow-strings.html">Unity и свои строки</a>
+      <a class="s2" href="articles/bioshock-infinite-lessons.html">уроки BioShock: Infinite</a>
       <a class="s2" href="articles/twenty-cores-not-enough.html">20 ядер мало</a>
       <a class="s3" href="articles/gamedev-programmer.html">программист в gamedev</a>
       <a class="s2" href="articles/need-own-game-engine.html">свой игровой движок?</a>
@@ -69,7 +71,6 @@
       <a class="s1" href="articles/catch-the-paying-player.html">тёмные паттерны игр</a>
       <a class="s2" href="articles/miss-old-game-mechanics.html">механики старых игр</a>
       <a class="s1" href="articles/corridors-tell-no-tales.html">коридоры BioShock</a>
-      <a class="s2" href="articles/bioshock-infinite-lessons.html">уроки BioShock: Infinite</a>
       <a class="s2" href="articles/last-of-deus-ex.html">последний Deus Ex</a>
       <a class="s1" href="articles/fistful-of-achievements.html">пригоршня ачивок</a>
       <a class="s2" href="articles/strings-in-engines.html">строки в движках</a>
@@ -101,26 +102,26 @@
       <a class="more" href="articles/index.html">Все статьи →</a>
     </div>
     <div class="grid">
-      <a class="post reveal d1" href="articles/twenty-cores-not-enough.html">
+      <a class="post reveal d1" href="articles/unity-cow-strings.html">
         <span class="arrow">↗</span>
-        <span class="tag gold">Производительность</span>
-        <h3>И целых 20 ядер мало</h3>
-        <p>Одиннадцать приёмов оптимизации C++ из боевых движков: разогрев кэша, compile-time диспетчеризация, разворачивание циклов, согласование знаков и типов, hotpath, SIMD, prefetch, constexpr и lock-free — с бенчмарками и историями из жизни.</p>
-        <div class="pmeta"><span>18 июля 2024</span><span>27 мин</span></div>
+        <span class="tag">Ненормальное программирование</span>
+        <h3>Как Unity отказались от своих строк</h3>
+        <p>История COW-строк в Unity: copy-on-write с частичным копированием буфера и почти нулевыми аллокациями, конфликт с дизайном <code>std::string</code>, висячие указатели и почему движок в итоге вернулся к стандартной библиотеке.</p>
+        <div class="pmeta"><span>29 октября 2024</span><span>7 мин</span></div>
       </a>
-      <a class="post reveal d2" href="articles/fistful-of-achievements.html">
-        <span class="arrow">↗</span>
-        <span class="tag clay">Геймдизайн</span>
-        <h3>За пригоршню ачивок</h3>
-        <p>Психология коллекционных механик в играх: доминирование, социализация, эффект недостроя и зависть, типы коллекций по доступности, ачивки и экипировка как коллекции.</p>
-        <div class="pmeta"><span>28 июня 2024</span><span>8 мин</span></div>
-      </a>
-      <a class="post reveal d3" href="articles/pharaoh-engine-tricks.html">
+      <a class="post reveal d2" href="articles/pharaoh-engine-tricks.html">
         <span class="arrow">↗</span>
         <span class="tag">Реверс-инжиниринг</span>
         <h3>ecs, dynvtbl, логические потоки и Фараон</h3>
         <p>Кодоархеология движка Pharaoh и Caesar III: древнеегипетский ECS на массивах, VMT на минималках через колбеки, логические потоки из прошлого века и god object ради экономии памяти.</p>
         <div class="pmeta"><span>8 окт 2024</span><span>2 мин</span></div>
+      </a>
+      <a class="post reveal d3" href="articles/bioshock-infinite-lessons.html">
+        <span class="arrow">↗</span>
+        <span class="tag clay">Геймдизайн</span>
+        <h3>Чему стоит поучиться у старенькой Bioshock: Infinite?</h3>
+        <p>Уроки геймдизайна из BioShock: Infinite: принцип наглядности, фиксированный и эмергентный нарратив, иллюзия выбора и многослойное повествование Кена Левина — и почему линейный шутер ломает пятую стену.</p>
+        <div class="pmeta"><span>24 июля 2024</span><span>8 мин</span></div>
       </a>
     </div>
   </section>

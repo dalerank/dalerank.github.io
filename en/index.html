@@ -47,12 +47,14 @@
         <a class="btn ghost" href="#books">See the books</a>
       </div>
       <div class="meta reveal d5">
-        <span><b>57</b> essays</span>
+        <span><b>58</b> essays</span>
         <span><b>2</b> books</span>
         <span>since <b>2014</b></span>
       </div>
     </div>
     <div class="sphere reveal d3">
+      <a class="s3" href="articles/unity-cow-strings.html">Unity's own strings</a>
+      <a class="s2" href="articles/bioshock-infinite-lessons.html">BioShock: Infinite lessons</a>
       <a class="s2" href="articles/twenty-cores-not-enough.html">20 cores aren't enough</a>
       <a class="s3" href="articles/gamedev-programmer.html">programmer in gamedev</a>
       <a class="s2" href="articles/need-own-game-engine.html">your own engine?</a>
@@ -69,7 +71,6 @@
       <a class="s1" href="articles/catch-the-paying-player.html">dark game patterns</a>
       <a class="s2" href="articles/miss-old-game-mechanics.html">old-game mechanics</a>
       <a class="s1" href="articles/corridors-tell-no-tales.html">BioShock corridors</a>
-      <a class="s2" href="articles/bioshock-infinite-lessons.html">BioShock: Infinite lessons</a>
       <a class="s2" href="articles/last-of-deus-ex.html">the last Deus Ex</a>
       <a class="s1" href="articles/fistful-of-achievements.html">fistful of achievements</a>
       <a class="s2" href="articles/strings-in-engines.html">strings in engines</a>
@@ -101,26 +102,26 @@
       <a class="more" href="articles/index.html">All articles →</a>
     </div>
     <div class="grid">
-      <a class="post reveal d1" href="articles/twenty-cores-not-enough.html">
+      <a class="post reveal d1" href="articles/unity-cow-strings.html">
         <span class="arrow">↗</span>
-        <span class="tag gold">Performance</span>
-        <h3>And 20 cores still aren't enough</h3>
-        <p>Eleven C++ optimization techniques from production engines: cache warming, compile-time dispatch, loop unrolling, signed/unsigned and type matching, hotpath isolation, SIMD, prefetch, constexpr and lock-free — with benchmarks and war stories.</p>
-        <div class="pmeta"><span>Jul 18, 2024</span><span>27 min</span></div>
+        <span class="tag">Abnormal programming</span>
+        <h3>How Unity gave up on their own strings</h3>
+        <p>The story of Unity's COW strings: copy-on-write with partial buffer sharing and near-zero allocations, the clash with <code>std::string</code>'s design, dangling pointers, and why the engine eventually returned to the standard library.</p>
+        <div class="pmeta"><span>Oct 29, 2024</span><span>7 min</span></div>
       </a>
-      <a class="post reveal d2" href="articles/fistful-of-achievements.html">
-        <span class="arrow">↗</span>
-        <span class="tag clay">Game design</span>
-        <h3>For a fistful of achievements</h3>
-        <p>The psychology of collection mechanics in games: domination, socialization, the unfinished-set effect and envy; types of collections by availability; achievements and gear as collections.</p>
-        <div class="pmeta"><span>Jun 28, 2024</span><span>8 min</span></div>
-      </a>
-      <a class="post reveal d3" href="articles/pharaoh-engine-tricks.html">
+      <a class="post reveal d2" href="articles/pharaoh-engine-tricks.html">
         <span class="arrow">↗</span>
         <span class="tag">Reverse-engineering</span>
         <h3>ECS, dynvtbl, logical threads and Pharaoh</h3>
         <p>Code archaeology of the Pharaoh and Caesar III engine: an ancient-Egyptian ECS on flat arrays, a bare-bones VMT made of callbacks, logical threads from the last century, and a god object to save memory.</p>
         <div class="pmeta"><span>Oct 8, 2024</span><span>2 min</span></div>
+      </a>
+      <a class="post reveal d3" href="articles/bioshock-infinite-lessons.html">
+        <span class="arrow">↗</span>
+        <span class="tag clay">Game design</span>
+        <h3>What can we learn from the old BioShock: Infinite?</h3>
+        <p>Game design lessons from BioShock: Infinite: the principle of clarity, fixed and emergent narrative, the illusion of choice and Ken Levine's layered storytelling — and how a linear shooter breaks the fifth wall.</p>
+        <div class="pmeta"><span>Jul 24, 2024</span><span>8 min</span></div>
       </a>
     </div>
   </section>
