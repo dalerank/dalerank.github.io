@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spears &amp; bits — dalerank</title>
+<meta name="description" content="Упаковка булевых значений в биты в играх: std::bitset, std::vector&lt;bool&gt;, наивный байтовый массив и решение из CryEngine, бенчмарки с выбросами на 32/64/128, промахи предсказателя переходов и финальная SSE-векторизация на _mm_movemask_epi8 — с 4 мс до 1 мс на кадр." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/spears-and-bits.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/spears-and-bits.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="spears-and-bits.html">RU</a><i>/</i><a href="../en/articles/spears-and-bits.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Производительность</span><h1>Spears &amp; bits</h1><div class="ameta"><span>17 декабря 2024</span><span>15 мин</span></div></div>
+  <article class="prose">
+    <img src="../assets/articles/spears-and-bits/01-header.png" alt="Spears &amp; bits" class="post-image" loading="lazy" />
+    <p>В играх часто используется паттерн упаковки булевых значений в биты. Это удобно для оптимизации памяти и ускорения выполнения массовых проверок. Например, такие проверки могут включать нахождение игрока в тайле, определение доступности клеток на четырёх- или шестигранной сетке или другие пространственные проверки, которые необходимо выполнять быстро. Это не ракетостроение, но когда профайлер показал одну из таких функций в числе горячих, мне стало интересно, как именно она работает и можно ли её оптимизировать. Структура данных bitset — это способ эффективно представлять множество целых индексов, которое к тому же поддерживает различные операции над ним, например объединение, разность, пересечение.</p>
+    <p>Итак, каждый юнит может занимать один или несколько тайлов, особенно если это большой юнит вроде колесницы или требушета, и мы хотим создать производную карту, которая хранит другие признаки, например: есть ли в тайле юнит, или фильтр по здоровью юнитов. Такие карты используются для разных быстрых проверок, вроде такой: можно ли переместиться в точку, или каких юнитов имеет смысл атаковать.</p>
+    <p>Для представления данных мы можем использовать индекс юнита в тайле. В качестве типовой задачи проверять будем только юнитов, у которых здоровье превышает определённое значение. Это условие не взято с потолка. Например, некоторые юниты используют стратегии вроде «убей слабейшего» или «нападай стаей». Для таких стратегий поюнитный обход всех юнитов вокруг (особенно если это выполняют все юниты в группе) может стать крайне затратной по времени операцией.</p>
+    <p>Название статьи получилось как-то само собой: недалеко от моего дома есть хорошее кафе Chief&amp;Bites, достаточно популярное у местных жителей, но пирожные там начинают делать после заказа — такой вот формат анти-кафе. Сами понимаете, прождать, пока сделают свежайшее пирожное, полчаса, а то и час — легко, там даже на чеке пишут время, когда начали делать именно твоё пирожное. Заранее извиняюсь за возможные «велосипеды» в коде, но, возможно, эта тема покажется кому-то полезной.</p>
+    <hr/>
+    <p>Пока вы не задумываетесь об упаковке булевых значений, они вас не беспокоят. А меня на эту тему натолкнули QA, которые прислали довольно странные репорты, что на некоторых картах с бенчмарками тесты ловят микрофризы при передвижении юнитов: глазами вы этого не увидите, но будет неприятное ощущение, что игра «плавает», хотя fps держится высокий. И проявлялось это только на определённых размерах карт и при определённых условиях, об этом чуть позже.</p>
+    <p>Вернёмся к нашему алгоритму, который выглядит в самом простом виде как-то так:</p>
+    <pre style="margin:1.4rem 0"><code>длина массива: N
+
+unitExist[x][y] = !!(unitHealth[x][y] &gt; limit)
+
+for i = 0...N-1
+    byte = pack(!!(unitHealth[i]   &gt; limit),
+                !!(unitHealth[i+1] &gt; limit)
+                ...,
+                !!(unitHealth[i+7] &gt; limit))
+    output[i/8] = byte
+    i += 8</code></pre>
+    <p>И при использовании битовой упаковки позволяют ещё и сэкономить памяти, так было в изначальной задумке.</p>
+    <pre style="margin:1.4rem 0"><code>256 x 256 * 1 (byte/health) = 65536 (bytes) = 64kb
+64kb/8 = 8192 (bytes) = 8kb</code></pre>
+    <p>Опишу только часть, связанную с «упаковкой». Для работы с такими значениями требуются другие алгоритмы, и иногда эта дополнительная работа может существенно замедлить весь процесс. Эта проблема похожа на алгоритмы сжатия, хотя упаковка, как правило, гораздо более быстрый процесс. Сейчас конфликт между объёмом памяти и вычислительной мощностью не стоит так остро, как, скажем, лет двадцать назад, поэтому выбирать, что на что разменивать, остаётся за разработчиком.</p>
+
+    <h2>С кем будем меряться битами?</h2>
+    <p>Чтобы было с чем сравнивать, я возьму несколько устоявшихся решений, у каждого из них есть свои плюсы и минусы. И не всегда скорость решает, но в моём случае это было основным критерием. Расскажу немного, как вообще эта часть кода замаячила в профайлере. Изначальный алгоритм использовал наивное размещение булей в памяти — относительно быстро и просто для реализации, но в порыве рефакторинга он был заменён на <code>std::bitset</code>, что в итоге привело его к периодическому мельканию в профайл-репортах.</p>
+    <ol>
+      <li>Без упаковки: просто храним булевые значения.</li>
+      <li><code>std::bitset</code>.</li>
+      <li><code>std::vector&lt;bool&gt;</code>.</li>
+      <li>Один «ручной» (manual) вариант.</li>
+      <li>Реализации от сообщества.</li>
+    </ol>
+    <p>Сначала я пробовал гонять на живых данных вроде карт из одной известной стратегии, но потом понял, что рандомные данные или просто шум дают схожие результаты, если сравнивать их время работы, поэтому в качестве начальных данных будет вот такой набор:</p>
+    <pre style="margin:1.4rem 0"><code>uhealths.reset(new int[N]);
+exist.reset(new bool[N]);
+length = N;
+
+std::mt19937 gen(0);
+std::uniform_int_distribution&lt;&gt; dist(0, 255);
+
+for (size_t i = 0; i &lt; testLength; ++i) {
+    uhealths[i] = dist(gen);
+    exist[i] = (uhealths[i] &gt; limit);
+}</code></pre>
+
+    <h2>std::bitset</h2>
+    <p>Первый недостаток использования <code>std::bitset</code> заключается в том, что он требует известной константы N на этапе компиляции. Это означает, что если размер битового набора может меняться во время выполнения, <code>std::bitset</code> становится непрактичным, и приходится использовать альтернативы, такие как <code>std::vector&lt;bool&gt;</code> или собственные реализации битовых массивов.</p>
+    <p>Второй — привязка к вендору: <code>std::bitset</code> зависит от реализации конкретного SDK, что может влиять на производительность или даже на правильность работы в зависимости от платформы и компилятора. Например, некоторые реализации могут быть недостаточно оптимизированы для массовой работы с битами, что делает <code>std::bitset</code> менее предпочтительным при использовании в горячих функциях. По этой причине в большинстве движков использование <code>std::bitset</code> не рекомендовано, и разработчики упражняются в описании собственных кактусов.</p>
+    <p>Преимущество этого класса в том, что он представлен в стандартной библиотеке и хорошо отлажен и протестирован.</p>
+    <pre style="margin:1.4rem 0"><code>for (int64_t i = 0; i &lt; length; ++i)
+    exist_bs.set(i, !!(uhealths[i] &gt; limit));</code></pre>
+
+    <h2>std::vector&lt;bool&gt;</h2>
+    <p><code>std::vector&lt;bool&gt;</code> — это специализированная реализация стандартного контейнера <code>std::vector</code>, когда вместо выделения одного байта памяти на каждый элемент они упаковываются в биты, что экономит память. Однако такая оптимизация имеет свои недостатки, которые делают <code>std::vector&lt;bool&gt;</code> менее подходящим для использования. Недостатком можно считать отсутствие семантики контейнера — класс не предоставляет прямого доступа к своим элементам в виде ссылок (<code>bool&amp;</code>). Вместо этого он использует прокси-объекты, и операции чтения и записи становятся менее эффективными из-за необходимости работы через прокси. Некоторые реализации алгоритмов стандартной библиотеки не могут работать или могут работать медленнее из-за отсутствия ссылочной семантики.</p>
+    <p>Но основной же проблемой является плохая предсказуемость времени работы, если вставка элемента приводит к переаллокации массива. Об этом многие забывают на этапе создания логики.</p>
+    <pre style="margin:1.4rem 0"><code>for (int64_t i = 0; i &lt; arrayLength; ++i)
+    exist_vb[i] = !!(uhealths[i] &gt; health);</code></pre>
+
+    <h2>Наивная версия</h2>
+    <p><code>std::vector&lt;uint8_t&gt;</code> — это стандартный контейнер, который часто используется для работы с наборами булевых значений, когда требуется высокая производительность, простота реализации и предсказуемое поведение. В отличие от <code>std::vector&lt;bool&gt;</code>, он не пытается упаковать значения в биты, а хранит каждый элемент как отдельный байт (8 бит). Простота — работает как обычный массив байтов, предоставляя прямой доступ к элементам, включая возможность использовать ссылки (<code>uint8_t&amp;</code>); хорошая производительность — минимальные накладные расходы среди всех классов; и совместимость со всеми алгоритмами делает этот класс лучшим выбором для игрового движка. Могу ещё отметить минимальные различия в разных реализациях практически во всех SDK, что делает её предсказуемой и одинаковой на всех платформах. Из минусов — необходимость таскать в юните относительно большой объём данных, 80% которых никак не используются.</p>
+    <pre style="margin:1.4rem 0"><code>auto uhealths = health.get();
+auto pOutputByte = vector&lt;uint8_t&gt;::data();
+
+for (int i = 0; i &lt; testLen; ++i) {
+    *pOutputByte = (*uhealths &gt; limit);
+    pInputData++;
+    pOutputByte++;
+}</code></pre>
+
+    <h2>ce::bitset</h2>
+    <p>Решение взято из движка CryEngine (<a href="https://github.com/ValtoGameEngines/CryEngine" target="_blank" rel="noopener">github.com/ValtoGameEngines/CryEngine</a>), красивое и простое. Исходники довольно старые, новее, к сожалению, не нашёл. У нас есть N/8 полных байтов, а также один байт в конце, который может быть частично заполнен. В основе лежит, как обычно, использование массива <code>uint8_t</code>, который хранит битовую информацию.</p>
+    <p>Плюсы решения: эффективность — используется минимальное количество байт; и простота — код простой и легко адаптируется под различные нужды, например для проверки других состояний юнитов, таких как время жизни, статус или другие флаги. Тут используются два паттерна оптимизации — разворачивание цикла, когда вместо работы с одной переменной используются восемь разных переменных, чтобы хранить результат условия, и data parallelism CPU: на усмотрение CPU эти переменные могут быть выполнены в произвольном порядке или одновременно, если у него будут регистры для выполнения одновременных операций.</p>
+    <p>Используя независимые переменные, авторы Crysis смогли неплохо ускорить и даже превзойти по скорости версию без упаковки! Как вы понимаете, эта тема довольно широко освещена и исследована, и вы с ней могли сталкиваться на конференциях.</p>
+    <img src="../assets/articles/spears-and-bits/02-ce-bitset.png" alt="ce::bitset из CryEngine" class="post-image" loading="lazy" />
+
+    <h2>Бенчмарки</h2>
+    <p>Вот ещё несколько библиотек с открытым исходным кодом, которые я использовал в разных проектах и движках.</p>
+    <ul>
+      <li><strong>CRoaring</strong>: реализует сжатый формат Roaring на C с обёрткой для C++. Работает с GCC, clang и Visual Studio.</li>
+      <li><strong>EWAHBoolArray</strong>: реализует сжатый формат EWAH на C++. C-версия этой библиотеки частично включена в Git — инструмент, который знаком всем. Похожа на WAH и Concise, но работает быстрее.</li>
+      <li><strong>cbitset</strong>: реализует несжатый bitset на C. Работает с GCC и clang.</li>
+      <li><strong>Concise</strong>: эта библиотека на C++ реализует сжатые форматы WAH и CONCISE. Работает с GCC и clang.</li>
+      <li><strong>BitMagic</strong>: эта библиотека на C++ использует собственный формат сжатия. Чем-то похожа на Roaring, но может использовать больше памяти. Работает с GCC, clang и Visual Studio.</li>
+    </ul>
+    <pre style="margin:1.4rem 0"><code>constexpr int N = 1 &lt;&lt; 22;
+constexpr int testLen = N;
+const int length = N;
+int* ids = nullptr;
+uint8_t * exist = nullptr;
+std::vector&lt;uint8_t&gt; exist_rbyte;
+std::vector&lt;bool&gt; exist_vb;
+uint8_t* exist_cr = nullptr;
+uint8_t *exist_cr_sse4 = nullptr;
+std::bitset&lt;N&gt; exist_bs;
+
+bool init_data = [] {
+    ids = (int*)_aligned_malloc(N * 4, 16);
+    exist = new uint8_t[N];
+    exist_vb.resize(N);
+
+    int numBytes = (N + 7) / 8;
+    exist_cr = new uint8_t[numBytes];
+
+    exist_cr_sse4 = (uint8_t *)_aligned_malloc(numBytes, 16);
+
+    std::mt19937 gen(0);
+    std::uniform_int_distribution&lt;&gt; dist(0, 255);
+
+    for (int i = 0; i &lt; length; ++i) {
+        ids[i] = dist(gen);
+    }
+
+    return true;
+} ();</code></pre>
+    <details style="margin:1.4rem 0">
+      <summary style="cursor:pointer">Время прохождения тестов</summary>
+      <pre style="margin:1rem 0"><code>BM_NaivePack/1           1609942 ns
+BM_NaivePack/16          1192141 ns
+BM_NaivePack/31          1719096 ns
+BM_NaivePack/46          1200694 ns
+BM_NaivePack/61          1618988 ns
+BM_NaivePack/76          2186776 ns
+BM_NaivePack/91          2802234 ns
+BM_NaivePack/106         2662890 ns
+BM_NaivePack/121         2073261 ns
+BM_NaivePack/136         2634842 ns
+BM_NaivePack/151         3746350 ns
+BM_NaivePack/166         3394095 ns
+BM_NaivePack/181         4359031 ns
+BM_NaivePack/196         3435947 ns
+BM_NaivePack/211         3510137 ns
+BM_NaivePack/226         3655667 ns
+BM_NaivePack/241         3991442 ns
+BM_NaivePackBytes/1      3509043 ns
+BM_NaivePackBytes/16     3514472 ns
+BM_NaivePackBytes/31     3678914 ns
+BM_NaivePackBytes/46     3544597 ns
+BM_NaivePackBytes/61     3633955 ns
+BM_NaivePackBytes/76     3617636 ns
+BM_NaivePackBytes/91     3584735 ns
+BM_NaivePackBytes/106    3617619 ns
+BM_NaivePackBytes/121    3723257 ns
+BM_NaivePackBytes/136    3577626 ns
+BM_NaivePackBytes/151    3612330 ns
+BM_NaivePackBytes/166    3645496 ns
+BM_NaivePackBytes/181    3505923 ns
+BM_NaivePackBytes/196    3545582 ns
+BM_NaivePackBytes/211    3575154 ns
+BM_NaivePackBytes/226    3576095 ns
+BM_NaivePackBytes/241    3493394 ns
+BM_BitsetPack/1          6674177 ns
+BM_BitsetPack/16         6621221 ns
+BM_BitsetPack/31         7335433 ns
+BM_BitsetPack/46         6981509 ns
+BM_BitsetPack/61        11823524 ns
+BM_BitsetPack/76        11110423 ns
+BM_BitsetPack/91        11182558 ns
+BM_BitsetPack/106       14577181 ns
+BM_BitsetPack/121       15940045 ns
+BM_BitsetPack/136       15685271 ns
+BM_BitsetPack/151       14161470 ns
+BM_BitsetPack/166       14417320 ns
+BM_BitsetPack/181       12599843 ns
+BM_BitsetPack/196       10681116 ns
+BM_BitsetPack/211        7695923 ns
+BM_BitsetPack/226        9137301 ns
+BM_BitsetPack/241        7174469 ns
+BM_VectorBoolPack/1      5458234 ns
+BM_VectorBoolPack/16     6592367 ns
+BM_VectorBoolPack/31     8488209 ns
+BM_VectorBoolPack/46     9434079 ns
+BM_VectorBoolPack/61    10114762 ns
+BM_VectorBoolPack/76    10074691 ns
+BM_VectorBoolPack/91     9704196 ns
+BM_VectorBoolPack/106    8232093 ns
+BM_VectorBoolPack/121    8646065 ns
+BM_VectorBoolPack/136    8656318 ns
+BM_VectorBoolPack/151    8223281 ns
+BM_VectorBoolPack/166    7549834 ns
+BM_VectorBoolPack/181    6153987 ns
+BM_VectorBoolPack/196    5565482 ns
+BM_VectorBoolPack/211    5112986 ns
+BM_VectorBoolPack/226    6735515 ns
+BM_VectorBoolPack/241    6374604 ns
+BM_VectorBoolCrPack/1       862798 ns
+BM_VectorBoolCrPack/16      961743 ns
+BM_VectorBoolCrPack/30     1463229 ns
+BM_VectorBoolCrPack/31     1663319 ns
+BM_VectorBoolCrPack/32     1763199 ns
+BM_VectorBoolCrPack/46      970211 ns
+BM_VectorBoolCrPack/61     1866960 ns
+BM_VectorBoolCrPack/62     1966960 ns
+BM_VectorBoolCrPack/63     1766960 ns
+BM_VectorBoolCrPack/76      960931 ns
+BM_VectorBoolCrPack/91      970822 ns
+BM_VectorBoolCrPack/106     930512 ns
+BM_VectorBoolCrPack/127    1445005 ns
+BM_VectorBoolCrPack/128    1478082 ns
+BM_VectorBoolCrPack/129    1421018 ns
+BM_VectorBoolCrPack/136    1073085 ns
+BM_VectorBoolCrPack/151    1022925 ns
+BM_VectorBoolCrPack/166    1098550 ns
+BM_VectorBoolCrPack/181    1069320 ns
+BM_VectorBoolCrPack/196     869055 ns
+BM_VectorBoolCrPack/211     864756 ns
+BM_VectorBoolCrPack/226     869617 ns
+BM_VectorBoolCrPack/241     873865 ns
+BM_VectorRoaringPack/1      4275220 ns
+BM_VectorRoaringPack/16     5437126 ns
+BM_VectorRoaringPack/31     6128085 ns
+BM_VectorRoaringPack/46     5871086 ns
+BM_VectorRoaringPack/61     7915343 ns
+BM_VectorRoaringPack/76     7712348 ns
+BM_VectorRoaringPack/91     9502761 ns
+BM_VectorRoaringPack/106   10350658 ns
+BM_VectorRoaringPack/121   11880587 ns
+BM_VectorRoaringPack/136   13258820 ns
+BM_VectorRoaringPack/151    8353258 ns
+BM_VectorRoaringPack/166    7489464 ns
+BM_VectorRoaringPack/181    6191120 ns
+BM_VectorRoaringPack/196    5471773 ns
+BM_VectorRoaringPack/211    4170502 ns
+BM_VectorRoaringPack/226    4265632 ns
+BM_VectorRoaringPack/241    4382265 ns
+BM_VectorEWAHPack/1         1300556 ns
+BM_VectorEWAHPack/16        1577675 ns
+BM_VectorEWAHPack/31        1944834 ns
+BM_VectorEWAHPack/46        2320396 ns
+BM_VectorEWAHPack/61        2747305 ns
+BM_VectorEWAHPack/76        3173199 ns
+BM_VectorEWAHPack/91        3641935 ns
+BM_VectorEWAHPack/106       4138737 ns
+BM_VectorEWAHPack/121       4518641 ns
+BM_VectorEWAHPack/136       5495677 ns
+BM_VectorEWAHPack/151       4214512 ns
+BM_VectorEWAHPack/166       3771664 ns
+BM_VectorEWAHPack/181       3325077 ns
+BM_VectorEWAHPack/196       2797083 ns
+BM_VectorEWAHPack/211       2260267 ns
+BM_VectorEWAHPack/226       2653270 ns
+BM_VectorEWAHPack/241       2997353 ns
+
+BM_VectorBoolCrPack16/1       954375 ns
+BM_VectorBoolCrPack16/16     1039411 ns
+BM_VectorBoolCrPack16/31     1002091 ns
+BM_VectorBoolCrPack16/46     1028297 ns
+BM_VectorBoolCrPack16/61     1000939 ns
+BM_VectorBoolCrPack16/76     1026647 ns
+BM_VectorBoolCrPack16/91     1042885 ns
+BM_VectorBoolCrPack16/106    1032887 ns
+BM_VectorBoolCrPack16/121    1012283 ns
+BM_VectorBoolCrPack16/136    1032231 ns
+BM_VectorBoolCrPack16/151    1015109 ns
+BM_VectorBoolCrPack16/166    1002528 ns
+BM_VectorBoolCrPack16/181     992190 ns
+BM_VectorBoolCrPack16/196     974831 ns
+BM_VectorBoolCrPack16/211    1010501 ns
+BM_VectorBoolCrPack16/226    1112051 ns
+
+BM_VectorBoolCrSSE4Slow/1      2107951 ns
+BM_VectorBoolCrSSE4Slow/16     2560582 ns
+BM_VectorBoolCrSSE4Slow/31     2607340 ns
+BM_VectorBoolCrSSE4Slow/46     2728132 ns
+BM_VectorBoolCrSSE4Slow/61     2643938 ns
+BM_VectorBoolCrSSE4Slow/76     2667886 ns
+BM_VectorBoolCrSSE4Slow/91     2629916 ns
+BM_VectorBoolCrSSE4Slow/106    2786141 ns
+BM_VectorBoolCrSSE4Slow/121    2816921 ns
+BM_VectorBoolCrSSE4Slow/136    2832634 ns
+BM_VectorBoolCrSSE4Slow/151    2824516 ns
+BM_VectorBoolCrSSE4Slow/166    2734794 ns
+BM_VectorBoolCrSSE4Slow/181    2786650 ns
+BM_VectorBoolCrSSE4Slow/196    2808093 ns
+BM_VectorBoolCrSSE4Slow/211    2796277 ns
+BM_VectorBoolCrSSE4Slow/226    2780945 ns
+BM_VectorBoolCrSSE4Slow/241    2750617 ns
+BM_VectorBoolCrSSE4/1           444404 ns
+BM_VectorBoolCrSSE4/16          451969 ns
+BM_VectorBoolCrSSE4/31          522670 ns
+BM_VectorBoolCrSSE4/46          467582 ns
+BM_VectorBoolCrSSE4/61          475176 ns
+BM_VectorBoolCrSSE4/76          458831 ns
+BM_VectorBoolCrSSE4/91          438453 ns
+BM_VectorBoolCrSSE4/106         455410 ns
+BM_VectorBoolCrSSE4/121         440304 ns
+BM_VectorBoolCrSSE4/136         453381 ns
+BM_VectorBoolCrSSE4/151         458007 ns
+BM_VectorBoolCrSSE4/166         463374 ns
+BM_VectorBoolCrSSE4/181         447081 ns
+BM_VectorBoolCrSSE4/196         492977 ns
+BM_VectorBoolCrSSE4/211         449133 ns
+BM_VectorBoolCrSSE4/226         484524 ns
+BM_VectorBoolCrSSE4/241         447056 ns</code></pre>
+    </details>
+    <p>Из того что было в наличии при проведении тестов (<a href="https://www.cpu-monkey.com/en/compare_cpu-amd_ryzen_7_7435hs-vs-intel_core_i7_12650h" target="_blank" rel="noopener">сравнение CPU</a>), запускались на одном ядре с установленным affinity, но Intel всё равно умудрялся перекидывать поток между ядрами, это было видно в PIX'е — вероятно, отсюда же и просадка по времени выполнения. AMD не перекидывал тред, и context switches там было заметно меньше.</p>
+    <img src="../assets/articles/spears-and-bits/03-intel.png" alt="Intel i7-12650H" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/04-amd.png" alt="AMD Ryzen 7 7435HS" class="post-image" loading="lazy" />
+
+    <h2>Ветвления</h2>
+    <p>Как вы, возможно, уже заметили, на графиках у всех рассмотренных алгоритмов присутствуют выбросы в районе 32, 64, 128. Могу предположить, что проблема в неправильных предсказаниях ветвлений и частых промахах блока предсказаний переходов. Когда значение порога относительно стабильное, вероятность того, что входные значения вызовут изменение ветки, относительно мала. Но для порогов, кратных или близких к 32, картина меняется, объяснить я это не могу. Поискав дополнительную информацию в интернетах, набрёл на интересную статью, достаточно старую (<a href="https://igoro.com/archive/fast-and-slow-if-statements-branch-prediction-in-modern-processors/" target="_blank" rel="noopener">Fast and slow if-statements: branch prediction</a>) на эту тему.</p>
+    <p>Для значений больше 127 можно наблюдать уменьшение числа бранч-миссов и, соответственно, увеличение скорости работы: проц видит по истории BPU, что предыдущие ветвления уходили по другой ветке. Самый пик почти во всех алгоритмах мы видим возле значения 128; к сожалению, у меня нет инструментов для измерения бранч-миссов проца.</p>
+
+    <h2>Почему не «глючит» алгоритм от CryEngine</h2>
+    <p>Ну и, наверное, у вас есть вопрос, почему версия от CR избавлена от этих эффектов и работает более-менее стабильно на всём интервале? Как вы можете заметить, версия от авторов Crysis не использует ветвления. Вместо этого она использует инструкцию <code>setg</code> (set byte if greater), но это не настоящее ветвление.</p>
+    <pre style="margin:1.4rem 0"><code>typedef unsigned char uint8_t;
+
+void bm_branch(int* uhealths, uint8_t* bm, int len, int limit)
+{
+    uint8_t mask[8] = { 0 };
+    const auto lenDivBy8 = (len / 8) * 8;
+
+    auto h = uhealths;
+    auto bb = bm;
+
+    for (int j = 0; j &lt; lenDivBy8; j += 8)
+    {
+        mask[0] = h[0] &gt; limit ? 0x01 : 0;
+        mask[1] = h[1] &gt; limit ? 0x02 : 0;
+        mask[2] = h[2] &gt; limit ? 0x04 : 0;
+        mask[3] = h[3] &gt; limit ? 0x08 : 0;
+        mask[4] = h[4] &gt; limit ? 0x10 : 0;
+        mask[5] = h[5] &gt; limit ? 0x20 : 0;
+        mask[6] = h[6] &gt; limit ? 0x40 : 0;
+        mask[7] = h[7] &gt; limit ? 0x80 : 0;
+
+        *bb++ = mask[0] | mask[1] | mask[2] | mask[3] | mask[4] | mask[5] | mask[6] | mask[7];
+        h += 8;
+    }
+}</code></pre>
+    <p><a href="https://gcc.godbolt.org/z/1dz7sEjMz" target="_blank" rel="noopener">godbolt: сравнение асма для MS и clang</a>.</p>
+    <p>Итак, если я правильно понял асм, CR-алгоритм не подвержен промахам в BPU, потому что не использует ветвления, а пользуется <code>setg</code>, которая не вызывает изменения потока управления, как это делают условные переходы.</p>
+    <p>В наивной же версии кода (и, думаю, что и в других алгоритмах тоже) есть ветвления в цикле, что сказывается на скорости работы. И когда процессор натыкается на нешаблонный переход, да ещё на относительно случайных данных, это всё приводит к кратному снижению производительности.</p>
+    <pre style="margin:1.4rem 0"><code>typedef unsigned char uint8_t;
+
+void bm_branch(int* uhealths, uint8_t* bm, int len, int limit)
+{
+    uint8_t mask = 0;
+    int shiftl = 0;
+
+    auto h = uhealths;
+    auto bb = bm;
+
+    for (int i = 0; i &lt; len; ++i)
+    {
+        if (*h &gt; limit)
+            mask |= (1 &lt;&lt; shiftl);
+
+        h++;
+        shiftl++;
+
+        if (shiftl &gt; 7)
+        {
+            *bb++ = mask;
+            mask = 0;
+            shiftl = 0;
+        }
+    }
+}</code></pre>
+    <p>То же самое, но с ветвлениями, и компилятор не смог это дело заоптимайзить, даже при хорошо известном паттерне применения. <a href="https://gcc.godbolt.org/z/cs6GExoxn" target="_blank" rel="noopener">godbolt: версия для MS и clang</a>.</p>
+
+    <h2>Бенчмарки — это не реальный проект</h2>
+    <p>Как вы понимаете, бенчмарки — дело хорошее, но реальное приложение накладывает свои ограничения. Поэтому в игре прирост был что-то около 2% на тестах. В продакшн-код, который даёт меньше 3% прироста, мы обычно не пускаем, за исключением фиксов памяти, и он отправляется на доработку, поэтому возможный фикс был отложен в бэклог. Один из коллег на ревью предложил просто расширить диапазон маски, чтобы обрабатывать больше битов за раз — так получилась версия x16, которая, конечно, работала быстрее, но 3% всё равно не давала.</p>
+    <pre style="margin:1.4rem 0"><code>int ImplVectorBoolCr16(int *health, uint8_t *pOutput, int limit) {
+    auto h = (uint8_t*)health;
+    auto pOutputByte = pOutput;
+
+    uint8_t mask[16] = { 0 };
+    const int64_t lenDivBy16 = (testLen / 16) * 16;
+
+    for (int64_t i = 0; i &lt; lenDivBy16; i += 16) {
+        mask[0] = (*h &gt; limit) ? 0x01 : 0; h++;
+        mask[1] = (*h &gt; limit) ? 0x02 : 0; h++;
+        mask[2] = (*h &gt; limit) ? 0x04 : 0; h++;
+        mask[3] = (*h &gt; limit) ? 0x08 : 0; h++;
+        mask[4] = (*h &gt; limit) ? 0x10 : 0; h++;
+        mask[5] = (*h &gt; limit) ? 0x20 : 0; h++;
+        mask[6] = (*h &gt; limit) ? 0x40 : 0; h++;
+        mask[7] = (*h &gt; limit) ? 0x80 : 0; h++;
+        mask[8] = (*h &gt; limit) ? 0x100 : 0; h++;
+        mask[9] = (*h &gt; limit) ? 0x200 : 0; h++;
+        mask[10] = (*h &gt; limit) ? 0x400 : 0; h++;
+        mask[11] = (*h &gt; limit) ? 0x800 : 0; h++;
+        mask[12] = (*h &gt; limit) ? 0x1000 : 0; h++;
+        mask[13] = (*h &gt; limit) ? 0x2000 : 0; h++;
+        mask[14] = (*h &gt; limit) ? 0x4000 : 0; h++;
+        mask[15] = (*h &gt; limit) ? 0x8000 : 0; h++;
+
+        *pOutputByte = mask[0] | mask[1] | mask[2] | mask[3] | mask[4] | mask[5] | mask[6] | mask[7]
+                       | mask[8] | mask[9] | mask[10] | mask[11] | mask[12] | mask[13] | mask[14] | mask[15];
+        pOutputByte += 2;
+    }
+
+    return *pOutputByte;
+}</code></pre>
+    <p>Посмотрев на получившийся код, я подумал, что можно переложить этот алгоритм в SSE, и сделал решение в лоб, но работало оно даже медленнее, чем плюсовый код.</p>
+    <pre style="margin:1.4rem 0"><code>int ImplVectorBoolSSE(int *health, uint8_t *pOutput, int limit) {
+    uint16_t mask[16] = { 0 };
+    const size_t lenDiv16y16 = (arrayLength / 16) * 16; // full packs of 16 values...
+
+    const __m128i sse127 = _mm_set1_epi8(127);
+    const int8_t ConvertedThreshold = ThresholdValue - 128;
+    const __m128i sseThresholds = _mm_set1_epi8(ConvertedThreshold);
+
+    auto pInputData = signedInputValues.get();
+    auto pOutputByte = alignedOutputValues;
+    for (size_t j = 0; j &lt; lenDiv16y16; j += 16)
+    {
+        const auto in16Values = _mm_set_epi8(pInputData[15], pInputData[14], pInputData[13], pInputData[12],
+            pInputData[11], pInputData[10], pInputData[9], pInputData[8],
+            pInputData[7], pInputData[6], pInputData[5], pInputData[4],
+            pInputData[3], pInputData[2], pInputData[1], pInputData[0]);
+        const auto cmpRes = _mm_cmpgt_epi8(in16Values, sseThresholds);
+        const auto packed = _mm_movemask_epi8(cmpRes);
+        *((uint16_t *)pOutputByte) = static_cast&lt;uint16_t&gt;(packed);
+        //*pOutputByte++ = (packed &amp; 0x0000FF00) &gt;&gt; 8;
+        //*pOutputByte++ = packed &amp; 0x000000FF;
+        pOutputByte += 2;
+        pInputData += 16;
+    }
+}</code></pre>
+    <img src="../assets/articles/spears-and-bits/05-sse-slow.png" alt="Бенчмарк наивной SSE-версии" class="post-image" loading="lazy" />
+    <p>Покопавшись в документации Intel и на форумах, я нашёл, что это не полноценный интринсик, а хелпер, который генерит доп. инструкции:</p>
+    <blockquote><p>_mm_set_epi8 is not a direct hardware instruction but a helper intrinsic that generates multiple instructions to construct the desired SIMD register. This adds complexity compared to direct memory loads or other simpler instructions. (stolen from intel forum)</p></blockquote>
+    <p>так что лучше воспользоваться другим интринсиком, благо что наш алгоритм и область применения это позволяют.</p>
+    <pre style="margin:1.4rem 0"><code>alignas(16) int8_t data[16] = {15, 14, 13, ..., 0};
+__m128i reg = _mm_load_si128((__m128i*)data);</code></pre>
+    <p>Так получился окончательный вариант, который давал необходимый прирост по скорости. Алгоритм обрабатывает массив целых чисел (<code>pValues</code>), выполняя для каждого значения проверку, превышает ли оно пороговое значение (порог задаётся переменной <code>limit</code>), и создаёт выходной массив (<code>pOutput</code>), который хранит битовые маски для каждого набора значений. Векторизация обработки массива позволяет обрабатывать 16 значений за одну инструкцию (на консолях можно расширить до 32 за одну операцию, AVX2), значительно ускоряя выполнение по сравнению с традиционными циклами. Уменьшение количества операций с памятью и избавление от ветвлений дополнительно повышает скорость работы алгоритма.</p>
+    <pre style="margin:1.4rem 0"><code>const size_t lenDiv16y16 = (testLen / 16) * 16; // full packs of 16 values...
+const __m128i sse127 = _mm_set1_epi8(127);
+const int8_t ConvertedThreshold = limit - 128;
+const __m128i sseThresholds = _mm_set1_epi8(ConvertedThreshold);
+
+auto pInputData = pValues;
+auto pOutputByte = pOutput;
+for (size_t j = 0; j &lt; lenDiv16y16; j += 16) {
+    const auto in16Values = _mm_loadu_si128(reinterpret_cast(pInputData));
+    const auto cmpRes = _mm_cmpgt_epi8(in16Values, sseThresholds);
+    const auto packed = _mm_movemask_epi8(cmpRes);
+    *((uint16_t *)pOutputByte) = static_cast(packed);
+    pOutputByte += 2;
+    pInputData += 16;
+}</code></pre>
+    <img src="../assets/articles/spears-and-bits/06-sse-final.png" alt="Бенчмарк финальной SSE-версии" class="post-image" loading="lazy" />
+    <p>Всё это вместе позволило снизить время построения битовых карт на больших и сверхбольших картах (256 и 1024 тайла по стороне соответственно) с 4 мс до 1 мс на фрейм. Зависит, конечно же, ещё и от железа: на консолях результаты получались более стабильные.</p>
+
+    <h2>Выводы</h2>
+    <ul>
+      <li>Ветвления дорогие, даже на современных процах, но бороться с ними надо только в очень специальных задачах.</li>
+      <li>Бенчмарки — это очень стрёмная задача: эффект с порогами на 32, 64, 128 практически не наблюдался на райзенах последнего поколения. Ага, вот такие результаты — все наши примочки оказались бесполезны, но там других проблем хватает.</li>
+      <li>Паттерн довольно узкоспециализированный: так, увеличение размера карты приводило к снижению эффекта — заметнее всего он проявлялся на картах 256×256 тайлов, карты большего размера давали схожие результаты.</li>
+      <li>Внимание к ветвлениям важно, особенно в горячих функциях, так как это может существенно повысить производительность, только предварительно проверить 33 раза профайлером это место.</li>
+      <li>Не спешите менять собственный велосипед на стандартный bitset, это не всегда работает в лучшую сторону.</li>
+    </ul>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
