@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How to fit an elephant into a suitcase — dalerank</title>
+<meta name="description" content="The levels of optimization when porting games to weak hardware (Switch, Apple TV, mobile): architecture, algorithms and code. A story about an expensive string-escaping check — from a naive early-exit loop to a branchless version, a lookup table and SIMD with _mm_movemask_epi8, with iPhone load-time tables." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/fit-elephant-in-suitcase.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/fit-elephant-in-suitcase.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/fit-elephant-in-suitcase.html">RU</a><i>/</i><a class="on" href="fit-elephant-in-suitcase.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Performance</span><h1>How to fit an elephant into a suitcase</h1><div class="ameta"><span>Dec 21, 2024</span><span>10 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/fit-elephant-in-suitcase/01-header.jpg" alt="How to fit an elephant into a suitcase" class="post-image" loading="lazy" />
+    <p>I've always been amazed at how developers manage to fit a large amount of computation onto relatively weak hardware — what tricks and solutions they resort to so the application runs fast. This applies not only to game engines but also to databases, control systems and so on, but since my field is still games and game engines, that's what I'll talk about. This difference was especially noticeable when porting relatively recent games (the ps3+ generation) to various handheld consoles like the Nintendo Switch, the Apple TV (this device is also considered a decent platform, in the sense that it has a paying audience) and mobile. Both the Switch and the Apple TV aren't far off the PlayStation 3 in performance, and attempts to port demanding games designed for at least the next (ps4) console generation lead to significant problems that aren't easily solved. Games are fairly demanding software, often soft real-time: you have to deliver an acceptable fps, otherwise it'll hurt to play, be uncomfortable, and nobody will buy it. A small help when porting to handhelds and mobile is their stable hardware, though for mobile I wouldn't say so — there's a whole zoo of CPUs, GPUs and environments there. On consoles it's better, and the specs change once every couple of years. When it comes to porting a game, optimizations can be split into several levels: architecture, algorithms and code.</p>
+    <hr/>
+    <ol>
+      <li><strong>Architecture-level optimizations (~50% gain).</strong> This level is responsible for the overall structure of the game and engine, its components and the interaction between them. If the architecture was initially designed sub-optimally, this leads to serious performance problems on weak devices. The wrong choice of memory-management system (read: crooked pools and lots of copying), an excessive number of allocations or the wrong threading layout (stalls and frequent context switches) create narrow and hard-to-fix bottlenecks that are practically impossible to fix at later development stages, let alone post-development stages like porting. And solving problems at this level gives the most noticeable perf boost, but usually that means rewriting half the engine.</li>
+      <li><strong>Algorithm- and data-structure-level optimizations (~30%).</strong> At this level you decide which algorithms and data structures to use for specific tasks. A good (which doesn't mean the fastest or most academic) or properly chosen algorithm can significantly speed up the whole game. For example, replacing linear search with binary search, using hash tables instead of lists, or applying data structures with optimized access complexity (e.g. search trees) can give a huge performance gain. But there are counter-examples too: a simple linear scan over arrays that fit in the CPU cache is significantly faster than using hash maps and even the most optimized but complex solutions.</li>
+      <li><strong>Source-code + asm-level optimizations (~10%).</strong> This already concerns concrete implementations in code, where micro-optimizations target the execution time of individual code blocks or even single operations, but more often memory usage and data access. A good example here would be eliminating memory allocations wherever possible, unrolling loops if the compiler "couldn't," and much more. Mostly this stage consists of running the profiler and then spending a long time analyzing call stacks, trying to fix what's already broken badly enough to show up in the profiler.</li>
+      <li><strong>Everything else (~10%).</strong> What can be said about this part? Usually it includes proper build pipelines, where the build reaches QA an hour after the commit and comes back to the author within two if there were errors. Custom debugging tools and game replays — modern game-development tools (BT — behavior tree, VS — visual scripts, blueprints, AS — animation scripts) are very hard to debug from under a debugger, and bugs related to them in 99% of cases don't reproduce, though of course it depends on the professionalism of QA. These improvements may not directly affect the game's performance at runtime, but they help find and fix problems faster; and when a developer isn't fixing a bug, they're making a feature — i.e. directly doing the project good.</li>
+    </ol>
+    <p>Software game replays are probably the best bug-debugging tool I've seen over my time in development. It's like time-travel debugging, but doesn't require compiler support and is much cheaper to build.</p>
+    <p>But let's get back to porting games. As I said above, changes at the architecture and algorithm levels have the biggest impact on a game's performance compared to source-code-level optimizations. Even a perfectly written loop can't compensate for an inefficient algorithm or a wrong data-structure choice, and before spending time optimizing code, you should make sure the data architecture and the algorithm are chosen correctly.</p>
+    <p>Another question — will such changes be greenlit? Most likely not: changing the architecture won't be allowed by the project's architect, the tech lead or the tech director in 99.9999% of cases. First, it's not the programmer's concern; second, with such decisions you're simply taking the bread out of the architect's mouth; and third, by changing an existing, working and debugged system you break the neighboring ones, and when that bug surfaces — and it definitely will — no one can say. It's this last reason that keeps the developer who started yesterday from rewriting half the engine and doing it the right way :) You're left to make do with code-and-algorithm-level changes, which, however, also give you the chance to "do some good" to the tune of 10%+ in speed.</p>
+
+    <h2>Component isolation</h2>
+    <img src="../../assets/articles/fit-elephant-in-suitcase/02-isolation.png" alt="Isolating engine components" class="post-image" loading="lazy" />
+    <p>Another important aspect of optimizations, especially when it comes to porting, is the isolation of engine and game components. If components are well isolated from each other, it lets you change their internal implementation without affecting the rest of the system. For example, you can replace an inefficient sorting algorithm with a more performant one without touching the interface or the calling code. Or fork the render system and tweak it for a specific console without breaking the main branch. Isolated components significantly simplify both porting and development itself at all levels — changes become localized and less risky.</p>
+
+    <h2>Micro and small optimizations</h2>
+    <p>I'm talking about <strong>small optimizations</strong> that most often belong to the source-code level and touch relatively small parts of the program, and that are easy to do and cover within a single code review (up to 100 changes and up to 10 files):</p>
+    <ul>
+      <li>Loop optimization: analyzing and replacing nested loops with more efficient ones.</li>
+      <li>Finding and getting rid of linear search in code or loops.</li>
+      <li>Eliminating unnecessary function calls in critical code paths.</li>
+      <li>Getting rid of memory allocations in loops or hot functions.</li>
+    </ul>
+    <p>These small code regions won't affect a game's perf on big consoles or PC; a 1–2% gain is of no interest to anyone, because it requires a lot of effort and time but is imperceptible, and accordingly management figures it's better to spend time developing a feature. But on handhelds even such "small" changes give a noticeable performance gain, especially if they're applied in hot code regions that are called many times. It's worth noting that writing correct and efficient <strong>two or three lines of code</strong> may require analysis, experiments and time on the order of several days. Plus careful profiling and an understanding of the CPU cache's behavior on a specific bit of logic.</p>
+
+    <h2>Myths about low-level optimizations</h2>
+    <img src="../../assets/articles/fit-elephant-in-suitcase/03-myths.png" alt="Myths about low-level optimizations" class="post-image" loading="lazy" />
+    <p>There's a widespread misconception that optimizations at this level require complex and hard-to-understand solutions, such as writing code in asm, using rocket-science algorithms, or wholesale conversion to a SIMD implementation. Luckily, in practice that's not always so, and many optimizations turn out fairly simple and intuitive. For example:</p>
+    <ul>
+      <li>Redundant data copying (passing such arguments to functions).</li>
+      <li>Temporary objects where you could pass a reference or a pointer (strings).</li>
+      <li>Unnecessary memory allocations and reallocations (strings, arrays, object storage).</li>
+      <li>Extra branches in "hot" code paths (nested if).</li>
+      <li>Complex, tangled noodle code spanning 30 screens (spaghetti logic).</li>
+    </ul>
+    <p>Often <strong>clean, readable code</strong> runs fast on its own, because it's simpler for the compiler and optimizer. But not always.</p>
+
+    <h2>An expensive check (a story from one project)</h2>
+    <img src="../../assets/articles/fit-elephant-in-suitcase/04-expensive-check.png" alt="An expensive check" class="post-image" loading="lazy" />
+    <p>The game levels I happened to work on for mobile were described in an internal json-like format that required escaping certain characters. The main development was on PC, of course, and there were no perf problems there. The game could receive external changes in several formats from different servers (json, bjson, xml, kvpatch), plus users could create and share levels, district layouts and individual buildings themselves (custom yaml). All data exchange went through the game's servers, which sent changes and updates in binary form (to save traffic), and to process them correctly they had to be restored to text form, then normalized to json, which then had to be converted to the internal format so the level parser could read it. Levels were requested from the server every time so users couldn't cheat themselves some money, since part of the simulation ran on the local device. Data could arrive in different formats from different systems, and during processing it was fully checked for the need to escape 4 (four!) times.</p>
+    <p>I bring this up to say that an architectural change would have removed all the unnecessary actions described below, but rewriting the servers to defeat 2 seconds of level-load time for the end user will be allowed with very low probability — basically never. This is a pure architectural bug that the system architect didn't notice in time, and which leaked down to the algorithm and code level.</p>
+    <p>Games in general have a lot of text data: it's in configs, in localizations, in resource names. And strings are often represented with quotes <code>"</code>. But what happens if the string itself contains quotes? In that case the string needs to be escaped. For example, the quote character <code>"</code> or the backslash <code>\</code> needs to be replaced with <code>\"</code> or <code>\\</code>. You can easily write code in your favorite language for this check. Most strings don't need escaping. So it's useful to be able to quickly check whether a string requires escaping. The algorithm is very simple: the function takes an argument of type <code>eastl::stringz</code> named <code>v</code> (C++14 didn't have <code>string_view</code> yet, but custom solutions for non-zero-terminated strings already existed). It walks each character <code>c</code> in the input string <code>v</code>.</p>
+    <pre style="margin:1.4rem 0"><code>bool need_escaping_symbol(eastl::stringz v) { // stringz -&gt; string_view
+  for (char c : v) {
+    if ((uint8_t(c) &lt; 32) | (c == '"') | (c == '\\')) {
+      return true;
+    }
+  }
+  return false;
+}</code></pre>
+    <p>Inside the loop it first uses the comparison <code>(uint8_t(c) &lt; 32)</code>, which checks whether the character's ASCII value is less than 32. This condition let us escape control characters (such as newline, tab, etc.); the format had some specifics differing from json, so they also had to be escaped for the parser to work correctly.</p>
+    <p>Then the comparison <code>(c == '"')</code> checks whether the character is a double quote, and <code>(c == '\\')</code> checks whether it's a backslash. If at least one of these conditions is true for any character, the function returns <code>true</code>, indicating that the character requires escaping. If none of the conditions hold for all characters, the function returns <code>false</code>, indicating that escaping such a string isn't needed. Simple? Well, at least not complicated, and understandable even to a junior. On PC (in simulation) this code ran at a good speed and needed no changes. On mobile, though, the situation was grim: an empty level loaded in 10+ seconds, of which 2 seconds went on parsing and applying text configs. And as the number of objects on the level grew, this time got bigger and bigger, and on levels fully packed with buildings it shot up to around 2 minutes on what was, during development, a top-end iPhone 5s, which of course couldn't possibly please the QA department and users. Fifteen seconds of loading was the maximum we could count on to pass store certification.</p>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Simulator</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Native build</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Empty level time (parsing time)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">12s (3s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">10s (2s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">3s (0.152s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">2s (0.112s)</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Full level time (parsing time)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">143s (23s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">92s (16s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">34s (1s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">22s (1.199s)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Here you can note that this function finishes early once it finds a character that needs escaping. The problem with this approach is that, because of this inner <code>if</code>, the compiler can't vectorize these computations. And this early exit with a condition turns out more expensive than just walking the whole string with no conditions.</p>
+    <pre style="margin:1.4rem 0"><code>bool linear_need_escaping_symbol(eastl::stringz v) {
+  bool b = false;
+  for (char c : v) {
+    b |= ((uint8_t(c) &lt; 32) | (c == '"') | (c == '\\'));
+  }
+  return b;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Nice to get a bit of perf just by getting rid of the <code>if</code>, but clearly not enough to get rid of the QA department's nagging reports. But we can pull a fast one and get rid of the <s>QA</s> arithmetic operations and comparisons in the code — for that we need to build a table that already contains all the checks for every possible byte value and a flag for whether it needs escaping or not. This takes a bit more effort, but the result turned out quite fast: checking each character takes just one load from the table.</p>
+    <pre style="margin:1.4rem 0"><code>static constexpr eastl::sarray&lt;uint8_t, 255&gt; vflt_quotable_character =
+    []() constexpr {
+  eastl::sarray&lt;uint8_t, 255&gt; result = {0};
+  for (int i = 0; i &lt; 32; i++) {
+    result[i] = 1;
+  }
+  result['"'] = 1;
+  result['\\'] = 1;
+  return result;
+} ();
+
+bool table_need_escaping_symbol(eastl::stringz view) {
+  uint8_t needs = 0;
+  for (uint8_t c : view) {
+    needs |= vflt_quotable_character[c];
+  }
+  return needs;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Table</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.215 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.255 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">1.700 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2>Can we go faster?</h2>
+    <img src="../../assets/articles/fit-elephant-in-suitcase/05-faster.png" alt="Can we go faster?" class="post-image" loading="lazy" />
+    <p>Yes, if we use SIMD instructions — NEON for mobile or SSE for PC. And since strings usually aren't too long — 60% of strings are under 64 characters (those are keys, resource names, flags and just short strings) — the general idea is to load data in 16-byte blocks and run comparisons over those bytes simultaneously. There's no magic here: why compare one character at a time when you can do N comparisons at once — it should simply be physically faster. And what do we do if we have fewer than N characters or a leftover tail? Then we just fall back to the existing solution, which already shows decent results. For SSE the solution will be roughly like this; for NEON it'll be similar.</p>
+    <pre style="margin:1.4rem 0"><code>inline bool simd_need_escaping_symbol(eastl::stringz view) {
+  int size = view.size();
+  if (size &lt; 16) {
+    return linear_need_escaping_symbol(view);
+  }
+
+  size_t i = 0;
+  __m128i r = _mm_setzero_si128();
+  for (; i + 15 &lt; size; i += 16) {
+    __m128i word = _mm_loadu_si128((const __m128i *)(view.data() + i));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(34)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(92)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(_mm_subs_epu8(word, _mm_set1_epi8(31)),
+                                _mm_setzero_si128()));
+  }
+
+  if (i &lt; size) {
+    __m128i word = _mm_loadu_si128((const __m128i *)(view.data() + view.length() - 16));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(34)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(92)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(_mm_subs_epu8(word, _mm_set1_epi8(31)),
+                                _mm_setzero_si128()));
+  }
+  return _mm_movemask_epi8(r) != 0;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Table</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.215 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.255 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">1.700 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">SIMD</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.480 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.580 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">4.200 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Simulator</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Native build</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Empty level time (parsing time)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">10s (3→1s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">8s (2→0.5s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">3s (0.152→0.052s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">2s (0.112→0.032s)</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Full level time (parsing time)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">128s (23→8s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">74s (16→5s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">33s (1→0.32s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">21s (1.199→0.219s)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>It turned out quite well; we closed this task with a clear conscience. The new year of 2016 was coming, and we calmly went off to celebrate our small victories at the office party. Meanwhile the render team kept on packing elephants and optimizing something there, but that's a whole different story.</p>
+    <img src="../../assets/articles/fit-elephant-in-suitcase/06-closing.png" alt="An elephant in a suitcase" class="post-image" loading="lazy" />
+    <p>Happy New Year, everyone!</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

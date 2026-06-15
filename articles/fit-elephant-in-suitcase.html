@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Как засунуть слона в чемодан — dalerank</title>
+<meta name="description" content="Уровни оптимизации при портировании игр на слабое железо (Switch, Apple TV, мобилки): архитектура, алгоритмы и код. История про дорогую проверку экранирования строк — от наивного цикла с ранним выходом к версии без ветвлений, lookup-таблице и SIMD на _mm_movemask_epi8, с таблицами времени загрузки на iPhone." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/fit-elephant-in-suitcase.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/fit-elephant-in-suitcase.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="fit-elephant-in-suitcase.html">RU</a><i>/</i><a href="../en/articles/fit-elephant-in-suitcase.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Производительность</span><h1>Как засунуть слона в чемодан</h1><div class="ameta"><span>21 декабря 2024</span><span>10 мин</span></div></div>
+  <article class="prose">
+    <img src="../assets/articles/fit-elephant-in-suitcase/01-header.jpg" alt="Как засунуть слона в чемодан" class="post-image" loading="lazy" />
+    <p>Меня всегда удивляло, как разработчики умудряются размещать большой объём вычислений на относительно слабом железе, к каким трюкам и решениям прибегают, чтобы приложение работало быстро. Это относится не только к игровым движкам, но и к базам данных, системам управления и т. д., но так как моя область — это всё же игры и игровые движки, то рассказывать я буду про них. Особенно заметна эта разница была при портировании относительно свежих игр (поколение ps3+) на всякие портативные консоли вроде Nintendo Switch, Apple TV (это девайс тоже считается неплохой платформой в плане того, что там есть платящая аудитория) и мобилки. И Switch, и Apple TV по производительности не сильно далеко ушли от третьей плойки, и попытки перенести требовательные игры, рассчитанные как минимум на следующее (ps4) поколение консолей, приводят к значительным проблемам, которые непросто решаются. Игры — это достаточно требовательный софт, зачастую с мягким реалтаймом: надо же выдавать приемлемый fps, иначе играть будет больно, некомфортно, и её никто не купит. Небольшим подспорьем при переносе на портативки и мобилки является их стабильное железо, хотя вот для мобилок я бы так не сказал — там целый зоопарк процов, видях и окружения. На консолях с этим всё получше, и спеки меняются раз в пару лет. Когда речь заходит о портировании игры, оптимизации можно разделить на несколько уровней: архитектура, алгоритмы и код.</p>
+    <hr/>
+    <ol>
+      <li><strong>Оптимизации на уровне архитектуры (~50% прироста).</strong> Этот уровень отвечает за общую структуру игры и движка, его компоненты и взаимодействие между ними. Если архитектура изначально спроектирована неоптимально, это приводит к серьёзным проблемам с производительностью на слабых устройствах. Неверный выбор системы управления памятью (читай кривые пулы и много копирования), избыточное количество аллокаций или неправильная организация тредов (столлы и частые смены контекста выполнения) создают узкие и трудночинимые места, которые практически невозможно исправить на более поздних этапах разработки, не говоря уже об этапах постразработки вроде портирования. И решение проблем на этом уровне даёт самый ощутимый буст перфа, но обычно для этого надо переписать полдвижка.</li>
+      <li><strong>Оптимизации на уровне алгоритмов и структур данных (~30%).</strong> На этом уровне решается, какие алгоритмы и структуры данных использовать для выполнения конкретных задач. Хороший (это не значит самый быстрый или академический) или правильно подобранный алгоритм может значительно ускорить работу всей игры. Например, замена линейного поиска на бинарный, использование хеш-таблиц вместо списков или применение структур данных с оптимизированной сложностью доступа (например, деревья поиска) может дать огромный прирост производительности. Но есть и обратные примеры: простой линейный поиск по массивам, которые укладываются в кеш проца, значительно быстрее, чем использование хеш-мап и даже самых оптимизированных, но сложных решений.</li>
+      <li><strong>Оптимизации на уровне исходного кода + асм (~10%).</strong> Это уже касается конкретных реализаций в коде, где микрооптимизации направлены на время выполнения отдельных блоков кода или даже единичных операций, но чаще на использование памяти и доступ к данным. Хорошим примером тут будет устранение аллокаций памяти где это только возможно, разворачивание циклов, если компилятор «нешмогла», и много чего другого. В основном этот этап заключается в запуске профайлера и последующем долгом анализе колстеков в попытке починить то, что уже сломано настолько, что стало видно в профайлере.</li>
+      <li><strong>Всё остальное (~10%).</strong> Что можно сказать об этой части? Обычно она включает в себя нормальные сборочные пайплайны, когда билд попадает к QA через час после коммита и возвращается к автору через два, если были ошибки. Кастомные инструменты отладки и игровые реплеи — современные инструменты игровой разработки (BT — behavior tree, VS — visual scripts, blueprints, AS — animation scripts) очень сложно дебажить из-под отладчика, а баги, с ними связанные, в 99% случаев не воспроизводятся, хотя, конечно, зависит от профессионализма QA. Эти улучшения могут не оказывать прямого влияния на производительность игры во время её работы, но способствуют более быстрому выявлению и устранению проблем; а когда разработчик не чинит баг, он делает фичу, т. е. непосредственно наносит добро проекту.</li>
+    </ol>
+    <p>Программные игровые реплеи — пожалуй, лучшее средство отладки багов, что я видел за время разработки. Это как time travel debugging, но не требует поддержки со стороны компилятора и намного дешевле в разработке.</p>
+    <p>Но вернёмся к портированию игр. Как я уже сказал выше, изменения на уровнях архитектуры и алгоритмов оказывают самое большое влияние на производительность игры по сравнению с оптимизациями на уровне исходного кода. Даже идеально написанный цикл не сможет компенсировать неэффективный алгоритм или неверный выбор структуры данных, и прежде чем тратить время на оптимизацию кода, стоит убедиться, что архитектура данных и алгоритм подобраны правильно.</p>
+    <p>Другой вопрос — дадут ли ход таким изменениям? Скорее всего, нет: менять архитектуру ни архитект проекта, ни техлид, ни техдир в 99,9999% не разрешат. Во-первых, это не забота программиста; во-вторых, такими решениями вы просто отбираете хлеб архитекта; и в-третьих, изменяя существующую, работающую и отлаженную систему, вы ломаете соседние, и когда эта бага всплывёт, а она обязательно всплывёт, никто сказать не может. Вот эта последняя причина и не даёт пришедшему вчера разработчику переписать половину движка и сделать как правильно :) Остаётся довольствоваться изменениями на уровне кода-алгоритмов, что, однако, тоже даёт возможность «причинить добро» в размере 10%+ к скорости работы.</p>
+
+    <h2>Изоляция компонентов</h2>
+    <img src="../assets/articles/fit-elephant-in-suitcase/02-isolation.png" alt="Изоляция компонентов движка" class="post-image" loading="lazy" />
+    <p>Ещё один важный аспект оптимизаций, особенно когда речь заходит о портировании, — это изоляция компонентов движка и игры. Если компоненты хорошо изолированы друг от друга, это позволяет изменять их внутреннюю реализацию без влияния на остальную часть системы. Например, вы можете заменить неэффективный алгоритм сортировки на более производительный, не затрагивая интерфейс или вызывающий код. Или форкнуть рендер-систему и допиливать её под конкретную консоль, не ломая основную ветку. Изолированные компоненты значительно упрощают как портирование, так и саму разработку на всех уровнях — изменения становятся локализованными и менее рискованными.</p>
+
+    <h2>Микро- и мелкие оптимизации</h2>
+    <p>Я говорю о <strong>мелких оптимизациях</strong>, которые чаще всего относятся к уровню исходного кода и затрагивают относительно небольшие участки программы, и которые легко сделать и охватить в рамках одного код-ревью (до 100 изменений и до 10 файлов):</p>
+    <ul>
+      <li>Оптимизация циклов: анализ и замена вложенных циклов на более эффективные.</li>
+      <li>Поиск и избавление от линейного поиска в коде или циклах.</li>
+      <li>Устранение ненужных вызовов функций в критических местах кода.</li>
+      <li>Избавление от аллокаций памяти в циклах или горячих функциях.</li>
+    </ul>
+    <p>Эти небольшие участки кода не будут влиять на перф игры на больших консолях или ПК, прирост 1–2% никому не интересен, потому что требует много усилий и времени, но незаметен, и соответственно менеджмент считает, что лучше потратить время на разработку фичи. Но на портативках даже такие «небольшие» изменения дают ощутимый прирост производительности, особенно если они применяются в горячих участках кода, которые вызываются многократно. Стоит отметить, что написание правильных и эффективных <strong>двух-трёх строк кода</strong> может потребовать анализа, экспериментов и времени порядка нескольких дней. А ещё тщательного профилирования и понимания поведения кэша процессора на конкретном участке логики.</p>
+
+    <h2>Мифы о низкоуровневых оптимизациях</h2>
+    <img src="../assets/articles/fit-elephant-in-suitcase/03-myths.png" alt="Мифы о низкоуровневых оптимизациях" class="post-image" loading="lazy" />
+    <p>Существует распространённое заблуждение, что оптимизации на этом уровне требуют использования сложных и труднопонимаемых решений, таких как написание кода на асме, использование рокетсайнс-алгоритмов или поголовного перевода в SIMD-реализацию. Хорошо, что на практике это не всегда так, и многие оптимизации получаются довольно простыми и интуитивно понятными. Например:</p>
+    <ul>
+      <li>Избыточное копирование данных (передача таких аргументов в функции).</li>
+      <li>Временные объекты там, где можно прокинуть ссылку или указатель (строки).</li>
+      <li>Ненужные аллокации и переаллокации памяти (строки, массивы, хранение объектов).</li>
+      <li>Лишние ветвления в «горячих» участках кода (nested if).</li>
+      <li>Сложный и запутанный лапшекод на 30 экранов (spaghetti-logic).</li>
+    </ul>
+    <p>Часто <strong>чистый и понятный код</strong> сам по себе работает быстро, потому что он проще для компилятора и оптимизатора. Но не всегда.</p>
+
+    <h2>Дорогая проверка (история из одного проекта)</h2>
+    <img src="../assets/articles/fit-elephant-in-suitcase/04-expensive-check.png" alt="Дорогая проверка" class="post-image" loading="lazy" />
+    <p>Уровни игры, где мне довелось участвовать в разработке под мобилки, описывались внутренним форматом, похожим на json, который требовал экранирования некоторых символов. Основная разработка велась на ПК, конечно, и там проблем с перфом не было. Игра могла получать внешние изменения в нескольких форматах от разных серверов (json, bjson, xml, kvpatch) плюс пользователи могли сами создавать и делиться уровнями, компоновкой районов и отдельными зданиями (custom yaml). Весь обмен данными шёл через сервера игры, которые присылали изменения и обновления в бинарном виде (экономия трафика), и для корректной обработки их необходимо было восстановить в текстовый вид, затем нормализовать до json'а, который уже надо было конвертнуть во внутренний формат, чтобы парсер уровня мог их прочитать. Уровни запрашивались каждый раз с сервера, чтобы пользователи не могли себе начитить деньжат, т. к. часть симуляции проводилась на локальном устройстве. Данные могли приходить в разных форматах из разных систем, и в процессе обработки 4 (четыре!) раза полностью проверялись на необходимость экранирования.</p>
+    <p>Это я к тому, что архитектурное изменение позволило бы убрать все ненужные действия, описанные ниже, но переписывать сервера, чтобы победить 2 секунды времени на загрузке уровня у конечного пользователя, вам дадут с очень небольшой вероятностью — считай, никогда. Это в чистом виде архитектурная бага, которую своевременно не заметил системный архитект и которая протекла на уровень алгоритмов и кода.</p>
+    <p>В играх вообще очень много текстовых данных: они есть в конфигах, в локализациях, в названиях ресурсов. И строки часто представляются с помощью кавычек <code>"</code>. Но что происходит, если сама строка содержит кавычки? В таком случае строку нужно экранировать. Например, символ кавычки <code>"</code> или обратного слэша <code>\</code> нужно заменить на <code>\"</code> или <code>\\</code>. Вы с лёгкостью напишете код на своём любимом языке для этой проверки. Большинство строк не нуждаются в экранировании. Поэтому полезно иметь возможность быстро проверить, требует ли строка экранирования. Алгоритм очень простой: функция принимает аргумент типа <code>eastl::stringz</code> с именем <code>v</code> (в стандарте C++14 ещё не было <code>string_view</code>, но кастомные решения для non-zero-terminated строк уже были). Она проходит по каждому символу <code>c</code> во входной строке <code>v</code>.</p>
+    <pre style="margin:1.4rem 0"><code>bool need_escaping_symbol(eastl::stringz v) { // stringz -&gt; string_view
+  for (char c : v) {
+    if ((uint8_t(c) &lt; 32) | (c == '"') | (c == '\\')) {
+      return true;
+    }
+  }
+  return false;
+}</code></pre>
+    <p>Внутри цикла сначала используется сравнение <code>(uint8_t(c) &lt; 32)</code>, которое проверяет, меньше ли ASCII-значение символа 32. Это условие позволяло экранировать управляющие символы (такие как новая строка, табуляция и т. д.); формат имел некоторую специфику от json, поэтому их тоже надо было экранировать для правильной работы парсера.</p>
+    <p>Затем сравнение <code>(c == '"')</code> проверяет, является ли символ двойной кавычкой, а <code>(c == '\\')</code> проверяет, является ли символ обратным слэшем. Если хотя бы одно из этих условий истинно для какого-либо символа, функция возвращает <code>true</code>, указывая, что символ требует экранирования. Если ни одно из условий не выполняется для всех символов, функция возвращает <code>false</code>, указывая, что экранирование такой строки не требуется. Просто? Ну не сложно как минимум, и понятно даже джуну. На ПК (в симуляции) этот код работал с хорошей скоростью и не требовал никаких изменений. На мобилках же ситуация была печальная: пустой уровень грузился 10+ секунд, из которых 2 секунды уходило на парсинг и применение текстовых конфигов. А с ростом числа объектов на уровне это время становилось всё больше и больше, и на полностью заполненных зданиями уровнях улетало где-то за 2 минуты на топовом во время разработки iPhone 5s, что, конечно, никак не могло понравиться QA-отделу и пользователям. Пятнадцать секунд загрузки — это был максимум, на который мы могли рассчитывать для прохождения сертификации в стор.</p>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Simulator</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Native build</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Пустой уровень (время парсинга)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">12s (3s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">10s (2s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">3s (0.152s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">2s (0.112s)</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Полный уровень (время парсинга)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">143s (23s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">92s (16s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">34s (1s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">22s (1.199s)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Тут можно отметить, что эта функция завершает выполнение, если обнаружился символ, требующий экранирования. Проблема такого подхода в том, что компилятор из-за вот этого внутреннего <code>if</code> не может эти вычисления векторизовать. И этот ранний выход с условием получается дороже, чем просто пройтись по всей строке без условий.</p>
+    <pre style="margin:1.4rem 0"><code>bool linear_need_escaping_symbol(eastl::stringz v) {
+  bool b = false;
+  for (char c : v) {
+    b |= ((uint8_t(c) &lt; 32) | (c == '"') | (c == '\\'));
+  }
+  return b;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Неплохо получить немного перфа, просто избавившись от <code>if</code>, но явно недостаточно, чтобы избавиться от назойливых репортов QA-отдела. Зато мы можем сделать финт ушами и избавиться от <s>QA</s> арифметических операций и сравнений в коде — для этого надо создать таблицу, которая уже содержит все проверки для каждого возможного значения байта и флаг о том, требуется ли его экранирование или нет. Это требует немного больше усилий, но результат в итоге получился довольно быстрым: для проверки каждого символа достаточно одной загрузки из таблицы.</p>
+    <pre style="margin:1.4rem 0"><code>static constexpr eastl::sarray&lt;uint8_t, 255&gt; vflt_quotable_character =
+    []() constexpr {
+  eastl::sarray&lt;uint8_t, 255&gt; result = {0};
+  for (int i = 0; i &lt; 32; i++) {
+    result[i] = 1;
+  }
+  result['"'] = 1;
+  result['\\'] = 1;
+  return result;
+} ();
+
+bool table_need_escaping_symbol(eastl::stringz view) {
+  uint8_t needs = 0;
+  for (uint8_t c : view) {
+    needs |= vflt_quotable_character[c];
+  }
+  return needs;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Table</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.215 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.255 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">1.700 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2>Можем ли мы сделать быстрее?</h2>
+    <img src="../assets/articles/fit-elephant-in-suitcase/05-faster.png" alt="Можем ли мы сделать быстрее?" class="post-image" loading="lazy" />
+    <p>Да, если использовать SIMD-инструкции — NEON для мобилок или SSE для ПК. А так как обычно строки не слишком длинные — 60% строк меньше 64 символов (это ключи, имена ресурсов, флаги и просто короткие строки), — то общая идея состоит в том, чтобы загружать данные блоками по 16 байт и выполнять сравнения над этими байтами одновременно. Магии здесь нет: зачем сравнивать по одному символу, если можно выполнять N сравнений одновременно, это просто физически должно работать быстрее. А что делать, если у нас меньше N символов или остался хвост? Ну тогда просто вернёмся к уже существующему решению, которое и так показывает неплохие результаты. Для SSE решение будет примерно такое, для NEON будет похоже.</p>
+    <pre style="margin:1.4rem 0"><code>inline bool simd_need_escaping_symbol(eastl::stringz view) {
+  int size = view.size();
+  if (size &lt; 16) {
+    return linear_need_escaping_symbol(view);
+  }
+
+  size_t i = 0;
+  __m128i r = _mm_setzero_si128();
+  for (; i + 15 &lt; size; i += 16) {
+    __m128i word = _mm_loadu_si128((const __m128i *)(view.data() + i));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(34)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(92)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(_mm_subs_epu8(word, _mm_set1_epi8(31)),
+                                _mm_setzero_si128()));
+  }
+
+  if (i &lt; size) {
+    __m128i word = _mm_loadu_si128((const __m128i *)(view.data() + view.length() - 16));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(34)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(word, _mm_set1_epi8(92)));
+    running = _mm_or_si128(r, _mm_cmpeq_epi8(_mm_subs_epu8(word, _mm_set1_epi8(31)),
+                                _mm_setzero_si128()));
+  }
+  return _mm_movemask_epi8(r) != 0;
+}</code></pre>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">PC</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Naive</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.055 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.075 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.650 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">No branches</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.092 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.112 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.900 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Table</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.215 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.255 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">1.700 Gb/s</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">SIMD</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.480 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">0.580 Gb/s</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">4.200 Gb/s</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div style="overflow-x:auto;margin:1.4rem 0">
+    <table style="border-collapse:collapse;width:100%;font-family:var(--serif);font-size:15px">
+      <thead><tr>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left"></th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 5S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">iPhone 6S</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Simulator</th>
+        <th style="border:1px solid var(--line,#ddd);padding:8px;text-align:left">Native build</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Пустой уровень (время парсинга)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">10s (3→1s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">8s (2→0.5s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">3s (0.152→0.052s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">2s (0.112→0.032s)</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">Полный уровень (время парсинга)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">128s (23→8s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">74s (16→5s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">33s (1→0.32s)</td>
+          <td style="border:1px solid var(--line,#ddd);padding:8px">21s (1.199→0.219s)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Получилось очень даже неплохо, эту таску мы закрыли с чистой совестью; наступал новый 2016 год, и мы спокойно пошли праздновать свои маленькие победы на корпоратив. А рендер-тим продолжала упаковывать слонов и что-то там оптимайзить, но это уже совсем другая история.</p>
+    <img src="../assets/articles/fit-elephant-in-suitcase/06-closing.png" alt="Слон в чемодане" class="post-image" loading="lazy" />
+    <p>Всех с наступающим Новым годом!</p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
