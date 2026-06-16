@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game++. String interning — dalerank</title>
+<meta name="description" content="String interning (пул строк) в игровых движках: одна копия строки на все ссылки, интернирование литералов компилятором в clang/GCC и почему трюк ломается на Xbox, опасность сравнения строк через ==, борьба с фрагментацией памяти и простая реализация xstring на хешах с подсчётом ссылок." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/string-interning.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/string-interning.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="string-interning.html">RU</a><i>/</i><a href="../en/articles/string-interning.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Game++. String interning</h1><div class="ameta"><span>13 января 2025</span><span>9 мин</span></div></div>
+  <article class="prose">
+    <img src="../assets/articles/string-interning/01-header.png" alt="Game++. String interning" class="post-image" loading="lazy" />
+    <p>«String interning», иногда это называют «пулом строк» — это <a href="https://en.wikipedia.org/wiki/String_interning" target="_blank" rel="noopener">оптимизация</a>, при которой хранится только одна копия строки, независимо от того, сколько раз программа ссылается на неё. Среди других оптимизаций по работе со строками (SWAR, SIMD-строки, immutable strings, StrHash, Rope string и немного других), часть которых была описана <a href="strings-in-engines.html">тут</a>, она считается одной из самых полезных оптимизаций в игровых движках. Есть, правда, небольшие недостатки у этого подхода, но экономия памяти и скорость работы при правильной подготовке ресурсов и работе с лихвой их перекрывают.</p>
+    <p>Вы 100% когда-нибудь писали одну и ту же строку несколько раз в одной программе. Например: <code>pcstr color = "black";</code> А позже в коде пришлось написать: <code>strcmp(color, "black");</code> Как видите, строковый литерал <code>"black"</code> встречается несколько раз. Означает ли это, что программа содержит две копии строки "black"? Более того, означает ли это, что в оперативную память загружаются две копии этой строки? На оба вопроса ответ — зависит от компилятора и вендора. Благодаря некоторым оптимизациям в clang (Sony) и GCC, каждая строка-литерал хранится в программе только в одном экземпляре и, следовательно, только одна копия загружается в оперативную память, поэтому иногда становятся возможными разные фокусы.</p>
+    <hr/>
+    <p>Это часть серии «Game++»:</p>
+    <ul>
+      <li><strong>Game++. String interning</strong> &lt;=== Вы тут</li>
+      <li><a href="https://habr.com/ru/articles/873990/" target="_blank" rel="noopener">Game++. Cooking vectors</a></li>
+      <li><a href="https://habr.com/ru/articles/876804/" target="_blank" rel="noopener">Game++. Dancing with allocators</a></li>
+      <li><a href="https://habr.com/ru/articles/880918/" target="_blank" rel="noopener">Game++. Juggling STL algorithms</a></li>
+      <li><a href="https://habr.com/ru/articles/882684/" target="_blank" rel="noopener">Game++. run, thread, run...</a></li>
+      <li><a href="https://habr.com/ru/articles/885780/" target="_blank" rel="noopener">Game++. Building arcs</a></li>
+      <li><a href="https://habr.com/ru/articles/891700/" target="_blank" rel="noopener">Game++. Unpacking containers</a></li>
+      <li><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></li>
+      <li><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></li>
+      <li><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></li>
+      <li><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></li>
+      <li><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></li>
+    </ul>
+    <p>Например такой (<a href="https://onlinegdb.com/ahHo6hWn7" target="_blank" rel="noopener">https://onlinegdb.com/ahHo6hWn7</a>):</p>
+    <pre style="margin:1.4rem 0"><code>const char* color = "black";
+
+int main()
+{
+    const char *color2 = "black";
+    printf("%p - %p, %d", color, color2, color == color2);
+
+    return 0;
+}
+
+&gt;&gt;&gt;&gt;
+0x603cc2b7d004 - 0x603cc2b7d004, 1</code></pre>
+    <img src="../assets/articles/string-interning/02-ptr-equal.png" alt="Одинаковые адреса литералов на PlayStation" class="post-image" loading="lazy" />
+    <p>А вот на Xbox этот трюк работать не будет:</p>
+    <pre style="margin:1.4rem 0"><code>00007FF6E0C36320 - 00007FF6E0C36328, 0</code></pre>
+    <img src="../assets/articles/string-interning/03-xbox.png" alt="Разные адреса литералов на Xbox" class="post-image" loading="lazy" />
+
+    <h2>Виноват компилятор?</h2>
+    <p>Да вроде нет. В стандарте вообще ничего не говорится об интернировании строк, поэтому это фактически является расширением компилятора, который может заниматься удалением дубликатов, а может и не заниматься, как вы поняли. И работать это будет только для строк, значения которых известны во время компиляции, что означает: если уже в рантайме код собирает одинаковые строки, то будет создано две копии. В других языках, таких как <code>C#</code> или <code>Java</code>, интернирование строк происходит во время выполнения, потому что .NET Runtime или Java VM реализуют эту оптимизацию что называется из коробки. В C++ у нас нет среды выполнения, которая могла бы выполнить эту оптимизацию, поэтому она происходит только на этапе компиляции, но зато у нас есть игровой движок и приданные программисты, которые могут это сделать.</p>
+    <details style="margin:1.4rem 0">
+      <summary style="cursor:pointer">Ой, хватит заниматься этой чёрной магией</summary>
+      <p>Если по каким-то причинам вы вдруг захотите отключить эту оптимизацию и работать MS-стайл в clang — есть флаг <code>-fno-merge-constants</code>. Эта же оптимизация отвечает за удаление дубликатов для числовых констант с плавающей запятой.</p>
+    </details>
+    <p>К сожалению, эта оптимизация очень хрупкая: существует множество способов её нарушить. Вы видели, что она работает нормально с <code>const char*</code>, и то не везде:</p>
+    <pre style="margin:1.4rem 0"><code>// Количество копий: 1 в rodata, 1 в RAM
+const char* s1 = "black";
+const char* s2 = "black";</code></pre>
+    <p>Если же мы изменим тип на <code>char[]</code>, программа создаст копию литерала при создании переменных:</p>
+    <pre style="margin:1.4rem 0"><code>// Количество копий: 1 в rodata, 3 в RAM
+const char s1[] = "black";
+const char s2[] = "black";</code></pre>
+    <p>Аналогично, если мы изменим тип на <code>string</code>, конструктор создаст копию строки:</p>
+    <pre style="margin:1.4rem 0"><code>// Количество копий: 1 в rodata, хз сколько в RAM будет, если такое положить в хедере
+const string s1 = "black";
+const string s2 = "black";</code></pre>
+
+    <h2>Сравнение строк</h2>
+    <p>Теперь, когда вы увидели некоторые особенности при работе с такими строками на разных платформах, а также знаете, как можно сломать эту оптимизацию, можно посмотреть на сравнение строк с помощью оператора <code>==</code>. Все ведь знают, что использование оператора <code>==</code> для типов указателей, в том числе и для литералов, приводит к сравнению адреса, а не содержимого? Два одинаковых строковых литерала могут иметь одинаковый адрес, когда компилятор смог их объединить, или разные адреса, когда не смог.</p>
+    <pre style="margin:1.4rem 0"><code>const char* color = "black";
+if (color == "black") { // true, потому что работает интернирование строк
+  // ...
+}</code></pre>
+    <p>Магия — но на плойке работает. Всё хорошо, но плохо, потому что это перестаёт работать, как только одна из строк не попадёт в оптимизацию.</p>
+    <pre style="margin:1.4rem 0"><code>const char color[] = "black";
+if (color == "black") { // false, потому что color хранит копию
+  // ...
+}</code></pre>
+    <p>Может, кому-то покажется это прописной истиной, почему крайне нельзя использовать оператор <code>==</code> для сравнения строк типа <code>char*</code>? Но такое, блин, сплошь и рядом: за прошлый год я поймал 6 (шесть! в 2024 году, 4 случая в пятницу, 1 в пятницу 13-го, два случая от одного и того же человека) случаев, когда литералы сравнивались через указатели и приводили к разного рода багам, и примерно столько же попыток было отловлено на код-ревью. Похоже, некоторые забыли, что надо использовать функцию <code>strcmp()</code>, которая является частью стандартной библиотеки и сравнивает символы по одному, возвращая 0, если строки совпадают (она также возвращает -1 или +1 в зависимости от лексикографического порядка, но это здесь не важно).</p>
+    <pre style="margin:1.4rem 0"><code>const char color[] = "black";
+if (strcmp(color, "black") == 0) { // true, потому что сравниваются каждый символ
+  // ...
+}</code></pre>
+    <p>Читаемость, конечно, уменьшилась, подвержена ошибкам и надо помнить правила работы с <code>strcmp</code>, но это наше наследие от plain C и все более-менее понимают, как с этим жить. Ну и перф, конечно, страдает, особенно на синтаксически похожих данных.</p>
+
+    <h2>Не совсем строки</h2>
+    <p>Есть идеи, как растёт фрагментация памяти при использовании строковых данных? Из прошлого опыта по использованию обычных <code>string</code> и их аналогов в движке Unity — суммарный размер составлял от 3% до 6% от размеров дебажного билда, 3% набегали из-за фрагментации, когда мелкая строка удалялась, но в этот участок памяти ничего другого не помещалось. Средний размер строковых данных (в основном ключей) составлял 14–40 байт, и эти дырки были везде. Согласитесь, от 30 до 60 мегабайт «свободной памяти» на гиговом iPhone 5S — достаточная причина, чтобы попытаться оптимизировать её и забрать себе, ну, например, для текстур.</p>
+    <p>К тому же эти данные не нужны в релизе, они нужны только для отладки. Сами строковые данные можно вообще безопасно удалить из релизных сборок, оставив только хеши. Как минимум — это обезопасит или усложнит возможность взлома ресурсов игры. Добавьте сюда линейный аллокатор в отдельном участке памяти и вы получите возможность убрать вызванную строками фрагментацию из билда насовсем, когда всё будет сделано. И вот эти 6% тестовых данных превращаются в менее чем 1% хешей (4 байта на хеш), а освободившуюся память мы точно найдём куда пристроить.</p>
+    <pre style="margin:1.4rem 0"><code>xstring color = "black";
+xstring color2 = "black"
+if (color == color2) { // true, потому что вызывается xstring::operator==()
+  // ..
+}
+
+if (color == "black") { // true, потому что вызывается xstring::operator==()
+  // ..
+}</code></pre>
+    <img src="../assets/articles/string-interning/04-fragmentation.png" alt="Фрагментация памяти от строковых данных" class="post-image" loading="lazy" />
+
+    <h2>На кончиках пальцев</h2>
+    <p>Разработчики давно придумали разные реализации, которые позволяют делать interning данных. Когда моя команда интегрировала это решение в Unity 4, мы вдохновлялись доступными исходниками на гитхабе и решениями из GCC, но по условиям open-source лицензии тот код нельзя было напрямую взять для использования, поэтому писали своё. Что-то подобное я недавно увидел уже в библиотеке stb, вот прям дежавю какое-то (<a href="https://graemephi.github.io/posts/stb_ds-string-interning/" target="_blank" rel="noopener">https://graemephi.github.io/posts/stb_ds-string-interning/</a>).</p>
+    <p>Есть несколько областей, где применяется много, очень много сырых текстовых данных, но они (строки известны заранее) могут быть захешированы: либо во время выполнения, либо в процессе обработки контентного пайплайна. В движке это префабы, экземпляры сцен, модели и части процедурных генераций. Обычно они используются как независимые экземпляры или как шаблоны, которые могут быть дополнены другими данными или компонентами. Ещё это:</p>
+    <ul>
+      <li>Литералы, хешируемые в скриптах</li>
+      <li>Имена тегов в префабах и сценах</li>
+      <li>Строковые значения свойств</li>
+    </ul>
+    <p>Как идея это выглядит довольно просто: это довольно простая таблица поиска, которая сопоставляет идентификаторы строкам.</p>
+    <pre style="margin:1.4rem 0"><code>namespace utils {
+  struct xstrings { eastl::hash_map&lt; uint32_t, std::string &gt; _interns; };
+  namespace strings
+  {
+    uint32_t Intern( xtrings &amp;strs, const char *str );
+    const char* GetString( xstrings &amp;strs, uint32_t id );
+    bool LoadFromDisk( xstrings &amp;strs, const char *path );
+  }
+}</code></pre>
+    <p>В релизе во время выполнения движок или игра может загрузить файл с хешами и значениями строк, если это требуется для отладки. В дебаге же можно создавать такие строки прямо по месту вызова, это, конечно, немного дороже, но код выглядит читаемым. Когда мы только начинали интегрировать эту систему в Unity, у нас был отдельный объект для генерации xstring с различными масками, это было связано с тем, как Unity внутри хранил строковые данные, и было выгоднее заранее нагенерить себе нужные идентификаторы, чтобы они все лежали друг за другом и быстрее обрабатывались, если нужно было пройтись по какому-то массиву свойств. К тому же в четвёрке Юньки был ещё локальный для объекта кеш компонентов, который подгружал несколько следующих компонентов объекта для более эффективного доступа.</p>
+    <pre style="margin:1.4rem 0"><code>xstring tableId = Engine.SetXString( 'table', 'prop', 0 );</code></pre>
+    <p>Эта функция приводила к созданию и хешированию таких строк, как <code>table0prop</code>, <code>table1prop</code> вплоть до <code>table15prop</code>. Уже не нужно было отдельно создавать <code>table15prop</code>, потому что движок уже сделал это. Но это всё особенности устройства конкретного движка, не вижу смысла на них останавливаться, к тому же прошло уже почти 10 лет, может, там вообще всё новое придумали.</p>
+    <p>Позже, благодаря простоте и всеядности этой системы, я использовал её с незначительными вариациями в других проектах и движках. Что до конкретной реализации, то её можно посмотреть здесь (<a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/xstring.h" target="_blank" rel="noopener">github.com/dalerank/Akhenaten/.../xstring.h</a>). Вкратце расскажу, как работает код, он и на самом деле очень простой.</p>
+    <pre style="margin:1.4rem 0"><code>struct xstring_value {
+    uint32_t crc;       // контрольная сумма строки
+    uint16_t reference; // сколько осталось ссылок
+    uint16_t length;    // длина строки
+    std::string value;  // сырые данные, сейчас тут std::string
+                        // но могут быть любые структуры, заточенные под проект
+};
+
+class xstring {
+    xstring_value* _p;
+
+protected:
+    void _dec() {
+        if (0 == _p)
+            return;
+
+        _p-&gt;reference--;
+        if (0 == _p-&gt;reference)
+            _p = 0;
+    }
+
+public:
+    xstring_value *_dock(pcstr value);
+    void _set(pcstr rhs) {
+        xstring_value* v = _dock(rhs);
+        if (0 != v) {
+            v-&gt;reference++;
+        }
+        _dec();
+        _p = v;
+    }
+  ...
+}</code></pre>
+    <p>Структура <code>xstring_value</code> хранит метаданные для строки, в конкретной реализации в качестве хранилища <code>std::string</code> выбран просто для удобства, в каноническом виде там был bump-аллокатор, который просто размещал новую строку в конце (надо помнить про грамотное использование таких xstring) буфера, так гарантировалось, что строки всегда живы. Класс <code>xstring</code> создавал новую строку (если такой ещё не было) и запоминал указатель на то место в памяти, где она размещена, либо получал указатель на существующую копию, если совпадал хеш. В принципе, это все основные моменты, которые требуются для работы, я же говорил, что всё очень просто. Ниже приведён код, который размещает строку в пуле, здесь опять же выбрана <code>std::map</code> ради удобства, да и просто лень было возиться с написанием бамп-аллокатора, он лишь немногим выигрывает по скорости, но немного проигрывает по памяти. Но общий подход серьёзно выигрывает у стандартных строк <code>std::string</code> по времени создания, если они идут через системный аллокатор (malloc/new), и по скорости сравнения.</p>
+    <details style="margin:1.4rem 0">
+      <summary style="cursor:pointer">Неинтересная реализация</summary>
+      <pre style="margin:1.4rem 0"><code>std::map&lt;uint32_t, xstring_value*&gt; data;
+mutex _m; // spinlock ?
+
+xstring_value *dock(pcstr value) {
+    if (nullptr == value) {
+        return nullptr;
+    }
+
+    std::scoped_lock _(_m);
+
+    // calc len
+    const size_t s_len = strlen(value);
+    const size_t s_len_with_zero = s_len + 1;
+    assert(sizeof(xstring_value) + s_len_with_zero &lt; 4096);
+
+    // setup find structure
+    uint16_t length = static_cast(s_len);
+    uint32_t crc = crc32(value, uint32_t(s_len));
+
+    // search
+    auto it = data.find(crc);
+
+    // it may be the case, string is not found or has "non-exact" match
+    if (it == data.end()) {
+        xstring_value *new_xstr = new xstring_value;
+        new_xstr-&gt;reference = 0;
+        new_xstr-&gt;length = length;
+        new_xstr-&gt;crc = crc;
+        new_xstr-&gt;value = value;
+
+        data.insert({crc, new_xstr});
+        return new_xstr;
+    }
+
+    return it-&gt;second;
+}
+
+xstring_container *g_xstring = nullptr;
+
+xstring_value *xstring::_dock(pcstr value) {
+    if (!g_xstring) { g_xstring = new xstring_container(); }
+    return g_xstring-&gt;dock(value);
+}</code></pre>
+    </details>
+
+    <h2>Как использовать</h2>
+    <p>Классический вариант использования таких строк сводится к генерации из скриптов и ресурсов либо объявлению в коде строк-констант. Если вы обратили внимание на класс <code>xstring</code>, то у него есть дефолтный оператор сравнения, и так как сам класс по сути это POD <code>int32_t</code>, все проверки сводятся к сравнению целых чисел. Десять лет назад это дало буст к перфу анимаций чуть меньше 30%, и в целом использование таких строк вкупе с другими оптимизациями сделало возможным запустить <code>Sims Mobile</code> на iPhone 4S, когда игра позиционировалась для шестого поколения, и немножко для пятого, а наши заокеанские коллеги не считали такое в принципе возможным.</p>
+    <pre style="margin:1.4rem 0"><code>struct time_tag {
+    float12 time;
+    xstring tag;
+};
+
+struct events {
+    static const xstring aim_walk;
+    static const xstring aim_turn;
+};
+
+void ai_unit::on_event(const time_tag &amp;tt) {
+    if (tt.tag == events().aim_walk) {
+        ai_start_walk(tt);
+    } else if (tt.tag == events().aim_turn) {
+        ai_start_turn(tt);
+    }
+
+    ai_unit_base::on_event(tt);
+}</code></pre>
+    <p>Ещё немного по этой теме:</p>
+    <ul>
+      <li><a href="https://github.com/foonathan/string_id" target="_blank" rel="noopener"><strong>foonathan/string_id</strong></a> — библиотека на C++ для создания уникальных идентификаторов для строк через интернирование. Отображает строковые литералы в уникальные ID.</li>
+      <li><a href="https://alexpolt.github.io/intern.html" target="_blank" rel="noopener"><strong>Понимание интернирования строк</strong></a> — подробное объяснение интернирования строк, его преимуществ и того, когда и как его эффективно использовать.</li>
+      <li><a href="https://blog.heycoach.in/understanding-string-interning/" target="_blank" rel="noopener"><strong>Блог об интернировании строк</strong></a> — статья глубже рассматривает концепцию интернирования строк, предлагая как теоретическое обоснование, так и практическое применение для производительности в играх.</li>
+      <li><a href="https://github.com/RipcordSoftware/libstringintern" target="_blank" rel="noopener"><strong>libstringintern</strong></a> — библиотека на C++, реализующая интернирование строк для более эффективного управления памятью.</li>
+      <li><a href="https://cpp4arduino.com/2018/10/23/what-is-string-interning.html" target="_blank" rel="noopener"><strong>Интернирование строк в C++</strong></a> — статья фокусируется на интернировании строк в контексте C++. Объясняется, как интернирование строк может снизить использование памяти и улучшить производительность.</li>
+    </ul>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
