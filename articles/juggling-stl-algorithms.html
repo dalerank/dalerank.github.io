@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game++. Juggling STL algorithms — dalerank</title>
+<meta name="description" content="Почему алгоритмы STL — это «разговорный» C++: они показывают Что вы делаете, а не Как; убирают ошибки границ, пустых коллекций и «размазанного перфа», дают код уровня компилятора. История EASTL, итераторы и back_inserter, пример с кешированием шейдеров через set_difference и большая шпаргалка по алгоритмам." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/juggling-stl-algorithms.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/juggling-stl-algorithms.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="juggling-stl-algorithms.html">RU</a><i>/</i><a href="../en/articles/juggling-stl-algorithms.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Ремесло</span><h1>Game++. Juggling STL algorithms</h1><div class="ameta"><span>9 февраля 2025</span><span>29 мин</span></div></div>
+  <article class="prose">
+
+    <img src="../assets/articles/juggling-stl-algorithms/01-header.png" alt="" class="post-image" loading="lazy" />
+<p>Мы все пишем циклы, в каждом софте, в каждой игре они будут. Вы не можете обойтись без них. Скажете, что делает этот код?</p>
+    <img src="../assets/articles/juggling-stl-algorithms/02-loop-sum.png" alt="" class="post-image" loading="lazy" />
+<p>Конечно, это просто: код суммирует элементы массива. Похожую задачу про суммирование или другую операцию над массивом мой лид даёт на собесах :) Люди смотрят с удивлением, а потом большинство пишут, вот то, что было выше. И тут три вещи - человек либо поленился прочитать про STL алгоритмы, либо не доверяет нам и знает про них, но думает что не поймем мы, либо знает, но не понимает зачем показываеть эти знания, почему? вопрос оставим открытым. Этот пример с циклом - простейший алгоритм.</p><p>Алгоритмы STL — это настоящий швейцарский нож для разработчика. Они не просто помогают писать код, а делают его чище, понятнее и надежнее. В проектах с большими кодовыми базами, где легаси код не всегда стабилен и удобен для поддержки, это особенно важно.  Каждый, кто писал циклы вручную, сталкивался с ошибками: вылезли за границы массива, забыли обработать пустой контейнер, сделали лишнее копирование. STL-алгоритмы избавляют от многих проблем, позволяя выразить мысли кратко и четко. Вместо простыней кода с индексами — несколько строк с понятным смыслом. Так что, если вы еще не знакомы со стандартными алгоритмами, самое время это исправить. Это один из тех инструментов, которые однажды освоив, уже невозможно забыть, это как езда на велосипеде, хорошем промышленном велике, за авторством Кнута или Саттера - надежном и с серийным номером.   </p><hr/>
+    <p>Это часть серии «Game++»:</p>
+    <ul><li><p><a href="string-interning.html">Game++. String interning</a></p></li><li><p><a href="cooking-vectors.html">Game++. Cooking vectors</a></p></li><li><p><a href="dancing-with-allocators.html">Game++. Dancing with allocators</a></p></li><li><p>Game++. Juggling STL algorithms &lt;=== Вы тут</p></li><li><p><a href="https://habr.com/ru/articles/882684/" target="_blank" rel="noopener">Game++. run, thread, run...</a></p></li><li><p><a href="https://habr.com/ru/articles/885780/" target="_blank" rel="noopener">Game++. Building arcs</a></p></li><li><p><a href="https://habr.com/ru/articles/891700/" target="_blank" rel="noopener">Game++. Unpacking containers</a></p></li><li><p><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></p></li><li><p><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></p></li><li><p><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></p></li><li><p><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></p></li><li><p><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></p></li></ul><h2>Немного истории</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/03-history.png" alt="" class="post-image" loading="lazy" />
+<p>Далее будет использоваться аббревиатура <code>gtl</code> как и <code>std, stl, eastl</code>, все они обозначают стандартную библиотеку. GTL - game templates library, набор алгоритмов, которые реализует тот или иной движок, фреймворк. Обычно разработчики предпочитают делать свои реализации алгоритмов, чтобы избежать зависимостей от вендоров и компиляторов, а также для унификации работы алгоритмов на разных платформах, чем, к сожалению std похвастаться не может. </p><p>Большинство реализаций  более или менее похожи, а многие опираются на EASTL, как одну из первых, которая появилась в открытом доступе. Первые публичные комиты в EASTL (Electronic Arts Standard Template Library) относятя к 2005 году  в рамках внутренних инструментов Electronic Arts, но сама история появления по разным источникам стартует в 1995, или даже на год-другой раньше.</p><p>Изначально библиотека создавалась как высокопроизводительная альтернатива стандартной STL, оптимизированная для игровых проектов, разрабатываемых EA. Основной целью EASTL было предсказуемое управлению памятью<strong> </strong>и повторяемость результатов на разных платформах. EASTL полностью совместима со стандартной библиотекой, и предоставляет контейнеры и алгоритмы, аналогичные STL, но с упором на разработку игр и движков. Позже, в <strong>2007 году</strong>, компания вывела проект в open-source и с тех пор она активно используется в игровой индустрии. Как обычно у реализации много критиков, но как и в случае языками программирования, язык либо ругают, либо на нем не пишут.</p><h2>Продолжаем суммировать массив</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/04-accumulate.png" alt="" class="post-image" loading="lazy" />
+<p>Возвращаясь к заданному в начале статьи вопросу - меньшая часть, где-то четверть пишут вот так. </p><pre style="margin:1.4rem 0"><code>gtl::vector numbers = {1, 2, 3, 4, 5};
+int sum = gtl::accumulate(numbers.begin(), numbers.end(), 0);</code></pre><p>Собственно это все - что я жду от этого вопроса. Это не тест вашего умения написать логику, чтобы просуммировать массив, это тест того, что новый человек и команда смогут говорить на одном языке. Этот очень короткий пример показывает, что вы знаете про алгоритмы, видите как и где их можно использовать (ну хотя бы отчасти, для позиций выше джуновской у нас сейчас нет алго собеса, потому что он показывает свою несостоятельность уже какое-то время), и что ваш код будет выразительным и менее подверженным ошибкам.</p><p>А знаете какая может быть ошибка? Очень простой пример, все то же самое, просто у нас теперь строки. Строка здесь выступает в качестве класса, который аллоцирует данные при создании.</p><pre style="margin:1.4rem 0"><code>std::vector numbers = {"1", "2", "3", "4", "5"};
+string sum = 0;
+
+for (string num : numbers) { 
+  sum += num;
+}</code></pre><p>Или другой пример, тоже очень частый. Надо выборочно скопировать массив, применяется для разных фильтров, кешей, архивов и тд</p><pre style="margin:1.4rem 0"><code>std::vector numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; 
+std::vector odds;
+
+for (int num : numbers) { 
+  if (!!(num % 2)) { 
+    odds.push_back(num); 
+  } 
+}</code></pre><p>Аналогично <code>for</code>, но более выразительно и с меньшим количеством кода.</p><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+std::vector&lt;int&gt; odds;
+
+std::copy_if(numbers.begin(), numbers.end(), std::back_inserter(odds), 
+             [] (const auto &amp;v) { return !!(v % 2); })
+</code></pre><h2>Другой пример</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/05-copy-if.png" alt="" class="post-image" loading="lazy" />
+<p>Если вы хоть немного знакомы с программированием, то, просмотрев этот код, вы поймете, что он копирует элементы из массива numbers в другой массив по какому-то условию. В принципе, вам даже не надо смотреть на само условие, потому мы смотрим в данном случае на логику работы.</p><pre style="margin:1.4rem 0"><code>std::vector numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; 
+std::vector odds;
+
+std::copy_if(numbers.begin(), numbers.end(), std::back_inserter(odds),
+             [] (auto &amp;v) { return v % 2 != 0; })</code></pre><p>Там вобще может быть что-то такое:</p><pre style="margin:1.4rem 0"><code> std::copy_if(numbers.begin(), numbers.end(), std::back_inserter(odds),
+              func);</code></pre><p>Даже если вы не знаете что означает <code>std::back_inserter</code>, вы сразу понимаете - данные из одного массива копируются в другой массив, потому что в коде явно указано: <code>copy</code>. В этом разница между написанием сырой логики, которую нужно прочитать и осмыслить, прежде чем двинуться дальше. </p><p>Это всего 10–15 секунд. Но если умножить это на количество строк в вашей кодовой базе и учесть более сложные сценарии, как много времени вы тратите на разбор логики внутри блока, вместо понимания логики работы этого участка кода в целом?</p><p><code>std::copy/copy_if</code> — это алгоритм, доступный во всех имплементациях STL (а их больше десятка), и каждый вендор старается сделать свою. Да, некоторые элементы в этом коде больше похожи на шум, чем на полезную информацию — например, <code>.begin()</code> и <code>.end()</code>, но это было сделано из-за принципа ортогональности данных. В любом случае, такое использование STL закладывает хорошую, и главное, стандартную основу для написания понятного и самодокументируемого кода. Это как разговаривать на одном языке.</p><p>Все алгоритмы STL, разработанные за десятилетия развития языка, указывают, что конкретно они делают. Они <strong>НЕ</strong> выносят наружу как они это делают. Это напрямую связано с принципом разработки «пиши логику, а не код», про которую часто говорит Саттер. Но мне больше нравится «zero copy programming» стиль, который несет в массы Александреску.</p><h2>Как работают итераторы</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/06-iterators.png" alt="" class="post-image" loading="lazy" />
+<p>Немного углубимся в прошлый пример, если вам знакома эта часть языка, смело проматывайте дальше. Тут нет, чего-то интересного -<code>std::copy_if</code> принимает на вход три итератора: </p><ul><li><p>начало и конец входного диапазона, содержащего элементы, которые нужно скопировать.</p></li><li><p>начало выходного диапазона, куда должны быть помещены копии, функтор для проверки.</p></li></ul><pre style="margin:1.4rem 0"><code>template&lt;typename ...&gt; 
+OutputIterator copy_if(InputIterator first, 
+                       InputIterator last,
+                       OutputIterator out,
+                       Func func);</code></pre><p>Началом диапазона считается итератор, указывающий на его первый элемент, концом диапазона является итератор, указывающий на элемент, следующий за последним:  выходной итератор в <code>std::copy_if</code> — это начало диапазона, в который будут скопированы элементы. <code>std::copy_if</code> проходит по входному диапазону и последовательно копирует все элементы, которые попадают в условие, в выходной диапазон, начинающийся с итератора <code>out</code>.</p><p>Внутренняя реализация <code>std::copy_if</code> и большинства алгоритмов требует, чтобы в выходном контейнере было достаточно места для размещения всех копируемых элементов. Однако в большинстве случаев мы не можем вычислить необходимый объем памяти и изменить размер выходной коллекции, иногда это возможно, но неудобно, или не всегда практично.</p><p>Тут на помощь приходит <code>std::back_inserter</code>. Он создает итератор, который привязан к переданному контейнеру. Когда через этот итератор записывается значение, фактически вызывается метод <code>push_back</code> этого контейнера с передаваемым значением. Теперь при использовании других контейнеров с неизвестным размером, а это будет в 90% случаев, нет необходимости вручную его изменять.</p><h2>Fluent C++</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/07-fluent.png" alt="" class="post-image" loading="lazy" />
+<p>Знание и применение алгоритимов - это обычный "разговорный" C++. Это уже часть языка, без которой он не воспринимается многими разработчиками как полноценный. И умение  читать такой код становится не то, что желаемым навыком, но скорее необходимым, и не надо бояться писать такой код. </p><p>Надеюсь, теперь вам понятно одно из главных преимуществ алгоритмов — это их стандартная выразительность, они меняют уровень абстракции логики, убирая необходимость "писать отдельные слова" и позволяют писать сразу предложениями. Алгоритмы показывают <strong>Что</strong> вы делаете в данном участке кода, а не <strong>Как</strong> вы это делаете. </p><p>Есть еще другие плюсы в алгоритмах: они помогают избежать распространенных ошибок, таких как выход за границы массива. Вы все еще может написать такой код, что он скрашится, но вероятность этого намного меньше, чем при работе с raw индексами. </p><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(3); // выделяем с размером всего 3.
+    
+// Попытка скопировать все 5 элементов из source в destination.
+// вызывает запись за границы массива.
+std::copy(source.begin(), source.end(), destination.begin());
+int sum = *std::max_element(destination.begin(), destination.end());
+
+for (int t : destination) {
+    printf("%d", t);
+}
+
+printf("\n%d", ((int*)destination.data())[4]);
+printf("\n%d", sum);
+
+&gt;&gt; 123
+&gt;&gt; 5
+&gt;&gt; 3</code></pre><p>Совсем недавний пример из живого и известного проекта: эта логика не менялась с 2010 года. Пока не провели рефакторинг, этот код искал максимальный демедж среди входящих хитов (не спрашивайте почему так, код сильно легаси, возможно там хотели добавить какую-то доп логику)</p><pre style="margin:1.4rem 0"><code>std::vector&lt;Hit&gt; hits;
+
+...
+
+    int maxDamage = -1;
+    for (size_t i = 0; i &lt; hits.size() - 1; ++i) { // int -&gt; size_t
+        int pa = hits[i];
+        int pb = hits[i + 1];
+
+        maxDamage = std::max(maxDamage, std::max(pa, pb));
+        ...
+        
+    }
+    updateDamage(maxDamage)
+...</code></pre><p><code>int</code> поменяли на <code>size_t</code>  когда убирали ворнинги clang, и получили краш на пустых коллекциях. Если же опираться только на ту логику, что есть, то это могло быть сделано более выразительно и безопасно, и также бы избавляло от другой частой ошибки - обработки пустых коллекций. Здесь есть один нюанс, я не обрабатываю случай когда в <code>Hits</code> содержится только одни элемент, оригинальная логика в этом случае вернет -1.</p><pre style="margin:1.4rem 0"><code>auto it = std::max_element(hits.begin(), hits.end());
+int maxDamage = it != hits.end() ? *it : -1;
+updateDamage(maxDamage)</code></pre><p>Еще использование алгоритмов убирает ошибки "размазанного перфа", когда вы пользуетесь индексами для контейнера. В общем случае мы не можем знать как реализован оператор получения элемента по индексу. Опять же тест - синтетика, но и реальных примеров, на которых он основан, в существующем коде пруд пруди. Один из них, который  уже не первый раз встречается в коде разных игровых движков, когда любители итерироваться по list, делают "удобную" возможность делать это через индекс. Там нет аллокаций, которые были бы видны в профайлере, просто функция начинает потихоньку "поджирать" время, и иногда оно действительно небольшое, но суммарно набегает достаточно, чтобы отнять у вас фрейм-другой, пока вы обратите внимание на такую аномалию и примете меры. (<a href="https://quick-bench.com/q/rg6kugF2MYqDIbHK_HsP4Gki_Dg" target="_blank" rel="noopener">https://quick-bench.com/q/rg6kugF2MYqDIbHK_HsP4Gki_Dg</a>)</p><pre style="margin:1.4rem 0"><code>    list::at(int i) {
+      // Двигаем итератор i раз
+      return *std::next(lst.begin(), i);
+    }
+
+    int listSum = 0;
+    for (size_t i = 0; i &lt; lst.size(); ++i) {
+        listSum += list.at(i);
+    }</code></pre><details style="margin:1.4rem 0"><summary style="cursor:pointer">Размазанный перф</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::list&lt;int&gt; lst = {6, 7, 8, 9, 10};
+
+static void VectorIndexSum(benchmark::State&amp; state) {
+  // Code inside this loop is measured repeatedly
+  for (auto _ : state) {
+    int vecSum = 0;
+    for (size_t i = 0; i &lt; vec.size(); ++i) {
+        vecSum += vec[i]; // Обычный доступ по индексу
+    }
+    // Make sure the variable is not optimized away by compiler
+    benchmark::DoNotOptimize(vecSum);
+  }
+}
+// Register the function as a benchmark
+BENCHMARK(VectorIndexSum);
+
+static void ListIndexSum(benchmark::State&amp; state) {
+  // Code before the loop is not measured
+  for (auto _ : state) {
+    int listSum = 0;
+    for (size_t i = 0; i &lt; lst.size(); ++i) {
+        listSum += *std::next(lst.begin(), i); // Двигаем итератор i раз
+    }
+    benchmark::DoNotOptimize(listSum);
+  }
+}
+BENCHMARK(ListIndexSum);
+
+static void ListIterSum(benchmark::State&amp; state) {
+  // Code before the loop is not measured
+  for (auto _ : state) {
+    int listSum = 0;
+    for (auto it = lst.begin(); it != lst.end(); ++it) {
+        listSum += *it; // Двигаем итератор i раз
+    }
+    benchmark::DoNotOptimize(listSum);
+  }
+}
+BENCHMARK(ListIterSum);
+
+static void NoopIndexSum(benchmark::State&amp; state) {
+  // Code inside this loop is measured repeatedly
+  for (auto _ : state) {
+    int vecSum = 0;
+    // Make sure the variable is not optimized away by compiler
+    benchmark::DoNotOptimize(vecSum);
+  }
+}
+// Register the function as a benchmark
+BENCHMARK(NoopIndexSum);
+</code></pre></details>
+    <img src="../assets/articles/juggling-stl-algorithms/08-benchmark.png" alt="" class="post-image" loading="lazy" />
+<p>Алгоритмы STL лишены большей части этих проблем, и покрытие тестами, которое вы никогда (если вы конечно не разработчик компилятора) не сможете сделать сами, лишнее тому доказательство. Эти алгоритмы разрабатывали люди, которые хорошо понимали, что делают, и они были тщательно протестированы сообществом и большими кодовыми базами и проектами. Используя алгоритмы вместо велосипедов и сырых циклов вы автоматически получаете качество кода уровня компилятора или крупных опенсорс проектов.</p><p>Как обычно есть масса способов выстрелить себе в ногу при сколь угодно грамотном и безопасном фреймворке, но тут хотя бы есть глушитель, дополнительно обмотанный тряпками. Будет не так больно и свалится на тестах или внутрениих ассертах, в случае чего ногу можно будет перевязать тряпкой от глушителя и допрыгать до закрытия сессии.</p><h2>Data + Algorithms</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/09-data-algorithms.png" alt="" class="post-image" loading="lazy" />
+<p>Еще одно хорошее свойство алгоритмов - разделение алгоритмов и данных, на которых они работают. <strong>Nicolai M. Josuttis</strong> в своей книге <strong>The C++ Standard Library: A Tutorial and Reference</strong> достаточно много времени уделяет тому, что основная идея STL — разделение алгоритмов и контейнеров посредством итераторов, что позволяет развивать структуры данных и операции над ними независимо друг от друга. До определенной степени конечно.</p><p>Возможно, термин "итераторное разделение" (iterator separation) будет правильным, но на русском это звучит как "разделение через итераторы", оно редко встречается в ру-литературе, наши переводчики больше используют другой термин - "обобщенное программирование" или более умное "ортогональность данных". В STL хватает простых и очевидных алгоритмов, но также, там очень много широкоприменимых решений, которые в наивном варианте работают за O(n²), но в STL оптимизированы до O(n). </p><p>Эти решения покрывают 80% каждодневной работы. Поначалу разнообразие алгоритмов STL может казаться давящим, и разработчики, даже с опытом, бывает ограничиваются знакомыми, вроде std::copy, std::count или std::find, поскольку их назначение очевидно, и редко заглядывают дальше std::is_heap_until. </p><p>Это нормальная и естественная реакция — игнорировать «странные» алгоритмы, которые кажутся слишком сложными или редкими, но будь они действительно редкими, их бы не поместили в стандартную библиотеку. Я периодически мониторю пропозалы новых стандартов в отношении алгоритмов, и каждый год их расшаривается больше десятка для обсуждения, но действительно новые принимаются редко. Возможно это правильно - почти все алгоритмы STL, которые сейчас есть в библиотеке полезны в повседневном примении, надо просто знать их и видеть, где они подходят.</p><h2>Кеширование шейдеров</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/10-shader-cache.png" alt="" class="post-image" loading="lazy" />
+<p>Возьмём, к примеру, <code>std::set_difference</code> - этот алгоритм выполняет разность множеств для любых отсортированных контейнеров. Имея отсортированные контейнеры A и B, можно получить элементы, которые есть в A, но отсутствуют в B. </p><p>Применение очень широкое, приведу пример из текущего движка, где этот алгоритм ипользуется при кешировании шейдеров. Каждый раз при старте игры, она обновляет текущий набор шейдеров. Кеш шейдеров представлен в виде ассоциативного контейнера, содержащего ключи и значения, при этом допускается наличие нескольких одинаковых ключей, потому что шейдер может существовать в разных вариациях для разных типов юнитов. Игра также поддерживает моды, поэтому также требуется хранить разные версии шейдера для обеспечения соместимости мода и актуальной версии движка. Для таких случаев идеально подходит <code>std::multimap</code>.</p><pre style="margin:1.4rem 0"><code>stl::multimap&lt;Key, Shader&gt; shaderCache();</code></pre><p>Добавление новых данных в кеш происходит через некоторую функцию <code>addNewShaders</code> , где нужно следить за тем, чтобы не добавлять в кеш уже существующие результаты, иначе мы рискуем накопить дубликаты. Это приводит не только к овериспользованию памяти, но и к логическим проблемам и даже глитчам (визуальным артефактам) в самой игре. Я рекомендую попытаться понять этот код строка за строкой, просто чтобы было с чем сравнивать ниже. Думаю у того программиста, который это писал, просто не было особого выбора - решение было написано для железа 2009 года. Вот как это было реализовано без использования алгоритмов:</p><pre style="margin:1.4rem 0"><code>void addNewShaders(stl::multimap const&amp; results) {
+  ...
+  for (stl::multimap&lt;Key, Shader&gt;::const_iterator it = newShaders.begin(); it != newShaders.end(); ++it)
+  {
+      using iterator = stl::pair&lt;std::multimap&lt;Key, Shader&gt;::const_iterator, stl::multimap&lt;Key, Shader&gt;::const_iterator&gt;::type;
+      iterator range = cachedShaders.equal_range(it-&gt;first);
+      if (range.first == range.second)
+      {
+          stl::multimap&lt;Key, Shader&gt;::const_iterator it2 = it;
+          while (!(it2-&gt;first &lt; it-&gt;first) &amp;&amp; !(it-&gt;first &lt; it2-&gt;first))
+          {
+              ++it2;
+          }
+          cachedShaders.insert(it, it2);
+      }
+  }
+  ...
+}</code></pre><p>Код бы написан давно, и человек уже в студии не работает, спросить не у кого. Фактически тот программист написал свою реализацию <code>set_difference</code> и скрестил её со вставкой, возможная причина будет указана ниже. Как это работает:</p><p>Цикл <code>for</code> проходит по всем элементам контейнера newShaders. Переменная it – это константный итератор. C помощью <br/><code>iterator range = cachedShaders.equal_range(it-&amp;gt;first);<br/></code>производится поиск диапазона элементов в контейнере cachedShaders, у которых ключ равен <code>it-&gt;first</code> (ключу текущего элемента из newShaders).</p><p>Функция <code>equal_range</code> возвращает пару итераторов (range.first и range.second), где:<br/> - <code>range.first</code> – начало диапазона элементов с данным ключом;<br/> - <code>range.second</code> – итератор, указывающий на первый элемент с другим ключом (конец диапазона).</p><p>Условие <code>if (range.first == range.second)</code> проверяет, что в cachedShaders нет ни одного элемента с ключом it-&gt;first. Если диапазон пустой, значит, элементов с таким ключом там нет.</p><p>Если в <code>cachedShaders</code> отсутствует элемент с данным ключом, то необходимо добавить из <code>newShaders</code> все элементы, у которых ключ равен <code>it-&gt;first</code>.  Для этого создаётся дополнительный итератор <code>it2</code>, инициализированный значением it: <code>stl::multimap::const_iterator it2 = it;</code>Затем выполняется цикл:</p><pre style="margin:1.4rem 0"><code>while (!(it2-&gt;first &lt; it-&gt;first) &amp;&amp; !(it-&gt;first &lt; it2-&gt;first))
+{
+    ++it2;
+}</code></pre><p>Здесь используется идиома сравнения с помощью оператора <code>&lt;</code> для строгого порядка. Если ни <code>it2-&gt;first</code> не меньше <code>it-&gt;first</code>, ни <code>it-&gt;first</code> не меньше <code>it2-&gt;first</code>, то считается, что ключи эквивалентны. Таким образом, после выхода из цикла <code>it2</code> указывает на первый элемент в <code>newShaders</code>, у которого ключ отличается от <code>it-&gt;first</code>. </p><p>После завершения внутреннего цикла, диапазон элементов от <code>it</code> до <code>it2</code> (то есть все элементы с ключом <code>it-&gt;first</code>) вставляется в <code>cachedShaders</code>:<br/> <code>cachedShaders.insert(it, it2);</code> если в <code>cachedShaders</code> ещё нет элементов с данным ключом, то вставляется весь блок элементов из <code>newShaders</code>, имеющих этот ключ.</p><p>Ну как? Все понятно?</p><h2>А как сделать через алгоритмы?</h2><p>А теперь давайте вместо вот той относительно сложной логики, попробуем понять что надо было сделать. А надо добавить в кеш элементы, которые есть в <code>newShaders</code>, но которых нет в кеше (<code>cachedShaders</code>). И тут на помощь приходит <code>stl::set_difference</code>:</p><pre style="margin:1.4rem 0"><code>stl::multimap&lt;Key, Shader&gt; shadersToAdd;
+
+stl::set_difference(newShaders.begin(),
+                    newShaders.end(),
+                    cachedShaders.begin(),
+                    cachedShaders.end(),
+                    stl::inserter(shadersToAdd, shadersToAdd.end()),
+                    compareShaderHash);
+
+stl::copy(shadersToAdd.begin(), shadersToAdd.end(), 
+          stl::inserter(cachedShaders, cachedShaders.end()));</code></pre><p><code>stl::inserter</code> похож на <code>stl::back_inserter,</code> за исключением того, что он вызывает метод <code>insert</code> контейнера, с которым связан, вместо <code>push_back</code>, а <code>compareShaderHash</code>— это функция, которую мы определяем, чтобы указать <code>stl::set_difference</code> как сравнивать элементы в контейнерах.</p><p>Тут есть одна особенность, первый вариант работает без дополнительной аллокации в виде временного <code>shadersToAdd</code> контейнера, и видимо это было тем условием, которое привело к такому решению. Но смотря на объемы шейдеров в сотни килобайт за обновление, я пришел к выводу, что можно разменять память на читаемость кода. По скорости работы, второй вариант немного уступает, но не критично.</p><p>Вы видели два фрагмента кода, которые делают одно и то же. Чтобы понять как работает первый, мне понадобилось потратить несколько минут, и подписать что делает каждая строка. Во втором прямо видно, что он делает. В этом примере, конечно, надо понимать что значат все эти аргументы для <code>set_difference</code> и это может затруднить по первости понимание, если вы не привыкли к такому. Но я как писал выше, лучше смотреть на логику, а не на реализацию.</p><h2>Вместо тысячи слов</h2>
+    <img src="../assets/articles/juggling-stl-algorithms/11-thousand-words.png" alt="" class="post-image" loading="lazy" />
+<p>Я хочу подвести вас к тому, что понимание алгоритмов STL так же важно, как и знание основ языка, шаблонов, хороших практик проектирования и программирования. Это такие же ключевые слова, как <code>if, else, for, auto</code> , только на уровне логики.</p><p>Статья получилась больше обзорная, да и примеров маловато. Чтобы было понятно насколько актуальны алгоритмы в текущем игрострое, оставлю тут те, которые рекомендованы к пониманию в нашей студии и паттерны их проявления в коде. Примеры я скопировал с нашей корпвики, надеюсь они не слишком NDA :) Но если найдете ошибку, тоже пишите в коментах.</p><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::accumulate</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5};
+int sum = std::accumulate(numbers.begin(), 
+                          numbers.end(), 0.f)</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5};
+int sum = initial_value;
+for (int number : numbers) {
+    sum += number;
+}
+</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::all_of</summary><pre style="margin:1.4rem 0"><code>int ar[6] = {1, 2, 3, 4, 5, -6};
+// Checking if all elements are positive
+bool allPositive = all_of(ar, ar+6, [](int x) { return x&gt;0; })</code></pre><pre style="margin:1.4rem 0"><code>bool allPositive = true;
+// Manual check if all numbers are positive
+for (int num : numbers) {
+    if (num &lt;= 0) {
+        allPositive = false;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::any_of</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 3, 5, 8, 11};
+// Check if any number in the vector is even
+bool hasEven = std::any_of(
+    numbers.begin(),
+    numbers.end(),
+    [](int num) { return num % 2 == 0; }
+);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 3, 5, 8, 11};
+bool hasEven = false;
+// Manual check if any number is even
+for (int num : numbers) {
+    if (num % 2 == 0) { 
+        hasEven = true;
+        break; 
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::none_of</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 3, 5, 7, 9};
+// Check if no number in the vector is even
+bool noEven = std::none_of(
+                numbers.begin(), numbers.end(),
+                [](int num){ return !(num%2);})</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 3, 5, 7, 9};
+bool noEven = true;
+for (int num : numbers) {
+    if (num % 2 == 0) {
+        noEven = false;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::find</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+int target = 30;     // Value to find
+auto it = std::find(numbers.begin(), 
+                    numbers.end(), target);
+bool found = it != numbers.end();</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+bool found = false;
+for (int num : numbers) {
+    if (num == 30) {
+        std::cout &lt;&lt; "Found " &lt;&lt; num &lt;&lt; "\n";
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::find_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+auto it = std::find_if(numbers.begin(), numbers.end(), 
+               [](int num) { return num &gt; 25; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+bool found = false;
+for (int num : numbers) {
+    if (num &gt; 25) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::find_if_not</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+auto it = std::find_if_not(
+    numbers.begin(), numbers.end(), 
+    [](int num) { return num &gt; 25; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {10, 20, 30, 40, 50};
+bool found = false;
+for (int num : numbers) {
+    if (num &lt;= 25) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::find_end</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6, 7, 8};
+std::vector&lt;int&gt; subsequence = {4, 5};
+auto it = std::find_end(
+            numbers.begin(), numbers.end(), 
+            subsequence.begin(), subsequence.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6, 7, 8};
+std::vector&lt;int&gt; subsequence = {4, 5};
+bool found = false;
+for (size_t i = numbers.size() - subsequence.size(); i != (size_t)-1; --i) {
+    bool match = true;
+    for (size_t j = 0; j &lt; subsequence.size(); ++j) {
+        if (numbers[i + j] != subsequence[j]) {
+            match = false;
+            break;
+        }
+    }
+    if (match) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::find_first_of</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; set = {3, 7, 8};
+auto it = std::find_first_of(
+            numbers.begin(), numbers.end(), 
+            set.begin(), set.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; set = {3, 7, 8};
+bool found = false;
+for (int num : numbers) {
+    for (int s : set) {
+        if (num == s) {
+            found = true;
+            break;
+        }
+    }
+    if (found) break;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::adjacent_find</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 4, 6, 7};
+auto it = std::adjacent_find(
+            numbers.begin(), numbers.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 4, 6, 7};
+bool found = false;
+for (size_t i = 0; i &lt; numbers.size() - 1; ++i) {
+    if (numbers[i] == numbers[i + 1]) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::count</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 5, 6, 7, 5};
+int count = std::count(
+              numbers.begin(), numbers.end(), 5);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 5, 6, 7, 5};
+int count = 0;
+for (int num : numbers) {
+    if (num == 5) {
+        ++count;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std :: count_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+int count = std::count_if(numbers.begin(), numbers.end(), [](int num) {
+    return num % 2 == 0; // Count even numbers
+});</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+int count = 0;
+for (int num : numbers) {
+    if (num % 2 == 0) { // Count even numbers
+        ++count;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::mismatch</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {1, 2, 0, 4, 5};
+auto result = std::mismatch(
+                  range1.begin(), range1.end(), 
+                  range2.begin());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {1, 2, 0, 4, 5};
+bool foundDifference = false;
+for (size_t i = 0; i &lt; range1.size() &amp;&amp; i &lt; range2.size(); ++i) {
+    if (range1[i] != range2[i]) {
+        foundDifference = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::equal</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {1, 2, 3, 4, 5};
+std::equal(range1.begin(), range1.end(), 
+            range2.begin())</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {1, 2, 3, 4, 5};
+bool areEqual = true;
+for (size_t i = 0; i &lt; range1.size(); ++i) {
+    if (range1[i] != range2[i]) {
+        areEqual = false;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::is_permutation</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {5, 4, 3, 2, 1};
+std::is_permutation(range1.begin(), range1.end(),
+                    range2.begin())</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {5, 4, 3, 2, 1};
+std::vector&lt;int&gt; temp = range2;
+std::sort(range1.begin(), range1.end());
+std::sort(temp.begin(), temp.end());
+bool isPermutation = (range1 == temp);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::search</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range = {1, 2, 3, 4, 5, 6, 7};
+std::vector&lt;int&gt; subsequence = {3, 4, 5};
+auto it = std::search(range.begin(), range.end(), 
+                      subsequence.begin(), 
+                      subsequence.end());
+const bool found = (it != range.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range = {1, 2, 3, 4, 5, 6, 7};
+std::vector&lt;int&gt; subsequence = {3, 4, 5};
+bool found = false;
+for (size_t i = 0; i &lt;= range.size() - subsequence.size(); ++i) {
+    bool match = true;
+    for (size_t j = 0; j &lt; subsequence.size(); ++j) {
+        if (range[i + j] != subsequence[j]) {
+            match = false;
+            break;
+        }
+    }
+    if (match) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::search_n</summary><pre style="margin:1.4rem 0"><code> std::vector&lt;int&gt; range = {1, 2, 3, 3, 3, 4, 5};
+ int value = 3;
+ size_t count = 3;
+ auto it = std::search_n(range.begin(), range.end(), 
+                        count, value);
+ bool found = (it != range.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range = {1, 2, 3, 3, 3, 4, 5};
+int value = 3;
+size_t count = 3;
+bool found = false;
+for (size_t i = 0; i &lt;= range.size() - count; ++i) {
+    bool match = true;
+    for (size_t j = 0; j &lt; count; ++j) {
+        if (range[i + j] != value) {
+            match = false;
+            break;
+        }
+    }
+    if (match) {
+        found = true;
+        break;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(source.size());
+std::copy(source.begin(), source.end(),
+          destination.begin());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(source.size());
+for (size_t i = 0; i &lt; source.size(); ++i) {
+    destination[i] = source[i];
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::copy_n</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(3); 
+std::copy_n(source.begin(), 3, destination.begin());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(3);
+for (size_t i = 0; i &lt; 3; ++i) {
+    destination[i] = source[i];
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::copy_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5, 6, 7};
+std::vector&lt;int&gt; destination;
+std::copy_if(source.begin(), source.end(),
+             std::back_inserter(destination), 
+             [](int num) { return num % 2 == 0; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5, 6, 7};
+std::vector&lt;int&gt; destination;
+for (int num : source) {
+    if (num % 2 == 0) {
+        destination.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::copy_backward</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+// Size of destination should be at least the same as source
+std::vector&lt;int&gt; destination(5); 
+std::copy_backward(source.begin(), source.end(), destination.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+// Size of destination should be at least the same as source
+std::vector&lt;int&gt; destination(5); 
+for (size_t i = 0; i &lt; source.size(); ++i) {
+    destination[destination.size() - 1 - i] = source[i]; // Copy backward
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::move</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(5);
+std::move(source.begin(), source.end(),
+          destination.begin());
+// source vector will be empty after this algo</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(5);
+for (size_t i = 0; i &lt; source.size(); ++i) {
+    // Move elements manually
+    destination[i] = std::move(source[i]);  
+}
+source.clear();</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::move_backward</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(5);
+std::move_backward(source.begin(), source.end(), 
+                  destination.end())
+// source vector will be empty after this algo</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; source = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; destination(5);
+for (size_t i = 0; i &lt; source.size(); ++i) {
+    // Move elements manually backward
+    destination[destination.size() - 1 - i] = std::move(source[i]);  
+}
+// Clear the source after moving elements to simulate 'move'
+source.clear();</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::swap</summary><pre style="margin:1.4rem 0"><code>int a = 10, b = 20;
+std::swap(a, b);</code></pre><pre style="margin:1.4rem 0"><code>int a = 10, b = 20;
+// Manual swap using a temporary variable
+int temp = a;
+a = b;
+b = temp;</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::swap_ranges</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {6, 7, 8, 9, 10};
+std::swap_ranges(range1.begin(), range1.end(), 
+                 range2.begin());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {6, 7, 8, 9, 10};
+// Manual swap of elements
+for (size_t i = 0; i &lt; range1.size(); ++i) {
+    int temp = range1[i];
+    range1[i] = range2[i];
+    range2[i] = temp;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::iter_swap</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Swap the elements pointed to by two iterators
+std::iter_swap(vec.begin(), vec.begin() + 4); </code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Manual swap of elements using iterators
+auto it1 = vec.begin();
+// Point to the last element
+auto it2 = vec.begin() + 4;  
+int temp = *it1;
+*it1 = *it2;
+*it2 = temp;</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::transform</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; result(vec.size());
+// Transform the elements by multiplying each by 2
+std::transform(vec.begin(), vec.end(),
+               result.begin(), 
+               [](int x) { return x * 2; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; result(vec.size());
+// Manual transformation by multiplying each element
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    result[i] = vec[i] * 2;
+}
+</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::replace</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+// Replace all occurrences of 3 with 10
+std::replace(vec.begin(), vec.end(), 3, 10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+// Manual replace of all occurrences of 3 with 10
+for (int&amp; num : vec) {
+    if (num == 3) {
+        num = 10;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::replace_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+// Replace all even numbers with 10
+std::replace_if(vec.begin(), vec.end(), [](int x) {
+    return x % 2 == 0;
+}, 10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+// Manual replace of even numbers with 10
+for (int&amp; num : vec) {
+    if (num % 2 == 0) {
+        num = 10;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::replace_copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+std::vector&lt;int&gt; result;
+// Replace all occurrences of 3 with 10 while copying to the new vector
+std::replace_copy(vec.begin(), vec.end(), 
+                  std::back_inserter(result), 3, 10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+std::vector&lt;int&gt; result;
+// Manually copy elements and replace 3 with 10
+for (int num : vec) {
+    if (num == 3) {
+        result.push_back(10);
+    } else {
+        result.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::replace_copy_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; result;
+// Replace all even numbers with 10 while copying to the new vector
+std::replace_copy_if(vec.begin(), vec.end(), 
+                     std::back_inserter(result), 
+                     [](int x) { return x % 2 == 0;},
+                     10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; result;
+// Manually copy elements and replace even numbers
+for (int num : vec) {
+    if (num % 2 == 0) {
+        result.push_back(10);
+    } else {
+        result.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::fill</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Fill the entire range with the value 10
+std::fill(vec.begin(), vec.end(), 10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Manually fill the entire range with the value 10
+for (int&amp; num : vec) {
+    num = 10;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::fill_n</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec(10);  // Vector of size 5
+// Fill the first 5 elements with the value 10
+std::fill_n(vec.begin(), 5, 10);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Manually fill the entire range with the value 10
+for (int i = 0; i &lt; 5; ++i) {
+    vec[i] = 10;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::generate</summary><pre style="margin:1.4rem 0"><code>int generate_value() {
+  static int i = 1;
+  return i++;  
+}
+std::vector&lt;int&gt; vec(5);
+// Generate values for the range using 
+// the generate_value function
+std::generate(vec.begin(), vec.end(), generate_value);</code></pre><pre style="margin:1.4rem 0"><code>int generate_value() {
+  static int i = 1;
+  return i++;  
+}
+std::vector&lt;int&gt; vec(5);
+// Manually generate values for the range
+for (int&amp; num : vec) {
+    num = generate_value();  
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::generate_n</summary><pre style="margin:1.4rem 0"><code>int generate_value() {
+  static int i = 1;
+  return i++;  
+}
+std::vector&lt;int&gt; vec(5);
+// Generate values for the sequence using 
+// the generate_value function
+std::generate_n(vec.begin(), 5, generate_value);</code></pre><pre style="margin:1.4rem 0"><code>int generate_value() {
+  static int i = 1;
+  return i++;  
+}
+std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+// Manually fill the entire range with the value 10
+for (int i = 0; i &lt; 5; ++i) {
+    vec[i] = generate_value();
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::remove</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+// Remove all occurrences of 3
+vec.erase(std::remove(vec.begin(), vec.end(), 3),
+          vec.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+// Manually remove all occurrences of 3
+for (int i = 0; i &lt; vec.size(); ++i) {
+    if (vec[i] != 3) {
+        vec.erase(i);
+        --i;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::remove_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+// Remove all even numbers
+vec.erase(std::remove_if(vec.begin(), vec.end(), 
+          [](int x) { return x % 2 == 0;}),
+          vec.end());</code></pre><pre style="margin:1.4rem 0"><code>bool wantRemove(int n) { return n % 2 == 0; }
+std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+// Manually remove all occurrences of 3
+for (int i = 0; i &lt; vec.size(); ++i) {
+    if (wantRemove(vec[i])) {
+        result.erase(i);
+        --i;
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::remove_copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+std::vector&lt;int&gt; result;
+// Copy the range while removing all occurrences 
+std::remove_copy(vec.begin(), vec.end(), 
+                 std::back_inserter(result), 3);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 3};
+std::vector&lt;int&gt; result;
+// Manually copy the range while removing all occurrences of 3
+for (int num : vec) {
+    if (num != 3) {
+        result.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::remove_copy_if</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; result;
+// Copy the range while removing all even numbers
+std::remove_copy_if(vec.begin(), vec.end(), 
+                    std::back_inserter(result), 
+                    [](int x) { return x % 2 == 0; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; result;
+// Manually copy the range while removing all 
+// even numbers
+for (int num : vec) {
+    if (num % 2 != 0) {
+        result.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::unique</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 1, 2, 2, 3, 3, 3, 4, 4, 5};
+auto last = std::unique(vec.begin(), vec.end());
+vec.erase(last, vec.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 1, 2, 2, 3, 3, 3, 4, 4, 5};
+std::vector&lt;int&gt; result;
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    if (i == 0 || vec[i] != vec[i - 1]) {
+        result.push_back(vec[i]);
+    }
+}
+std::swap(vec, result);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::unique_copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 1, 2, 2, 3, 3, 3, 4, 4, 5};
+std::vector&lt;int&gt; result;
+std::unique_copy(vec.begin(), vec.end(),
+                 std::back_inserter(result));</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 1, 2, 2, 3, 3, 3, 4, 4, 5};
+std::vector&lt;int&gt; result;
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    if (i == 0 || vec[i] != vec[i - 1]) {
+        result.push_back(vec[i]);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::reverse</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::reverse(vec.begin(), vec.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+size_t left = 0;
+size_t right = vec.size() - 1;
+while (left &lt; right) {
+    std::swap(vec[left], vec[right]);
+    ++left;
+    --right;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::reverse_copy </summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; result;
+std::reverse_copy(vec.begin(), vec.end(),
+                  std::back_inserter(result));</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; result(vec.size());
+size_t j = 0;
+for (int i = vec.size() - 1; i &gt;= 0; --i) {
+    result[j++] = vec[i];
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::rotate</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::rotate(vec.begin(), vec.begin() + 2, vec.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+size_t n = 2;  // Number of positions to rotate
+std::vector&lt;int&gt; result(vec.size());
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    result[i] = vec[(i + n) % vec.size()];
+}
+std::swap(vec, result);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::rotate_copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; result;
+std::rotate_copy(vec.begin(), vec.begin() + 2,
+                 vec.end(), 
+                 std::back_inserter(result));</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+size_t n = 2;
+std::vector&lt;int&gt; result(vec.size());
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    result[i] = vec[(i + n) % vec.size()];
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::random_shuffle</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::random_device rd;
+std::mt19937 g(rd());
+std::shuffle(vec.begin(), vec.end(), g);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+std::srand(std::time(0)); 
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    size_t j = std::rand() % vec.size();  
+    std::swap(vec[i], vec[j]); 
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::shuffle</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 2, 3, 3, 4, 5};
+std::random_device rd;
+std::mt19937 g(rd());
+std::shuffle(vec.begin(), vec.end(), g);</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 2, 3, 3, 4, 5};
+std::srand(std::time(0));
+for (size_t i = 0; i &lt; vec.size(); ++i) {
+    size_t j = std::rand() % vec.size();
+    std::swap(vec[i], vec[j]);
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::is_partitioned</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+bool result = std::is_partitioned(
+                vec.begin(), vec.end(), 
+                [](int x) { return x % 2 == 0; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
+bool partitioned = true;
+for (int num : vec) {
+    if (num % 2 == 0) {
+        if (found_odd) {
+            partitioned = false;
+            break;
+        }
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::partition</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+auto partition_point = std::partition(
+          vec.begin(), vec.end(), 
+          [](int x) { return x % 2 == 0; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; part1, part2;
+for (int num : vec) {
+    if (num % 2 == 0) {
+        part1.push_back(num);
+    } else {
+        part2.push_back(num);
+    }
+}
+auto tail = std::copy(part1.begin(), part1.end(),
+                      vec.begin());
+std::copy(part2.begin(), part2.end(), tail);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::partition_copy</summary><pre style="margin:1.4rem 0"><code>int arr[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+int true_arr[5] = {0};
+int false_arr[5] = {0};
+std::partition_copy(std::begin(arr), std::end(arr),
+                    std::begin(true_arr), std::begin(false_arr),
+                    [](int i) { return 4 &lt; i; });</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5, 6};
+std::vector&lt;int&gt; part1, part2;
+for (int num : vec) {
+    if (4 &lt; num) {
+        part1.push_back(num);
+    } else {
+        part2.push_back(num);
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::sort</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {5, 3, 1, 4, 2};
+std::sort(vec.begin(), vec.end());</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std :: partial_sort</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {7, 3, 9, 1, 4, 8};
+std::partial_sort(vec.begin(), vec.begin() + 3, 
+                  vec.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {7, 3, 9, 1, 4, 8};
+for (size_t i = 0; i &lt; 3; ++i) {
+    for (size_t j = i + 1; j &lt; vec.size(); ++j) {
+        if (vec[j] &lt; vec[i]) {
+            std::swap(vec[i], vec[j]);
+        }
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::partial_sort_copy</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {7, 3, 9, 1, 4, 8};
+std::vector&lt;int&gt; result(3);
+std::partial_sort_copy(vec.begin(), vec.end(), 
+                      result.begin(), result.end());</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {7, 3, 9, 1, 4, 8};
+std::vector&lt;int&gt; result(3);
+// Copy all elements to result, up to the size of result
+for (size_t i = 0; i &lt; result.size(); ++i) {
+    result[i] = vec[i];
+}
+// Sort the copied portion
+for (size_t i = 0; i &lt; result.size(); ++i) {
+    for (size_t j = i + 1; j &lt; result.size(); ++j) {
+        if (result[j] &lt; result[i]) {
+            std::swap(result[i], result[j]);
+        }
+    }
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::is_sorted_until</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 5, 4, 6, 7};
+auto it = std::is_sorted_until(vec.begin(), vec.end());
+const bool sorted = it != vec.end();</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {1, 2, 5, 4, 6, 7};
+auto it = vec.begin();
+for (; it != vec.end() - 1; ++it) {
+    if (*(it + 1) &lt; *it) {
+        break;
+    }
+}
+const bool sorted = (it != vec.end() - 1);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::nth_element</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec = {7, 2, 9, 4, 6, 3, 8};
+std::nth_element(vec.begin(), vec.begin() + 3, vec.end());
+std::cout &lt;&lt; "The 4th smallest element is: " &lt;&lt; vec[3] &lt;&lt; "\n";
+std::cout &lt;&lt; "Partially sorted range: ";
+for (int num : vec) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+The 4th smallest element is: 6
+Partially sorted range: 4 2 3 6 9 8 7</code></pre><pre style="margin:1.4rem 0"><code>int partition(std::vector&lt;int&gt;&amp; vec, int low, int high) {
+  int pivot = vec[high];
+  int i = low - 1;
+  for (int j = low; j &lt; high; ++j) {
+      if (vec[j] &lt; pivot) {
+          ++i;
+          std::swap(vec[i], vec[j]);
+      }
+  }
+  std::swap(vec[i + 1], vec[high]);
+  return i + 1;
+}
+void nth_element_manual(std::vector&lt;int&gt;&amp; vec, int n, int low, int high) {
+  if (low &lt; high) {
+      int pivot_index = partition(vec, low, high);
+      if (pivot_index == n) {
+          return;
+      } else if (pivot_index &gt; n) {
+          nth_element_manual(vec, n, low, pivot_index - 1);
+      } else {
+          nth_element_manual(vec, n, pivot_index + 1, high);
+      }
+  }
+}
+std::vector&lt;int&gt; vec = {7, 2, 9, 4, 6, 3, 8};
+nth_element_manual(vec, 3, 0, vec.size() - 1);
+std::cout &lt;&lt; "The 4th smallest element is: " &lt;&lt; vec[3] &lt;&lt; "\n";
+std::cout &lt;&lt; "Partially sorted range: ";
+for (int num : vec) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+The 4th smallest element is: 6
+Partially sorted range: 4 2 3 6 9 8 7</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::merge</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec1 = {1, 3, 5, 7};
+std::vector&lt;int&gt; vec2 = {2, 4, 6, 8};
+std::vector&lt;int&gt; result(vec1.size() + vec2.size());
+std::merge(vec1.begin(), vec1.end(), 
+           vec2.begin(), vec2.end(), 
+           result.begin());
+result: 1 2 3 4 5 6 7 8</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; vec1 = {1, 3, 5, 7};
+std::vector&lt;int&gt; vec2 = {2, 4, 6, 8};
+std::vector&lt;int&gt; result(vec1.size() + vec2.size());
+auto it1 = vec1.begin();
+auto it2 = vec2.begin();
+auto it_result = result.begin();
+while (it1 != vec1.end() &amp;&amp; it2 != vec2.end()) {
+    if (*it1 &lt; *it2) {
+        *it_result = *it1;
+        ++it1;
+    } else {
+        *it_result = *it2;
+        ++it2;
+    }
+    ++it_result;
+}
+while (it1 != vec1.end()) {
+    *it_result = *it1;
+    ++it1;
+    ++it_result;
+}
+while (it2 != vec2.end()) {
+    *it_result = *it2;
+    ++it2;
+    ++it_result;
+}</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::includes</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {2, 4};
+bool includes = std::includes(range1.begin(), range1.end(), 
+                              range2.begin(), range2.end()))</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {2, 4};
+auto it1 = range1.begin();
+auto it2 = range2.begin();
+while (it1 != range1.end() &amp;&amp; it2 != range2.end()) {
+    if (*it1 &lt; *it2) {
+        ++it1;
+    } else if (*it1 == *it2) {
+        ++it1;
+        ++it2;
+    } else {
+        break;
+    }
+}
+bool includes = (it2 == range2.end())</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::set_union</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 3, 5, 7};
+std::vector&lt;int&gt; range2 = {2, 3, 6, 8};
+std::vector&lt;int&gt; result;
+result.resize(range1.size() + range2.size());
+auto it = std::set_union(range1.begin(), range1.end(), 
+                         range2.begin(), range2.end(),
+                        result.begin());
+result.resize(it - result.begin());
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2 3 5 6 7 8</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 3, 5, 7};
+std::vector&lt;int&gt; range2 = {2, 3, 6, 8};
+std::vector&lt;int&gt; result;
+auto it1 = range1.begin();
+auto it2 = range2.begin();
+while (it1 != range1.end() &amp;&amp; it2 != range2.end()) {
+    if (*it1 &lt; *it2) {
+        result.push_back(*it1);
+        ++it1;
+    } else if (*it2 &lt; *it1) {
+        result.push_back(*it2);
+        ++it2;
+    } else {
+        result.push_back(*it1);
+        ++it1;
+        ++it2;
+    }
+}
+while (it1 != range1.end()) {
+    result.push_back(*it1);
+    ++it1;
+}
+while (it2 != range2.end()) {
+    result.push_back(*it2);
+    ++it2;
+}
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2 3 5 6 7 8</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::set_intersection</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+result.resize(std::min(range1.size(), range2.size()));
+auto it = std::set_intersection(range1.begin(), range1.end(), range2.begin(), range2.end(), result.begin());
+result.resize(it - result.begin());
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+3 4 5</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+auto it1 = range1.begin();
+auto it2 = range2.begin();
+while (it1 != range1.end() &amp;&amp; it2 != range2.end()) {
+    if (*it1 &lt; *it2) {
+        ++it1;
+    } else if (*it2 &lt; *it1) {
+        ++it2;
+    } else {
+        result.push_back(*it1);
+        ++it1;
+        ++it2;
+    }
+}
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+3 4 5</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::set_difference</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+result.resize(range1.size());  
+auto it = std::set_difference(
+                range1.begin(), range1.end(), 
+                range2.begin(), range2.end(),
+                result.begin());
+result.resize(it - result.begin());
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+auto it1 = range1.begin();
+auto it2 = range2.begin();
+while (it1 != range1.end()) {
+    if (it2 != range2.end() &amp;&amp; *it1 &lt; *it2) {
+        result.push_back(*it1);
+        ++it1;
+    } else if (it2 != range2.end() &amp;&amp; *it2 &lt; *it1) {
+        ++it2;
+    } else {
+        ++it1;
+        ++it2;
+    }
+}
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::set_symmetric_difference</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+result.resize(range1.size() + range2.size()); 
+auto it = std::set_symmetric_difference(
+                range1.begin(), range1.end(), 
+                range2.begin(), range2.end(), 
+                result.begin());
+result.resize(it - result.begin());  
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2 6 7</code></pre><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; range1 = {1, 2, 3, 4, 5};
+std::vector&lt;int&gt; range2 = {3, 4, 5, 6, 7};
+std::vector&lt;int&gt; result;
+auto it1 = range1.begin();
+auto it2 = range2.begin();
+while (it1 != range1.end() &amp;&amp; it2 != range2.end()) {
+    if (*it1 &lt; *it2) {
+        result.push_back(*it1);
+        ++it1;
+    } else if (*it2 &lt; *it1) {
+        result.push_back(*it2);
+        ++it2;
+    } else {
+        ++it1;
+        ++it2;
+    }
+}
+while (it1 != range1.end()) {
+    result.push_back(*it1);
+    ++it1;
+}
+while (it2 != range2.end()) {
+    result.push_back(*it2);
+    ++it2;
+}
+for (int num : result) {
+    std::cout &lt;&lt; num &lt;&lt; " ";
+}
+1 2 6 7</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std :: minmax</summary><pre style="margin:1.4rem 0"><code>int a = 5, b = 8;
+auto result = std::minmax(a, b);</code></pre><pre style="margin:1.4rem 0"><code>std::pair&lt;int, int&gt; minmax_manual(int a, int b) {
+    if (a &lt; b) {
+        return {a, b};
+    } else {
+        return {b, a};
+    }
+}
+int a = 5, b = 8;
+auto result = minmax_manual(a, b);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::min_element</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+auto minElemIt = std::min_element(nums.begin(), nums.end());</code></pre><pre style="margin:1.4rem 0"><code>int min_element_manual(const std::vector&lt;int&gt;&amp; nums) {
+    int minElem = nums[0];
+    for (const auto&amp; num : nums) {
+        if (num &lt; minElem) {
+            minElem = num;
+        }
+    }
+    return minElem;
+}
+std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+int minElem = min_element_manual(nums);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::max_element</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+auto maxElemIt = std::max_element(nums.begin(), nums.end());</code></pre><pre style="margin:1.4rem 0"><code>int max_element_manual(const std::vector&lt;int&gt;&amp; nums) {
+    int maxElem = nums[0];
+    for (const auto&amp; num : nums) {
+        if (num &gt; maxElem) {
+            maxElem = num;
+        }
+    }
+    return maxElem;
+}
+std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+int maxElem = max_element_manual(nums);</code></pre></details><details style="margin:1.4rem 0"><summary style="cursor:pointer">std::minmax_element</summary><pre style="margin:1.4rem 0"><code>std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+auto result = std::minmax_element(nums.begin(), nums.end());</code></pre><pre style="margin:1.4rem 0"><code>std::pair&lt;int, int&gt; minmax_element_manual(const std::vector&lt;int&gt;&amp; nums) {
+    int minElem = nums[0];
+    int maxElem = nums[0];
+    for (const auto&amp; num : nums) {
+        if (num &lt; minElem) {
+            minElem = num;
+        }
+        if (num &gt; maxElem) {
+            maxElem = num;
+        }
+    }
+    return {minElem, maxElem};
+}
+std::vector&lt;int&gt; nums = {10, 20, 5, 30, 15};
+auto result = minmax_element_manual(nums);</code></pre></details></div></div></div><!----><!----></div><!----><!----></div><!--]--><!----><div class="
+    <a class="backlink" href="index.html">← Все статьи</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
