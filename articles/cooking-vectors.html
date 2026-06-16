@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game++. Cooking vectors — dalerank</title>
+<meta name="description" content="Как устроены векторы в игровых движках и чем за них приходится платить: рост ёмкости и фрагментация памяти, одномерная против каскадной композиции, std::array, static_vector на стеке, hybrid_vector с SSO-подобной оптимизацией и подводные камни pmr-аллокаторов и monotonic_buffer_resource у вендоров." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cooking-vectors.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cooking-vectors.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="cooking-vectors.html">RU</a><i>/</i><a href="../en/articles/cooking-vectors.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Game++. Cooking vectors</h1><div class="ameta"><span>15 января 2025</span><span>12 мин</span></div></div>
+  <article class="prose">
+    <img src="../assets/articles/cooking-vectors/01-header.png" alt="Game++. Cooking vectors" class="post-image" loading="lazy" />
+    <p>В разработке игр динамические и статические массивы являются основным инструментом при работе с набором объектов, буду дальше называть их vector. Вы можете подумать про разные map, set и другие ускоряющие структуры, но их тоже предпочитают делать поверх векторов. Почему так? Вектора просты для понимания, удобны для большого числа задач, особенно там, где объём данных заранее неизвестен или примерно известен. Но, как вы понимаете, за всё надо платить, и расплачиваться приходится производительностью, которой, как обычно, всегда не хватает. Так что использование динамических массивов имеет свои ограничения и особенности.</p>
+    <hr/>
+    <p>Это часть серии «Game++»:</p>
+    <ul>
+      <li><a href="string-interning.html">Game++. String interning</a></li>
+      <li><strong>Game++. Cooking vectors</strong> &lt;=== Вы тут</li>
+      <li><a href="https://habr.com/ru/articles/876804/" target="_blank" rel="noopener">Game++. Dancing with allocators</a></li>
+      <li><a href="https://habr.com/ru/articles/880918/" target="_blank" rel="noopener">Game++. Juggling STL algorithms</a></li>
+      <li><a href="https://habr.com/ru/articles/882684/" target="_blank" rel="noopener">Game++. run, thread, run...</a></li>
+      <li><a href="https://habr.com/ru/articles/885780/" target="_blank" rel="noopener">Game++. Building arcs</a></li>
+      <li><a href="https://habr.com/ru/articles/891700/" target="_blank" rel="noopener">Game++. Unpacking containers</a></li>
+      <li><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></li>
+      <li><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></li>
+      <li><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></li>
+      <li><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></li>
+      <li><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></li>
+    </ul>
+    <p><code>std::vector</code> и его аналоги часто используются для хранения всего, начиная от игровых объектов, таких как сущности, и заканчивая текстурами, сетевыми пакетами и тасками в шедулерах. Благо — это достаточно просто сделать и сопровождать. Это контейнер с последовательно выделенной памятью, который может хранить произвольное количество элементов. Каждый раз, когда ёмкость (capacity) увеличивается, vector выделяет новый блок памяти для нового размера и копирует туда старые элементы. Здесь тоже есть подводные камни, связанные с элементами, которым нужна поддержка операций копирования, что может вылиться в довольно нетривиальную задачу, когда некоторые классы и вовсе копировать нельзя.</p>
+
+    <h2>Выделение памяти</h2>
+    <img src="../assets/articles/cooking-vectors/02-allocation.png" alt="Выделение памяти вектором" class="post-image" loading="lazy" />
+    <p>В стандарте ничего не говорится о выделении памяти для пустого массива. При создании <code>std::vector</code> <strong>может</strong> выделяться блок памяти, достаточный для хранения некоторого начального числа элементов. Размер этого блока может варьироваться в зависимости от компилятора и реализации STL. Например, так поступает реализация <code>std::vector</code> от Nintendo, которая всегда выделяет место под 4 элемента при объявлении вектора.</p>
+    <p>С точки зрения компилятора, если мы объявили такой массив, то в большинстве случаев он будет заполнен, почему бы не сделать этого сразу. В принципе, это достаточно хорошая стратегия, за одним небольшим исключением: она будет хорошо работать только на платформе Nintendo, которая имеет отдельный аллокатор для небольших объёмов до 128 байт; если хотите больше — добро пожаловать в обычный медленный аллокатор, ну или пишите свой.</p>
+    <p>Когда добавляемых элементов становится больше, чем текущая ёмкость, <code>std::vector</code> увеличивает размер выделенного блока памяти. Обычно ёмкость увеличивается в N раз, но опять же точное значение коэффициента роста зависит от реализации. Некоторые реализации могут использовать коэффициент роста, который зависит от текущего числа элементов, чтобы минимизировать издержки на перераспределение памяти, другие полагаются на постоянный коэффициент.</p>
+    <p>При увеличении ёмкости все существующие элементы копируются в новый блок памяти. Это может быть дорогостоящей операцией, особенно если элементы имеют сложные конструкторы или деструкторы. Поскольку большинство реализаций вектора использует динамическую память, это приводит к её фрагментации, особенно в системах с ограниченными ресурсами, таких как консоли.</p>
+    <p>После увеличения ёмкости часть выделенной памяти остаётся неиспользованной, чтобы избежать частого перераспределения при добавлении новых элементов. Это компромисс между эффективностью памяти и производительностью. Особенно это явно проявляется на больших размерах и автоматическом режиме управления ростом ёмкости вектора. Условно при реальных 100 элементах в векторе памяти могло быть выделено под 150–200 элементов, что, конечно, при бездумном использовании векторов приводит в конечном итоге к вопросу: а где память <s>деньги</s> Зин?</p>
+
+    <h2>Не все вектора одинаково полезны</h2>
+    <img src="../assets/articles/cooking-vectors/03-not-all-vectors.png" alt="Не все вектора одинаково полезны" class="post-image" loading="lazy" />
+    <p>Ну что, достаточно минусов у самого быстрого и популярного контейнера в игрострое? Давайте посмотрим, как можно от них избавиться. Совсем, конечно, не избавимся — игры стали реально жадные до памяти, и зачастую стека даже в 2 Мб на тред уже не хватает. Прежде чем двинуться дальше и посмотреть на разные трюки, приведу здесь высказывание одного легендарного разработчика:</p>
+    <blockquote><p>Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered. We should forget about small efficiencies, say about 97% of the time: premature optimization is the root of all evil. Yet we should not pass up our opportunities in that critical 3%.</p></blockquote>
+    <p>Вы, скорее всего, слышали её короткую версию:</p>
+    <blockquote><p>Premature optimization is the root of all evil.<br/>Т.е. не занимайтесь фигнёй без предварительного анализа кода в профайлере, только время потеряете.</p></blockquote>
+    <p>При проектировании нашей логики мы часто хотим получать однократную композицию (линейную, многомерную) в массивах, чтобы иметь хорошую локальность кеша, быстрый доступ и обработку. Непрерывное размещение данных в памяти очень хорошо сказывается на скорости работы, что делает такой вид <code>std::vector</code> самым эффективным по сравнению с другими. Выглядит как-то так:</p>
+    <img src="../assets/articles/cooking-vectors/04-single-composition.png" alt="Однократная композиция в памяти" class="post-image" loading="lazy" />
+    <p>Но из-за размеров и динамического характера объектов чаще получается двукратная композиция. Однако с точки зрения размещения в памяти <code>std::vector</code> из <code>std::vector</code> не является расширенной версией многомерного массива в C++. Первый хранится в одном непрерывном блоке памяти, тогда как второй — нет. Условно так:</p>
+    <img src="../assets/articles/cooking-vectors/05-double-composition.png" alt="Каскадная композиция в памяти" class="post-image" loading="lazy" />
+    <p>Двукратная, или каскадная, структура <code>std::vector</code> имеет схему размещения памяти, схожую с <code>std::deque</code>, что является практически гарантированным промахом в кеше процессора без дополнительных усилий. Процессоры уже более-менее хорошо работают с двойным-тройным поинтером, но вот с большей размерностью поинтеров скорость падает катастрофически. Кроме того, и это более критично, каскадная структура <code>std::vector</code> требует множества операций выделения памяти, тогда как для многомерного массива достаточно одной. К сожалению, однократную композицию не всегда получается получить без лома и какой-то матери, поэтому второй вариант встречается значительно чаще.</p>
+    <p>При разработке софта, особенно там, где требуется высокая производительность, выделение памяти является серьёзным ограничением. В прошлом году Sony выкатила на превью требование, чтобы даже в нагруженных сценах fps не опускались ниже 60 (это якобы снижает пользовательский экспириенс), что даёт нам порядка 16 мс на подготовку кадра.</p>
+    <p>Системный вызов для аллокации памяти занимает 1–10 нс, если не было коллизии с другой аллокацией, когда время подбирается уже к 40 нс, или к 120 нс, если вызов оператора new или функции malloc() привёл к системному вызову для увеличения размера кучи, что, в свою очередь, включает переключение в режим ядра и возможный stall в треде. Есть, конечно, специализированные аллокаторы для игр и систем реального времени вроде TLSF или jemalloc; если кому-то будет интересно, тут же на хабре есть интересная статья на эту тему (<a href="https://habr.com/ru/articles/486650/" target="_blank" rel="noopener">https://habr.com/ru/articles/486650/</a>) от @Spym.</p>
+    <p>Как вы видите, даже одна операция выделения памяти может стать узким местом, если она выполняется внутри часто вызываемой логики. В играх динамическое выделение памяти в большинстве случаев запрещено, вам 95% завернут такой код на ревью. Без веских на такое действие причин выделять память где хочется нельзя. Всё, что может быть выделено, должно быть выделено до старта уровня.</p>
+
+    <h2>std::array</h2>
+    <img src="../assets/articles/cooking-vectors/06-array.png" alt="std::array" class="post-image" loading="lazy" />
+    <p>Первое, на что можно обратить внимание, если хочется скорости, но не хочется возиться с написанием собственных классов, будет стандартный массив C++. Он имеет точно N элементов, которые инициализируются при создании, это, конечно, не так удобно, как vector, который может иметь переменное количество элементов и не дёргает кторы на старте. К тому же нам самим придётся следить за размером через ещё одну переменную. К тому же array вызывает конструктор своих элементов, что также может просадить перф. Неудобно, но в крайнем случае, когда нет других альтернатив, вполне подходит. <code>std::array</code> — это просто статический массив C++, расширенный возможностями STL. Размер <code>std::array</code> всегда равен N, и это статическая величина, определённая на этапе компиляции.</p>
+    <pre style="margin:1.4rem 0"><code>    std::vector vec = {} // 1, 2, 3, 4, 5</code></pre>
+    <pre style="margin:1.4rem 0"><code>    std::array vec = { 0 };
+    int vec_size = 0;</code></pre>
+    <details style="margin:1.4rem 0">
+      <summary style="cursor:pointer">Чем грозят беспорядочные связи с векторами</summary>
+      <pre style="margin:1.4rem 0"><code>#include &lt;cstdint&gt;
+#include &lt;array&gt;
+#include &lt;vector&gt;
+
+static void VectorLoop(benchmark::State&amp; state) {
+    for (auto _ : state) {
+      std::vector&lt;int&gt; vec = {0};
+      for (int i = 0; i &lt; 5; ++i) {
+          vec.push_back(i);
+          volatile int x = vec[i];
+          benchmark::DoNotOptimize(x);
+      }
+    }
+}
+
+static void VectorLoopCached(benchmark::State&amp; state) {
+    for (auto _ : state) {
+      std::vector&lt;int&gt; vec = {0};
+      vec.reserve(5);
+
+      for (size_t i = 0; i &lt; 5; ++i) {
+          vec.push_back(i);
+          volatile int x = vec[i];
+          benchmark::DoNotOptimize(x);
+      }
+    }
+}
+
+static void ArrayLoop(benchmark::State&amp; state) {
+    for (auto _ : state) {
+      std::array&lt;int, 5&gt; arr = {1, 2, 3, 4, 5};
+
+      for (size_t i = 0; i &lt; 5; ++i) {
+          arr[i] = i;
+          volatile int x = arr[i];
+          benchmark::DoNotOptimize(x);
+      }
+    }
+}
+
+static void EmptyLoop(benchmark::State&amp; state) {
+    for (auto _ : state) {
+      std::array&lt;int, 5&gt; arr = {1, 2, 3, 4, 5};
+
+      for (size_t i = 0; i &lt; arr.size(); ++i) {
+          volatile int x = arr[i];
+          benchmark::DoNotOptimize(x);
+      }
+    }
+}
+
+BENCHMARK(VectorLoop);
+BENCHMARK(VectorLoopCached);
+BENCHMARK(ArrayLoop);
+BENCHMARK(EmptyLoop);</code></pre>
+    </details>
+    <img src="../assets/articles/cooking-vectors/07-benchmark.png" alt="Результаты бенчмарка vector vs array" class="post-image" loading="lazy" />
+    <p><a href="https://quick-bench.com/q/ScPhKA9CEtFcZp4DLLgTVBhFVfU" target="_blank" rel="noopener">https://quick-bench.com/q/ScPhKA9CEtFcZp4DLLgTVBhFVfU</a></p>
+    <p>Но всё заменить на array тоже не получится — мы как-то столкнулись с проблемами при портировании игры с PS4 на Nintendo Switch, был некий код условно с 20 if'ами, в каждой ветке создавался временный объект. Код прекрасно работал на PS4, но для свича понадобился 21-й if со своим временным объектом. На плойке стек был 2 Мб, и на вызове этой функции уже было израсходовано условно 460 Кб. А вот на свиче стек не мог быть больше 480 Кб на любой тред, и для полного исчерпания стека тогда достаточно было, чтобы кто-то разместил на стеке ещё порядка 20 килобайт.</p>
+    <p>Вообще 20 Кб на стеке — это слёзы с точки зрения игрового программера. Вы можете сказать, что 20-килобайтные объекты «хорошие разработчики не будут аллоцировать на стеке», ок, а десять 2-килобайтных объектов будут? Это к вопросу, откуда растут ноги у 20-килобайтных объектов на стеке и двухмегабайтных стеков для треда, просто посмотрите пример выше. Поменяйте <code>std::vector</code> на <code>std::array</code> — и вот 128 Кб как не бывало, чего только ради скорости не сделаешь. Да, не всегда красиво, зато быстро и с песнями и танцами при отладке.</p>
+
+    <h2>static_vector</h2>
+    <img src="../assets/articles/cooking-vectors/08-static-vector.png" alt="static_vector" class="post-image" loading="lazy" />
+    <p>Неудобства при работе с <code>std::array</code> привели к тому, что разработчики писали и пишут собственные реализации векторов, которые могут размещаться на стеке. Если мы продолжим улучшение примера из предыдущего абзаца, то получим класс, который за счёт некоторой структуры сможет хранить данные локально (внутри объекта).</p>
+    <p>Если мы знаем, что размер такого вектора не превысит N, то можно использовать этот факт как основу и заменить вектор с динамической аллокацией на вектор со статической аллокацией. В игровых движках такой класс в силу необходимости оптимизировать время фрейма появился почти сразу, в EASTL/Boost/Folly и остальных фреймворках он появляется где-то с 2014–15 годов, в стандартной библиотеке его нет до сих пор. Есть пропозалы на такой класс, но даже в 26-й стандарт они не попали. <code>static_vector</code> устраняет большинство случаев аллокации памяти в функциях, но расплачиваться за это приходится огромными стеками 2 Мб+, и то не всегда хватает.</p>
+    <p>В стандартной библиотеке мы можем использовать <code>pmr::vector</code> c собственным аллокатором, который не позволит выделить больше памяти, чем ему дано при проектировании (пример ниже), это, правда, не всегда удобно. Там всё же есть фоллбек на кучу, но буфер подбирается так, чтобы ассерт не срабатывал. Аллокатор очень простой и рассчитан на то, что разработчик, его применяющий, знает, что делает. У него есть одна особенность, если найдёте — пишите в комментариях.</p>
+    <pre style="margin:1.4rem 0"><code>// Initial allocations come from a fixed buffer, with later allocations just doing new / delete
+// Pass a type and a count that will typically be used in the allocations for sizing the fixed buffer
+template &lt;typename T, size_t COUNT, size_t FIXEDSIZE = COUNT * sizeof(T)&gt;
+struct FixedMemoryResource : public std::pmr::memory_resource
+{
+    virtual void* do_allocate(size_t bytes, size_t align) override
+    {
+        // Check if free memory in fixed buffer - else just call new
+        void* currBuffer = &amp;mFixedBuffer[FIXEDSIZE - mAvailableFixedSize];
+        if (std::align(align, bytes, currBuffer, mAvailableFixedSize) == nullptr)
+        {
+            assert(false &amp;&amp; "allocate more that expected");
+            return ::operator new(bytes, static_cast&lt;std::align_val_t&gt;(align));
+        }
+        mAvailableFixedSize -= bytes;
+        return currBuffer;
+    }
+
+    virtual void do_deallocate(void* ptr, size_t bytes, size_t align) override
+    {
+        if (ptr &lt; &amp;mFixedBuffer[0] || ptr &gt;= &amp;mFixedBuffer[FIXEDSIZE])
+        {
+            ::operator delete(ptr, bytes, static_cast&lt;std::align_val_t&gt;(align));
+        }
+    }
+
+    virtual bool do_is_equal(const std::pmr::memory_resource&amp; other) const noexcept override { return this == &amp;other; }
+
+  private:
+    alignas(T) uint8_t mFixedBuffer[FIXEDSIZE]; // Internal fixed-size buffer
+    std::size_t mAvailableFixedSize = FIXEDSIZE; // Current available size
+};</code></pre>
+    <p>Примеров на гитхабе с реализацией <code>static_vector</code> великое множество, без проблем найдёте под свои нужды; если интересно, для своего проекта я использую такую <a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/svector.h" target="_blank" rel="noopener">github.com/dalerank/Akhenaten/.../svector.h</a> (кастомная с минимумом зависимостей, Boost/EASTL/Folly тянут уж очень много своих хедеров). Дальнейшим развитием идеи статического вектора стал вектор гибридный.</p>
+
+    <h2>hybrid_vector</h2>
+    <img src="../assets/articles/cooking-vectors/09-hybrid-vector.png" alt="hybrid_vector" class="post-image" loading="lazy" />
+    <p>С точки зрения памяти, hybrid_vector — это такой static_vector, который может выделить место для любого числа элементов, но если оно меньше некоторого числа, то использует для этого внутреннюю структуру.</p>
+    <blockquote><p>На похожем эффекте работает оптимизация для небольших строк (SSO, short string optimization) от Александреску, просто в качестве внутреннего буфера используются переменные класса, которые интерпретируются как массив байт. Объект строки должен хранить указатель на буфер строки, но указатель с 64-битным адресом может сам по себе хранить до 8 символов без выделения памяти. Типичная реализация строки также хранит размер, ёмкость (capacity), иногда контрольную сумму и указатель на буфер. Совокупно поля могут быть использованы непосредственно для хранения внутреннего буфера строки, если размер строки подходит под ограничения и не превышает условно 16+ символов.</p></blockquote>
+    <p>Если данные создаются временно на стеке — например, как локальные переменные функции, которая хранит промежуточные результаты вычислений, — тогда hybrid_vector может полностью разместить свои элементы локально, без привлечения динамического выделения памяти, аналогично статическим массивам C++. Условно мы знаем, что НПС используют обычно не больше двух видов оружия, но штурмовики могут таскать с собой ещё и пулемёт, тогда выгоднее всем НПС дать hybrid_vector и все данные будут внутри класса, а штурмовики получат динамически выделенный участок памяти. Но т.к. условно штурмовиков 1 из 10, то потеряем мы место только под две пушки на НПС, и получим быструю работу с параметрами НПС.</p>
+    <p>Использование hybrid_vector связано с дополнительными затратами при проектировании. Есть ситуации, когда он вообще может не принести пользы.</p>
+    <ul>
+      <li>Отсутствие разумного «малого» числа N, раздувание данных класса тоже не даётся бесплатно.</li>
+      <li>Размер часто значительно меньше N, когда большинство случаев требуют меньше памяти, чем выделяет буфер; тут тоже надо внимательно следить за аллокациями памяти, но контролировать их значительно проще, чем стандартные классы, потому что всегда можно прицепить кастомные метрики или счётчики.</li>
+      <li>Элементы большого размера. Если элементы занимают много памяти, выгода от локальности данных нивелируется увеличенным объёмом памяти, и тогда причина, по которой мы вообще этот класс придумали — улучшение локальности данных в кэше — размазывается, так что нет хорошего прироста, а скорость работы становится сравнима с массивами в куче.</li>
+    </ul>
+    <p>Но тут опять же всё зависит от алгоритма и железа: на старых мобилках и консолях прирост наблюдался вплоть до полукилобайта на стеке, потом была деградация по скорости работы и где-то к 16 Кб сравнивалась по скорости с кучей. На современных процессорах это уже не имеет такого значения, главное, чтобы размера самого стека хватило.</p>
+    <p>В стандартной библиотеке с 17-го стандарта у нас появилась возможность эмулировать hybrid_vector через аллокаторы:</p>
+    <pre style="margin:1.4rem 0"><code>char buffer[64] = {}; // a small buffer on the stack
+std::pmr::monotonic_buffer_resource pool{std::data(buffer), std::size(buffer)};
+std::pmr::vector&lt;char&gt; vec{ &amp;pool };</code></pre>
+    <p>Но тут тоже надо быть осторожным, потому что даже реализации от вендоров могут содержать такие приколы, что вам придётся переписывать очень много кода. Как это получилось с одной японской компанией на четыре буквы, которая выкатила последний SDK, а у нас просели фпс на треть. Вот вчера ещё было стабильно 60, а после обновления 40–45 — ПМ в ужасе, программеры в шоке, а техлид... техлид в отпуске.</p>
+    <img src="../assets/articles/cooking-vectors/10-sneaky-type.png" alt="Коварный тип гражданской наружности" class="post-image" loading="lazy" />
+    <p>Код ниже просто перескакивает первый буфер и радостно идёт в системную память за аллокацией, игнорируя статический буфер. Ну и кому такой hybrid_vector нужен, который ничего не отличается от <code>std::vector</code>?</p>
+    <blockquote><p>Вот он, этот коварный тип гражданской наружности! (с)</p></blockquote>
+    <pre style="margin:1.4rem 0"><code>class monotonic_buffer_resource
+    : public memory_resource
+    {	// pool optimized for quick allocation, slow or no deallocation
+    typedef _Mypoolalloc _Myalloc;
+    typedef _STD list&lt;_Mon_block&gt; _Mylist;
+.....
+
+    virtual void *do_allocate(size_t _Bytes, size_t _Bound)
+        {	// allocate from blocks
+        if (_Free_space.empty())	// ensure one non-allocated entry
+            _Free_space.push_front(_Mon_block(0, 0));
+
+        if (_Initial_size == 0)
+            _Initial_size = _MONOTONIC_INITIAL_SIZE;
+        _Initial_size = _Roundup(_Initial_size);
+        _Bytes = _Roundup(_Bytes);
+
+        for (; ; )
+            {	// find aligned space, or add more blocks
+            for (_Mylist::iterator _It = _Free_space.begin();
+                ++_It != _Free_space.end(); )  &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;  ++It
+                {
+                uintptr_t _Current_offset_addr = (uintptr_t)(_It-&gt;_Ptr + _It-&gt;_Offset);
+                char *_Next_aligned_addr =
+                    (char *)((_Current_offset_addr + (_Bound - 1)) &amp; ~(_Bound - 1));
+                if (_Next_aligned_addr + _Bytes &lt;= _It-&gt;_Ptr + _It-&gt;_Bytes)
+                    {	// room for aligned storage, return its address
+                    _It-&gt;_Offset = (_Next_aligned_addr + _Bytes) - _It-&gt;_Ptr;
+                    return (_Next_aligned_addr);
+                    }
+                }
+
+            // add more storage
+            size_t _Next_size = _Free_space.size() &lt;= 1 ? 0
+                : _Free_space.back()._Bytes;
+            do {	// add one or more ever larger blocks
+                if (_Next_size == 0)
+                    _Next_size = _Initial_size;
+                else if (2 * _Next_size &lt; _Next_size)
+                    _Next_size = _Bytes;	// last try if overflow
+                else
+                    _Next_size *= 2;	// double after first block
+
+                _Free_space.push_back(_Mon_block(_Next_size, _Bound,
+                    upstream_resource()-&gt;allocate(_Next_size, _Bound)));
+                } while (_Next_size &lt; _Bytes);
+            }
+        }</code></pre>
+    <p>Пришлось менять все места, где юзался <code>monotonic_buffer_resource</code> в коде, на кастомный. Можете для сравнения посмотреть каноничную реализацию для кланга <a href="https://github.com/llvm/llvm-project/blob/llvmorg-18.1.0-rc3/libcxx/include/memory_resource" target="_blank" rel="noopener">llvm-project/.../memory_resource</a>.</p>
+    <p>Вот так, не верьте вендорам, SDK приносящим!</p>
+
+    <h2>Заключение</h2>
+    <p>В определённом смысле можно проследить зависимость от vector к array, когда производительность возрастает за счёт уменьшения гибкости (или увеличения потребления памяти). В большинстве случаев полная гибкость vector не требуется, и он используется как удобный, но бездумный стандартный выбор, предоставляющий доступ ко всему арсеналу STL. За большим удобством скрывается не меньшая ответственность, в последнее время не все разработчики уже и знают, как работает под капотом <code>std::vector</code> и какие есть особенности его применения.</p>
+    <p>Интересные материалы:</p>
+    <ul>
+      <li><a href="https://pvs-studio.com/en/blog/posts/0989/" target="_blank" rel="noopener">pvs-studio.com — std::vector</a></li>
+      <li><a href="https://github.com/palotasb/static_vector" target="_blank" rel="noopener">github.com/palotasb/static_vector</a></li>
+      <li><a href="https://github.com/gnzlbg/static_vector" target="_blank" rel="noopener">github.com/gnzlbg/static_vector</a></li>
+      <li><a href="https://en.cppreference.com/w/cpp/container#Container_adaptors" target="_blank" rel="noopener">cppreference — Container adaptors</a></li>
+      <li><a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p0843r6.html" target="_blank" rel="noopener">P0843R6 — inplace_vector</a></li>
+      <li><a href="https://www.cppstories.com/2020/06/pmr-hacking.html/" target="_blank" rel="noopener">cppstories — PMR hacking</a></li>
+    </ul>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
