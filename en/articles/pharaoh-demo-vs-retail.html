@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Welcome to Ancient… — dalerank</title>
+<meta name="description" content="Pharaoh (1999): why the city-builder won't start on Windows 10/11 (the 640×480 bug, 125% scaling, overlays, knocking on a dead Microsoft service, sound problems) and how the demo differs from retail — loading screens, menus, textures borrowed from Caesar III, Nile floods, irrigation canals and cut content. Illustrated with my Akhenaten remake." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pharaoh-demo-vs-retail.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-demo-vs-retail.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pharaoh-demo-vs-retail.html">RU</a><i>/</i><a class="on" href="pharaoh-demo-vs-retail.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Reverse-engineering</span><h1>Welcome to Ancient…</h1><div class="ameta"><span>Jan 22, 2025</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/01-header.png" alt="Welcome to Ancient Egypt" class="post-image" loading="lazy" />
+    <p>...Egypt — a world of majestic pyramids, the turbulent waters of the Nile and one of the warmest, coziest 2D strategy games from 1999! Here you become an architect and ruler, building cities, caring for the well-being of your citizens and erecting monuments worthy of pharaohs. Did you know Pharaoh had a full-fledged demo? Although that was normal for the industry of that period, it's the differences from the retail version that we'll be talking about. (Lots of pictures)</p>
+    <p>…but keep in mind that in 2025 all this splendor may fail to start and will require some file-work to run on modern systems. The most reliable way to enjoy this old but still magical city-builder without glitches is to install a WinXP virtual machine — but even that doesn't always work. A VM helps get rid of most problems; unfortunately, on every OS after XP the game runs worse and worse.</p>
+    <hr/>
+    <p>On my system, for example, the Steam version looked like this no matter what I tried.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/02-steam-broken.png" alt="Broken render of the Steam version" class="post-image" loading="lazy" />
+    <p>If you do decide to install this wonder-sim without a VM, be ready for tambourine dances and crashes, and you may also be in for:</p>
+    <ul>
+      <li>freezes on the first screen;</li>
+      <li>freezes in the main menu (there's sound, but the picture doesn't change);</li>
+      <li>a long startup of up to a couple of minutes (looks like a freeze);</li>
+      <li>regular crashes after 30–60 minutes (requires a restart, sometimes drags the laptop down with it);</li>
+      <li>UI displacement, when mouse clicks don't line up with the display, and no sound because the system lacks the old DX API; sometimes installing MS Visual Studio 6/7 with the bundled bits helps, or an old DirectX 9.0c (2010), which still contained the needed DLLs.</li>
+    </ul>
+    <p>The effectiveness of the file-work varies depending on your system and settings, the diameter of your tambourine and the phase of the moon. Most of the bugs are known, and in places there are recipes for fixing them, but nobody has cancelled the moon. If the nostalgia has really bitten you hard and you want to play the native game on a modern Windows 10 (on version 11, 90% won't work, not even the GOG version, not even with community patches and fixes), then first take a look at the possible solutions here: <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2625065788" target="_blank" rel="noopener">steamcommunity.com/sharedfiles/...</a>. Now let me tell you a bit more about the funniest errors and their possible causes, and then we'll get to the demo and the differences.</p>
+
+    <h2>Too good a graphics card, or the 640×480 bug</h2>
+    <p>On first launch the game always starts in fullscreen mode at 640×480. For modern graphics cards this became a problem, and many consider switching to that mode an error — or the minimum supported resolution is even 800×600 or 1024×768. As a result you see something like this, or similar, or a completely black screen, or the game just hangs. The graphics settings can be changed from the menu during a mission, but you still have to get to it, as you understand.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/03-640x480.png" alt="The 640×480 resolution bug" class="post-image" loading="lazy" />
+
+    <h2>Too good a screen, or the 125% bug</h2>
+    <p>If you use a laptop or a 2K+ monitor, then you most likely have scaling set to 125% or more. This makes UI elements bigger and text more readable. But not for old games! In Pharaoh such scaling tricks lead to problems like image or UI elements being displaced, displayed not where they should be. But that's only half the trouble — at least you can still play. It's when the mouse doesn't hit the buttons that the game becomes practically unplayable. The screenshot below shows a playable variant: the UI renders in absolute coordinates, i.e. it's 1024×768, the resolution the game thinks it is — you couldn't set anything higher in the settings anyway. It's worse when, on systems with scaling, the OS starts sending the mouse position into the black area, while the game keeps handling buttons where it rendered them.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/04-scaling.png" alt="The 125% scaling bug" class="post-image" loading="lazy" />
+
+    <h2>Everyone's in my way, or the overlay bug</h2>
+    <p>I don't know how, but it's possible that other applications' overlays break something in the game's render. Trying to open certain programs, like Discord, which can embed their overlay over a running application, ends badly in most cases. A message comes in from friends — and you turn on Discord.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/05-discord.png" alt="Black screen due to the Discord overlay" class="post-image" loading="lazy" />
+    <p>Welcome to restarting the game; instead of a render there'll be a black screen. But not always and not everything — Chrome, for example, doesn't suffer from this in the slightest.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/06-chrome.png" alt="With Chrome the game works fine" class="post-image" loading="lazy" />
+    <p>The community figured out which software is highly likely to hang the game's render.</p>
+    <ul>
+      <li>AMD tools</li>
+      <li>NVidia tools and "GeForce Experience"</li>
+      <li>AfterBurner, RivaTuner, Origin (99% hang it)</li>
+      <li>Discord, Skype, Windows Xbox (90% hang it)</li>
+      <li>Steam (doesn't interfere, but may crash the game when you open the chat)</li>
+    </ul>
+
+    <h2>Who are you knocking on, warrior?</h2>
+    <p>The Steam version may fail to start or start with a substantial 2–3 minute delay for one strange reason. The game tries to connect to 40.113.76.66:443 — a long-dead service from Microsoft's Windows Game Explorer. Naturally, nobody answers there, and it just hangs waiting, sending a connection request every 5 seconds.</p>
+    <pre style="margin:1.4rem 0"><code>https://www.findip-address.com/40.113.76.66
+
+ISP: Microsoft Corporation
+Organization: Microsoft Azure
+User type: hosting
+Autonomous system number (ASN): 8075
+Autonomous system organization: MICROSOFT-CORP-MSN-AS-BLOCK
+
+Anonymous proxy? No
+Satellite provider? No</code></pre>
+    <p>So there you go: the service is long gone, but the games still reach for it. The problem can be solved by kicking out <code>gameux.dll</code> or digging around in the registry. This behavior is known for Windows 10/11; on a VM the requests stop after a few failed attempts and the game starts normally. The GOG version was not caught doing this kind of snitching. Sometimes the game hangs if the executable's name differs from <code>Pharaoh.exe</code>. For example, modders did this when fiddling with the vanilla version and a build hacked for resources or settings.</p>
+    <pre style="margin:1.4rem 0"><code>[HKEY_CLASSES_ROOT\Local Settings\Software\Microsoft\Windows\GameUX\ServiceLocation]
+"Games"=""</code></pre>
+
+    <h2>No sound</h2>
+    <p>If the game has no sounds, you can play like that too. The fact that the game launched and runs is already a big success, but with sound, of course, the atmosphere becomes exactly like twenty years ago. But not all game packs contain the necessary files (.mp3, .wav) for music and sounds, and although they may be present in the resources — they're fakes. The Fargus version, for example, suffered from this nonsense: a game voiced by professional actors simply didn't fit on the disc, so some files were just deleted.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/07-no-sound.png" alt="Sound problems" class="post-image" loading="lazy" />
+    <p>There was another problem, when some of the city sounds, citizen voices and the commentator had an incorrect WAV header that told the engine they were 0 seconds long. Apparently there was an error during conversion. Sometimes the problem is unsuitable (old or new, doesn't matter anymore) versions of libraries (MSS32.DLL, MP3DEC.ASI, BNKADEC.ASI), which may not work correctly on a specific system. Not even compatibility mode and a VM save you. Then you just need to take these files from other games, for example from <em>Zeus+Poseidon</em> or <em>Caesar III</em> — some set will definitely work. In the <em>Caesar</em>, <em>Pharaoh</em>, <em>Zeus</em> series, sound problems were often related to the DirectMusic system, already outdated at the time. <em>Caesar 3</em> and <em>Pharaoh</em> use MSS (Miles Sound System) version 5, which causes sound-playback problems on modern systems. <em>Zeus</em> and <em>Emperor</em> use MSS version 6, which works more adequately with DirectX 6+, so they have fewer such problems.</p>
+    <p>The Pharaoh 1.1 patch added sound support via DirectSound and fixed operation on the then-new Windows 2000. Funnily enough, Zeus had a fun bug called "Slow Gods Animation," due to which the gods' animation slows down if sound is enabled. After Windows XP, DirectMusic support was removed entirely, and sound playback is done through OS-level DirectMusic emulation, which became the cause of many sound problems not only in this line but in many old games.</p>
+
+    <h2>Differences</h2>
+    <p>And of course we should recall the gorgeous high-resolution trailer, which even won some award. I remember being impressed for a long time and expecting something new in the game itself. <em>(You can watch the trailer in the <a href="https://habr.com/ru/articles/875784/" target="_blank" rel="noopener">original article on Habr</a>.)</em></p>
+    <p>If I remember the history of <em>Pharaoh</em>'s development correctly, at the time the demo came out the monument-building mechanic wasn't fully implemented. That is, the logic itself may have been there, but the textures weren't. And if you started building a monument, yellow dots would be drawn instead.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/08-yellow-dots.png" alt="Yellow dots instead of a monument in the demo" class="post-image" loading="lazy" />
+    <p>The differences began with the loading screen already (on the left is what was in the demo), and later the image familiar to all players, with the pyramid and the Impressions Games logo.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/09-loading-screens.png" alt="Loading screens of the demo and the release" class="post-image" loading="lazy" />
+    <p>Another difference was in the main menu, which had a different set of buttons in different versions. Below are screenshots from the demo to the full version and the expansion.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/10-menu-demo.png" alt="Demo main menu" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/11-menu-full.png" alt="Full version main menu" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/12-menu-addon.png" alt="Expansion main menu" class="post-image" loading="lazy" />
+    <p>In general, if you're curious, you can wander through the game's resources and see how it's all laid out. But for that you'll need either SGReader, which can unpack sg3 archives — but that tool is static and can't show animations in motion — or you can find my <em>Akhenaten</em> project on GitHub (<a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">github.com/dalerank/Akhenaten</a>); in my free time I'm restoring the original engine, and there you can already watch the animations in motion.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/13-akhenaten-anim.gif" alt="Animations in the Akhenaten project" class="post-image" loading="lazy" />
+    <p>If you wander through the game's resources, you can notice that a lot of things weren't added even in the expansion. How about, for example, reserved room for five more deities? Here are the unpacked resources with the game's main text.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/14-reserved-gods.png" alt="Reserved room for gods" class="post-image" loading="lazy" />
+    <p>Which is, in principle, not surprising for a civilization where the gods occupied a central place in the culture and worldview, embodying the forces of nature and social order. The pantheon of Egyptian gods is very extensive and included hundreds of deities — if I remember correctly, over three hundred gods, deities and divine beings, each of which played its role in maintaining harmony, social and spiritual life. Gods could take anthropomorphic forms, look like animals, or combine features of human and beast. Among the most revered deities were Ra, the sun god, who "resurrected" every morning, bringing light and life, and Osiris, god of the afterlife and rebirth, symbolizing the eternal cycle of life and death. Isis, Osiris's wife, was considered the patroness of magic and motherhood, and their son Horus was the protector of pharaohs and the embodiment of royal power. Anubis, the jackal-headed god who escorted the souls of the dead to the afterlife, also held an important place. Each of the gods had its own temples, cults and rituals.</p>
+    <p>It looks like the developers were going to expand the pantheon to 10, but in the end kept the old system from <em>Caesar</em> with five deities: Osiris, Ra, Ptah, Set, Bast. This is more likely related to a lack of time for development and balancing — the gods in <em>Caesar</em> didn't always work correctly, let alone adding new ones.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/15-gods.png" alt="Gods in the game" class="post-image" loading="lazy" />
+    <p>If you look closely at the textures from the demo, it turns out they're actually from Caesar: on the left in the demo, the grass is exactly the same as in the previous game. On the right the textures have already been redrawn for Pharaoh.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/16-caesar-textures.png" alt="Textures from Caesar III in the demo" class="post-image" loading="lazy" />
+    <p>The evolution of the main interface is also easy to trace: from left to right — the texture from Caesar (the marble background replaced with yellow, can be found in the demo resources), then with a marble background and without some buttons (this version was in some demos for Europe), then the more familiar texture from a later demo, and finally the texture in the final version — empty, as in the game.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/17-interface-evolution.png" alt="Interface evolution" class="post-image" loading="lazy" />
+    <p>The textures for fertile land also changed, not much, but became more in the style of the game. In general, the mechanic of destroying part of the map was quite interesting for city-builders, since it allowed dynamic behavior to be done relatively cheaply. In fact there was no flood on the map at all — at a certain frequency we simply change the fertile-land texture to water and then restore it back as it was. But in motion, at the time of release, it looked stunning, because the competitors couldn't offer anything like it.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/18-fertile-land.png" alt="Fertile-land textures" class="post-image" loading="lazy" />
+    <p>It seems simple. I don't know how much time the authors spent developing this flood mechanism, but even knowing how it works and having partially reverse-engineered sources, it took me more than three months to make it work properly.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/19-flood-anim.gif" alt="Nile flood animation" class="post-image" loading="lazy" />
+    <p>Another visible difference is the appearance of irrigation canals and the corresponding mechanic for them. If in the demo this building sent out a worker with water (who later became a firefighter), in the release there were already irrigation canals filled from a special building. An amusing mechanic that grew out of the aqueduct system, which would effectively have been forgotten otherwise. Judging by the remaining bits of code and logic, the canals are former aqueducts, and the water pumps are reservoirs from the previous installment.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/20-irrigation.png" alt="Irrigation canals" class="post-image" loading="lazy" />
+    <p>Also, some buildings and citizens that didn't fit the game's setting became unnecessary, although resources existed for them, such as: Mud Tower, Mud Gatehouse, Brick Tower, Brick Gatehouse, Military Academy 2, Military Academy 3 and several others. A detailed description of what went missing can be seen here (<a href="https://tcrf.net/Proto:Pharaoh_(Windows)" target="_blank" rel="noopener">tcrf.net/Proto:Pharaoh_(Windows)</a>).</p>
+
+    <h2>In my free time</h2>
+    <p>If you're interested in how it all works on the inside, come to <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">GitHub</a> or to <a href="https://akhenatengame.squarespace.com/" target="_blank" rel="noopener">the site</a> — some sympathizers set up a site for me, I'll fill it with content when I can and keep a devblog. From the latest news: it's playable up to mission 8 and can run on Macs, there are no pyramids yet, only mastabas. The game is entirely in C++, with a self-written JS VM for configs and a bunch of various tricks, like pulling a class name at compile time with the help of <a href="https://habr.com/ru/articles/839692/" target="_blank" rel="noopener">black magic and templates</a>. There won't be a Telegram, sorry — I just don't get along with it somehow.</p>
+    <img src="../../assets/articles/pharaoh-demo-vs-retail/21-akhenaten-site.png" alt="The Akhenaten project site" class="post-image" loading="lazy" />
+    <p>UPD: I was asked to add the link <a href="https://akhenatengame.squarespace.com/" target="_blank" rel="noopener">akhenatengame.squarespace.com</a>.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
