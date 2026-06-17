@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game++. run, thread, run… — dalerank</title>
+<meta name="description" content="Multithreading in games: the problems with locks (deadlock, thread starvation, priority inversion in Cyberpunk 2077 and Crysis), the C++11 memory model, lock-free and atomics, spinlocks with backoff, thread pools and a task system, hitching, a read-write mutex and 8 rules for good threading." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/run-thread-run.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/run-thread-run.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/run-thread-run.html">RU</a><i>/</i><a class="on" href="run-thread-run.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>Game++. run, thread, run…</h1><div class="ameta"><span>Feb 17, 2025</span><span>33 min</span></div></div>
+  <article class="prose">
+
+    <img src="../../assets/articles/run-thread-run/01-header.png" alt="" class="post-image" loading="lazy" />
+<p>While developing your own game, engine or framework, you'll inevitably run into the need to implement a resource-loading system, to run tasks outside the main game loop, and to move various subsystems (sound, render, physics, effects) into separate threads to reduce frame-preparation time and improve overall performance. As a classic programmer, you probably know about the problems of implementing multithreading, using locks, and lock-based algorithms.</p>
+<p>In ordinary lock-based programming, when you need to share data, you have to use mechanisms that serialize access to that data so that operations working with it are protected from simultaneous interference by other threads and from being broken. Broken in the literal sense. Even an operation as simple as ++count, where count is an integer, requires a lock, since the increment operation is in general a three-step operation (read, modify, write) that is not atomic. I won't even mention anything more complex or long-running.</p>
+<p>Behind the apparent simplicity hides a host of rakes and traps: deadlocks, thread "starvation", asynchronous errors. It's like trying to conduct an orchestra where the musicians ignore the rhythm. Simply put, any actions on data can lead to problems, and to prevent that, operations on data must be atomic — which is solved by introducing synchronization primitives into the code, like mutexes, semaphores, spinlocks.</p>
+<p>The first good thing about lock-based programming is that while a resource is locked, no other logic can interfere. The second good thing — people perfectly understand, read and work with such code, because it fits well into the "natural" understanding of how the world is arranged.</p>
+<p>And then the problems begin...</p>
+<hr/>
+    <p>This is part of the "Game++" series:</p>
+    <ul><li><p><a href="string-interning.html">Game++. String interning</a></p></li><li><p><a href="cooking-vectors.html">Game++. Cooking vectors</a></p></li><li><p><a href="dancing-with-allocators.html">Game++. Dancing with allocators</a></p></li><li><p><a href="juggling-stl-algorithms.html">Game++. Juggling STL algorithms</a></p></li><li><p>Game++. run, thread, run... &lt;=== You are here</p></li><li><p><a href="https://habr.com/ru/articles/885780/" target="_blank" rel="noopener">Game++. Building arcs</a></p></li><li><p><a href="https://habr.com/ru/articles/891700/" target="_blank" rel="noopener">Game++. Unpacking containers</a></p></li><li><p><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></p></li><li><p><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></p></li><li><p><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></p></li><li><p><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></p></li><li><p><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></p></li></ul>
+<p>Real-life analogies for multithreaded algorithms often resemble situations where several people interact with a shared resource.</p>
+<ul><li><p>The room key:<br/>A person who wants to enter a room needs the key that hangs on a hook by the door. Whoever takes the key can work in the room. The rest wait at the door for the work to finish. This precisely reflects how a mutex works in code.</p></li><li><p>The shop queue:<br/>The cashier serves one customer at a time. If customers start shoving and cutting in line — chaos ensues, there's a race condition, and the cashier makes mistakes. The customer queue, in this case, plays the role of synchronization, allowing them to be processed one after another and avoid errors.</p></li><li><p>The micromanaging boss:<br/>Friday, the end of the workday. Manager Vasiliy is waiting for you to finish some task and every five minutes asks: "Have you finished the task yet?", so he can mark it as closed in the weekly report and go drink iced coffee at the pub with manager Vanya. A classic spinlock, the "M" kind, with a constant wait time.</p></li></ul>
+<p>However, it's precisely this "natural understanding" of the possible actions inside a locked section of code that creates problems. You can lock some shared resource — in game development, frame time is also a shared resource, and a very, very limited one — and start a long operation, for example unpacking a texture. You can launch I/O operations, which already carry overhead in themselves and contain internal locks of the OS or framework, thereby delaying all the other threads.</p>
+<p>Worst of all is when, in attempts to improve the game's performance, we end up in a deadlock situation. They will happen anyway, no matter how correctly you design your code. The more mutexes in the application, the higher the chances of deadlock situations arising. And that's it — nobody's going anywhere, even if the lanes are clear.</p>
+    <img src="../../assets/articles/run-thread-run/02-deadlock.png" alt="" class="post-image" loading="lazy" />
+<p>Besides the well-known <code>deadlock</code>, which, by the way, can be caused by several reasons:</p>
+<ul><li><p>Mutual Exclusion: A resource can be used by only one thread.</p></li><li><p>Hold and Wait: A thread holds a resource and waits for another.</p></li><li><p>No Preemption: A resource cannot be taken away from a thread.</p></li><li><p>Circular Wait: A chain of threads, each of which waits for a resource from the next one.</p></li></ul>
+<p>There's also the problem of priority inversion, when a low-priority thread or task holds a resource needed by a high-priority one, so the latter can't run. This can lead to significant delays and a drop in performance. As it was, for example, in CP2077 with the fps drop in a crowd at release: I remember fighting that bug for a long time until I found a mod on one of the forums that simply lowered the priority for pedestrian AI navigation, otherwise the FPS dropped to 8, although on average it held steadily above 40</p>
+<p>The RED4 architecture is fairly classic for game engines, where the threads are distributed as follows:</p>
+<ul><li><p>Main thread: responsible for game logic, physics processing, animation and updating the world state.</p></li><li><p>Render thread: prepares and submits data for the GPU. Works in parallel with the main thread.</p></li><li><p>Worker threads for tasks: used to run all the secondary work, such as NPC AI, traffic, asset loading, updating navigation data and everything else.</p></li></ul>
+<p>The pedestrian and traffic threads actively used shared data about NPC positions and the navigation graph. As I understood from the forum discussion, the pedestrian AI tasks updated NPC positions several times per frame, and those positions were simultaneously used by the render thread for drawing. This data was protected by synchronization primitives. If a navigation task held the resource for a long time while computing a complex route, rendering was forced to wait, which led to stutters, micro-freezes and a sharp drop in frame rate. This was especially noticeable in areas with high NPC density and complex buildings (for example, the market in the Kabuki district) — FPS could drop from 40 to 10, and the game "stuttered" on a sharp camera turn, when the render thread had to wait for the locked data to be released while the engine tried to recompute routes for many NPCs at once, if the player created a jam or provoked a crowd.</p>
+<p>The problem was aggravated by the fact that in REDEngine the main game logic, including physics, animation and event handling, ran in the main thread, while rendering and worker threads ran in parallel. Because of this, the execution priority of secondary tasks began to affect everything around it, leading to cascading delays (more here <a href="https://www.gdcvault.com/play/1020197/Landscape-Creation-and-Rendering-in" target="_blank" rel="noopener">https://www.gdcvault.com/play/1020197/Landscape-Creation-and-Rendering-in</a> and here <a href="https://gdcvault.com/play/1034318/A-Ticket-to-Redemption-How" target="_blank" rel="noopener">https://gdcvault.com/play/1034318/A-Ticket-to-Redemption-How</a>). It's very strange, because the same people made the gorgeous Witcher 3: Blood and Wine, where all of this ran, jumped and didn't lag on noticeably weaker hardware (<a href="https://youtu.be/9vEfH9SJ9mY" target="_blank" rel="noopener">https://youtu.be/9vEfH9SJ9mY</a>).</p>
+    <img src="../../assets/articles/run-thread-run/03-convoying.png" alt="" class="post-image" loading="lazy" />
+<p>The convoying effect — a slowdown caused by many tasks lining up in a queue for a shared resource, even if they don't conflict during execution. A real example in Crysis — the barrels.</p>
+<p>To process physics and explosion effects, this engine uses a pool of worker threads. But the barrels use the same effect, and the effect instances themselves are stored in lists by effect type, and access to the list is protected by a mutex. Physics handles its tasks quite acceptably — even with 500 barrels the engine produces decent fps, until the barrels start exploding and adding their effects to that list simultaneously.</p>
+<p>Although the engine handles hundreds of different volumetric effects on the scene without noticeable slowdown in a normal situation (smoke, bullet trails and damage), it copes poorly specifically with such scenarios. That is, there are many workers, but they all bottleneck on access to a single resource, which causes an overall drop in performance.</p>
+<p>But still, locks let you write code much more simply — as if the threads worked sequentially. This matches our natural linear thinking, where each action follows one after another.</p>
+<p>The brain generally copes poorly with true parallelism (as does code without synchronization), and locks simplify the modeling: "First you do it, then I do it" — like in real life. This reduces the load when designing systems and makes the logic more predictable. Despite the general clarity, modern games demand more and more resources and ever-smaller latencies, especially the render and sound, for which even minimal delays threaten frame desync, jerks, glitches, audio hissing, clicks and other delights of desync.</p>
+<p>For example, if the audio-render thread blocks on access to the sound buffer or fails to fill it in time, you'll hear the characteristic "clicking" or wheezing, and if the render blocks, it leads to visual artifacts (glitches), micro-freezes (stutters).</p>
+<h2>Non-blocking logic</h2>
+<p>This is where lock-free programming enters the stage, promising potentially fast and safe primitives and algorithms for multithreaded applications. Such algorithms work thanks to the existence of a certain set of atomic primitives that give strict guarantees about the progress of threads and their interaction.</p>
+<p>This set of primitives is quite limited. In 2003 Maurice Herlihy defended his work "Wait-Free Synchronization", published back in 1991, where he showed which primitives are suitable for building lock-free data structures and which are not. This research became the foundation for subsequent developments by Intel and AMD in parallel computing, which not only changed the approach to designing multithreaded systems but also predetermined the further evolution of hardware architectures.</p>
+<p>Also in his work he showed the impossibility of implementing certain operations for the correct synchronization of more than two threads, for example test-and-set, swap, fetch-and-add. I think you'll be able to find the work itself on your own. The article is hard — I warn you right away, I couldn't grasp all the nuances even with the help of more experienced colleagues.</p>
+<p>The biggest achievement, IMO, was the proof of the universality of certain simple primitives, with which you can implement any lock-free algorithm for any number of threads, which later appeared in one form or another in most languages. The simplest and most popular primitive is the Compare-and-Swap (CAS) operation:</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+bool compare_and_swap(T* addr, T exp, T val) {
+    if (*addr == exp) {
+        *addr = val;
+        return true;
+    }
+    return false;
+}</code></pre>
+<p>The primitive compares the contents of memory at address <code>addr </code>with the expected value exp. If the values match, <code>addr </code>is updated with the new value <code>val</code>. The whole operation (the primitive) must execute atomically.</p>
+<p>But before moving on and talking about the application of all this wealth in game development, I want to state the main rule of multithreaded programming that I've arrived at:</p>
+<blockquote><p>Don't use lock-free without necessity</p></blockquote>
+<p>You won't believe me, of course. But having gone through the experience of creating and porting several games and engines with a large number of parallel tasks, I can give one main piece of advice. Lock-free algorithms are not so much a silver bullet as a risky area with an enormous number of pitfalls. They require a deep understanding of programming in general, of multithreaded programming in particular, as well as a good knowledge of hardware specifics and how memory is arranged.</p>
+<p>Sometimes it's better to lose a millisecond on a frame and look for where you can dig it up somewhere else, than to have a pile of non-reproducible bugs. And even worse — to chase rare crashes or graphical glitches that show up only on certain hardware configurations, and only after hours of running.</p>
+<p>But I just write articles on Habr and know a little C++. Maybe some of these people will be more convincing? 😊</p>
+<blockquote><p>Herb Sutter: "Lock-free programming is like playing with knives"</p><p>Tony Van Eerd: “Lock-free coding is the last thing you want to do”</p><p>Anthony Williams: “Lock-free programming is about how to faster shoot yourself in the foot“</p></blockquote>
+<h2>Before C++11</h2>
+<p>Before the eleventh standard, C++ knew nothing about the existence of multitasking and atomic operations, and there was no memory model either. We had "visually" a single control flow with sequence points (<a href="https://en.wikipedia.org/wiki/Sequence_point" target="_blank" rel="noopener">sequence points</a>) in the program's code, and the compiler's task was to produce such code that, by the moment the execution flow reached a given point, all the effects of the instructions executed before that point were visible.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">sequence points</summary><p><strong>Sequence points</strong> are moments in a program's execution (for example, the end of an expression, a function call) where all side effects of the preceding operations are guaranteed to be complete, and the subsequent ones have not yet begun.</p></details>
+<p>Picture the beginning and end of a function — these are two sequence points: before the start all argument values must be known, at the end the results must be known. That's the layman's explanation. But if you call a function with two arguments, the C++ standard didn't guarantee which of the arguments would be evaluated first. How the compiler arrived at the current state of the code is undefined. The reason is simple: the comma operator is not a sequence point. This is a very simple example that worked god-knows-how, and there's a freight car with a trailer of such code in old legacy projects.</p>
+<pre style="margin:1.4rem 0"><code>int x = 0;
+
+int foo() {
+    x += 10;
+    return x;
+}
+
+int bar() {
+    x *= 2;
+    return x;
+}
+
+// The order of calling foo() and bar() is undefined!
+void print_values(int a, int b) {
+    printf("a = %d, b = %d, x = %d\n", a, b, x);
+}
+
+int main() {
+    x = 1;
+    print_values(foo(), bar()); // The result depends on the compiler!
+    return 0;
+}</code></pre>
+<h2>Memory model</h2>
+<p>With the arrival of C++11 we got a new memory model. The memory model is a contract between the programmer and the compiler + processor that lets the programmer constrain the program's optimization opportunities as long as the rules aren't violated. If the programmer explicitly states where synchronization is needed (for example, by specifying the order of operations via <code>memory_order_seq_cst</code>), the compiler guarantees the order of operations as in sequential code. In the good case we get a correctly working program that is decently optimized.</p>
+<p>In the bad case, we get what we get. If you break the "contract" (for example, use <code>memory_order_relaxed </code>where strict ordering is needed), the optimizations will break the logic. Breaking the "contract" leads to desync that's hard to catch and to heisenbugs that vanish the moment you try to debug.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">A moment for a joke (What will this code print?)</summary><pre style="margin:1.4rem 0"><code>void helloworld() {
+    printf("Hello world!");
+}
+
+int main() {
+    while (1) {
+        ;
+    }
+    helloworld();
+    return 0;
+}
+
+void goodbyeworld() {
+    printf("Goodbye world!");
+}</code></pre><p>(<a href="https://godbolt.org/z/h7WooW6PE" target="_blank" rel="noopener">https://godbolt.org/z/h7WooW6PE</a>)<br/>It doesn't relate to what's described above, but it shows that you have to check the compiler too. Recently we caught similar behavior in a release and were very surprised by a call to an uncallable function.</p></details>
+<p>But the fewer rules the programmer sets, the more opportunities the compiler has to produce a well-optimized binary. We can use very weak constraints — read: memory model — and then there's a mass of optimization options. But who would be able to maintain and debug such a program? Only very smart programmers. And so that ordinary programmers can write non-buggy programs, the smart programmers came up with a set of constraints and rules. Below the list goes from strict to softer.</p>
+<ul><li><p>One control flow (strong, single threading)<br/>Only one execution flow exists in the program, so there's no need for synchronization mechanisms. Memory is perceived sequentially: operations execute strictly in the order in which they are written in the code. There's effectively no overhead for memory management within a single process — the simplest memory model, if it's needed at all.</p></li><li><p>Tasks (strong, multi threading)<br/>Tasks are units of work that can run in parallel (for example, std::async in C++). The system (or library) distributes tasks among threads, abstracting the programmer away from low-level work with threads directly. Data is local within a single task; the memory model is as simple as in single thread</p></li><li><p>Threads (middle, multi threading)<br/>Multithreading implies several independent flows of code execution within a single process. This gives flexibility and the possibility of parallelization, but requires careful management of shared resources and synchronization to avoid data races and undefined behavior. Data can be shared between threads, the memory model gets more complex, since consistency of data between threads is required. Without special synchronization primitives or atomic operations, changes in one thread may be "invisible" to another.</p></li><li><p>Condition variables (middle, multi threading)<br/>A mechanism that lets a thread "fall asleep" (block) until a certain condition is met, the occurrence of which is signaled by another thread. Used together with mutexes to coordinate threads and the correct order of execution.</p></li><li><p>Sequential consistency (soft, mt)<br/>The strictest order. All atomic operations behave as if they occur in a single global sequence consistent across all threads. Simplifies the logic but limits optimizations — the compiler builds the asm code exactly as the programmer wrote it.</p></li><li><p>Acquire-release semantic (soft, mt)<br/>A less strict mode. "Acquire" guarantees that all operations before the atomic operation in the current thread are visible, and "release" guarantees that all operations in the current thread won't be "overtaken" by operations after the release. This allows finer control over the order and gives the compiler the chance to use additional optimization algorithms compared to sequential consistency.</p></li><li><p>Relaxed semantic (soft, mt)<br/>The most "free" mode. Only the atomicity of the operation itself is guaranteed, but not the order relative to other operations. This gives the compiler maximum freedom for optimizations, including aggressive reordering, vectorization and dead-code elimination, but complicates understanding, since the operations may be rearranged relative to one another.</p></li></ul>
+<p>The C++ memory model was inspired by the Java memory model, as the most mature one at the time the standard was being developed. On the one hand, the C++ memory model leaves it to the programmer to watch out for data races if threads jointly use shared data. In this respect tasks are much easier to use than threads or condition variables. On the other hand, it provides such generally accepted solutions as atomic operations, the ability to work with threads, and a guarantee of when the result of an operation on atomic variables becomes visible in another thread.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">To summarize</summary><p><strong>The fewer the rules — the more efficient the binary and the more bugs:</strong></p><ul><li><p>The compiler and the processor rearrange instructions, merge them, or even remove "unnecessary" ones, if it doesn't violate the visible order of operations (the <strong>as-if rule</strong>).</p></li><li><p>If a variable is declared as memory_order_relaxed, the compiler can cache its value in a register without updating it in memory after each write. This speeds up the code but requires a deep understanding of the memory model.</p></li></ul><p><strong>Weak constraints = hell for the developer:</strong></p><ul><li><p><strong>Heisenbugs</strong>: Errors that occur only in production and "evaporate" during debugging because of the changed order of instructions.</p></li><li><p><strong>Non-determinism</strong>: Each run of the program may behave differently, since the reordering depends on the processor, the OS, the load and the position of the moon.</p></li></ul><p><strong>For ordinary mortals:</strong></p><ul><li><p><strong>RAII and mutexes</strong> — abstractions that hide the complexity. You call lock(), and under the hood the compiler places memory barriers.</p></li><li><p><strong>Atomic variables with default settings</strong> (std::atomic&lt;T&gt;) — work like memory_order_seq_cst, but this is safer than manual control.</p></li></ul><p><strong>This is the whole philosophy of C++:</strong><br/>Give the programmer control over every bit, but don't force them to use it.</p><ul><li><p>Want speed — write on "weak" models and optimize.</p></li><li><p>Want to sleep peacefully — use high-level primitives.</p></li></ul></details>
+<h3>Blocking, non-blocking, lock-free, wait-free</h3>
+    <img src="../../assets/articles/run-thread-run/04-nonblocking.png" alt="" class="post-image" loading="lazy" />
+<p>Each of these terms describes a characteristic of an algorithm when executed in a multithreaded environment. So, when reasoning about a program's runtime behavior, it's important to classify the algorithm correctly.</p>
+<p>Intuitively it's fairly clear what blocking means for an algorithm. However, multithreading isn't about intuition. The simplest way to define blocking is to do it through the inversion of non-blocking behavior.</p>
+<p>Non-blocking behavior: an algorithm is non-blocking if the failure or suspension of any thread cannot cause the failure or suspension of another thread (something from the university algorithms course). You may notice that this definition doesn't say a word about locks, because "non-blocking" is a broader concept.</p>
+<p>Blocking a program is fairly easy. A typical example is using several mutexes and acquiring them in different orders — roughly how people place mutexes in code: put one here, put another there, hope for the moon. An unlucky coincidence is enough — and there you have a deadlock.</p>
+<pre style="margin:1.4rem 0"><code>mutex entities_mutex;
+
+int main(){
+
+  thread t([]{
+    cout &lt;&lt; "Start updating ..." &lt;&lt; endl;
+    lock_guard&lt;mutex&gt; _(entities_mutex);
+    cout &lt;&lt; "Thread: " &lt;&lt; this_thread::get_id() &lt;&lt; endl;}
+  );
+
+  {
+    lock_guard&lt;mutex&gt; _(entities_mutex);
+    cout &lt;&lt; "Update entities: " &lt;&lt; this_thread::get_id() &lt;&lt; endl;
+
+    t.join();
+  }
+}</code></pre>
+<p>The main categories of non-blocking algorithms are lock-free and wait-free. Any wait-free algorithm is lock-free, and any lock-free one is non-blocking. However, non-blocking and lock-free are not the same thing.</p>
+<p>There's another category, called obstruction-free, which guarantees that if some thread starts performing an operation and at a certain point in time runs without interference from other threads (for example, other threads are suspended), then this thread will complete the operation in a finite number of steps. However, if other threads actively interfere, the operation may not complete or may require retries.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">The serial section at the end or start of a frame</summary><p>The serial section of a frame is a stage of frame processing where sequential (strictly non-parallel) code is executed that's necessary to finish the current frame and prepare for the next one. This part of the game frame pipeline often becomes a performance bottleneck, since it requires data synchronization and work with APIs that don't support parallelism. The engine's obstruction-free guarantees allow operations to be performed here without regard for various locks, because data preparation for the frame is finished, and only a small part of the logic that can't be parallelized runs. For example, fixing resources, advancing counters, committing subsystem parameters.</p><ul><li><p>Unity: At the end of the frame the main thread runs LateUpdate, submits commands to the GPU, prepares shaders for subsequent compilation, prepares the resource-unpacking queue, and updates navigation.</p></li><li><p>Unreal Engine: The serial section includes the "RHI Commit" stage, where data is handed to the graphics API.</p></li><li><p>CryEngine: The serial section includes the "RTG Finalize" stage and preparation of data for the GPU, gathering subsystem telemetry, and removing stale objects (GC — the objects haven't been deleted yet and still hold data, but you can't use them).</p></li></ul></details>
+<p>Lock-free: Non-blocking behavior is lock-free if it guarantees system-wide progress (at least one thread will complete its work in finite time).</p>
+<p>Wait-free: Non-blocking behavior is wait-free if it guarantees progress for every thread, i.e. any thread will complete its work in finite time, independently of the others.</p>
+<p>The <a href="https://github.com/DNedic/lockfree" target="_blank" rel="noopener">algorithms and containers themselves</a> will probably be a separate article, if anyone is interested in their application in game engines — too much material comes out. Of what I've had to work with and implement:</p>
+<ul><li><p>Stack: Implemented using a singly linked list and an atomic operation (CAS) to update the pointer to the stack head. (<a href="https://lumian2015.github.io/lockFreeProgramming/lock-free-stack.html" target="_blank" rel="noopener">Writing lock-free stack</a>, <a href="https://www.modernescpp.com/index.php/a-lock-free-stack-a-simplified-implementation/" target="_blank" rel="noopener">Lock-free stack</a>)</p></li><li><p>Queue à la Michael-Scott, which uses CAS to update the head and tail pointers.<br/>(<a href="https://www.cs.rochester.edu/~scott/papers/1996_PODC_queues.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://concurrencyfreaks.blogspot.com/2018/01/a-lock-free-persistent-queue.html" target="_blank" rel="noopener">Article</a>, <a href="https://github.com/pmem/pmdk" target="_blank" rel="noopener">Github</a>, <a href="https://github.com/pramalhe/ConcurrencyFreaks/blob/master/CPP/queues/MichaelScottQueue.hpp" target="_blank" rel="noopener">Github</a>)</p></li><li><p>Hash Table is implemented as an array of pointers to lock-free lists.</p></li><li><p>Linked List — in my case, several implementations à la Harris, using CAS for atomic pointer updates.<br/>(<a href="https://archive.ll.mit.edu/HPEC/agendas/proc11/Day1/Posters/A-9_Feldman_A.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://github.com/bhhbazinga/LockFreeHashTable" target="_blank" rel="noopener">Github</a>, <a href="https://github.com/divfor/atomic_hash" target="_blank" rel="noopener">Github</a>, <a href="https://potay.github.io/FreeTables/" target="_blank" rel="noopener">Article</a>)</p></li><li><p>Vector, a dynamic array — I don't remember whose authorship anymore</p></li><li><p>Snapshot, allows several threads to simultaneously read and write a set of shared variables.<br/>(<a href="https://csl.stanford.edu/~christos/publications/2009.snapshot.ics.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://www.cs.cmu.edu/~guyb/papers/3437801.3441602.pdf" target="_blank" rel="noopener">Paper</a>)</p></li><li><p>Queue, a wait-free queue à la Kogan.<br/>(<a href="https://rusnikola.github.io/files/wcq-ppopp22.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://github.com/pramalhe/ConcurrencyFreaks/blob/master/CPP/queues/KoganPetrankQueueCHP.hpp" target="_blank" rel="noopener">Github</a>)</p></li><li><p>Hazard pointers, for safe memory reclamation in a multithreaded environment.<br/>(<a href="https://www.cs.otago.ac.nz/cosc440/readings/hazard-pointers.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://erdani.org/publications/cuj-2004-12.pdf" target="_blank" rel="noopener">Paper</a>, <a href="https://github.com/pramalhe/ConcurrencyFreaks/blob/master/CPP/queues/HazardPointers.hpp" target="_blank" rel="noopener">Github</a>)</p></li><li><p>Atomics — Compare-And-Swap (CAS), Fetch-And-Add (FAA), Load-Linked/Store-Conditional (LL/SC) as the basic primitives for implementing all the goodness described above</p></li></ul>
+<h2>Why move away from mutexes at all?</h2>
+<p>People often describe lock-free programming as programming without mutexes and other heavy locks, often meaning by this some complex structures like circular buffers or lock-free queues, like those described in the previous paragraph. That's true, but it's only part of the picture. The generally accepted definition is somewhat broader: in essence, lock-free is a property you can use to characterize some code or logic, without going into the details of exactly how it was written.</p>
+<p>Lock-free ≠ "faster than locks". It's a guarantee that at least one thread always moves forward, even if the others are "stuck". It's like driving without brakes:</p>
+<ul><li><p>You can drive fast, very fast, but you need perfect roads (hardware) and reaction time (algorithms).</p></li><li><p>One wrong turn (a bug in the code) — and you're in the ditch (crash, desync).</p></li><li><p>Do you really need it?!</p></li></ul>
+<p>For example, I have some resource I want to use in threads.</p>
+<pre style="margin:1.4rem 0"><code>int counter = 0;
+std::mutex counter_mutex;
+
+void increment() {
+    for (int i = 0; i &lt; 1000; ++i) {
+        std::lock_guard&lt;std::mutex&gt; lock(counter_mutex);
+        ++counter;
+    }
+}
+
+int main() {
+  std::vector&lt;std::thread&gt; threads;
+
+  for (int i = 0; i &lt; 10; ++i) {
+      threads.emplace_back(increment);
+  }
+
+  for (auto&amp; t : threads) {
+      t.join();
+  }
+}</code></pre>
+<p>And then I see that my hypothetical resource can be transformed so as to get rid of the mutex.</p>
+<pre style="margin:1.4rem 0"><code>std::atomic&lt;int&gt; counter{0};
+
+void increment() {
+    for (int i = 0; i &lt; 1000; ++i) {
+        counter.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+int main() {
+  std::vector&lt;std::thread&gt; threads;
+
+  for (int i = 0; i &lt; 10; ++i) {
+      threads.emplace_back(increment);
+  }
+
+  for (auto&amp; t : threads) {
+      t.join();
+  }
+}</code></pre>
+<p><code>std::atomic&lt;int&gt;</code> — lets you perform operations on the counter variable atomically, excluding data races. <code>fetch_add(1, std::memory_order_relaxed)</code> increments the counter without locks. Here memory_order_relaxed is used; strict ordering between threads isn't required. This too is lock-free programming, right where you need it, without using mutexes and GMOs. And it's this kind of lock-free programming that people often forget about in favor of big and complex — truly complex — implementations.</p>
+<p>And this is probably even more important: to see the opportunity to apply this logic, rather than the ability to write a <code>circular-buffer </code>and try to cram it into the project, especially if it's not needed there, when what you really need is to correctly lay out the counters, tasks and variables.</p>
+<h2>Atomic operations</h2>
+<p>These are memory operations that execute in a way that makes them look indivisible: no thread can see the operation in a half-completed state. On modern processors many operations are already atomic. For example, aligned reads and writes of simple data types are, as a rule, performed atomically.</p>
+<p>Read-Modify-Write operations (<a href="http://en.wikipedia.org/wiki/Read-modify-write" target="_blank" rel="noopener">Read-Modify-Write, RMW</a>) go further, allowing more complex transactions to be performed atomically. They're especially useful in lock-free algorithms with multiple writers, since when several threads try to perform an RMW on the same address, these operations will execute in turn, one after another. C++ gives us such an implementation via <code>std::atomic&lt;T&gt;::fetch_add</code>, but it's worth remembering that the standard doesn't guarantee a lock-free implementation of atomic operations on all platforms. So you should take the capabilities of the specific processor into account. You can check whether <code>std::atomic&lt;&gt;</code> supports a lock-free implementation by calling <code>std::atomic&lt;&gt;::is_lock_free</code>.</p>
+<p><code>std::atomic_flag</code> is the only lock-free atomic primitive whose implementation is guaranteed by the standard. The others, more powerful and general primitives, may implement their functionality using other primitives, so they have an <code>is_lock_free()</code> method that lets you check whether an atomic operation is used inside or another implementation is involved.</p>
+<p>The <code>atomic_flag  </code>primitive is enough to build the simplest spinlock. Among the various synchronization primitives it holds a special place — it combines simplicity of implementation with the best performance in specific scenarios, compared to all the other implementations.</p>
+<pre style="margin:1.4rem 0"><code>struct spinlock_t{
+  atomic_flag flag;
+
+  spinlock_t(): flag(ATOMIC_FLAG_INIT) {
+  }
+
+  void lock(){
+    while( flag.test_and_set() );
+  }
+
+  void unlock(){
+    flag.clear();
+  }
+};</code></pre>
+<p>Unlike classic mutex-based locks, which switch the thread into a waiting state when the resource can't be acquired (suspending it and handing control to the OS scheduler), a spinlock implements an active-waiting strategy. The thread trying to acquire the lock continuously polls the state in a loop, without giving up CPU time. This approach avoids the overhead of context switching, which is often critically important in highly loaded scenarios. However, the effectiveness of using a spinlock directly depends on where it's used.</p>
+<p>It's not a replacement for a mutex, as many might think. Its area of application is resources whose hold time is comparable to the time of locking a mutex, which can reach thousands of CPU cycles or more. With long operations under a spinlock, active waiting leads to useless CPU consumption, which comes out more expensive than using a mutex, or to the effect of thread "starvation".</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">Thread starvation</summary><p>A situation in a multitasking system where one or several threads don't get enough CPU time to do their work. It happens for various reasons, and especially often manifests with the use of priorities that interfere with the scheduler's normal operation.</p><ol><li><p>Low thread priority: a low priority hampers time-slot allocation, high-priority threads get more slots, and with a large number of high-priority threads the rest don't get slots at all. The Priority inversion effect.</p></li><li><p>Inefficient synchronization: In the case of incorrect thread synchronization (for example, if one thread constantly acquires a mutex or another resource), other threads are constantly blocked, which leads to their starvation. The Lock contention effect</p></li><li><p>Long resource holds: Threads that acquire resources may not release them for a long time, creating a situation in which other threads can't continue execution. The Resource contention effect.</p></li><li><p>Algorithmic starvation: If the program uses an algorithm that for some reason doesn't give equal access to all threads (for example, an algorithm with a predictable service cycle, where some threads are always served before others). The <code>Fairness issue</code> effect — you could conceivably write a spinlock that grabs the lock earlier than others, which leads to prioritizing certain threads.</p></li></ol></details>
+<p>I've already described the potential problems when implementing different waiting algorithms in a spinlock (<a href="https://habr.com/ru/articles/689310/" target="_blank" rel="noopener">https://habr.com/ru/articles/689310/</a>). Of the various options, I eventually arrived at using a scheme with pseudo-random waiting, which performs well in most cases.</p>
+<pre style="margin:1.4rem 0"><code>struct spin_lock_t {
+    enum	{
+        SPIN_LOCK_FREE	= 0,
+        SPIN_LOCK_TAKEN	= -1
+    };
+    volatile int _lock;
+
+    inline void	lock () noexcept {
+        for (;;) {
+            // Optimistically assume the lock is free on the first try
+            if (!cmpxchg(_lock, SPIN_LOCK_TAKEN, SPIN_LOCK_FREE)) {
+                break;
+            }
+
+            // Wait for lock to be released without generating cache misses
+            uint8_t wait = 1;
+            while (SPIN_LOCK_FREE != load(&amp;_lock)) {
+                wait *= 2; // exponential backoff if can't get lock
+#if (defined(__PROSPERO__) || defined(_GAMING_XBOX))
+                // hardware wait on address when value changes
+                _mm_monitorx((void *)&amp;_lock, 0, 0);
+                _mm_waitx(0, 0, wait);
+#else
+                for (u8 i = 0; i &lt; wait; i++)
+                    __mm_pause();
+#endif
+                wait += (wait ? 0 : 1);
+            }
+        }
+    }
+
+    inline void	unlock	() noexcept {
+        _lock = SPIN_LOCK_FREE;
+    }
+
+    inline bool	trylock	() noexcept {
+        // First do a relaxed load to check if lock is free in order to prevent
+        // cache misses if someone does while(!try_lock())
+        if ((SPIN_LOCK_FREE == load(&amp;_lock))
+            &amp;&amp; (SPIN_LOCK_FREE == cmpxchg(_lock, SPIN_LOCK_TAKEN, SPIN_LOCK_FREE)) ) {
+            return (true);
+        } else {
+            return (false);
+        }
+    }
+
+    // just debug check
+    inline	bool locked	() const noexcept {
+        return (SPIN_LOCK_FREE != _lock);
+    }
+
+    inline spin_lock_t(pcstr = 0) noexcept : _lock(SPIN_LOCK_FREE) {}
+    inline ~spin_lock_t() noexcept {}
+};</code></pre>
+<p>There's a small difference for consoles: the <code>__mm_monitorx((void *)&amp;_lock, 0, 0)</code> instruction prepares the core to enter a waiting mode, telling it which address in memory it should watch. Then we wait for changes at that address, or for the timeout to expire. This reduces excessive CPU usage during active waiting (spin-wait), and the core can avoid spending time endlessly polling the variable in a loop. This instruction isn't always available on a CPU, so this block of code is implemented only for consoles, while for PC a more universal code path is made.</p>
+<p>Sometimes using a mutex/spinlock doesn't fit the algorithm, or there's a desire to move away from using them entirely. So <code>std::atomic&lt;bool&gt;</code> offers the ability to emulate condition variables with atomics. This is often enough to synchronize two threads. Code like this:</p>
+<pre style="margin:1.4rem 0"><code>vector&lt;int&gt; player_actions;
+mutex action_mutex;
+condition_variable action_cond;
+
+bool is_action_ready;
+
+void waiting_actions(){
+    cout &lt;&lt; "Waiting for player action..." &lt;&lt; endl;
+    unique_lock&lt;mutex&gt; lck(action_mutex);
+    action_cond.wait(lck,[]{return is_action_ready;});
+    player_actions[1] = 2;  // Example of performing an action
+    cout &lt;&lt; "Action completed!" &lt;&lt; endl;
+}
+
+void set_player_action(){
+    player_actions = {1, 0, 3};  // Example of setting the player's actions
+    {
+        lock_guard&lt;std::mutex&gt; lck(actionMutex);
+        is_action_ready = true;
+    }
+    cout &lt;&lt; "Player actions set!" &lt;&lt; endl;
+    action_cond.notify_one();
+}</code></pre>
+<p>If you run this code from different threads, then <code>waiting_actions</code> waits for the <code>action_cond</code> event to continue working, but uses a mutex whose lock/unlock takes significant time compared to the actual work. This isn't a real example, of course, but imagine you need to read the controller's state in the input-processing thread.</p>
+<p>If you rewrite this code using atomics, it turns into:</p>
+<pre style="margin:1.4rem 0"><code>vector&lt;int&gt; player_actions;
+atomic&lt;bool&gt; actions_ready(false);
+
+void waiting_actions(){
+    cout &lt;&lt; "Waiting for player action..." &lt;&lt; endl;
+    while ( !actions_ready.load() ){           // (C)
+        this_thread::sleep_for(chrono::milliseconds(5));
+    }
+    player_actions[1] = 2;                     // (D)
+    cout &lt;&lt; "Action completed!" &lt;&lt; endl;
+}
+
+void set_player_action(){
+    player_actions = {1,0,3};                  // (A)
+    actions_ready = true;                      // (B)
+    cout &lt;&lt; "Player actions set!" &lt;&lt; endl;
+}</code></pre>
+<p>Active waiting was added in <code>C</code>.</p>
+<p>What guarantees that line <code>D</code> will execute after line <code>C</code>? Because of the atomic variable <code>actions_ready </code>, access to the shared variable <code>player_actions </code>is synchronized — the <code>waiting_actions</code> thread won't see the changes until <code>actions_ready</code> changes, despite the fact that <code>player_actions </code>isn't protected by a lock and isn't atomic.</p>
+<p>In modern C++, atomic types have been added <a href="https://en.cppreference.com/w/cpp/atomic/atomic" target="_blank" rel="noopener">for all known integer types</a>.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">When should this NOT be used?</summary><ul><li><p>More complex synchronization is required, for example waiting for multiple events.</p></li><li><p>Threads rarely interact — a <code>condition_variable </code>will be more efficient in terms of the amount of work done; the CPU time will be used for the real task rather than waiting.</p></li><li><p>With high contention between threads, active waiting (spin-wait) leads to unnecessary CPU load and ultimately to less work done.</p></li></ul></details>
+<h2>Tasks</h2>
+<p>New standards increasingly simplify multithreaded programming for the "ordinary" developer, while still leaving enormous potential for optimization both on the compiler's side and on the experts' side. <code>thread, async, mutex, condition_variable, and atomic</code> let you write efficient multithreaded code without delving into the details of low-level synchronization.</p>
+<p>To do multithreading in C++ now, you no longer need to be an expert — the compiler does most of it, analyzes dependencies, places memory barriers, eliminates false dependencies, and even parallelizes the code at the instruction level. The main thing is not to interfere with it too much. Zero-cost abstractions in action!</p>
+<p>I'm joking, of course — you always have to understand what you're writing. Even high-level mechanisms can hide bugs and nuances, like spurious wakeup, the overhead of context switching, or false sharing of data. The real magic is that modern C++ lets you work at a convenient level of abstraction without losing control over performance, if that's necessary.</p>
+<pre style="margin:1.4rem 0"><code>void doWork() {
+    // ... long works
+    std::cout &lt;&lt; "Thread works: " &lt;&lt; std::this_thread::get_id() &lt;&lt; std::endl;
+}
+
+std::thread t1(doWork);
+std::thread t2(doWork);
+
+t1.join();
+t2.join();</code></pre>
+<p>This is already enough to implement multithreaded processing in an engine without thinking too much about how it works under the hood. This is that very <strong>Tasks </strong>system, with a strict memory model, which requires minimal knowledge to work with. Slightly trickier cases with simultaneous access are fixed by using a mutex in the right place.</p>
+<p>This way of working with threads suits many people. What's bad about this approach is the cost of starting a thread. Creating and starting a thread can take from a few dozen microseconds to a few hundred microseconds, and in some cases under high load this time can reach several milliseconds, which is often comparable to the execution time of the task itself.</p>
+<h2>Thread pool</h2>
+<p>It's precisely because of this non-zero overhead that creating threads during frame preparation is of little use, which led to the appearance of thread pools, which let you create the needed number of threads once and then reuse them many times to run tasks, thereby avoiding the extra costs of starting and stopping threads. The threads in the pool remain in a waiting state until a new task is handed to them, which significantly increases the efficiency of working with them.</p>
+<p>An example of what has probably become a classic thread-pool implementation: (<a href="https://github.com/progschj/ThreadPool/blob/master/ThreadPool.h" target="_blank" rel="noopener">https://github.com/progschj/ThreadPool</a>)</p>
+<pre style="margin:1.4rem 0"><code>class Pool {
+public:
+    Pool(size_t) { ... }
+    ~Pool() { ... }
+
+    template&lt;class F, class... Args&gt;
+    future&lt;typename result_of&lt;F(Args...)&gt;::type&gt;
+    enqueue(F&amp;&amp; f, Args&amp;&amp;... args) {
+      using return_type = typename result_of&lt;F(Args...)&gt;::type;
+
+      auto task = make_shared&lt;packaged_task&lt;return_type()&gt; &gt;(
+              bind(forward&lt;F&gt;(f), forward&lt;Args&gt;(args)...)
+          );
+
+      future&lt;return_type&gt; res = task-&gt;get_future();
+          unique_lock&lt;std::mutex&gt; lock(queue_mutex);
+          tasks.emplace([task](){
+            (*task)();
+          });
+      }
+
+      condition.notify_one();
+      return res;
+    }
+
+private:
+    vector&lt;thread&gt; workers;
+    queue&lt;function&lt;void()&gt;&gt; tasks;
+    mutex m;
+    condition_variable cv;
+    bool stop;
+};
+
+
+int main() {
+    Pool pool(4);
+    vector&lt; future&lt;int&gt; &gt; results;
+
+    for(int i = 0; i &lt; 8; ++i) {
+        results.emplace_back(
+            pool.enqueue([i] {
+                cout &lt;&lt; "hello " &lt;&lt; i &lt;&lt; endl;
+                this_thread::sleep_for(chrono::seconds(1));
+                cout &lt;&lt; "world " &lt;&lt; i &lt;&lt; endl;
+                return i*i;
+            })
+        );
+    }
+}</code></pre>
+<p>Over time games and game engines arrived at the point where there's effectively no "main" thread in the system, only a multitude of tasks. The <code>MainThread</code>, of course, exists, but its functions now come down to waiting for workers, distributing tasks (<code>tasks</code>) and preparing for the frame switch. Instead of directly running <code>GameUpdate()</code>, the main thread rather organizes the execution of many independent tasks that in parallel finish processing the current frame.</p>
+<p>Such a system has a big advantage over the classic <code>GameUpdate()</code> scheme for many reasons. For example, if one worker gets preempted (say, an external process grabs that core), the other workers simply take on its tasks, and there won't be delays from waiting for a specific thread. This reduces the chance of sharp FPS drops and the short-term stretching of frame time (hitching), especially under high load.</p>
+<h2>Hitching</h2>
+<p>That is, all frames fit within 16 ms, but some break out of that time — it seems imperceptible to the player, but having several such frames within a one-second interval makes the picture "float", or appear "jerky" when the frame time is large.</p>
+    <img src="../../assets/articles/run-thread-run/05-hitching.png" alt="" class="post-image" loading="lazy" />
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">Hitching</summary><p>These are short but noticeable delays (freezes) during a game's operation, which cause abrupt changes in the smoothness of animations — the controls start to feel jerky or floaty, and the frame rate dips and then returns to normal.</p><p>On perf graphs a hitch (or frame hitch) looks like one or several frames with a sharply increased processing time compared to neighboring frames. For example, if the game stably runs at 16 ms per frame (60 FPS) and then one or several frames take 20 or more ms, the player will notice it as a hitch — an implicit freeze.</p><p>Hitching is even more annoying than a stable 30 FPS, because the sharp jumps in smoothness or floaty controls break the predictability of the game.</p></details>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">I/O hitching</summary><p>Long disk-read operations, loading textures, models or animations during gameplay.</p><p>The player enters a new area, and the game loads textures. If this happens synchronously (in the game thread), the frame can hang.</p><p>In open worlds, content streaming (loading data as the player moves) can cause hitching if the game is poorly optimized for working with a large number of resources</p><p>Old SSDs/HDDs are especially prone to this, since their data-access time is higher than modern ones</p></details>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">Threading hitching</summary><p>Unpredictable CPU load, for example when one thread runs too complex a task while the others sit idle.</p><p>The engine doesn't use a job system or distributes tasks unevenly across cores, and moments can arise when one thread blocks the execution of the others.</p><p>Interruptions (for example, a sudden flush of the CPU cache or the work of an antivirus and other heavy applications in the background)</p></details>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">GC Hitching</summary><p>In systems with garbage collection (C#, Lua) memory cleanup can happen suddenly and block normal operation.</p><p>In Unity/Godot you encounter GC hitches when temporary objects accumulate and then their removal causes a freeze.</p><p>In engines with scripting VMs (WoW, Roblox) sharp freezes can happen because the GC cleans up memory and doesn't manage to do it before the next frame and delays it.</p></details>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">Graphics Hitching</summary><p>Unpredictable delays in the GPU's operation.</p><p>The game sends the GPU too many commands per frame, and the CPU may be forced to wait for their processing to finish (GPU stall).</p><p>Complex effects (for example, tessellation, ray tracing, a large number of particles) can overload the GPU.</p><p>Changing the rendering state (switching between different render passes, textures, materials) can cause hitches.</p><p>On the first run of complex effects the game may compile shaders on the fly, which leads to dips</p></details>
+<h2>Workers</h2>
+<p>Modern game engines use a thread pool where one worker thread is allocated per N cores of the processor, less often two — we'll call them workers. All workers run tasks and are fully interchangeable — there's no rigid binding of a thread to a specific task. An exception can be made for the render, physics, sound and external-device threads, but even those can be integrated into the task paradigm.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">The "one thread per core" scheme</summary><p>No contention for resources — if each core is allocated only one thread, the OS won't switch between them, and there'll be no losses on context switch.</p><p>Maximum CPU utilization — all cores are evenly loaded and work at maximum efficiency.</p><p>Predictable performance — if the engine has 16 threads on 16 cores, it can always guarantee running 16 tasks at once.</p></details>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">The "two threads per core" scheme</summary><p>Tasks don't fully load the CPU (for example, there are many lightweight computations, waits).</p><p>Threads often block, for example waiting for I/O operations or data from the GPU.</p></details>
+<p>Separate threads for working with external devices that can block (I/O, GPU, sound) are necessary, because their APIs were often designed without multithreading in mind. You'll need a separate thread for each device to wrap the awkward APIs and provide an interface for the game's workers. As a result, I/O tasks for devices are simply put in a queue, and then the worker is handed a task handle with which it can query the results or the completion of the operation.</p>
+<p>In code, this will resemble a thread pool — in essence it is one — but here you can already play with task priorities, the priorities of the threads themselves, and adapt the pool's logic more to the engine. For example, make long-live tasks that can be suspended at the moment of frame commit and then resumed, since the engine doesn't necessarily have to wait for their completion on the current frame.</p>
+<p>Unfortunately, most third-party APIs aren't truly asynchronous. For example, many graphics APIs, despite having command buffers, in reality cause locks, especially when working with VRAM. Platforms like the Nintendo NX push fully asynchronous APIs, but somehow people aren't using it very actively.</p>
+<h2>Game update and Last frame data</h2>
+<p>However, for greater freedom you have to pay with greater problems. How do you manage locking of game objects so as not to freeze the whole world? What happens if several threads need access to a single object to modify it?</p>
+<p>Conceptually the simplest solution is locking at the "game object" level. That is, each object can be locked for modification by one thread, while the other threads are forced to wait. This isn't always good from a performance standpoint, but the approach is clear and simple to implement.</p>
+<p>Obviously, you need some kind of "read/write" lock, because most objects are read far more often than written. In the ideal situation each object updates only itself (it can read other objects but writes only itself), and you have full parallelism. This isn't always possible — you need to handle updates between objects and cycles; for example, A writes A and also writes B, B writes B and also writes A — this can lead to a deadlock.</p>
+<p>So, all game objects are referenced through weak references in the form of opaque handles or indices. To read one of them, you do something like:</p>
+<pre style="margin:1.4rem 0"><code>const GameObject * read_lock(GameHandle h)</code></pre>
+<p><code>read_lock </code>increments the reference count on a copy of the object so that the version I'm reading stays available, even if <code>write_lock </code>replaces it with a new one. There are several ways to implement a write lock. In any case, <code>write_lock </code>takes a local copy of the object and returns a pointer to it. Thus, <code>read_lock </code>can continue without blocking — they simply get the old state. This is fine if reads get data that lags by one frame; in modern games almost all object data lags by one or two frames. The very rare cases when you need truly up-to-date data about an object are solved by implementing them through getters and atomic variables.</p>
+<p>In the end we get that the hypothetical <code>write_unlock </code>simply replaces the object in the table with the local copy. And the <code>read_lock </code>that were already in progress keep referencing the old data, but all subsequent <code>read_lock</code> and <code>write_lock </code>will get the new version of the object. To further reduce possible problems, we shift the update point closer to the end of the frame.</p>
+<p>But for such a system ordinary mutexes and spinlocks aren't suitable, because they'd lead to significant delays in operation. You need some synchronization primitive that wouldn't lock the object on read. And it appeared — it was called the <code>Read-Write Mutex</code>. Below is the simplest scheme of an <code>rw_mutex</code>, implemented via a spinlock.</p>
+<pre style="margin:1.4rem 0"><code>struct rw_mutex	{
+public:
+    spin_lock_t		lock;
+    volatile int	readers;
+
+    void cpu_relax()	{ __mm_pause(); };
+    explicit rw_mutex_lw	(pcstr) : readers(0) {}
+
+    void acquire_write()
+    {
+        /* Get write lock */
+        lock.lock();
+
+        /* Wait for readers to finish */
+        while (readers)
+            cpu_relax();
+    }
+    void release_write() { lock.unlock(); }
+    void acquire_read()
+    {
+        while (1)
+        {
+            /* Speculatively take read lock */
+            atomic_inc(&amp;readers);
+
+            /* Success? */
+            if (!lock._lock){
+                return;
+            }
+
+            /* Failure - undo, and wait until we can try again */
+            atomic_dec(&amp;readers);
+
+            while (lock._lock)
+                cpu_relax();
+        }
+    }
+
+    void release_read()
+    {
+        dec(&amp;readers);
+    }
+};
+
+struct read_locker_lw {
+    read_locker_lw(rw_mutex_lw &amp;lock) : _lock(lock)		{ _lock.acquire_read(); }
+    ~read_locker_lw()									{ _lock.release_read(); }
+
+    rw_mutex_lw	&amp;_lock;
+
+    read_locker_lw(const read_locker_lw &amp;);
+    void operator =(const read_locker_lw &amp;);
+};
+
+struct write_locker_lw {
+    write_locker_lw(rw_mutex_lw &amp;lock) : _lock(lock)	{ _lock.acquire_write(); }
+    ~write_locker_lw()									{ _lock.release_write(); }
+
+    rw_mutex_lw	&amp;_lock;
+
+    write_locker_lw(const write_locker_lw &amp;);
+    void operator =(const write_locker_lw &amp;);
+};</code></pre>
+<p>Well, how was it? Didn't tire you out too much with yet more guts of game development?</p>
+<h2>Good multithreading design in games</h2>
+<p>I want to finish this article with a few rules about how multithreading should be used in games and what makes a multithreading design good or bad in general. I'll lay out several principles of good multithreading in games, tested on my own experience, and explain why exactly them.</p>
+<p>Games are in a peculiar in-between zone: they aren't truly "real-time" systems — such systems almost never allow switching between threads. But they belong to the category of "high-performance computing", specifically the part of it oriented toward maximum throughput rather than minimum latency, and at the same time they grab the entire machine they can reach, which is more characteristic of RTOS and various control systems. Games are also not ordinary applications that can tolerate long CPU idle times. As a result, developers have to figure out how to be both smart and beautiful at the same time.</p>
+<h4>1. Threads shouldn't fall asleep when they have nothing to do</h4>
+<p>Games use worker threads that constantly spin in a loop, executing a queue of tasks. This lets them guarantee delays within a few hundred processor cycles when this thread is activated. Games always run in a system that needs to share resources — overall, to the OS a game is the same kind of application as a browser and a calculator. On a PC other applications may run that can cause context switches, which in most cases negatively affects the game's perf; to avoid this, you have to keep the thread constantly loaded.</p>
+<h4>2. Never use Sleep(n)</h4>
+<p>🔴 At all. Never. Nowhere. Not even in spin loops.<br/>Some articles advise using exponential backoff (Sleep(n), YieldThread(), etc.), but for games this is a vicious practice that kills perf worse than allocations. Even <code>Sleep(1)</code> is about 1 millisecond, which is an eternity in game logic. If a Sleep() is on a critical rendering function, it can easily add a millisecond or more to the frame time. But even worse than this loss of time, <code>Sleep </code>hands the thread to the scheduler, and when it decides to return control is known only to the moon.</p>
+<h4>3. All waits should work through OS events (semaphores, etc.)</h4>
+<p>If a thread is put to sleep, then it should wake up by an event, not by a timer. If a thread wakes up "just because", it wastes 10,000+ cycles on a context switch.</p>
+<h4>4. Thread switches are a problem</h4>
+<p>Deadlocks and data races are just bugs — you can find and fix them. To fix thread switching (whose indirect visible symptoms are FPS drops, stutters, jerks, freezes and glitches), you have to know the engine very well — moreover, you have to know where to strike with the hammer, and such specialists don't stay free on the market for long. Just remember that taking a mutex ≈ 200+ cycles, a thread switch &gt; 10,000 cycles.</p>
+<details style="margin:1.4rem 0"><summary style="cursor:pointer">The parable of the hammer</summary><p>Once at one of the English factories a steam generator broke down. What specialists the factory owner didn't invite, but none could fix it. And then one day a stranger came and said he could fix the generator. The owner was surprised but decided to give the master a chance.<br/> Carefully and methodically he began tapping various parts of the machine, listening attentively to the sounds the metal surface made. In ten minutes he tapped the pressure sensors, the thermostats, the bearings and the joints where, as he supposed, the damage was. Then he approached one of the crank joints and struck a light blow with a hammer. The effect was instant. Something shifted, and the steam generator started working.<br/> The owner thanked the master at length and asked him to send a bill listing all the kinds of work.</p><p>Here's what was written in the bill:<br/> For ten minutes of tapping — 1 pound.<br/> For knowing where to strike — 9999 pounds. Total: 10000 pounds.<br/> The moral: professionalism is not the ability to strike, but the ability to strike exactly where needed.</p></details>
+<h4>5. Spurious wakeups kill perf</h4>
+<p>If a thread wakes up, checks a condition, and falls asleep again, then 10,000 cycles are wasted. Threads shouldn't wake up just because — they should wait on a specific condition.</p>
+<h4>6. It's better to sacrifice task efficiency but avoid switching</h4>
+<p>If a task is very small, you can run it right away in the calling thread or worker. Batches of tasks run more efficiently than a single one. Task priorities work much more efficiently than batches.</p>
+<p><strong>🔴 </strong>Bad scenario (it's a catastrophe because of constant switching): a task queue (SPCS queue) on semaphores</p>
+<ol><li><p>The main thread puts a task in the queue</p></li><li><p>The worker thread wakes up, runs the task, falls asleep</p></li><li><p>The main thread puts a new task</p></li><li><p>The worker thread wakes up again... and so on</p></li></ol>
+<h4>7. Mutexes cause unnecessary thread switches</h4>
+<p>The problem with mutexes isn't that they're "slow" (200+ cycles isn't scary), but that when they block they force the thread to switch. The best solution would be Spinlock + backoff mechanisms if the wait time is short, and Lock-free queues if there's frequent contention for the resource or the wait time is expected to be more costly than waiting on a spinlock.</p>
+<p>🔴 Bad scenario: a queue for frequent tasks with a mutex</p>
+<ol><li><p>A thread wants to write a task → lock</p></li><li><p>The thread exits execution while the mutex is taken</p></li><li><p>The thread that owns the mutex finishes its work → unlock</p></li><li><p>The OS switches context back to the first thread</p></li></ol>
+<h4>8. An excessive number of threads is harmful</h4>
+<p>The more threads, the more switches. A good game and engine architecture uses fewer threads than cores for all of the game's subsystems. You can make exceptions if threads wait for IO devices, or for unique subsystems like rendering, collisions, particles. In games you don't need forced interleaving of threads — you have to maximally load what you have. One thread per task is bad — you'll only get excess switches. One thread per core is good.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
