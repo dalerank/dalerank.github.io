@@ -19,7 +19,7 @@
 <main class="wrap article">
   <div class="article-head"><span class="tag gold">Производительность</span><h1>Spears &amp; bits</h1><div class="ameta"><span>17 декабря 2024</span><span>15 мин</span></div></div>
   <article class="prose">
-    <img src="../assets/articles/spears-and-bits/01-header.png" alt="Spears &amp; bits" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/01-header.jpg" alt="Spears &amp; bits" class="post-image" loading="lazy" />
     <p>В играх часто используется паттерн упаковки булевых значений в биты. Это удобно для оптимизации памяти и ускорения выполнения массовых проверок. Например, такие проверки могут включать нахождение игрока в тайле, определение доступности клеток на четырёх- или шестигранной сетке или другие пространственные проверки, которые необходимо выполнять быстро. Это не ракетостроение, но когда профайлер показал одну из таких функций в числе горячих, мне стало интересно, как именно она работает и можно ли её оптимизировать. Структура данных bitset — это способ эффективно представлять множество целых индексов, которое к тому же поддерживает различные операции над ним, например объединение, разность, пересечение.</p>
     <p>Итак, каждый юнит может занимать один или несколько тайлов, особенно если это большой юнит вроде колесницы или требушета, и мы хотим создать производную карту, которая хранит другие признаки, например: есть ли в тайле юнит, или фильтр по здоровью юнитов. Такие карты используются для разных быстрых проверок, вроде такой: можно ли переместиться в точку, или каких юнитов имеет смысл атаковать.</p>
     <p>Для представления данных мы можем использовать индекс юнита в тайле. В качестве типовой задачи проверять будем только юнитов, у которых здоровье превышает определённое значение. Это условие не взято с потолка. Например, некоторые юниты используют стратегии вроде «убей слабейшего» или «нападай стаей». Для таких стратегий поюнитный обход всех юнитов вокруг (особенно если это выполняют все юниты в группе) может стать крайне затратной по времени операцией.</p>
@@ -93,7 +93,7 @@ for (int i = 0; i &lt; testLen; ++i) {
     <p>Решение взято из движка CryEngine (<a href="https://github.com/ValtoGameEngines/CryEngine" target="_blank" rel="noopener">github.com/ValtoGameEngines/CryEngine</a>), красивое и простое. Исходники довольно старые, новее, к сожалению, не нашёл. У нас есть N/8 полных байтов, а также один байт в конце, который может быть частично заполнен. В основе лежит, как обычно, использование массива <code>uint8_t</code>, который хранит битовую информацию.</p>
     <p>Плюсы решения: эффективность — используется минимальное количество байт; и простота — код простой и легко адаптируется под различные нужды, например для проверки других состояний юнитов, таких как время жизни, статус или другие флаги. Тут используются два паттерна оптимизации — разворачивание цикла, когда вместо работы с одной переменной используются восемь разных переменных, чтобы хранить результат условия, и data parallelism CPU: на усмотрение CPU эти переменные могут быть выполнены в произвольном порядке или одновременно, если у него будут регистры для выполнения одновременных операций.</p>
     <p>Используя независимые переменные, авторы Crysis смогли неплохо ускорить и даже превзойти по скорости версию без упаковки! Как вы понимаете, эта тема довольно широко освещена и исследована, и вы с ней могли сталкиваться на конференциях.</p>
-    <img src="../assets/articles/spears-and-bits/02-ce-bitset.png" alt="ce::bitset из CryEngine" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/02-ce-bitset.jpg" alt="ce::bitset из CryEngine" class="post-image" loading="lazy" />
 
     <h2>Бенчмарки</h2>
     <p>Вот ещё несколько библиотек с открытым исходным кодом, которые я использовал в разных проектах и движках.</p>
@@ -315,8 +315,8 @@ BM_VectorBoolCrSSE4/226         484524 ns
 BM_VectorBoolCrSSE4/241         447056 ns</code></pre>
     </details>
     <p>Из того что было в наличии при проведении тестов (<a href="https://www.cpu-monkey.com/en/compare_cpu-amd_ryzen_7_7435hs-vs-intel_core_i7_12650h" target="_blank" rel="noopener">сравнение CPU</a>), запускались на одном ядре с установленным affinity, но Intel всё равно умудрялся перекидывать поток между ядрами, это было видно в PIX'е — вероятно, отсюда же и просадка по времени выполнения. AMD не перекидывал тред, и context switches там было заметно меньше.</p>
-    <img src="../assets/articles/spears-and-bits/03-intel.png" alt="Intel i7-12650H" class="post-image" loading="lazy" />
-    <img src="../assets/articles/spears-and-bits/04-amd.png" alt="AMD Ryzen 7 7435HS" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/03-intel.jpg" alt="Intel i7-12650H" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/04-amd.jpg" alt="AMD Ryzen 7 7435HS" class="post-image" loading="lazy" />
 
     <h2>Ветвления</h2>
     <p>Как вы, возможно, уже заметили, на графиках у всех рассмотренных алгоритмов присутствуют выбросы в районе 32, 64, 128. Могу предположить, что проблема в неправильных предсказаниях ветвлений и частых промахах блока предсказаний переходов. Когда значение порога относительно стабильное, вероятность того, что входные значения вызовут изменение ветки, относительно мала. Но для порогов, кратных или близких к 32, картина меняется, объяснить я это не могу. Поискав дополнительную информацию в интернетах, набрёл на интересную статью, достаточно старую (<a href="https://igoro.com/archive/fast-and-slow-if-statements-branch-prediction-in-modern-processors/" target="_blank" rel="noopener">Fast and slow if-statements: branch prediction</a>) на эту тему.</p>
@@ -440,7 +440,7 @@ void bm_branch(int* uhealths, uint8_t* bm, int len, int limit)
         pInputData += 16;
     }
 }</code></pre>
-    <img src="../assets/articles/spears-and-bits/05-sse-slow.png" alt="Бенчмарк наивной SSE-версии" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/05-sse-slow.jpg" alt="Бенчмарк наивной SSE-версии" class="post-image" loading="lazy" />
     <p>Покопавшись в документации Intel и на форумах, я нашёл, что это не полноценный интринсик, а хелпер, который генерит доп. инструкции:</p>
     <blockquote><p>_mm_set_epi8 is not a direct hardware instruction but a helper intrinsic that generates multiple instructions to construct the desired SIMD register. This adds complexity compared to direct memory loads or other simpler instructions. (stolen from intel forum)</p></blockquote>
     <p>так что лучше воспользоваться другим интринсиком, благо что наш алгоритм и область применения это позволяют.</p>
@@ -462,7 +462,7 @@ for (size_t j = 0; j &lt; lenDiv16y16; j += 16) {
     pOutputByte += 2;
     pInputData += 16;
 }</code></pre>
-    <img src="../assets/articles/spears-and-bits/06-sse-final.png" alt="Бенчмарк финальной SSE-версии" class="post-image" loading="lazy" />
+    <img src="../assets/articles/spears-and-bits/06-sse-final.jpg" alt="Бенчмарк финальной SSE-версии" class="post-image" loading="lazy" />
     <p>Всё это вместе позволило снизить время построения битовых карт на больших и сверхбольших картах (256 и 1024 тайла по стороне соответственно) с 4 мс до 1 мс на фрейм. Зависит, конечно же, ещё и от железа: на консолях результаты получались более стабильные.</p>
 
     <h2>Выводы</h2>

@@ -52,7 +52,7 @@
     <p>How does all this relate to modern ECS frameworks? Let me explain a bit what the Entity Component System (ECS) idea is — I'm personally a proponent of the classic <a href="https://en.wikipedia.org/wiki/Scene_graph" target="_blank" rel="noopener">SceneGraph</a> approach and believe that, done skillfully, it's in no way slower than ECS, especially if you take care of a proper split across threads.</p>
     <p>In traditional development, whether it's a game or other software, you use an approach with inheritance of data and logic. For example a porter inherits from a human, who inherits from a movable object, which inherits from another object that knows how to play an animation. A trader inherits from a porter, because the latter already knows how to carry something, and so on.</p>
     <p>This is the example for the various objects on the map; for the map itself you need to know the tile type (water, land, trees, dunes, etc.), but this approach has problems. The first is inflexible inheritance for combined types and extending the functionality of such objects: if we decide to create rocks on which buildings can stand, the inheritance tree breaks and you have to come up with workarounds — or buildings that can sit on the shore: the shore is water, you can't build on water. But sometimes you can.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/inherit.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/inherit.jpg" alt="" class="post-image" loading="lazy" />
     <p>The second is the inefficient use of CPU resources, namely the cache, and on weak devices this is very noticeable. Every frame in the game you'd have to walk all the map tiles to update their state, or the amount of resources in a tile, or other parameters. In the traditional approach we'd have a big tile object with the corresponding fields, states and dependencies. Something like this:</p>
     <pre style="margin:1.4rem 0"><code>struct Tile {
     // Main tile parameters
@@ -81,15 +81,15 @@ void map_grid_init(grid_xx* grid) {
     grid-&gt;initialized = 1;
 }</code></pre>
     <p>The map and the data array for land desirability:</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-grid.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-grid.jpg" alt="" class="post-image" loading="lazy" />
     <p>The same array in a more representative form, as it was in the game.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-view.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-view.jpg" alt="" class="post-image" loading="lazy" />
     <p>The map and the data array for water availability.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/water-grid.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/water-grid.jpg" alt="" class="post-image" loading="lazy" />
     <p>The same one in a more convenient-to-view form.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/water-view.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/water-view.jpg" alt="" class="post-image" loading="lazy" />
     <p>The animation array for each tile. Here we have the inverse situation: when rendering a tile's texture, the information is taken from this array, and by changing these values in the array you can safely and quickly update the data on the map and change how it's displayed.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/anim-grid.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/anim-grid.jpg" alt="" class="post-image" loading="lazy" />
     <p>How the map-update algorithm is implemented (an example for tile desirability, needed to raise a house's level):</p>
     <pre style="margin:1.4rem 0"><code>grid_xx g_desirability_grid = {0, {FS_INT8, FS_INT8}};
 
@@ -114,7 +114,7 @@ void desirability_t::update_buildings() {
     }
 }</code></pre>
     <p>Updating a tile's desirability and accessing the data turn into index access in an array, instead of walking objects and their properties. Another nice property of this solution is fast saving and loading as a binary block that doesn't require walking and updating objects.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-update.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/desirability-update.jpg" alt="" class="post-image" loading="lazy" />
 
     <h2>Ancient DynVMT</h2>
     <p>As a reminder, the engine was written in pure C; its history traces back to 1991 with the release of Caesar I. Judging by the comments in the resources and various constants from the binary that the community pulled out, by the time Pharaoh was released the engine was at version 6.4 (Caesar had 6.1).</p>
@@ -136,9 +136,9 @@ B* b = new C();
 b-&gt;bar();</code></pre>
     <p>Once virtual functions appear in a class, the compiler can't know which implementation of the method will be correct at runtime. If we kept using static dispatch, the call <code>b-&gt;bar()</code> would land on <code>B::bar</code>, since from the compiler's point of view that's what the current type of the object points to, even though it's actually a different one.</p>
     <p>Given that virtual methods can be overridden in descendants, the correct implementation can't be computed at compile time (except in a few explicit cases), so this information has to be found at runtime — and that's what's called dynamic dispatch or late binding.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/vmt.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/vmt.jpg" alt="" class="post-image" loading="lazy" />
     <p>Within the game, this mechanism was needed first and foremost to implement the user interface, which had to support "notional" multi-window behavior. In reality the game always showed only one active window; this was due to compute-resource limits — many machines of the era simply couldn't handle drawing all the windows every frame, which would lead to a framerate of 2-3, which you'll agree is utterly unplayable.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/multiwindow.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/multiwindow.jpg" alt="" class="post-image" loading="lazy" />
     <p>The developers of the original game made a bare-bones VMT — a struct of callbacks that were set when a window was initialized (the constructor).</p>
     <pre style="margin:1.4rem 0"><code>struct window_type {
     e_window_id id;
@@ -164,10 +164,10 @@ b-&gt;bar();</code></pre>
 
     <h2>Logical threads from the last century</h2>
     <p>Traditionally, in game development over the last twenty years or so, several threads are used to do several tasks, each doing its own work. The OS handles switching between threads and takes on context saving and other "little things". But until the mid-2000s most games didn't have this option, and threads were used mainly for heavy computation like playing sound, loading and decompressing textures, but not for game logic.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/single-thread.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/single-thread.jpg" alt="" class="post-image" loading="lazy" />
     <p>The single-threaded concurrency model with an event loop lets a program perform various tasks that have been put into a queue; in that case the control of a task's context falls on the developers. This is how the classic keyboard and mouse event handling is done in most games, including modern ones.</p>
     <p>Meanwhile the need to switch between tasks didn't go anywhere, and it had to be solved either with a task queue or with logical threads, which is what was implemented in Pharaoh. The essence of this solution is that the game loop is broken into steps — for example updating fire probability, tree growth, citizen generation, the influence of wells, and so on.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/logic-threads.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/pharaoh-engine-tricks/logic-threads.jpg" alt="" class="post-image" loading="lazy" />
     <p>Each step runs sequentially one after another on each frame (there's also a variant with priorities) until all are done. The game loop is thus stretched across the number of such steps, while execution of each step is guaranteed and the total loop time is smeared between them — and instead of a notional 140ms + render time per frame and 7fps, we get a notional 140ms / 10 = 14ms + render time per frame, or the desired 20-30fps. Over ten frames the game goes through a full game loop, but to the player this split isn't noticeable, because object animations happen at the same speed on every frame — that part can't be moved into a logical thread.</p>
     <p>Here's how this part was implemented in the game — the code is already slightly changed, but not globally, so the structure should be clear:</p>
     <pre style="margin:1.4rem 0"><code>void game_t::update_city(int ticks) {

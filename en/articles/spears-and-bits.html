@@ -19,7 +19,7 @@
 <main class="wrap article">
   <div class="article-head"><span class="tag gold">Performance</span><h1>Spears &amp; bits</h1><div class="ameta"><span>Dec 17, 2024</span><span>15 min</span></div></div>
   <article class="prose">
-    <img src="../../assets/articles/spears-and-bits/01-header.png" alt="Spears &amp; bits" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/01-header.jpg" alt="Spears &amp; bits" class="post-image" loading="lazy" />
     <p>Games often use the pattern of packing boolean values into bits. It's handy for optimizing memory and speeding up bulk checks. For example, such checks might include whether a player is in a tile, determining cell availability on a four- or six-sided grid, or other spatial checks that have to run fast. It's not rocket science, but when the profiler showed one of these functions among the hot ones, I got curious about how exactly it works and whether it could be optimized. The bitset data structure is a way to efficiently represent a set of integer indices, which on top of that supports various operations over it — for example union, difference, intersection.</p>
     <p>So, each unit can occupy one or several tiles, especially if it's a big unit like a chariot or a trebuchet, and we want to build a derived map that stores other attributes — for example: is there a unit in this tile, or a filter by unit health. Such maps are used for various quick checks, like: can you move to a point, or which units are worth attacking.</p>
     <p>To represent the data we can use the unit's index in the tile. As a typical task, we'll only check units whose health exceeds a certain value. This condition isn't picked out of thin air. For example, some units use strategies like "kill the weakest" or "attack in a pack." For such strategies, a per-unit walk over all the units around (especially if every unit in the group does it) can become a very time-consuming operation.</p>
@@ -93,7 +93,7 @@ for (int i = 0; i &lt; testLen; ++i) {
     <p>The solution is taken from the CryEngine engine (<a href="https://github.com/ValtoGameEngines/CryEngine" target="_blank" rel="noopener">github.com/ValtoGameEngines/CryEngine</a>) — pretty and simple. The sources are fairly old; I unfortunately couldn't find anything newer. We have N/8 full bytes, plus one byte at the end that may be partially filled. At its core, as usual, is the use of a <code>uint8_t</code> array that stores the bit information.</p>
     <p>The pros of the solution: efficiency — a minimal number of bytes is used; and simplicity — the code is simple and easily adapted to various needs, for example checking other unit states like lifetime, status, or other flags. Two optimization patterns are used here — loop unrolling, where instead of working with one variable, eight different variables are used to store the condition result, and CPU data parallelism: at the CPU's discretion these variables can be executed in arbitrary order or simultaneously, if it has the registers to perform concurrent operations.</p>
     <p>By using independent variables, the Crysis authors managed to speed things up nicely and even beat the no-packing version on speed! As you understand, this topic is fairly widely covered and researched, and you may have run into it at conferences.</p>
-    <img src="../../assets/articles/spears-and-bits/02-ce-bitset.png" alt="ce::bitset from CryEngine" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/02-ce-bitset.jpg" alt="ce::bitset from CryEngine" class="post-image" loading="lazy" />
 
     <h2>Benchmarks</h2>
     <p>Here are a few more open-source libraries I've used across different projects and engines.</p>
@@ -315,8 +315,8 @@ BM_VectorBoolCrSSE4/226         484524 ns
 BM_VectorBoolCrSSE4/241         447056 ns</code></pre>
     </details>
     <p>From what I had on hand while running the tests (<a href="https://www.cpu-monkey.com/en/compare_cpu-amd_ryzen_7_7435hs-vs-intel_core_i7_12650h" target="_blank" rel="noopener">CPU comparison</a>), they ran on a single core with affinity set, but Intel still managed to bounce the thread between cores — you could see it in PIX, which is probably also where the run-time dip comes from. AMD didn't bounce the thread, and there were noticeably fewer context switches.</p>
-    <img src="../../assets/articles/spears-and-bits/03-intel.png" alt="Intel i7-12650H" class="post-image" loading="lazy" />
-    <img src="../../assets/articles/spears-and-bits/04-amd.png" alt="AMD Ryzen 7 7435HS" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/03-intel.jpg" alt="Intel i7-12650H" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/04-amd.jpg" alt="AMD Ryzen 7 7435HS" class="post-image" loading="lazy" />
 
     <h2>Branches</h2>
     <p>As you may have already noticed, on the charts all the algorithms reviewed have spikes around 32, 64, 128. I'd guess the problem is mispredicted branches and frequent misses in the branch-prediction unit. When the threshold value is relatively stable, the probability that the input values cause a branch change is relatively low. But for thresholds that are multiples of, or close to, 32, the picture changes, and I can't explain it. Searching for more info on the internets, I stumbled on an interesting, fairly old article (<a href="https://igoro.com/archive/fast-and-slow-if-statements-branch-prediction-in-modern-processors/" target="_blank" rel="noopener">Fast and slow if-statements: branch prediction</a>) on the topic.</p>
@@ -440,7 +440,7 @@ void bm_branch(int* uhealths, uint8_t* bm, int len, int limit)
         pInputData += 16;
     }
 }</code></pre>
-    <img src="../../assets/articles/spears-and-bits/05-sse-slow.png" alt="Benchmark of the naive SSE version" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/05-sse-slow.jpg" alt="Benchmark of the naive SSE version" class="post-image" loading="lazy" />
     <p>Digging through Intel's documentation and the forums, I found that this isn't a full-fledged intrinsic but a helper that generates extra instructions:</p>
     <blockquote><p>_mm_set_epi8 is not a direct hardware instruction but a helper intrinsic that generates multiple instructions to construct the desired SIMD register. This adds complexity compared to direct memory loads or other simpler instructions. (stolen from intel forum)</p></blockquote>
     <p>so it's better to use a different intrinsic, lucky for us that our algorithm and use case allow it.</p>
@@ -462,7 +462,7 @@ for (size_t j = 0; j &lt; lenDiv16y16; j += 16) {
     pOutputByte += 2;
     pInputData += 16;
 }</code></pre>
-    <img src="../../assets/articles/spears-and-bits/06-sse-final.png" alt="Benchmark of the final SSE version" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/spears-and-bits/06-sse-final.jpg" alt="Benchmark of the final SSE version" class="post-image" loading="lazy" />
     <p>All of this together brought the time to build the bitmaps on large and ultra-large maps (256 and 1024 tiles per side respectively) down from 4 ms to 1 ms per frame. It depends, of course, on the hardware too: on consoles the results came out more stable.</p>
 
     <h2>Conclusions</h2>

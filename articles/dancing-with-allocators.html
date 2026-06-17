@@ -19,7 +19,7 @@
 <main class="wrap article">
   <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Game++. Dancing with allocators</h1><div class="ameta"><span>30 января 2025</span><span>34 мин</span></div></div>
   <article class="prose">
-    <img src="../assets/articles/dancing-with-allocators/01-header.png" alt="Game++. Dancing with allocators" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/01-header.jpg" alt="Game++. Dancing with allocators" class="post-image" loading="lazy" />
     <p>C и C++ не имеют встроенной сборки мусора, поэтому разработчик сам решает, как и когда выделять и освобождать память. Мы, конечно, можем покивать в сторону STL, сокрытия аллокаций в контейнерах, но от этого они никуда не денутся. Просто если раньше приходилось думать про выделенный кусок памяти, понимать, как он скажется на времени фрейма, помнить, что его надо удалить (а может, не надо и стоит оставить на следующий фрейм), то теперь всё заворачивается в сахарные контейнеры и разработку в стиле <code>STL-blin-vse-sterpit</code>. STL-то может и стерпит, и даже как-то будет ворочаться, однако не стоит полагаться исключительно на системный аллокатор, бездумно вызывая <code>new</code> или <code>malloc</code> для каждого запроса памяти. Вы ведь понимаете, что <code>std::vector</code> посреди цикла — это плохая идея?</p>
     <p>Кроме того, такая практика приводит к ожидаемым проблемам с производительностью даже в обычных приложениях, чего уж говорить про высоконагруженные системы или игры, которые претендуют на что-то быстрее 20 фреймов в секунду.</p>
     <p>Пытаться оптимизировать код, который использует системные аллокаторы, — всё равно что сгребать листья в кучу ветреным днём: куча, конечно, сгребается, но постоянно приходится махать грабельками, чтобы она оставалась на одном месте. Даже если выделения памяти происходят последовательно, друг за другом, вот прям без всяких перерывов, нет гарантии, что эти участки будут расположены хотя бы близко друг к другу. В результате при обработке таких данных процессору приходится прыгать по разным участкам памяти, теряя такты просто на поиск данных вместо того, чтобы работать с ними.</p>
@@ -66,7 +66,7 @@
     <blockquote><p>Ссылки могут иногда вести на смежные темы, которые не всегда относятся точно к нужному аллокатору, но чтиво точно будет интересное.</p></blockquote>
 
     <h2>Linear allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/02-linear.png" alt="Linear allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/02-linear.jpg" alt="Linear allocator" class="post-image" loading="lazy" />
     <p>Это один из самых простых и эффективных механизмов управления памятью, который часто используется в ситуациях, где требуется высокая производительность и минимальные накладные расходы. Его работа напоминает движение по прямой линии: память выделяется последовательно, без возможности освобождения отдельных блоков до тех пор, пока не будет освобождена вся выделенная область целиком.</p>
     <pre style="margin:1.4rem 0"><code>struct LinearAllocator {
   void* base_pointer;
@@ -104,7 +104,7 @@ start_ptr  current_ptr            end_ptr</code></pre>
     <p>Интересное по теме: <a href="https://blog.molecular-matters.com/2012/08/14/memory-allocation-strategies-a-linear-allocator/" target="_blank" rel="noopener">molecular-matters: a linear allocator</a>, <a href="https://github.com/Kashio/A5" target="_blank" rel="noopener">Kashio/A5</a>, <a href="https://bitsquid.blogspot.com/2010/09/custom-memory-allocation-in-c.html" target="_blank" rel="noopener">bitsquid: custom memory allocation</a>.</p>
 
     <h2>Step-back allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/03-step-back.png" alt="Step-back allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/03-step-back.jpg" alt="Step-back allocator" class="post-image" loading="lazy" />
     <p>Разновидность <strong>linear allocator</strong> с возможностью удаления последнего выделенного блока, если он совпал с тем, что был выделен последним. Широко применяется в игровых движках для всевозможных текстовых парсеров (JSON, XML, KV) и генераторов, где важна высокая производительность и проявляется паттерн краткосрочных аллокаций стекового типа.</p>
     <pre style="margin:1.4rem 0"><code>class StepBackAllocator {
 public:
@@ -173,7 +173,7 @@ start_ptr  │    current_ptr       end_ptr
 start_ptr  current_ptr            end_ptr</code></pre>
 
     <h2>Frame allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/04-frame.png" alt="Frame allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/04-frame.jpg" alt="Frame allocator" class="post-image" loading="lazy" />
     <p>Это специализированный вид linear-аллокатора, который используется для управления памятью в циклических или временных алгоритмах, где данные часто выделяются и освобождаются в рамках определённого времени (например, кадра, нескольких кадров, одного хода, одной секунды и т. д.). Они особенно хороши там, где требуется высокая производительность и минимальные накладные расходы на управление памятью, однако их недостатком является узкая область применения.</p>
     <p>Принцип работы сводится к тому, что в течение одной итерации (например, одного хода в пошаговой стратегии) память выделяется последовательно, как в линейном аллокаторе. Указатель перемещается вперёд при каждом запросе на выделение. В конце кадра (итерации) вся выделенная память освобождается сразу, а указатель сбрасывается на начало блока памяти. Реализация ничем не будет отличаться от linear-аллокатора, просто добавим возможность отслеживать, когда была произведена очистка.</p>
     <pre style="margin:1.4rem 0"><code>class FrameAllocator {
@@ -213,7 +213,7 @@ current_ptr        end_ptr</code></pre>
     <p>Интересное по теме: <a href="https://nfrechette.github.io/2016/05/08/stack_frame_allocators/" target="_blank" rel="noopener">nfrechette: stack frame allocators</a>, <a href="https://github.com/Srekel/sralloc" target="_blank" rel="noopener">Srekel/sralloc</a>.</p>
 
     <h2>Double-Frame allocator (Double-Buffered)</h2>
-    <img src="../assets/articles/dancing-with-allocators/05-double-frame.png" alt="Double-Frame allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/05-double-frame.jpg" alt="Double-Frame allocator" class="post-image" loading="lazy" />
     <p>Дальнейшее развитие идеи фрейм-аллокатора. Выделяются две области памяти (под фреймы), которые используются поочерёдно: в текущем кадре данные записываются в одну область, а в следующем кадре эта область очищается и переиспользуется, пока данные записываются во вторую область.</p>
     <p>Хорош для данных, живущих в пределах одного кадра. Сохраняет все качества linear-аллокатора, нет затрат на частое выделение и освобождение памяти, и достаточно лёгок в реализации и использовании. Используется для эффектов и интерполяции между кадрами (например, сглаживание движений камеры или объектов, карты движений и шахматного рендеринга).</p>
     <pre style="margin:1.4rem 0"><code>class DoubleFrameAllocator {
@@ -246,7 +246,7 @@ public:
 Пул 2 (неактивный): [ F | G | ... ]  ← Данные сохраняются для кадра N+2</code></pre>
 
     <h2>N-Frame allocator (Multi-Frame)</h2>
-    <img src="../assets/articles/dancing-with-allocators/06-n-frame.png" alt="N-Frame allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/06-n-frame.jpg" alt="N-Frame allocator" class="post-image" loading="lazy" />
     <p>Расширяет концепцию фрейм-аллокатора, создавая несколько (N) областей памяти под фреймы, которые используются циклически. Каждый фрейм использует одну из этих областей для размещения своих данных, пока остальные остаются доступными для чтения. Этот подход используется, если данные из предыдущих кадров нужны в течение нескольких фреймов, например, для рендеринга с задержкой или эффектов Motion Blur, Temporary AA.</p>
     <p>Плюсы те же — высокая скорость выделения памяти. Минусов становится больше: нужно больше памяти под каждую из N областей. Увеличение количества фреймов требует более сложного механизма синхронизации переключения, но в принципе остаётся несложным для понимания и реализации.</p>
     <p>Основной недостаток — это перерасход памяти. Зачастую неудобно хранить какие-то отдельные участки фрейма, и приходится хранить его целиком, что для 4K-разрешений требует хранения существенных объёмов. Хотя кто сейчас считает эти мегабайты, когда стали использовать 5K PNG в качестве фонов?</p>
@@ -268,7 +268,7 @@ public:
     <p>Интересное по теме: <a href="https://www.gamedev.net/blogs/entry/2271578-introduction-to-allocators-and-arenas/" target="_blank" rel="noopener">gamedev.net: introduction to allocators and arenas</a>.</p>
 
     <h2>Stack allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/07-stack.png" alt="Stack allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/07-stack.jpg" alt="Stack allocator" class="post-image" loading="lazy" />
     <p>Ещё один «золотой» аллокатор, в смысле простой и эффективный, который широко используется в разных системах, где важны скорость, предсказуемость и минимальные накладные расходы. Он основан на принципе стека, как видно из названия: память выделяется и освобождается в строгом порядке <strong>LIFO</strong> (Last In, First Out), то есть последний выделенный блок памяти должен быть освобождён первым.</p>
     <p>При инициализации стековый аллокатор получает большой непрерывный блок памяти, который будет использоваться для внутренней работы. Внутри аллокатора хранится указатель (или «вершина стека»), который указывает на начало свободной области памяти. Когда программа запрашивает память, аллокатор перемещает указатель вперёд на размер запрашиваемого блока и возвращает адрес начала этого блока. Память освобождается в порядке, обратном выделению.</p>
     <p>Чтобы освободить блок, указатель перемещается назад на размер этого блока. Переиспользовать произвольный участок нельзя (условно нельзя), но можно сбросить весь стек сразу.</p>
@@ -348,7 +348,7 @@ current_ptr                     end_ptr
     <p>Интересное по теме: <a href="https://github.com/mtrebi/memory-allocators" target="_blank" rel="noopener">mtrebi/memory-allocators</a>, <a href="https://blog.molecular-matters.com/2012/08/27/memory-allocation-strategies-a-stack-like-lifo-allocator/" target="_blank" rel="noopener">molecular-matters: a stack-like LIFO allocator</a>.</p>
 
     <h2>Double-stack allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/08-double-stack.png" alt="Double-stack allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/08-double-stack.jpg" alt="Double-stack allocator" class="post-image" loading="lazy" />
     <p>Одним из самых полезных расширений предыдущего аллокатора является то, что обычно называется двусторонним стековым аллокатором. Он позволяет выделять память с обоих концов стека, что даёт возможность размещать разные типы аллокаций на разных стеках.</p>
     <p>Лучшим применением для такого аллокатора снова будет загрузка уровней и моделей. И модели, и уровни обычно содержат набор данных, которые хорошо ложатся в последовательную память. Загрузка уровней сама по себе — очень затратная операция, потому что легко приводит к значительной фрагментации из-за большого числа временных объектов.</p>
     <pre style="margin:1.4rem 0"><code>class DoubleStackAllocator {
@@ -425,7 +425,7 @@ new(l) D (delete C, B) -- закончили загрузку, убрали ал
          ptr                    end_ptr</code></pre>
 
     <h2>Pointed Double-Stack Allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/09-pointed-double-stack.png" alt="Pointed Double-Stack Allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/09-pointed-double-stack.jpg" alt="Pointed Double-Stack Allocator" class="post-image" loading="lazy" />
     <p>Есть небольшая вариация аллокатора с двумя стеками, когда они растут из некоторой точки общего буфера. В этом случае память выделяется не с двух концов, а с расширением в обе стороны. Опять же, такой подход позволяет эффективно управлять памятью для различных типов объектов, которые могут иметь разные требования к жизненному циклу. Например, объекты, которые должны быть активны на протяжении всей работы уровня, могут выделяться с одной стороны, а временные объекты — с другой.</p>
     <p>Основное преимущество такого аллокатора — это возможность динамически управлять различными типами выделений, одновременно минимизируя вероятность переполнения или конфликтов между ними. Неявное преимущество: блок памяти одного из аллокаторов, который растёт «вперёд», можно попробовать реаллоцировать, если есть свободный объём, не перемещая его физически.</p>
     <p>Недостатком такого подхода является необходимость предварительного профилирования расхода памяти и настройки, и в большинстве случаев его можно заменить на пару обычных stack-аллокаторов.</p>
@@ -455,7 +455,7 @@ delete C, delete B
              sh_ptr                                     lgh_ptr</code></pre>
 
     <h2>Pool allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/10-pool.png" alt="Pool allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/10-pool.jpg" alt="Pool allocator" class="post-image" loading="lazy" />
     <p>Посидели умные люди, посмотрели на linear-аллокатор и подумали: а что если сделать аллокатор сразу под конкретный объект? Есть, например, у нас в игровом городе 32 NPC, мы создаём их, когда игрок подходит к городу. Зачем нам использовать аллокаторы общего назначения для группы объектов, увеличивая энтропию вселенной?</p>
     <p>Примерно так появились на свет пул-аллокаторы, которые выделяют память блоками одинакового размера, что полностью убирает фрагментацию для конкретной группы объектов и (в теории) должно ускорять выделение/освобождение памяти. В идеальном случае это должно вообще убрать затраты на пересоздание объектов, потому что появляется возможность переиспользовать уже существующие.</p>
     <p>При инициализации такой аллокатор резервирует большой кусок памяти за один вызов и делит его на равные части — блоки. При запросе памяти он возвращает первый свободный блок (O(1)), а при освобождении — добавляет блок обратно в список.</p>
@@ -511,7 +511,7 @@ public:
     <p>Интересное по теме: <a href="https://github.com/endurodave/Allocator" target="_blank" rel="noopener">endurodave/Allocator</a>, <a href="http://dmitrysoshnikov.com/compilers/writing-a-pool-allocator/" target="_blank" rel="noopener">dmitrysoshnikov: writing a pool allocator</a>, <a href="https://www.gingerbill.org/article/2019/02/16/memory-allocation-strategies-004/" target="_blank" rel="noopener">gingerbill: pool allocator</a>.</p>
 
     <h2>Free List Allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/11-free-list.png" alt="Free List Allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/11-free-list.jpg" alt="Free List Allocator" class="post-image" loading="lazy" />
     <p>Посмотрели другие мудрые люди на пул-аллокатор и подумали, что можно сделать пул, который разделяет предоставленную память на блоки одинакового размера и отслеживает, какие из них свободны. Пул-аллокатор хорош тем, что позволяет освобождать память в произвольном порядке за постоянное время O(1), при этом создавая минимальную фрагментацию. Но вот что неудобно, так это блоки одинакового размера, а что если добавить в блок размер?</p>
     <p>Так появился free list-аллокатор, который, по сравнению с предыдущим, не накладывает никаких ограничений на размер блока. Можно выделять и освобождать память в произвольном порядке и любого размера, но, конечно, за это приходится платить. Из-за своей природы производительность этого аллокатора ниже, но другие мудрые люди решили и эту задачку, но об этом позже.</p>
     <p>Работает просто и быстро. Каждый свободный блок содержит метаданные (размер, указатель на следующий блок). При выделении памяти ищется в списке блок, подходящий по размеру (есть разные стратегии: first-fit, best-fit, worst-fit, next-fit). Если найденный блок слишком большой, он делится на две части — выделенная память и остаток, который добавляется обратно в список. При освобождении памяти блок возвращается в список, а соседние с ним свободные блоки объединяются, чтобы уменьшить фрагментацию.</p>
@@ -544,7 +544,7 @@ Free       Alloc2   Alloc3</code></pre>
     <p>Интересное по теме: <a href="https://www.gingerbill.org/article/2021/11/30/memory-allocation-strategies-005/" target="_blank" rel="noopener">gingerbill: free list allocator</a>, <a href="https://embeddedartistry.com/blog/2017/02/15/implementing-malloc-first-fit-free-list/" target="_blank" rel="noopener">embeddedartistry: implementing malloc</a>.</p>
 
     <h2>Arena Allocator (Region-Based Allocator)</h2>
-    <img src="../assets/articles/dancing-with-allocators/12-arena.png" alt="Arena Allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/12-arena.jpg" alt="Arena Allocator" class="post-image" loading="lazy" />
     <p>Что будет, если один большой linear-allocator разбить на несколько поменьше и завязать очистку на количество объектов? А получим мы очень интересную возможность — автоматически сбрасывать текущий участок, если там не осталось живых объектов (все гладиаторы погибли, арена готова принять новых).</p>
     <p>Для реализации надо будет следить за счётчиком объектов на этом участке. Арена-аллокатор (<strong>region-аллокатор</strong>) — это стратегия управления памятью, при которой она выделяется достаточными блоками (аренами) и освобождается автоматически, когда на арене не осталось объектов.</p>
     <p>Хороший выбор для алгоритмов и логики, где время жизни объектов предсказуемо и группируется (например, обработка запросов, парсинг данных, игровые кадры), но достаточно большое, что не позволяет их размещать в одном linear-аллокаторе.</p>
@@ -627,7 +627,7 @@ private:
     <p>Интересное по теме: <a href="https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002/" target="_blank" rel="noopener">gingerbill: arena allocator</a>, <a href="https://github.com/tsoding/arena" target="_blank" rel="noopener">tsoding/arena</a>.</p>
 
     <h2>Segregated Allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/13-segregated.png" alt="Segregated Allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/13-segregated.jpg" alt="Segregated Allocator" class="post-image" loading="lazy" />
     <p>Опять же, это очередная попытка выжать больше из linear-аллокатора, ближе к стратегии управления памятью. Добавляем логику для аллокатора, при которой автоматически разделяем память на несколько крупных пулов (сегментов), каждый из которых предназначен для выделения блоков определённого размера.</p>
     <p>Чтобы сильно не мельчить, будем создавать пулы для объектов не меньше 16 байт и кратных этому размеру — такой подход позволит получить все преимущества linear-аллокатора и небольшие затраты на управление пулами. Аллокатор всегда знает, в каком сегменте искать подходящий блок: при запросе памяти определяется размер блока, если он соответствует одному из сегментов, аллокатор берёт блок из соответствующего пула, если в пуле нет свободных блоков или нет подходящего пула, выделяется новый.</p>
     <pre style="margin:1.4rem 0"><code>+-------------------+     +-------------------+     +-------------------+
@@ -638,13 +638,13 @@ private:
     <p>Как показывает практика использования в CryEngine, он позволяет достичь стабильной (не обязательно хорошей, но прогнозируемой) производительности даже на слабом железе. Однако его эффективность напрямую зависит от правильной настройки сегментов и анализа паттернов использования памяти.</p>
     <p>При определённых паттернах выделения и освобождения памяти может страдать от высокой фрагментации. Например, в Crysis деревья были реализованы как стволы, с рандомной генерацией положения веток, размеров и листьев. Использовались различные базовые формы веток с разным количеством треугольников (от 1 до 6) для оптимизации производительности, а внутренние части деревьев заполнялись простыми ветками из одного треугольника для создания плотности.</p>
     <p>В отличие от SpeedTree, который генерирует деревья процедурно, Crysis использовал ручное моделирование в сочетании с шейдерами для достижения высокого качества, но такой подход приводил к перегрузке этого механизма и сильной просадке FPS в лесу (где каждое дерево было отдельным объектом).</p>
-    <img src="../assets/articles/dancing-with-allocators/14-crysis-trees.png" alt="Деревья в Crysis" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/14-crysis-trees.jpg" alt="Деревья в Crysis" class="post-image" loading="lazy" />
     <p><em>(Видео про растительность в Crysis можно посмотреть в <a href="https://habr.com/ru/articles/876804/" target="_blank" rel="noopener">оригинале статьи на Habr</a>.)</em></p>
     <p>В CryEngine2 появилась система Merged Mesh, которая объединяла отдельные объекты растительности в батчи для уменьшения количества draw calls, и система лодов, что позволило более эффективно рендерить большие объёмы растительности, но это уже другая история и другие аллокаторы.</p>
     <p>Интересное по теме: <a href="https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-16-vegetation-procedural-animation-and-shading-crysis" target="_blank" rel="noopener">GPU Gems 3: Vegetation in Crysis</a>, <a href="https://github.com/giamo/segregated-fits-memory-allocator" target="_blank" rel="noopener">giamo/segregated-fits-memory-allocator</a>.</p>
 
     <h2>Buddy allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/15-buddy.png" alt="Buddy allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/15-buddy.jpg" alt="Buddy allocator" class="post-image" loading="lazy" />
     <p>Алгоритм управления памятью, разработанный в <strong>1960-х годах</strong> для операционных систем и файловых хранилищ. Принцип был описан в работах о «теории портфеля» <strong>Гарри Марковицем</strong>, американским экономистом, и позже в работах <a href="https://en.wikipedia.org/wiki/Ken_Knowlton" target="_blank" rel="noopener">Kenneth C. Knowlton</a> как способ борьбы с внешней фрагментацией памяти. Основная идея — разделение памяти на блоки, размеры которых кратны степеням двойки (например, 64, 128, 256 байт). При выделении памяти блок делится на два равных «блока» (buddies), а при освобождении — объединяется обратно. Процесс продолжается вверх по уровням, пока возможно объединение.</p>
     <p>Buddy-аллокатор часто используется в игровых движках для управления ресурсами, где требуется быстрое долговременное выделение памяти с минимальной фрагментацией: текстуры и меши (ресурсы часто имеют размеры, кратные степеням двойки — 512×512, 1024×1024, в Unreal Engine используется для управления видеопамятью), звуковые буферы, физические объекты (коллайдеры и данные в Havok), долгосрочные объекты уровня, spatial-объекты и октодерево для разделения пространства уровня (например, в id Tech 4, Doom 3).</p>
     <pre style="margin:1.4rem 0"><code>                                         Уровень 0: [Свободен]
@@ -671,7 +671,7 @@ private:
     <p>Интересное по теме: <a href="https://en.wikipedia.org/wiki/Buddy_memory_allocation" target="_blank" rel="noopener">Wikipedia: Buddy memory allocation</a>, <a href="https://www.gingerbill.org/article/2021/12/02/memory-allocation-strategies-006/" target="_blank" rel="noopener">gingerbill: buddy allocator</a>, <a href="https://github.com/red-rocket-computing/buddy-alloc/blob/master/doc/bitsquid-buddy-allocator-design.md" target="_blank" rel="noopener">bitsquid buddy allocator design</a>.</p>
 
     <h2>Thread-Cache Allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/16-thread-cache.png" alt="Thread-Cache Allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/16-thread-cache.jpg" alt="Thread-Cache Allocator" class="post-image" loading="lazy" />
     <p>Как, наверное, понятно из названия, это стратегия управления памятью, направленная на минимизацию конкуренции за ресурсы между потоками. Системный new/malloc взаимодействует с операционной системой для выделения и освобождения памяти. Когда приложение запрашивает память, то в худшем случае ему приходится конкурировать за ресурсы с другими приложениями. Сначала проверяется, есть ли свободная память во внутренних пулах процесса, если её недостаточно, то идёт обращение через системные вызовы brk/VirtualAlloc, которые запрашивают память у ядра ОС.</p>
     <p>TC-аллокатор переносит работу с памятью на уровень отдельного потока, предоставляя каждому собственный пул памяти. Помимо избавления от системного new/malloc, он также снижает затраты на синхронизацию между потоками.</p>
     <p>В идеальном случае каждый поток имеет свой собственный пул памяти, что позволяет избежать блокировок и уменьшить накладные расходы на синхронизацию. Если локальный пул оказывается исчерпан, аллокатор обращается к общему пулу между потоками (если он есть), а если и тот закончился, то уже обращается к стандартным механизмам new/delete. Чтобы снизить возможные издержки, запрошенная память не возвращается процессу, а остаётся в локальном пуле потока.</p>
@@ -740,7 +740,7 @@ private:
     <p>Интересное по теме: <a href="https://github.com/mjansson/rpmalloc" target="_blank" rel="noopener">mjansson/rpmalloc</a>, <a href="https://google.github.io/tcmalloc/design.html" target="_blank" rel="noopener">tcmalloc design</a>.</p>
 
     <h2>Fibonacci allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/17-fibonacci.png" alt="Fibonacci allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/17-fibonacci.jpg" alt="Fibonacci allocator" class="post-image" loading="lazy" />
     <p>Аллокатор использует последовательность чисел Фибоначчи для управления блоками памяти. Числа Фибоначчи — это последовательность, где каждое число равно сумме двух предыдущих: 1, 1, 2, 3, 5, 8, 13, 21, 34 и так далее. Эти числа используются для определения размеров блоков памяти, что позволяет минимизировать фрагментацию и показывает лучшие результаты при работе со строками естественных языков. Фрагментация на таких данных с аллокатором Фибоначчи на 40% ниже, чем с дефолтным, и почти на 80% по сравнению с buddy-аллокатором.</p>
     <p>Предложения естественных языков имеют разную длину, но часто их размеры укладываются в определённые диапазоны (короткие слова, фразы или предложения). Числа Фибоначчи лучше соответствуют этим диапазонам, чем степени двойки, минимизируя внутреннюю фрагментацию. Также числа Фибоначчи растут медленнее, чем степени двойки, что делает их подходящими для распределения памяти, когда преобладают небольшие и средние объёмы данных (до 2 Кб).</p>
     <pre style="margin:1.4rem 0"><code>class FibonacciAllocator {
@@ -796,7 +796,7 @@ private:
     <p>Интересное по теме: <a href="https://dev.to/naens/generalized-fibonacci-memory-allocator-2fja" target="_blank" rel="noopener">dev.to: generalized Fibonacci memory allocator</a>, <a href="https://github.com/naens/mem_alloc" target="_blank" rel="noopener">naens/mem_alloc</a>.</p>
 
     <h2>Compacting allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/18-compacting.png" alt="Compacting allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/18-compacting.jpg" alt="Compacting allocator" class="post-image" loading="lazy" />
     <p>Фрагментация памяти — одна из больных тем в долгоживущих приложениях, не только в играх. Как бы хорош ни был аллокатор общего назначения, со временем выделение и освобождение памяти приводит к появлению «дырок» и снижает эффективность использования памяти. Для текущего поколения игр и консолей допустимым является 5% фрагментации в первый час игры и +2% на каждый следующий час. Это 7% от 16 Гб, условно, которую заняла игра — сколько это будет в худшем случае? 16 Гб × 0.07 = 1.12 Гб, да у меня на ПК было меньше лет 10 назад. А на консолях не то что 1 Гб потерять нельзя, там счёт иногда на 10 мегабайт идёт.</p>
     <p>Такой аллокатор должен решать эту проблему за счёт периодического перемещения объектов в памяти, собирая свободное пространство в единый блок, перемещая объекты так, чтобы все занятые блоки располагались непрерывно. Чем-то напоминает дефрагментацию жёсткого диска, но выполняется программно и в реальном времени.</p>
     <pre style="margin:1.4rem 0"><code>void rminit(void *heap, size_t heap_size);
@@ -809,7 +809,7 @@ void compact(uint32_t compact_time_max_ms);</code></pre>
     <p>Интересное по теме: <a href="https://github.com/plasma-umass/Mesh" target="_blank" rel="noopener">plasma-umass/Mesh</a>, <a href="https://github.com/mmtk/mmtk-core" target="_blank" rel="noopener">mmtk/mmtk-core</a>, <a href="https://github.com/ivmai/bdwgc" target="_blank" rel="noopener">ivmai/bdwgc</a>.</p>
 
     <h2>Hot/Cold splitting allocator</h2>
-    <img src="../assets/articles/dancing-with-allocators/19-hot-cold.png" alt="Hot/Cold splitting allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/19-hot-cold.jpg" alt="Hot/Cold splitting allocator" class="post-image" loading="lazy" />
     <p>Сущности и объекты в играх содержат сотни полей, из которых только 10–20% активно используются в работе и обновляются каждый кадр, а остальные лежат мёртвым грузом в памяти, обновляясь раз в несколько секунд или вообще один раз за сессию. Суть заключается в том, чтобы подсказать компилятору, какие из свойств будут обновляться чаще других, чтобы он автоматически размещал их ближе к началу объекта в памяти (если это POD-структуры) или в специальных областях — соответственно, холодное и горячее хранилище.</p>
     <pre style="margin:1.4rem 0"><code>struct Entity {
     // Горячие данные (обновляются каждый кадр)
@@ -825,11 +825,11 @@ void compact(uint32_t compact_time_max_ms);</code></pre>
     <p>Пока что в таких исследованиях замечены только Bungie с их Destiny 2: <a href="https://advances.realtimerendering.com/destiny/gdc_2017/index.html" target="_blank" rel="noopener">advances.realtimerendering.com/destiny</a>, <a href="https://www.gdcvault.com/play/1022164/Multithreading-the-Entire-Destiny" target="_blank" rel="noopener">GDC: Multithreading the Entire Destiny</a>.</p>
 
     <h2>TLSF (Two-Level Segregated Fit)</h2>
-    <img src="../assets/articles/dancing-with-allocators/20-tlsf.png" alt="TLSF allocator" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/20-tlsf.jpg" alt="TLSF allocator" class="post-image" loading="lazy" />
     <p>Наверное, лучший и очень быстрый аллокатор общего назначения для игр, с которым приходилось работать (используется в Uncharted, Metro, Halo, Horizon, Mafia, The Witcher 3). Аллокатор возвращает наименьший блок памяти, который достаточно велик для размещения объекта. Поскольку большинство объектов занимают блоки памяти в ограниченном диапазоне размеров, стратегия <strong>Best-Fit</strong> (или её упрощённая версия — <strong>Good-Fit</strong>) обычно приводит к наименьшей фрагментации памяти при реальных нагрузках по сравнению с другими подходами, такими как <strong>First-Fit</strong>.</p>
     <p>Как работает: делим нашу память на два уровня, класс памяти (кратно степеням двойки), это позволяет быстро определить, к какому классу относится запрашиваемый размер. Далее внутри каждого класса память делится на подкатегории, например для класса 128–256 байт пусть будет 128–160, 161–200, 201–232, 233–256.</p>
     <p>Далее для поиска используется битовая маска, чтобы понять, есть ли свободные блоки в определённой категории. Например, если в категории 128–256 байт есть свободные блоки, соответствующий бит будет равен 1. Это позволяет быстро найти нужный класс и спуститься на второй уровень, где другая битовая маска определяет уточнённый размер. Условные 202 байта попадают в третью подкатегорию, из которой возвращается первый свободный блок. Никаких переборов и итераций.</p>
-    <img src="../assets/articles/dancing-with-allocators/21-tlsf-diagram.png" alt="Схема TLSF" class="post-image" loading="lazy" />
+    <img src="../assets/articles/dancing-with-allocators/21-tlsf-diagram.jpg" alt="Схема TLSF" class="post-image" loading="lazy" />
     <ul>
       <li>Каждый список содержит свободные блоки, размеры которых находятся в пределах одного класса размеров (диапазона).</li>
       <li>Блоки внутри каждого списка не упорядочены, что упрощает и ускоряет операции.</li>

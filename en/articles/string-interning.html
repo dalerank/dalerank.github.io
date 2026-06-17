@@ -19,7 +19,7 @@
 <main class="wrap article">
   <div class="article-head"><span class="tag">Abnormal programming</span><h1>Game++. String interning</h1><div class="ameta"><span>Jan 13, 2025</span><span>9 min</span></div></div>
   <article class="prose">
-    <img src="../../assets/articles/string-interning/01-header.png" alt="Game++. String interning" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/string-interning/01-header.jpg" alt="Game++. String interning" class="post-image" loading="lazy" />
     <p>"String interning," sometimes called a "string pool," is an <a href="https://en.wikipedia.org/wiki/String_interning" target="_blank" rel="noopener">optimization</a> in which only one copy of a string is stored, no matter how many times the program references it. Among the other string optimizations (SWAR, SIMD strings, immutable strings, StrHash, Rope string and a few others), some of which I described <a href="strings-in-engines.html">here</a>, it's considered one of the most useful optimizations in game engines. There are, admittedly, some small downsides to this approach, but the memory savings and the speed — with properly prepared resources and proper usage — more than cover for them.</p>
     <p>You've 100% written the same string several times in a single program at some point. For example: <code>pcstr color = "black";</code> And later in the code you had to write: <code>strcmp(color, "black");</code> As you can see, the string literal <code>"black"</code> appears several times. Does that mean the program contains two copies of the string "black"? More to the point, does it mean two copies of this string are loaded into RAM? The answer to both questions is — it depends on the compiler and the vendor. Thanks to certain optimizations in clang (Sony) and GCC, each string literal is stored only once in the program and, consequently, only one copy is loaded into RAM, so various tricks sometimes become possible.</p>
     <hr/>
@@ -51,10 +51,10 @@ int main()
 
 &gt;&gt;&gt;&gt;
 0x603cc2b7d004 - 0x603cc2b7d004, 1</code></pre>
-    <img src="../../assets/articles/string-interning/02-ptr-equal.png" alt="Identical literal addresses on PlayStation" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/string-interning/02-ptr-equal.jpg" alt="Identical literal addresses on PlayStation" class="post-image" loading="lazy" />
     <p>But on Xbox this trick won't work:</p>
     <pre style="margin:1.4rem 0"><code>00007FF6E0C36320 - 00007FF6E0C36328, 0</code></pre>
-    <img src="../../assets/articles/string-interning/03-xbox.png" alt="Different literal addresses on Xbox" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/string-interning/03-xbox.jpg" alt="Different literal addresses on Xbox" class="post-image" loading="lazy" />
 
     <h2>Is the compiler to blame?</h2>
     <p>Not really. The standard says nothing at all about string interning, so this is effectively a compiler extension that may deduplicate strings — or may not, as you've gathered. And it works only for strings whose values are known at compile time, which means that if the code assembles identical strings at runtime, two copies will be created. In other languages such as <code>C#</code> or <code>Java</code>, string interning happens at runtime, because the .NET Runtime or the Java VM implement this optimization out of the box, as they say. In C++ we have no runtime that could perform this optimization, so it happens only at compile time — but we do have a game engine and dedicated programmers who can do it.</p>
@@ -105,7 +105,7 @@ if (color == color2) { // true, because xstring::operator==() is called
 if (color == "black") { // true, because xstring::operator==() is called
   // ..
 }</code></pre>
-    <img src="../../assets/articles/string-interning/04-fragmentation.png" alt="Memory fragmentation from string data" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/string-interning/04-fragmentation.jpg" alt="Memory fragmentation from string data" class="post-image" loading="lazy" />
 
     <h2>At your fingertips</h2>
     <p>Developers came up with various implementations for interning data long ago. When my team integrated this solution into Unity 4, we drew on the available sources on GitHub and solutions from GCC, but under the open-source license terms that code couldn't be used directly, so we wrote our own. I recently saw something similar in the stb library — total déjà vu (<a href="https://graemephi.github.io/posts/stb_ds-string-interning/" target="_blank" rel="noopener">https://graemephi.github.io/posts/stb_ds-string-interning/</a>).</p>

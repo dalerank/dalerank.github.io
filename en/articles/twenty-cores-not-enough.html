@@ -24,10 +24,10 @@
     <p>The thing is, all those 30 — 60 — 120 — 200 fps in games are a purely marketing metric, the rate at which the engine can produce frames for the video card; but an engine isn't only the picture. There's physics — and it worked at 30 fps ten years ago and works the same way now. Or the audio subsystem, which lives its own separate life in its own priority threads; mostly we just throw messages at it with settings and a frame number to sync it with the picture. It's hard, but solvable — yet sound isn't tied to the picture.</p>
     <p>Input — it too lives separately in its own threads, and likewise sends messages, only to other systems. Various data caching and buffering systems — you can ignore those too, because modern rendering is almost entirely deferred; everything that can be deferred will be deferred — models, textures, shaders — they'll be in some indeterminate state, like a blurry texture or a common shader stretched over the model. And then, as resources load, the real data gets pulled in.</p>
     <p>With some stretch you can lump game logic in here too — it has ballooned from blueprints and various visual development systems, but there again it's all delta-time-oriented code, with no binding to fps. Game logic can calmly skip two or three, up to dozens of frames; consequences noticeable to the player only show up with designers' logic errors, like NPCs frozen in a T-pose.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/01-intro-systems.png" alt="Game engine subsystems" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/01-intro-systems.jpg" alt="Game engine subsystems" class="post-image" loading="lazy" />
     <p>There's also the physical simulation, rendering, level geometry and animation processing, and the game's debug systems. And it's right here, precisely because of the large volume of data — for instance when you need to collect and save all data from every model in the scene every frame for later analysis and debugging — that many good reasons appear to spend time optimizing code. Or allocation-tracking systems that track every memory allocation and deallocation during runtime. And it's exactly in such debug systems that attention is paid to low-latency code, which is irrelevant for general-purpose applications. Something similar exists in high-frequency trading (HFT) or queueing systems, but only there do the saved cycles bring real profit or cut the cost of running the hardware.</p>
     <p>In gamedev, though, we learn to value human time — the time of the designer who launches a game scene hundreds of times a day while tuning or polishing the game AI. The time of the programmer, who along with a bug receives not only a stacktrace, a dump and maybe a bug description, but also a replay of the scene from two minutes before the bug; the dump is about twenty gigabytes, the replay another twenty or so — except the replay contains a minidump of every frame, as I wrote above, for the last two minutes. And here small wins and optimizations turn into minutes of real time spent unpacking and processing huge volumes of data (huge within a single PC), which demands extremely fast algorithms and sometimes assorted tricks and hacks. And what's the most powerful thing we have for shooting bits at our bugs' feet? C++, of course.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/02-intro-cpp.png" alt="C++ for optimizations" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/02-intro-cpp.jpg" alt="C++ for optimizations" class="post-image" loading="lazy" />
 
     <h2>What this article is about</h2>
     <p>Many of the optimizations listed below are fairly obvious, such as pre-warming caches, using constexpr, loop unrolling and inlining. Other patterns are less obvious, such as the hotpath, branch trimming, isolating rarely executed code, getting rid of logs, training the branch predictor.</p>
@@ -91,11 +91,11 @@ Benchmark                 Time             CPU   Iterations
 -----------------------------------------------------------
 BM_CacheDataCold   33812905 ns     36281250 ns           20
 BM_CacheDataWarm   24459255 ns     25250000 ns           24</code></pre>
-    <img src="../../assets/articles/twenty-cores-not-enough/03-cache-warm-bench.png" alt="Cache warming benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/03-cache-warm-bench.jpg" alt="Cache warming benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> a game uses A* Jump to compute the path between two points; every frame, for all dynamic objects in the scene, the path is recomputed from the current position taking environment changes into account. The algorithm works with a bounded array of ints that represent the distance from the center of the map to the entry point, used by a directional heuristic that gets called to evaluate which way it's better to search at every step. By pre-walking every 8th element of the array, we get almost the whole array loaded into the L3 cache; the full run of the algorithm takes nearly 4ms per frame for 8k objects on the map. Profiling revealed almost 70% misses, which left the algorithm idling while waiting for data; warming the cache reduced the run time to almost 1.5ms. The game is under the spoiler.</p></blockquote>
     <details class="code">
       <summary>Game under spoiler</summary>
-      <img src="../../assets/articles/twenty-cores-not-enough/04-ymir.png" alt="Ymir" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/04-ymir.jpg" alt="Ymir" class="post-image" loading="lazy" />
       <p class="cap">Ymir</p>
     </details>
 
@@ -154,11 +154,11 @@ static void BM_CompileTimeFunction(benchmark::State&amp; state) {
 BENCHMARK_TEMPLATE(BM_CompileTimeFunction, Function1);
 BENCHMARK_TEMPLATE(BM_CompileTimeFunction, Function2);</code></pre>
     </details>
-    <img src="../../assets/articles/twenty-cores-not-enough/05-dispatch-bench.png" alt="Compile-time dispatch benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/05-dispatch-bench.jpg" alt="Compile-time dispatch benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> the effects manager used function overloading of the draw routine for different object types — sparks, splashes, grains of sand, dust, etc. On the PC build there were no problems; on a powerful (4GHz) processor it all chewed through instantly. When porting to the Nintendo Switch, the quirks of the weak (800MHz) processor showed up — it couldn't grind it all in time on busy scenes. First we tried cutting the number of effects, but the picture started to look poor. After profiling it turned out 7% of the run time went on stepping through the ifs, something like 50 branches, and another ~10% went on calling the overloaded function. Preparing effects for drawing on the console took 5ms per frame; after getting rid of the branching and the virtual function calls we were able to bring back almost all of the effects from the PC version and cut the time to 3ms. The game is under the spoiler.</p></blockquote>
     <details class="code">
       <summary>Game under spoiler</summary>
-      <img src="../../assets/articles/twenty-cores-not-enough/06-blades-of-time.png" alt="Blades Of Time (NX port)" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/06-blades-of-time.jpg" alt="Blades Of Time (NX port)" class="post-image" loading="lazy" />
       <p class="cap">Blades Of Time (NX port)</p>
     </details>
 
@@ -195,11 +195,11 @@ BM_RawLoopLogic/1000_mean               540 ns          541 ns           20
 BM_RawLoopLogic/1000_median             539 ns          547 ns           20
 BM_UnrolledLoopLogic/1000_mean          171 ns          171 ns           20
 BM_UnrolledLoopLogic/1000_median        171 ns          173 ns           20</code></pre>
-    <img src="../../assets/articles/twenty-cores-not-enough/07-unroll-bench.png" alt="Loop unrolling benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/07-unroll-bench.jpg" alt="Loop unrolling benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> back when clang/msvc didn't optimize so aggressively, we had to resort to such tricks to make a game run on weak devices. The game was written in Marmalade and targeted the iPhone 6, but at some point we decided to bring joy to the iPhone 5 crowd and even take a swing at the 4s. The 5 somehow coped, putting out 23–25 fps — playing wasn't exactly comfortable but possible — while the 4 couldn't go above 20 fps at all. We got 23 fps by lowering model quality, but there was nowhere left to lower it, since it was already mush. The profiler showed that a great many spots optimize well with loop unrolling; first we tried finding them by hand, then we gave up on that thankless task and, with the help of Python, macros, scripts and some choice words, went through the entire Marmalade codebase and partially unrolled the loops. Not without pain, but after a week of filework the coveted two fps were obtained, and we reached 25 fps for App Store approval. The game is under the spoiler.</p></blockquote>
     <details class="code">
       <summary>Game under spoiler</summary>
-      <img src="../../assets/articles/twenty-cores-not-enough/08-marmalade-game.png" alt="A Marmalade game for iPhone" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/08-marmalade-game.jpg" alt="A Marmalade game for iPhone" class="post-image" loading="lazy" />
     </details>
 
     <h2>Signed/Unsigned operand matching</h2>
@@ -236,7 +236,7 @@ static void BM_UnsignedSinged(benchmark::State&amp; state) {
     }
 }</code></pre>
     </details>
-    <img src="../../assets/articles/twenty-cores-not-enough/09-signed-bench.png" alt="Signed/unsigned matching benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/09-signed-bench.jpg" alt="Signed/unsigned matching benchmark" class="post-image" loading="lazy" />
     <pre style="margin:1.4rem 0"><code>-------------------------------------------------------------------
 Benchmark                         Time             CPU   Iterations
 -------------------------------------------------------------------
@@ -270,7 +270,7 @@ Benchmark                      Time             CPU   Iterations
 ----------------------------------------------------------------
 BM_FloatDouble              18.6 ns         18.7 ns     37333333
 BM_FloatFloat               18.3 ns         18.4 ns     37333333</code></pre>
-    <img src="../../assets/articles/twenty-cores-not-enough/10-floatdouble-bench.png" alt="Float/double benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/10-floatdouble-bench.jpg" alt="Float/double benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> using signed/unsigned operands in loop statements and mixing float/double led to suboptimal operations on the Nintendo Switch, which the compiler happily reported — but for a while we ignored those warnings. Before the game's release we decided to fix the warnings and got +2 FPS and a stable 30 in handheld mode. It turned out some were in critical spots in the renderer; on x86 it had no effect, but on the Switch's weak hardware it very much did. The game is under the spoiler.</p></blockquote>
 
     <h2>Reducing branch complexity (Branch Prediction Poison)</h2>
@@ -310,7 +310,7 @@ static void BM_ShortConditionFirst(benchmark::State&amp; state) {
 }
 BENCHMARK(BM_ShortConditionFirst)-&gt;Range(8, 8&lt;&lt;10);</code></pre>
     </details>
-    <img src="../../assets/articles/twenty-cores-not-enough/11-branch-bench.png" alt="Branch complexity benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/11-branch-bench.jpg" alt="Branch complexity benchmark" class="post-image" loading="lazy" />
 
     <h2>Branch optimization (Slowpath Removal)</h2>
     <p>An optimization technique aimed at minimizing calls into rarely used pieces of code within the execution stream. Some of my colleagues lump this into the previous point, but I broke it out into a separate section. This case includes, for example, debug and diagnostic log messages, which by their nature run very rarely but substantially affect the overall code structure, hampering the work of code optimizers. In the example below, saving a (potentially slow) error in hot code is replaced with putting it into an intermediate buffer that can be processed in a neighboring thread or separately after the main algorithm finishes. This didn't affect the algorithm itself, but the slow part was removed from the fast code; and although it was called only 10% of the time, it slowed the whole algorithm by roughly 3×. This is a synthetic example that draws attention to the problem, but using, for instance, error logging inside "hot" algorithms can drastically affect their speed even if such an error happens in 1% of cases.</p>
@@ -514,8 +514,8 @@ LessBranching         10597 ns        10498 ns        64000</code></pre>
     </details>
     <details class="code">
       <summary>Game under spoiler</summary>
-      <img src="../../assets/articles/twenty-cores-not-enough/12-matrix-game1.png" alt="The game where the matrix-multiply issue was found" class="post-image" loading="lazy" />
-      <img src="../../assets/articles/twenty-cores-not-enough/13-matrix-game2.png" alt="The game where the matrix-multiply issue was found" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/12-matrix-game1.jpg" alt="The game where the matrix-multiply issue was found" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/13-matrix-game2.jpg" alt="The game where the matrix-multiply issue was found" class="post-image" loading="lazy" />
     </details>
 
     <h2>Algorithm vectorization (SIMD logic)</h2>
@@ -572,7 +572,7 @@ Benchmark                Time             CPU   Iterations
 BM_NativeStrlen       29.3 ns         29.5 ns     24888889
 BM_SseStrlen          5.06 ns         5.10 ns    119466667</code></pre>
     <p>The screenshot shows representative timings for comparing a block of data using various approaches.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/14-simd-bench.png" alt="SIMD data comparison benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/14-simd-bench.jpg" alt="SIMD data comparison benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> we sadly can't get away from configs, and the desire to make the editor responsive to file changes or to add hotreload leads to having to work with strings on level load — comparing them and processing them somehow — which led to creating optimized functions where it's all packed into SSE instructions. The result wasn't long in coming: level load time in the editor dropped from 8 to 5 minutes.</p></blockquote>
 
     <h2>Data prefetching</h2>
@@ -621,11 +621,11 @@ Benchmark                     Time             CPU   Iterations
 NoPrefetch/5242880      6829454 ns      6835938 ns          112
 WithPrefetch/5242880    3624027 ns      3613281 ns          160</code></pre>
     <p>Here you can read about a <a href="https://kazakov.life/2017/03/06/cache-friendly-associative-container/" target="_blank" rel="noopener">cache-friendly associative container</a>, and about the same thing, the <a href="https://arxiv.org/ftp/arxiv/papers/1509/1509.05053.pdf" target="_blank" rel="noopener">effect of prefetching on search time in a linear array</a>.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/15-prefetch-bench.png" alt="Data prefetching benchmark" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/15-prefetch-bench.jpg" alt="Data prefetching benchmark" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> all those multicolored colors in the screenshot below are scene objects living in a linear array of size 65k. Objects of arbitrary type, from effects to character models and props. Each object has a set of components and properties, dozens of them. The structure sizes in memory are tens of kilobytes, so no cache is enough. Applying filters and searching for objects in the scene becomes a costly task that takes seconds of real time; knowing the addresses to be accessed next and being able to load that data into the cache before accessing it reduces search time to hundreds of milliseconds.</p></blockquote>
     <details class="code">
       <summary>Scene screenshot</summary>
-      <img src="../../assets/articles/twenty-cores-not-enough/16-prefetch-scene.png" alt="Scene objects in a linear array" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/twenty-cores-not-enough/16-prefetch-scene.jpg" alt="Scene objects in a linear array" class="post-image" loading="lazy" />
     </details>
 
     <h3>Constexpr computations</h3>
@@ -729,7 +729,7 @@ Benchmark                   Time             CPU   Iterations
 BM_AtomicInc/10000      51188 ns        50815 ns        14452
 BM_MutexInc/10000      164190 ns       163240 ns         3733</code></pre>
     <p>The picture shows the probability of acquiring the lock, for a mutex and various spinlock variants, as a function of the time between attempts. And here's a good article on a <a href="https://habr.com/ru/articles/328374/" target="_blank" rel="noopener">lock-free map</a>.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/17-lockfree-bench.png" alt="Lock acquisition probability for a mutex and spinlocks" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/17-lockfree-bench.jpg" alt="Lock acquisition probability for a mutex and spinlocks" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> on one project, even before gamedev, the volume of data coming from hardware could be several tens of millions of homogeneous objects — POD data, the objects could reference each other, all objects arrived in bulk and were deleted the same way. Under such conditions, dynamic memory management leads to very large time losses on creating/deleting objects. Without a debugger, creating/processing/deleting happened in a few seconds, but under the IDE freeing memory slowed down so much that debugging became simply unrealistic. Besides time, due to the large number of allocations, the memory spent on the allocator's bookkeeping data became noticeable. To work with this type of object we made a special lock-free container with a BumpAllocator that allocated memory in large segments and placed objects there by index. The object count is guaranteed to be under 65 million; each thread got its own segment in which processing and data placement happened. On x64, allocating 60 million elements across 12 threads with such an allocator took about 400ms on an i7 3GHz, and freeing 170ms. Allocating with new took about 2000ms.</p></blockquote>
 
     <h2>Training the branch predictor (Warming BPU)</h2>
@@ -745,7 +745,7 @@ BM_MutexInc/10000      164190 ns       163240 ns         3733</code></pre>
     <p>Misses can happen for various reasons, including first access to data (cold start), eviction of data due to size limits, or an inefficient management strategy.</p>
     <p>The ratio of hits to total access attempts is often used as the main metric for evaluating the effectiveness of a designed caching system, and the same metric is used in game engines to assess the overall health of systems. Cache occupancy and miss rate indicate the presence of errors in the architecture of the systems that use it.</p>
     <p>There won't be benchmarks, but here's an instructive picture with average access times to caches of different levels. And a cache can also be <a href="cache-pollution.html">poisoned</a> with the wrong data.</p>
-    <img src="../../assets/articles/twenty-cores-not-enough/18-cache-latency.png" alt="Average access time to caches of different levels" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/twenty-cores-not-enough/18-cache-latency.jpg" alt="Average access time to caches of different levels" class="post-image" loading="lazy" />
     <blockquote><p><strong>A war story:</strong> on the Nintendo Switch, due to the specifics of working with the SD card, there's a special class in the SDK called SDFileCache. You give it a file name, and after a callback fires you can start reading the data; while reading and processing is going on, this class prefetches data from the SD card, which lets you read the whole file practically continuously and quickly. If instead you open that file directly on the card and try to read it the same way, you catch freezes as you approach the 256kb boundary — i.e. you read the buffer, the OS dithered, filled it again, you read again. On the profiler this looked like a context switch between threads.</p></blockquote>
 
     <h2>Does all this work?</h2>

@@ -323,9 +323,9 @@ int* a = new int[2];
     <details class="code">
       <summary>So who's faster?</summary>
       <p>The second one will be faster, thanks to instruction-level parallelism on the CPU. Both ++ instructions go into execution at the same time, but in the first loop — unless the compiler cheats — there's a data dependency stall while the first ++ executes. But this happens at the processor level already; the compiler here can really only cheat with loop unrolling and the like.</p>
-      <img src="../../assets/articles/where-are-your-bugs/ilp-01.png" alt="" class="post-image" loading="lazy" />
-      <img src="../../assets/articles/where-are-your-bugs/ilp-02.png" alt="" class="post-image" loading="lazy" />
-      <img src="../../assets/articles/where-are-your-bugs/ilp-03.png" alt="" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/where-are-your-bugs/ilp-01.jpg" alt="" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/where-are-your-bugs/ilp-02.jpg" alt="" class="post-image" loading="lazy" />
+      <img src="../../assets/articles/where-are-your-bugs/ilp-03.jpg" alt="" class="post-image" loading="lazy" />
     </details>
 
     <h2>Next…</h2>

@@ -323,9 +323,9 @@ int* a = new int[2];
     <details class="code">
       <summary>Так кто же быстрее?</summary>
       <p>Второй будет быстрее, из-за параллелизма команд на уровне cpu. Обе команды ++ попадают на выполнение одновременно, но в первом если компилятор не на мухлюет будет задержка по данным, пока выполняется первая операция ++. Но это происходит на уровне процессора уже, компилятор действительно здесь может только помухлевать с разворачиванием цикла и тд.</p>
-      <img src="../assets/articles/where-are-your-bugs/ilp-01.png" alt="" class="post-image" loading="lazy" />
-      <img src="../assets/articles/where-are-your-bugs/ilp-02.png" alt="" class="post-image" loading="lazy" />
-      <img src="../assets/articles/where-are-your-bugs/ilp-03.png" alt="" class="post-image" loading="lazy" />
+      <img src="../assets/articles/where-are-your-bugs/ilp-01.jpg" alt="" class="post-image" loading="lazy" />
+      <img src="../assets/articles/where-are-your-bugs/ilp-02.jpg" alt="" class="post-image" loading="lazy" />
+      <img src="../assets/articles/where-are-your-bugs/ilp-03.jpg" alt="" class="post-image" loading="lazy" />
     </details>
 
     <h2>Next…</h2>

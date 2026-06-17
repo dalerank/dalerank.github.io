@@ -41,7 +41,7 @@
   </div>
 
   <article class="prose">
-    <img src="../assets/articles/do-not-copy/copy-01.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-01.jpg" alt="" class="post-image" loading="lazy" />
     <p>То, о чём я собираюсь рассказать в статье, настолько тривиально, что любой, даже начинающий, разработчик уже это знает — я правда очень на это надеюсь. Тем не менее, приходящий на ревью код показывает, что люди как делали, так и продолжают делать что-то подобное:</p>
     <pre style="margin:1.4rem 0"><code>bool LoadAnimation(str::string filename);
 void DrawLines(std::vector&lt;Points&gt; path);
@@ -92,7 +92,7 @@ void PassStringByNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(PassStringByNone);</code></pre>
-    <img src="../assets/articles/do-not-copy/copy-02.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-02.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/f6sBUE7FdwLdsU47G26yPOnnViY" target="_blank" rel="noopener">f6sBUE7FdwLdsU47G26yPOnnViY</a></p>
 
     <p><strong>Скрытая аллокация на массивах</strong></p>
@@ -135,9 +135,9 @@ void PassVectorByNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(PassVectorByNone);</code></pre>
-    <img src="../assets/articles/do-not-copy/copy-03.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-03.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/GU68xgT0r97eYaCKxMzm9bXJei4" target="_blank" rel="noopener">GU68xgT0r97eYaCKxMzm9bXJei4</a></p>
-    <img src="../assets/articles/do-not-copy/copy-04.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-04.jpg" alt="" class="post-image" loading="lazy" />
 
     <h2>Компилятор всё равно умнее</h2>
     <p>В случаях, если копируемый объект занимает размер меньше пары-тройки десятков байт, мы вообще не заметим никакой разницы от передачи его по ссылке, вплоть до того, что сгенерированный ассемблерный код будет «почти одинаковым».</p>
@@ -181,12 +181,12 @@ void DotProductNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(DotProductNone);</code></pre>
-    <img src="../assets/articles/do-not-copy/copy-05.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-05.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/drlH-a9o4ejvWP87neq7KAyyA8o" target="_blank" rel="noopener">drlH-a9o4ejvWP87neq7KAyyA8o</a></p>
     <p>В этом примере нам, конечно, известен размер структуры, да и пример очень простой. С другой стороны, если передача по ссылке явно работает не медленнее таковой по значению, использование <code>const&amp;</code> будет «such best as we can». А передача примитивных типов по <code>const&amp;</code> и вообще ни на что не влияет при <a href="https://godbolt.org/z/E7K54WY1b" target="_blank" rel="noopener">компиляции с флагом /Ox</a>:</p>
-    <img src="../assets/articles/do-not-copy/copy-06.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-06.jpg" alt="" class="post-image" loading="lazy" />
     <p>А раз нет никаких преимуществ, писать что-то подобное <code>const int &amp;i</code> лишено смысла, но некоторые всё же пишут.</p>
-    <img src="../assets/articles/do-not-copy/copy-07.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-07.jpg" alt="" class="post-image" loading="lazy" />
 
     <h2>Reserve my vector</h2>
     <p>Массивы имеют огромное преимущество по сравнению с другими структурами данных, которое зачастую перекрывает любые удобства других контейнеров: их элементы следуют в памяти один за другим. Можно долго обсуждать влияние применяемого алгоритма на время работы и как это может повлиять на производительность, но ничего быстрее кеш-линий процессора у нас нет, и чем больше элементов лежит в кеше, тем быстрее будет работать самый банальный перебор. Любое обращение за пределы L1-кеша сразу кратно увеличивает время работы.</p>
@@ -234,7 +234,7 @@ static void CycleNone(benchmark::State&amp; state) {
   }
 }
 BENCHMARK(CycleNone);</code></pre>
-    <img src="../assets/articles/do-not-copy/copy-08.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-08.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/OuiFp3VOZKNKaAZgM_0DkJxRock" target="_blank" rel="noopener">OuiFp3VOZKNKaAZgM_0DkJxRock</a></p>
     <p>Ну и напоследок пример того, как можно убить перф и получить просадку до 10 FPS на ровном месте, просто при движении мышкой по игровому полю. Движок называть не буду, баг уже пофиксили. Найдёте ошибку — пишите в комменты :)</p>
     <pre style="margin:1.4rem 0"><code>bool findPath(Vector2 start, Vector2 finish) {
@@ -260,7 +260,7 @@ BENCHMARK(CycleNone);</code></pre>
       }
    }
 }</code></pre>
-    <img src="../assets/articles/do-not-copy/copy-09.png" alt="" class="post-image" loading="lazy" />
+    <img src="../assets/articles/do-not-copy/copy-09.jpg" alt="" class="post-image" loading="lazy" />
 
     <a class="backlink" href="index.html">← Все статьи</a>
   </article>

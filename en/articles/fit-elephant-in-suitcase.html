@@ -33,7 +33,7 @@
     <p>Another question — will such changes be greenlit? Most likely not: changing the architecture won't be allowed by the project's architect, the tech lead or the tech director in 99.9999% of cases. First, it's not the programmer's concern; second, with such decisions you're simply taking the bread out of the architect's mouth; and third, by changing an existing, working and debugged system you break the neighboring ones, and when that bug surfaces — and it definitely will — no one can say. It's this last reason that keeps the developer who started yesterday from rewriting half the engine and doing it the right way :) You're left to make do with code-and-algorithm-level changes, which, however, also give you the chance to "do some good" to the tune of 10%+ in speed.</p>
 
     <h2>Component isolation</h2>
-    <img src="../../assets/articles/fit-elephant-in-suitcase/02-isolation.png" alt="Isolating engine components" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/fit-elephant-in-suitcase/02-isolation.jpg" alt="Isolating engine components" class="post-image" loading="lazy" />
     <p>Another important aspect of optimizations, especially when it comes to porting, is the isolation of engine and game components. If components are well isolated from each other, it lets you change their internal implementation without affecting the rest of the system. For example, you can replace an inefficient sorting algorithm with a more performant one without touching the interface or the calling code. Or fork the render system and tweak it for a specific console without breaking the main branch. Isolated components significantly simplify both porting and development itself at all levels — changes become localized and less risky.</p>
 
     <h2>Micro and small optimizations</h2>
@@ -47,7 +47,7 @@
     <p>These small code regions won't affect a game's perf on big consoles or PC; a 1–2% gain is of no interest to anyone, because it requires a lot of effort and time but is imperceptible, and accordingly management figures it's better to spend time developing a feature. But on handhelds even such "small" changes give a noticeable performance gain, especially if they're applied in hot code regions that are called many times. It's worth noting that writing correct and efficient <strong>two or three lines of code</strong> may require analysis, experiments and time on the order of several days. Plus careful profiling and an understanding of the CPU cache's behavior on a specific bit of logic.</p>
 
     <h2>Myths about low-level optimizations</h2>
-    <img src="../../assets/articles/fit-elephant-in-suitcase/03-myths.png" alt="Myths about low-level optimizations" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/fit-elephant-in-suitcase/03-myths.jpg" alt="Myths about low-level optimizations" class="post-image" loading="lazy" />
     <p>There's a widespread misconception that optimizations at this level require complex and hard-to-understand solutions, such as writing code in asm, using rocket-science algorithms, or wholesale conversion to a SIMD implementation. Luckily, in practice that's not always so, and many optimizations turn out fairly simple and intuitive. For example:</p>
     <ul>
       <li>Redundant data copying (passing such arguments to functions).</li>
@@ -59,7 +59,7 @@
     <p>Often <strong>clean, readable code</strong> runs fast on its own, because it's simpler for the compiler and optimizer. But not always.</p>
 
     <h2>An expensive check (a story from one project)</h2>
-    <img src="../../assets/articles/fit-elephant-in-suitcase/04-expensive-check.png" alt="An expensive check" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/fit-elephant-in-suitcase/04-expensive-check.jpg" alt="An expensive check" class="post-image" loading="lazy" />
     <p>The game levels I happened to work on for mobile were described in an internal json-like format that required escaping certain characters. The main development was on PC, of course, and there were no perf problems there. The game could receive external changes in several formats from different servers (json, bjson, xml, kvpatch), plus users could create and share levels, district layouts and individual buildings themselves (custom yaml). All data exchange went through the game's servers, which sent changes and updates in binary form (to save traffic), and to process them correctly they had to be restored to text form, then normalized to json, which then had to be converted to the internal format so the level parser could read it. Levels were requested from the server every time so users couldn't cheat themselves some money, since part of the simulation ran on the local device. Data could arrive in different formats from different systems, and during processing it was fully checked for the need to escape 4 (four!) times.</p>
     <p>I bring this up to say that an architectural change would have removed all the unnecessary actions described below, but rewriting the servers to defeat 2 seconds of level-load time for the end user will be allowed with very low probability — basically never. This is a pure architectural bug that the system architect didn't notice in time, and which leaked down to the algorithm and code level.</p>
     <p>Games in general have a lot of text data: it's in configs, in localizations, in resource names. And strings are often represented with quotes <code>"</code>. But what happens if the string itself contains quotes? In that case the string needs to be escaped. For example, the quote character <code>"</code> or the backslash <code>\</code> needs to be replaced with <code>\"</code> or <code>\\</code>. You can easily write code in your favorite language for this check. Most strings don't need escaping. So it's useful to be able to quickly check whether a string requires escaping. The algorithm is very simple: the function takes an argument of type <code>eastl::stringz</code> named <code>v</code> (C++14 didn't have <code>string_view</code> yet, but custom solutions for non-zero-terminated strings already existed). It walks each character <code>c</code> in the input string <code>v</code>.</p>
@@ -183,7 +183,7 @@ bool table_need_escaping_symbol(eastl::stringz view) {
     </div>
 
     <h2>Can we go faster?</h2>
-    <img src="../../assets/articles/fit-elephant-in-suitcase/05-faster.png" alt="Can we go faster?" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/fit-elephant-in-suitcase/05-faster.jpg" alt="Can we go faster?" class="post-image" loading="lazy" />
     <p>Yes, if we use SIMD instructions — NEON for mobile or SSE for PC. And since strings usually aren't too long — 60% of strings are under 64 characters (those are keys, resource names, flags and just short strings) — the general idea is to load data in 16-byte blocks and run comparisons over those bytes simultaneously. There's no magic here: why compare one character at a time when you can do N comparisons at once — it should simply be physically faster. And what do we do if we have fewer than N characters or a leftover tail? Then we just fall back to the existing solution, which already shows decent results. For SSE the solution will be roughly like this; for NEON it'll be similar.</p>
     <pre style="margin:1.4rem 0"><code>inline bool simd_need_escaping_symbol(eastl::stringz view) {
   int size = view.size();
@@ -274,7 +274,7 @@ bool table_need_escaping_symbol(eastl::stringz view) {
     </table>
     </div>
     <p>It turned out quite well; we closed this task with a clear conscience. The new year of 2016 was coming, and we calmly went off to celebrate our small victories at the office party. Meanwhile the render team kept on packing elephants and optimizing something there, but that's a whole different story.</p>
-    <img src="../../assets/articles/fit-elephant-in-suitcase/06-closing.png" alt="An elephant in a suitcase" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/fit-elephant-in-suitcase/06-closing.jpg" alt="An elephant in a suitcase" class="post-image" loading="lazy" />
     <p>Happy New Year, everyone!</p>
     <a class="backlink" href="index.html">← All articles</a>
   </article>

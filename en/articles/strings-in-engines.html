@@ -41,7 +41,7 @@
   </div>
 
   <article class="prose">
-    <img src="../../assets/articles/strings-in-engines/str-01.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Historically, the need for strings and their use in game engines was fairly limited — except, perhaps, for resource localization, where you needed full support for something beyond the ASCII set. But if they wanted to, developers managed to pack even those resources into the available 200 elements of the ASCII set, and since a game usually launches in only one locale, there was no need for conversion at all. There are differences from the standard, though: thanks to Sony, practically from the early 2000s, even before the C++20 standard, game developers had several models of character literals available. Standard ASCII on the PS1 and partial Unicode support (ISO 10646); the SDK for the second PlayStation added UTF-16 and UTF-32 support, and after the PS3 came out, UTF-8 support was added.</p>
     <pre style="margin:1.4rem 0"><code>int main()
 {
@@ -53,7 +53,7 @@
 }</code></pre>
 
     <h2>C-Style strings (NTBS)</h2>
-    <img src="../../assets/articles/strings-in-engines/str-02.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-02.jpg" alt="" class="post-image" loading="lazy" />
     <p>Any null-terminated byte sequence (NTBS), which is a chain of non-zero bytes plus a terminating null character (the character literal <code>'\0'</code>).</p>
     <p>The length of an NTBS is the number of elements preceding the terminating null character. An empty NTBS has length zero.</p>
     <p>A string literal is a sequence of characters surrounded by double quotes (<code>" "</code>).</p>
@@ -137,7 +137,7 @@ length                  : strlen, strempty</code></pre>
     <blockquote><p><strong>Scope of application:</strong> the widest — any software that doesn't require special string capabilities. In game engines, in pure form it's not very common because of the verbosity of the supporting code, security issues, and portability problems across platforms.</p></blockquote>
 
     <h2>C++ strings</h2>
-    <img src="../../assets/articles/strings-in-engines/str-03.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-03.jpg" alt="" class="post-image" loading="lazy" />
     <p>The C++ standard library supports the <code>&lt;string&gt;</code> header. The base type <code>std::string</code> can be thought of as a variable-size array of characters, and it contains functions for the most common operations — initialization from string literals, concatenation, search, and so on — which, however, doesn't make parsing strings any simpler than with C-strings, but still takes most of the work off the average programmer. Adding, mind you, other problems and tasks — but more on that later.</p>
     <pre style="margin:1.4rem 0"><code>const std::string this_string { "This is" }; // initialise
 
@@ -190,7 +190,7 @@ s g</code></pre>
     <p>And for small strings the size of this control part exceeds the useful payload of data, which — from the standpoint of performance and memory consumption — significantly reduces the advantages of using <code>std::string</code>. To improve memory usage and remove unnecessary allocations, when a string contains fewer characters than the control part, the compiler may (the keyword being "may," since it heavily depends on the enabled optimization modes) store the string in the stack space allocated for the control part, instead of allocating heap memory.</p>
 
     <h2>C++17 std::string_view</h2>
-    <img src="../../assets/articles/strings-in-engines/str-04.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-04.jpg" alt="" class="post-image" loading="lazy" />
     <p>C++17 added a new way to work with strings in the form of <code>std::string_view</code>, which describes a string-like object and, for example, can reference a contiguous sequence of char-like objects. A typical implementation of <code>std::string_view</code> contains just two members: a pointer to the character type and a size. And although it doesn't solve the problems of NTBS strings, <code>std::string_view</code> in C++17 added a safer alternative to C-style strings.</p>
     <pre style="margin:1.4rem 0"><code>template&lt;class _T, class _Traits = char_traits&lt;_CharT&gt; &gt;
 class string_view {
@@ -280,7 +280,7 @@ using string_sz64 = string_sz&lt;64&gt;;</code></pre>
 
     <h2>Pool String</h2>
     <p>A more general implementation of the idea of getting rid of random memory allocation when using strings — or at least making it more predictable and controllable — is using string pools, which can again be implemented by overloading the allocator. I described the advantages of this approach above: reducing fragmentation of the main memory and controlling the allocation and use of strings. But such pools are also subject to fragmentation, albeit to a lesser degree. A further development of this mechanism was the use of <a href="https://en.wikipedia.org/wiki/Slab_allocation" target="_blank" rel="noopener">slab</a> or arena allocators, which are least subject to fragmentation. Such Arena Pool Strings allocate space for a string in uniform chunks, for example 64 bytes, even if the string only takes 2. The screenshot shows an example of filling an arena with 32-byte blocks. The probability of placing a new string in the same spot after the "blue" segment is removed is much higher than if it had occupied only the requested amount of memory.</p>
-    <img src="../../assets/articles/strings-in-engines/str-05.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-05.jpg" alt="" class="post-image" loading="lazy" />
     <p>The advantage of this approach is that the larger the block, the less the external fragmentation of the pool, and given short-lived strings, returning blocks of equal size keeps the buffer utilization percentage roughly level. Subsequently profiling such pools by size makes it possible, before release, to trim them to the needed limits so that the fill percentage is around 90–95%. Another advantage of string pools is the ability to make them thread-local where the logic allows — for example for that same renderer or sound engine — decoupling them even further from the main thread and improving thread performance.</p>
     <blockquote><p><strong>Scope of application:</strong> working with strings in threads, parsing configs, where it's important to depend as little as possible on standard memory-allocation mechanisms.</p></blockquote>
 
@@ -340,7 +340,7 @@ simd.find          x86: 10.1 GB/s</code></pre>
     <blockquote><p><strong>Scope of application:</strong> mainly parsing configs and work in hot functions like shader auto-generation.</p></blockquote>
 
     <h2>Conclusion</h2>
-    <img src="../../assets/articles/strings-in-engines/str-06.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/strings-in-engines/str-06.jpg" alt="" class="post-image" loading="lazy" />
     <p>That's about all I wanted to tell you about the peculiarities of using strings.</p>
     <p>The C++ standard library supports a flexible and rich class for working with strings. Unfortunately, <code>std::string</code> isn't suitable for game engines and game development because of the need to manage dynamic memory.</p>
     <p>Short string optimization, used carefully, lets you safely manage strings of small length. However, mechanisms that prevent heap usage have a great many advantages that have long been widely battle-tested in game engines.</p>

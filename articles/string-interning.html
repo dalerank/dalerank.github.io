@@ -19,7 +19,7 @@
 <main class="wrap article">
   <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Game++. String interning</h1><div class="ameta"><span>13 января 2025</span><span>9 мин</span></div></div>
   <article class="prose">
-    <img src="../assets/articles/string-interning/01-header.png" alt="Game++. String interning" class="post-image" loading="lazy" />
+    <img src="../assets/articles/string-interning/01-header.jpg" alt="Game++. String interning" class="post-image" loading="lazy" />
     <p>«String interning», иногда это называют «пулом строк» — это <a href="https://en.wikipedia.org/wiki/String_interning" target="_blank" rel="noopener">оптимизация</a>, при которой хранится только одна копия строки, независимо от того, сколько раз программа ссылается на неё. Среди других оптимизаций по работе со строками (SWAR, SIMD-строки, immutable strings, StrHash, Rope string и немного других), часть которых была описана <a href="strings-in-engines.html">тут</a>, она считается одной из самых полезных оптимизаций в игровых движках. Есть, правда, небольшие недостатки у этого подхода, но экономия памяти и скорость работы при правильной подготовке ресурсов и работе с лихвой их перекрывают.</p>
     <p>Вы 100% когда-нибудь писали одну и ту же строку несколько раз в одной программе. Например: <code>pcstr color = "black";</code> А позже в коде пришлось написать: <code>strcmp(color, "black");</code> Как видите, строковый литерал <code>"black"</code> встречается несколько раз. Означает ли это, что программа содержит две копии строки "black"? Более того, означает ли это, что в оперативную память загружаются две копии этой строки? На оба вопроса ответ — зависит от компилятора и вендора. Благодаря некоторым оптимизациям в clang (Sony) и GCC, каждая строка-литерал хранится в программе только в одном экземпляре и, следовательно, только одна копия загружается в оперативную память, поэтому иногда становятся возможными разные фокусы.</p>
     <hr/>
@@ -51,10 +51,10 @@ int main()
 
 &gt;&gt;&gt;&gt;
 0x603cc2b7d004 - 0x603cc2b7d004, 1</code></pre>
-    <img src="../assets/articles/string-interning/02-ptr-equal.png" alt="Одинаковые адреса литералов на PlayStation" class="post-image" loading="lazy" />
+    <img src="../assets/articles/string-interning/02-ptr-equal.jpg" alt="Одинаковые адреса литералов на PlayStation" class="post-image" loading="lazy" />
     <p>А вот на Xbox этот трюк работать не будет:</p>
     <pre style="margin:1.4rem 0"><code>00007FF6E0C36320 - 00007FF6E0C36328, 0</code></pre>
-    <img src="../assets/articles/string-interning/03-xbox.png" alt="Разные адреса литералов на Xbox" class="post-image" loading="lazy" />
+    <img src="../assets/articles/string-interning/03-xbox.jpg" alt="Разные адреса литералов на Xbox" class="post-image" loading="lazy" />
 
     <h2>Виноват компилятор?</h2>
     <p>Да вроде нет. В стандарте вообще ничего не говорится об интернировании строк, поэтому это фактически является расширением компилятора, который может заниматься удалением дубликатов, а может и не заниматься, как вы поняли. И работать это будет только для строк, значения которых известны во время компиляции, что означает: если уже в рантайме код собирает одинаковые строки, то будет создано две копии. В других языках, таких как <code>C#</code> или <code>Java</code>, интернирование строк происходит во время выполнения, потому что .NET Runtime или Java VM реализуют эту оптимизацию что называется из коробки. В C++ у нас нет среды выполнения, которая могла бы выполнить эту оптимизацию, поэтому она происходит только на этапе компиляции, но зато у нас есть игровой движок и приданные программисты, которые могут это сделать.</p>
@@ -105,7 +105,7 @@ if (color == color2) { // true, потому что вызывается xstring
 if (color == "black") { // true, потому что вызывается xstring::operator==()
   // ..
 }</code></pre>
-    <img src="../assets/articles/string-interning/04-fragmentation.png" alt="Фрагментация памяти от строковых данных" class="post-image" loading="lazy" />
+    <img src="../assets/articles/string-interning/04-fragmentation.jpg" alt="Фрагментация памяти от строковых данных" class="post-image" loading="lazy" />
 
     <h2>На кончиках пальцев</h2>
     <p>Разработчики давно придумали разные реализации, которые позволяют делать interning данных. Когда моя команда интегрировала это решение в Unity 4, мы вдохновлялись доступными исходниками на гитхабе и решениями из GCC, но по условиям open-source лицензии тот код нельзя было напрямую взять для использования, поэтому писали своё. Что-то подобное я недавно увидел уже в библиотеке stb, вот прям дежавю какое-то (<a href="https://graemephi.github.io/posts/stb_ds-string-interning/" target="_blank" rel="noopener">https://graemephi.github.io/posts/stb_ds-string-interning/</a>).</p>

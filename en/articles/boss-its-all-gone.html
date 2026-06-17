@@ -41,7 +41,7 @@
   </div>
 
   <article class="prose">
-    <img src="../../assets/articles/boss-its-all-gone/cover.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/boss-its-all-gone/cover.jpg" alt="" class="post-image" loading="lazy" />
     <p>C++ programmers' mistakes are an art form of their own — a seemingly simple language, but the moment you step away for a cup of coffee, the compiler starts dumping a wall of warnings mixed with errors, and sometimes it looks more like ancient Egyptian writing than a normal output. You've probably run into a nullptr dereference more than once, or mixed up (= and ==) by oversight. The cause is often laziness or carelessness, or fatigue — it's no accident that superstitions appeared like "don't commit on Friday evening", "don't code in an altered state of consciousness" or "avoid coding on a caffeine high" — that's when you've downed three or four mugs of coffee and gone off spreading good code left and right.</p>
     <p>Actually this article was planned to be about how you can torment the switch operator — I had a recording of a talk from a St. Petersburg meetup some years ago, where the audience was challenged to write "impossible" but working code with switch. And while looking for that recording I stumbled on a file describing "Friday" bugs and commits that, in a sober mind mid-week, would hardly have slipped into master. There was also <a href="where-are-your-bugs.html">an earlier article about bugs too, "Where are your bugs?"</a>, where the esteemed reader guessed the cause of various mistakes, obvious or not. So I decided to continue in the same style — question, answer — and I invite you to join in guessing the possible causes too. All the examples are from real projects, games, engines and Friday commits.</p>
     <p>C++ doesn't forgive mistakes, but that's exactly its "charm". In most of the examples below the style and parameter names are preserved; only the comments are slightly cleaned up so as not to out the company.</p>
@@ -370,7 +370,7 @@ inline bool convex_volume_from_planes(const T &amp;clip_planes, E &amp;out_edges
       <p>Allocating memory in a loop is bad in general, and triply bad if it's allocation on the stack, since there the memory is only allocated but never returned. In complex cases this algorithm ate up all of the stack memory and crashed the engine.</p>
     </details>
 
-    <img src="../../assets/articles/boss-its-all-gone/alloca.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/boss-its-all-gone/alloca.jpg" alt="" class="post-image" loading="lazy" />
     <p>That's all! May your tickets be bug-free.</p>
 
     <a class="backlink" href="index.html">← All articles</a>

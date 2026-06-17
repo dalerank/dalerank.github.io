@@ -41,7 +41,7 @@
   </div>
 
   <article class="prose">
-    <img src="../../assets/articles/do-not-copy/copy-01.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-01.jpg" alt="" class="post-image" loading="lazy" />
     <p>What I'm about to talk about in this article is so trivial that any developer, even a beginner, already knows it — I really do hope so. And yet the code that comes in for review shows that people did, and keep doing, something like this:</p>
     <pre style="margin:1.4rem 0"><code>bool LoadAnimation(str::string filename);
 void DrawLines(std::vector&lt;Points&gt; path);
@@ -92,7 +92,7 @@ void PassStringByNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(PassStringByNone);</code></pre>
-    <img src="../../assets/articles/do-not-copy/copy-02.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-02.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/f6sBUE7FdwLdsU47G26yPOnnViY" target="_blank" rel="noopener">f6sBUE7FdwLdsU47G26yPOnnViY</a></p>
 
     <p><strong>Hidden allocation on arrays</strong></p>
@@ -135,9 +135,9 @@ void PassVectorByNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(PassVectorByNone);</code></pre>
-    <img src="../../assets/articles/do-not-copy/copy-03.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-03.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/GU68xgT0r97eYaCKxMzm9bXJei4" target="_blank" rel="noopener">GU68xgT0r97eYaCKxMzm9bXJei4</a></p>
-    <img src="../../assets/articles/do-not-copy/copy-04.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-04.jpg" alt="" class="post-image" loading="lazy" />
 
     <h2>The compiler is smarter anyway</h2>
     <p>In cases where the copied object is smaller than a couple-dozen bytes, we won't notice any difference at all from passing it by reference, to the point that the generated assembly will be "almost identical."</p>
@@ -181,12 +181,12 @@ void DotProductNone(benchmark::State&amp; state) {
     }
 }
 BENCHMARK(DotProductNone);</code></pre>
-    <img src="../../assets/articles/do-not-copy/copy-05.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-05.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/drlH-a9o4ejvWP87neq7KAyyA8o" target="_blank" rel="noopener">drlH-a9o4ejvWP87neq7KAyyA8o</a></p>
     <p>In this example we do, of course, know the size of the struct, and the example is very simple. On the other hand, if passing by reference is clearly no slower than passing by value, using <code>const&amp;</code> is "such best as we can." And passing primitive types by <code>const&amp;</code> has no effect at all when <a href="https://godbolt.org/z/E7K54WY1b" target="_blank" rel="noopener">compiling with the /Ox flag</a>:</p>
-    <img src="../../assets/articles/do-not-copy/copy-06.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-06.jpg" alt="" class="post-image" loading="lazy" />
     <p>And since there's no advantage, writing something like <code>const int &amp;i</code> is pointless, yet some people still do.</p>
-    <img src="../../assets/articles/do-not-copy/copy-07.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-07.jpg" alt="" class="post-image" loading="lazy" />
 
     <h2>Reserve my vector</h2>
     <p>Arrays have a huge advantage over other data structures that often outweighs any conveniences of other containers: their elements sit in memory one after another. You can argue at length about the impact of the chosen algorithm on running time and how it affects performance, but there's nothing faster than the CPU's cache lines, and the more elements that fit in the cache, the faster even the most trivial iteration will run. Any access beyond the L1 cache immediately multiplies the running time.</p>
@@ -234,7 +234,7 @@ static void CycleNone(benchmark::State&amp; state) {
   }
 }
 BENCHMARK(CycleNone);</code></pre>
-    <img src="../../assets/articles/do-not-copy/copy-08.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-08.jpg" alt="" class="post-image" loading="lazy" />
     <p class="cap">QuickBench: <a href="https://quick-bench.com/q/OuiFp3VOZKNKaAZgM_0DkJxRock" target="_blank" rel="noopener">OuiFp3VOZKNKaAZgM_0DkJxRock</a></p>
     <p>And finally, an example of how you can kill perf and get a drop to 10 FPS out of nowhere, just by moving the mouse across the game field. I won't name the engine; the bug is already fixed. Spot the mistake — write it in the comments :)</p>
     <pre style="margin:1.4rem 0"><code>bool findPath(Vector2 start, Vector2 finish) {
@@ -260,7 +260,7 @@ BENCHMARK(CycleNone);</code></pre>
       }
    }
 }</code></pre>
-    <img src="../../assets/articles/do-not-copy/copy-09.png" alt="" class="post-image" loading="lazy" />
+    <img src="../../assets/articles/do-not-copy/copy-09.jpg" alt="" class="post-image" loading="lazy" />
 
     <a class="backlink" href="index.html">← All articles</a>
   </article>
