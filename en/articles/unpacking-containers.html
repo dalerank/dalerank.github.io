@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Game++. Unpacking containers — dalerank</title>
+<meta name="description" content="Specialized containers in game engines: fixed array and matrices, linear/stable/sparse/packed/static/small/dirty/buddy vector, deque and bcdeque, bounded_priority_deque, intrusive list, octree and quadtree, object_pool, ring buffer, cached_hashtable, handle_container and slot_container — how they work, diagrams and where they're used." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/unpacking-containers.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/unpacking-containers.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/unpacking-containers.html">RU</a><i>/</i><a class="on" href="unpacking-containers.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>Game++. Unpacking containers</h1><div class="ameta"><span>Mar 19, 2025</span><span>40 min</span></div></div>
+  <article class="prose">
+
+    <img src="../../assets/articles/unpacking-containers/01.jpg" alt="" class="post-image" loading="lazy" />
+<p>Whether you're starting to build your own game or joining an existing project, when the time comes to optimize memory and do all sorts of tuning, the same questions always come up. Should you use your own containers? If you go with your own, which is better to pick — something like a vector, or is a map a better fit? Is a linked list the best choice for frequent insertions and removals of elements? And where did all those insertions even come from in the first place — but that's a different question, of course.</p>
+<p>In most cases studios start to implement their own solutions tailored to the game, and over time this leads to a library of solutions, and quite often to a full replacement of the entire STL stack. The main reason is to achieve contiguous placement of elements in memory in order to maximize cache locality when iterating over them. I hope it's clear why this is done: it's often faster to walk over 1000 elements that lie one after another than over a dozen that are scattered across different parts of RAM.</p>
+<p>If you're not ready to write and maintain your own STL, try to use vector — it's at least predictable in terms of timing on all platforms. That's what most C++ game developers will tell you, but the problem is that vector reallocates the stored objects in memory when inserting new elements, as well as when removing any element other than the last one. This means that pointers to the vector's elements become invalid, and then all the dependencies and interactions between elements stop working.</p>
+<p>Of course, you can access elements through indices instead of pointers, but indices too lose their validity when inserting or removing elements not at the end of the container. On top of that, memory allocation isn't free either and can seriously hurt performance if used improperly. Yes, vectors win over other containers in many places, but game development doesn't live by vector alone — we have something faster and more stable too.</p>
+<hr/>
+    <p>This is part of the "Game++" series:</p>
+    <ul><li><p><a href="string-interning.html">Game++. String interning</a></p></li><li><p><a href="cooking-vectors.html">Game++. Cooking vectors</a></p></li><li><p><a href="dancing-with-allocators.html">Game++. Dancing with allocators</a></p></li><li><p><a href="juggling-stl-algorithms.html">Game++. Juggling STL algorithms</a></p></li><li><p><a href="run-thread-run.html">Game++. run, thread, run...</a></p></li><li><p><a href="building-arcs.html">Game++. Building arcs</a></p></li><li><p>Game++. Unpacking containers &lt;=== You are here</p></li><li><p><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></p></li><li><p><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></p></li><li><p><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></p></li><li><p><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></p></li><li><p><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></p></li></ul>
+
+<h2>Foreword</h2>
+<p>One of the downsides of using the C++ standard library from a vendor or SDK is that they only provide the interface of the containers, with no way to change the allocator or change the container's growth policy without digging into the implementation. C++17 fixed this a little by adding polymorphic allocators, but they didn't get it quite right either, leaving virtual calls inside for alloc/dealloc.</p>
+<p>On top of that, there are several STL implementations, and although the basic containers usually don't differ much, they still look like a mess of defines and very non-trivial code because of the need to support various versions of the standard and various compilers, which makes them hard to understand. On the plus side, the containers will compile and work as advertised in most cases.</p>
+
+    <img src="../../assets/articles/unpacking-containers/02.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>fixed array</h2>
+<p>A fixed-size container, introduced as std::array starting with C++11. One way or another it's present in most libraries and is essentially a wrapper over a region of memory; the size is set at compile time and can't change. Elements are stored contiguously without using dynamic allocation.</p>
+<p>The main plus is that it provides the interface of a regular STL container. The implementation, in general terms, again boils down to a wrapper over a C array, and a predictable size lets the compiler do more optimizations, vectorize an algorithm or even unroll it completely, as well as do additional checks.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T, size_t SIZE&gt;
+class array {
+public:
+  size_t size() const { retrn SIZE; }
+  bool empty() const { return !size(); }
+  const T * data() const;
+  T * data();
+
+  typedef ArrayIterator&lt;T&gt; iterator;
+  iterator begin();
+  iterator end();
+
+private:
+  T values_[MAX_SIZE];
+};</code></pre>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | size()    | -&gt; SIZE (fixed)             |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | begin()   | --+                         |
+|  +-----------+   |                         |
+|                  |                         |
+|  +-----------+   |                         |
+|  | end()     | --+--------+                |
+|  +-----------+   |        |                |
+|                  |        |                |
+|  +-----------+   |        |                |
+|  | data()    | --+        |                |
+|  +-----------+   |        |                |
+|                  v        v                |
+|  +-------------------------------+         |
+|  | BUILT-IN FIXED-SIZE ARRAY              |
+|  |+------+------+------+------+  |         |
+|  || T[0] | T[1] | T[2] | ...  |  |         |
+|  |+------+------+------+------+  |         |
+|  |&lt;------- SIZE (constant) -----&gt;|         |
+|  | values_                       |         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<p><a href="https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/include/std/array" target="_blank" rel="noopener">https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/include/std/array</a><br/><a href="https://github.com/microsoft/STL/blob/main/stl/inc/array" target="_blank" rel="noopener">https://github.com/microsoft/STL/blob/main/stl/inc/array</a></p>
+<p>Often used as a pool, for example in particle systems, resource systems, animations — in general, anywhere the limits on the data are known.</p>
+<pre style="margin:1.4rem 0"><code>struct ParticleEmitter {
+    gtl::array&lt;Particle, MAX_PARTICLES_PER_EMITTER&gt; particles;
+    // ...
+};
+
+template&lt;typename ResourceType, size_t PoolSize&gt;
+class ResourcePool {
+    gtl::array&lt;ResourceType, PoolSize&gt; resources;
+    gtl::array&lt;bool, PoolSize&gt; used;
+    // ...
+};
+
+struct SkeletonJoint {
+    gtl::array&lt;int, MAX_CHILD_JOINTS&gt; childJoints;
+    gtl::array&lt;float, 16&gt; transformMatrix; // 4x4 matrix
+};
+
+struct Skeleton {
+    gtl::array&lt;SkeletonJoint, MAX_JOINTS&gt; joints;
+};</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/03.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>fixed matrix</h2>
+<p>Multidimensional arrays are data structures that organize elements in two or more dimensions; the most common examples of such structures are matrices and textures. They long ago grew into their own implementations, whose solutions have moved far away from ordinary arrays. Raw multidimensional arrays are also often used, and in most cases they are implemented in a contiguous region of memory, with elements stored in "row by row" order (row-major order).</p>
+<pre style="margin:1.4rem 0"><code>int matrix[3][4]; // 3 rows, 4 columns
+gtl::array&lt;gtl::array&lt;int, 4&gt;, 3&gt; matrix; // 3 rows, 4 columns
+boost::multi_array&lt;double, 3&gt; array_type
+
+// 4x4 transformation matrix
+std::array&lt;std::array&lt;float, 4&gt;, 4&gt; transformMatrix = {{
+    {1.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f}
+}};
+Eigen::Matrix4f transformMatrix = Eigen::Matrix4f::Identity();</code></pre>
+<p>Which allows direct access through multiple indexing: matrix[i][j]; in the general case the index of a particular cell is computed by the formula.</p>
+<pre style="margin:1.4rem 0"><code>flat_offset = (x0 - min0)*stride0 + (x1 - min1)*stride1 + ... + (xN - minN)*strideN</code></pre>
+<p><a href="https://github.com/dsharlet/array" target="_blank" rel="noopener">https://github.com/dsharlet/array</a><br/><a href="https://github.com/libigl/eigen/blob/master/Eigen/src/Core/Matrix.h" target="_blank" rel="noopener">https://github.com/libigl/eigen/blob/master/Eigen/src/Core/Matrix.h</a></p>
+<ul><li><p>object transforms: position, rotation and scale matrices, projection matrices for the camera</p></li><li><p>physics engine: inertia matrices for rigid bodies, constraint matrices for skeletons</p></li><li><p>rendering and animation: skeletal animation, morphing and keyframe interpolation matrices</p></li><li><p>navigation: navigation meshes, traversability maps, weight matrices for path computation, spatial partitioning maps (octrees, BSP)</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/04.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>nonlinear matrix</h2>
+<pre style="margin:1.4rem 0"><code>vector&lt;vector&lt;int&gt;&gt; matrix(11035, vector&lt;int&gt;(11035));</code></pre>
+<p>It may seem strange to you that anyone would need such madness as a vector of vectors. Until you run into level and content generation. Content generation, object placement, level checking and tracing (the release build) takes substantial time, and on large maps the desire arises to parallelize this work.</p>
+<p>At first there's almost no difference, but as the map size, the number of tiles, objects and so on grows (or the number of threads), we reach a point where the threads start spending more and more time waiting for updates of shared data that has been loaded into the caches of different cores. When one of the threads changes data in the matrix, the others are forced to update that information on their side. Updating a single byte invalidates the whole cache line where that byte lives, and if it was loaded into another core's cache — this leads to its update, a kind of cache poisoning, and good cache locality in this case only gets in the way. A vector of vectors is less prone to this effect, but the best results come from a segmented octree bounded in volume, more on that below.</p>
+
+    <img src="../../assets/articles/unpacking-containers/05.jpg" alt="" class="post-image" loading="lazy" />
+<p>Navigation meshes (NavMesh) are usually built on this pattern too, which lets you implement objects of arbitrary structure, not just rectangular ones, while saving memory for storing the level's description.</p>
+<p>Matrices of such large sizes (more than 4k×4k) are quite rarely used in standard game scenarios because of the high demands on memory and compute resources. They are, however, applied in specific cases for:</p>
+<ul><li><p>large open worlds: representation of heightmaps, storing terrain traversability information, megamaps</p></li><li><p>procedural content generation: generating and storing detailed landscapes, voxel representations of 3D spaces</p></li><li><p>simulation of physical phenomena: fluid simulation, runtime simulation of destruction and deformation</p></li><li><p>dynamic maps: game fields with a high level of detail, for tracking interactions between players/objects, for precomputing visibility, graphs of potential paths for NPCs</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/06.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>linear dynamic matrix</h2>
+<p>Dynamic multidimensional arrays, mostly two- and three-dimensional, are a fundamental data structure in game development, providing flexibility in development, from a simple tile-based level map all the way to whole voxel models and use in simulating physical processes. And tile and voxel maps won't necessarily appear only in isometric strategies — they are also, in themselves, convenient structures for organizing a level's working space, dividing it into zones, areas and triggers.</p>
+<pre style="margin:1.4rem 0"><code>struct Tile {
+    TileType type;
+    bool walkable;
+    float height;
+    // ...
+};
+
+struct TileMap {
+    gtl::vector&lt;Tile&gt; tiles;
+    int width, height;
+
+    TileMap(int width, int height) : width(width), height(height),
+                                     tiles(width * height) {}
+
+    Tile&amp; at(int x, int y) {
+        return tiles[y * width + x];
+    }
+
+    gtl::array&lt;Tile*, 4&gt; getNeighbors(int x, int y) {
+        gtl::array&lt;Tile*, 4&gt; neighbors = {nullptr, nullptr, nullptr, nullptr};
+        if (x &gt; 0) neighbors[0] = &amp;at(x-1, y);
+        if (y &gt; 0) neighbors[1] = &amp;at(x, y-1);
+        if (x &lt; width-1) neighbors[2] = &amp;at(x+1, y);
+        if (y &lt; height-1) neighbors[3] = &amp;at(x, y+1);
+        return neighbors;
+    }
+};</code></pre>
+<pre style="margin:1.4rem 0"><code>class VoxelObj {
+private:
+    gtl::vector&lt;uint8_t&gt; voxels;
+    int width, height, depth;
+
+public:
+    VoxelObj(int width, int height, int depth)
+        : width(width), height(height), depth(depth),
+          voxels(width * height * depth) {}
+
+    uint8_t&amp; at(int x, int y, int z) {
+        return voxels[(z * height + y) * width + x];
+    }
+
+    Mesh generateMesh() {
+        // build a model from the voxel grid
+        // ...
+    }
+};</code></pre>
+<ul><li><p>Simulation of physical systems (springs, pendulums)</p></li><li><p>Character animation using linear models</p></li><li><p>Prediction of object movement</p></li><li><p>Managing objects with smooth transitions between states</p></li><li><p>Simulating vehicle behavior</p></li></ul>
+<p>here we smoothly move on to vectors, which also have some peculiarities.</p>
+
+    <img src="../../assets/articles/unpacking-containers/07.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>linear vector</h2>
+<p>The most ordinary dynamic array (<a href="https://en.cppreference.com/w/cpp/container/vector" target="_blank" rel="noopener">https://en.cppreference.com/w/cpp/container/vector</a>), one of the most frequently used containers of the C++ standard library, which is especially useful in development when used wisely.</p>
+<p>It's a chunk of memory allocated on the heap that is automatically managed when certain operations happen to the elements. Elements are stored contiguously in memory, you can access them randomly in constant time, and it grows (and copies when necessary) when new elements are added.</p>
+<p>It provides amortized O(1) complexity for adding elements to the end, provided there is free space. This is important, because many people forget about array reallocation and the problems associated with it. The growth mechanism here is very simple: when there aren't enough free elements, a new block of memory is allocated (the size depends on the growth policy), then the elements are copied/moved from the old block into the new one (there can be several variants here, from a simple memcpy on POD data to a deep-copy pass, and this is perhaps the main downside of this class), then the old memory is freed. That is, at the moment of growth we'll need 2x the memory to store all the elements. But overall this mechanism provides O(1) complexity for the push_back operation, and let's not forget that individual operations can be expensive, for example insertion at the beginning.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T, class Allocator = std::allocator&lt;T&gt;&gt;
+class vector {
+private:
+    T* _begin;      // Pointer to the first element
+    T* _end;        // Pointer to the position past the last element
+    T* _capacity;   // Pointer to the end of the allocated memory
+    Allocator _alloc; // The allocator in use
+    // ...
+};</code></pre>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | _begin    | --+                         |
+|  +-----------+   |                         |
+|                  |                         |
+|  +-----------+   |                         |
+|  | _end      | --+------+                  |
+|  +-----------+   |      |                  |
+|                  |      |                  |
+|  +-----------+   |      |                  |
+|  | _capacity | --+------+------+           |
+|  +-----------+   |      |      |           |
+|                  |      |      |           |
+|  +-----------+   |      |      |           |
+|  | _alloc    |   |      |      |           |
+|  +-----------+   |      |      |           |
+|                  v      v      v           |
+|  +-------------------------------+         |
+|  | CONTIGUOUS MEMORY BLOCK       |         |
+|  |+------+------+------+------+  |         |
+|  || T[0] | T[1] | T[2] | ...  |  |         |
+|  |+------+------+------+------+  |         |
+|  |&lt;------ size() -------&gt;|       |         |
+|  |&lt;-------- capacity() ---------&gt;|         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<pre style="margin:1.4rem 0"><code>// Preallocating memory
+vector&lt;GameObject&gt; entities;
+entities.reserve(128);
+
+// Optimizing element insertion
+entities.resize(128);
+for (int i = 0; i &lt; 128; ++i) {
+    entities[i] = GameObject();
+}
+
+// Fast removal without preserving order
+entities[idx] = gtl::move(entities.back());
+entities.pop_back();</code></pre>
+<ul><li><p>game objects: lists of active objects in the scene, collections of enemies, NPCs, items, event queues for processing</p></li><li><p>physics engine: storing primitives, contact lists of physical bodies, storing vertices and indices for physical meshes</p></li><li><p>graphics and rendering: vertex and index buffers for models, triangle lists, queues of objects for rendering, textures, shaders and materials</p></li><li><p>resources: object pools for reuse, resource queues for loading/unloading, asset caching</p></li><li><p>particle systems: storing and updating active particles, emitters and effects</p></li><li><p>sound: queues of sound effects, lists of active sources</p></li><li><p>AI: NPC navigation paths, decision trees and FSMs, data structures for pathfinding (A*)</p></li><li><p>events: message and event buffers, callback lists, command queues for execution</p></li><li><p>debugging: event logs, statistics</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/08.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>stable vector</h2>
+<p>Vectors are convenient and widely used, but they have a significant limitation: iterators and references to elements become invalid when a non-last element is removed or the vector is grown, unlike stable containers such as std::list or std::set, which keep references and iterators valid until the element is removed. However, stability rules out element adjacency in memory, which makes it hard to create a "stable vector" with the characteristics of std::vector. Like std::vector, it supports random-access iterators, but it sacrifices element adjacency for the sake of stability. This means that references and iterators to elements remain valid until the element is removed. An iterator obtained from end() also remains valid until the stable_vector is destroyed.</p>
+<p>In its structure it often resembles a list laid out in a contiguous region of memory.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+class stable_vector {
+private:
+    struct node {
+        T value;
+        bool valid;
+
+        template &lt;typename... Args&gt;
+        node(bool v, Args&amp;&amp;... args) : value(forward&lt;Args&gt;(args)...), valid(v) {}
+    };
+
+    vector&lt;unique_ptr&lt;node&gt;&gt; nodes;
+    ...</code></pre>
+<pre style="margin:1.4rem 0"><code>                STABLE_VECTOR&lt;T&gt;
++--------------------------------------------+
+|                                            |
+|  +-----------------------------------------+
+|  | nodes     | std::vector&lt;std::unique_ptr&lt;node&gt;&gt;  |
+|  +-----------+                             |
+|  | [0] ------|--&gt; +-----------------+      |
+|  |           |    | node            |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | value: T    | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | valid: true | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    +-----------------+      |
+|  | [1] ------|--&gt; +-----------------+      |
+|  |           |    | node            |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | value: T    | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | valid: true | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    +-----------------+      |
+|  | [2] ------|--&gt; +-----------------+      |
+|  |           |    | node            |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | value: T    | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | valid: false| | &lt;-- removed element
+|  |           |    | +-------------+ |      |
+|  |           |    +-----------------+      |
+|  | ...       |                             |
+|  | [n] ------|--&gt; +-----------------+      |
+|  |           |    | node            |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | value: T    | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    | | valid: true | |      |
+|  |           |    | +-------------+ |      |
+|  |           |    +-----------------+      |
+|  +-----------+                             |
+|                                            |
++--------------------------------------------+</code></pre>
+<ul><li><p>game objects: storing long-lived game objects that are frequently referenced, stable object identifiers available on removal</p></li><li><p>components: storing components and entities, providing stable references between components</p></li><li><p>graphics: managing resources that must stay at the same addresses, meshes and geometry referenced by level rendering systems</p></li><li><p>physics: storing physical bodies and colliders</p></li><li><p>animation: storing shared skeletons and bones</p></li><li><p>AI: storing behavior data that requires stable references, behavior archetypes, static navigation graphs and movement paths</p></li><li><p>scripting: objects referenced by external scripts, target objects of interactive actions in cutscenes and finishers, objects that must keep stable identifiers for synchronization during animation</p></li><li><p>saving and loading: objects with serialization that require stable pointers during deserialization, systems that work with partially loaded data</p></li></ul>
+<p>Used mainly for long-lived game entities and lets you keep persistent references to game objects that don't need to be revalidated on creation/removal.</p>
+<p>It's also often found in a component-based object system, where you can safely reference an object's components without the risk of getting a dangling pointer/reference when adding/removing components.</p>
+<p>Another use is graphs, to provide stable references between graph nodes even when its structure changes.</p>
+<p><a href="https://github.com/david-grs/stable_vector/blob/master/stable_vector.h" target="_blank" rel="noopener">https://github.com/david-grs/stable_vector/blob/master/stable_vector.h</a><br/><a href="https://www.boost.org/doc/libs/1_85_0/boost/container/stable_vector.hpp" target="_blank" rel="noopener">https://www.boost.org/doc/libs/1_85_0/boost/container/stable_vector.hpp</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/09.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>sparse vector</h2>
+<p>Sparse arrays are containers in which empty gaps are deliberately left between elements, which lets you implement fast insertion of new elements without having to shift a large amount of data.</p>
+<p>Imagine we need to organize an array of game units on a level, but we also want to keep the ability to partially and, as far as possible, quickly sort groups of units. Given that groups aren't infinitely sized, but usually 4-8-16-32 in a group, you can deliberately leave empty spots after inserting a new element, so that when you create a new unit you can place it in the right spot without moving all the others.</p>
+<p>This approach is used everywhere in strategies with a large number of units, for example SC2/Total Annihilation, and practically doesn't lead to runtime memory allocations. The game's developers were forced to use such a unit placement mechanism, because the technical means of that time didn't allow doing it at runtime. If a group ran out, a new one would start being created at a larger distance from the last allocated element, which is how the wait for large groups of units was balanced if the player was amassing an army.</p>
+<ul><li><p>particles and effects: insertion and removal of new particles, managing short-lived objects</p></li><li><p>level editors: placing and moving objects, undo/redo of operations without complex data reorganization, fast addition of new objects into densely packed scenes</p></li><li><p>physics: insertion of new contacts and joints, efficient insertion of new contacts during destruction</p></li><li><p>AI: dynamic BTs and FSMs, managing task priorities</p></li><li><p>animation: inserting keyframes, managing animation layers</p></li></ul>
+<pre style="margin:1.4rem 0"><code>+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| A |   |   |   | B |   |   |   | C |   |   |   | D |   | E |
++---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14
+
++---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| A |   |   |   | B | B1|   |   | C | C1|   |   | D |   | E |
++---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  0   1   2   3   4   5   6   7   8   9  10  11  12  13  14</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/10.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>packed vector</h2>
+<p>The first things that come to mind here are implementations of bit and numeric packing, for example like std::bitset, or vector&lt;float16&gt;, which let you substantially reduce the memory cost of storing certain data types.</p>
+<p>But packed vectors are often interpreted more broadly; one approach to compressing data in a std::vector is to split the data into blocks and compress each block separately. This allows random access to the data with a relatively constant access time. For example, you can use an algorithm where each block contains compressed data for elements; such a mechanism works well for data with a predictable compression ratio.</p>
+<p>This organization also fits rarely used data perfectly — "rarely" in the case of a game means data that isn't touched for seconds, for example statistics, various game metrics, inventory items, settings, quests, parts of the story and so on, i.e. data that is needed during the game from time to time, and there's no point in keeping it fully resident either.</p>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | chunks    |   vector&lt;data_chunk&gt;        |
+|  +-----------+                             |
+|  | [0]       | --+                         |
+|  | [1]       | ---+                        |
+|  | [2]       | ----+                       |
+|  | ...       |      \                      |
+|  | [n]       | ------+                     |
+|  +-----------+        \                    |
+|                         \                  |
+|  +-----------+           \                 |
+|  | data      | --+        \                |
+|  +-----------+   |         \               |
+|                  v          v              |
+|  +-------------------------------+         |
+|  | CONTIGUOUS BLOCK OF COMPRESSED DATA    |
+|  |+------------++-----------+    |         |
+|  || Chunk 0    || Chunk 1   |... |         |
+|  || offset=0   || offset=X  |    |         |
+|  || size=X     || size=Y    |    |         |
+|  |+------------++-----------+    |         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<pre style="margin:1.4rem 0"><code>template&lt;class T&gt;
+class packed_vector {
+    struct compressed_data_chunk {
+      size_t offset;
+      size_t size;
+    };
+
+    std::vector&lt;compressed_data_chunk&gt;;
+    void* data;
+}</code></pre>
+<ul><li><p>inventory: compact storage of items in players' inventories, metadata of rarely used items, storing modifiers and characteristics of equipment</p></li><li><p>quests: quest descriptions and states, rarely changed dialogues and story elements, conditions for activating and completing tasks</p></li><li><p>statistics: storing game metrics and statistics, achievement and reward progress, historical data about the player's progress</p></li><li><p>graphics: storing UV coordinates and vertex attributes, compressed textures and normal maps, levels of detail for objects far from the camera</p></li><li><p>AI: compact representation of behavior graphs, compressed decision tables for AI, data about the state of the game world for NPCs</p></li><li><p>sound: sound banks, audio file metadata, parameters and settings of sound effects</p></li><li><p>procedural generation: storing parameters for content generation, intermediate generation results, storing generation rules, storing cosmetic options</p></li></ul>
+<p>Another, but related approach is to use compression over the entire volume of data, without bothering element by element, and to unpack/pack it on access, for example using fast algorithms like LZW/Oodle on the fly.</p>
+<p>This includes compression of text data, sound, animations. It's more efficient to load whole packs of textures, sounds or animations for a model from disk, in blocks of several megabytes, but usually only a few of them are needed from a block, and keeping them all unpacked in memory would be expensive, so they sit as they were loaded. As you move over such an array you'll have a temporary proxy object that, when destroyed, will be packed up again until next time.</p>
+
+    <img src="../../assets/articles/unpacking-containers/11.jpg" alt="" class="post-image" loading="lazy" />
+<p>This approach becomes especially interesting if the compression algorithms are supported by the hardware, for example the PS5 implements Kraken (Oodle). That is, the file on disk is stored in a certain format, and when reading through the SDK you get its temporary already-unpacked copy, which goes back to disk also packed — everything works transparently through the SDK provider.</p>
+<p>The same scheme will work with ordinary in-memory data too, and all the intermediate work is taken on by the SDK, while you simply walk over the array.</p>
+<p><a href="https://github.com/claudiomattera/fixed-point-vector/blob/master/lib/include/fixedpointvector.h" target="_blank" rel="noopener">https://github.com/claudiomattera/fixed-point-vector/blob/master/lib/include/fixedpointvector.h</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/12.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>static vector</h2>
+<p>In 2007 EASTL rolled out the concept of small_vector, which had a small buffer for 16 elements inside the class itself and, when using more elements, would already go to the allocator for memory.</p>
+<p>A special case of the small_vector implementation, where we removed the ability to allocate memory, turns it into a static_vector. Almost immediately such fixed-size containers became popular in game engines, especially where dynamic memory allocation was undesirable.</p>
+<p>Unlike a regular vector or small_vector, static_vector completely avoids dynamic allocation, storing all elements in a pre-allocated fixed-size buffer. This approach provides predictable memory usage and no overhead for resource management.</p>
+<p><a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0843r2.html" target="_blank" rel="noopener">https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0843r2.html</a><br/><a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/svector.h" target="_blank" rel="noopener">https://github.com/dalerank/Akhenaten/blob/master/src/core/svector.h</a><br/><a href="https://github.com/gnzlbg/static_vector" target="_blank" rel="noopener">https://github.com/gnzlbg/static_vector</a><br/><a href="https://github.com/electronicarts/EASTL/blob/master/include/EASTL/fixed_vector.h" target="_blank" rel="noopener">https://github.com/electronicarts/EASTL/blob/master/include/EASTL/fixed_vector.h</a></p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T, size_t Capacity&gt;
+class static_vector {
+private:
+    size_t size_ = 0;
+    alignas(T) byte buffer_[Capacity * sizeof(T)];
+
+    T* data() { return reinterpret_cast&lt;T*&gt;(buffer_); }
+    const T* data() const { return reinterpret_cast&lt;const T*&gt;(buffer_); }
+    ....
+}</code></pre>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | size_     | current number of elements  |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | data()    | --+                         |
+|  +-----------+   |                         |
+|                  |                         |
+|                  v                         |
+|  +-------------------------------+         |
+|  | ALIGNED STATIC BUFFER         |         |
+|  | alignas(T) byte buffer_       |         |
+|  |+------+------+------+------+  |         |
+|  || T[0] | T[1] | T[2] | ...  |  |         |
+|  |+------+------+------+------+  |         |
+|  |&lt;-- size_ --&gt;|                 |         |
+|  |&lt;-------- Capacity -----------&gt;|         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<ul><li><p>game loop: visible objects for rendering, temporary buffers for processing input data, lists of objects for physics processing, lists of a character's active abilities</p></li><li><p>physics: storing contact points, results of spatial queries</p></li><li><p>particles: buffers of active particles in emitters, buffers of particles closest to the camera, temporary structures for sorting particles</p></li><li><p>rendering: buffers for render commands, lists of objects within the frustum, buffers for sorting by materials</p></li><li><p>sound: buffers for active sound sources</p></li><li><p>multithreading: thread-local buffers, temporary structures for tasks in a thread pool, work queues</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/13.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>small vector</h2>
+<p>This is a container that first uses stack memory and, when it runs out, switches to dynamic allocation. It supports insertion and removal at the end in O(1), and in the middle in O(n). It lets you specify the element type, the size of the built-in storage and the allocator type. In C++17 it's present in the std::pmr::vector implementation.</p>
+<p>The approach is analogous to small string optimization (SSO); it reduces the overhead of memory allocation and improves performance in scenarios with a small number of elements. If you're sure that your vector will always be small, you can keep all the elements on the stack and avoid expensive heap allocations. Such cases come up more often than it seems.</p>
+<p>On my current project, analysis of memory usage showed that the vector size varies from 2 to 80 elements in 80% of cases, and most short-lived objects don't exceed a size of 512 bytes. That is, roughly 40kb on the stack in the worst case will be enough to get rid of most allocations. And in some cases this replacement with small_vector or an analog of pmr::vector gave a noticeable reduction in frame time of 10-15%.</p>
+<p>The implementation will overlap with the static vector, but the main interest lies in the memory allocation function for new elements, which, when it goes past the boundary of the built-in buffer, will allocate memory on the heap and from then on work there.</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T, size_t MaxSize = 8, typename NonReboundT = T&gt;
+struct small_buffer_vector_allocator{
+    alignas(alignof(T)) std::byte m_smallBuffer[MaxSize * sizeof(T)];
+    std::allocator&lt;T&gt; m_alloc{};
+    bool m_smallBufferUsed = false;
+
+    T* allocate(const size_t n) {
+       if (n &lt;= MaxSize) {
+            m_smallBufferUsed = true;
+             return reinterpret_cast&lt;T*&gt;(&amp;m_smallBuffer);
+        }
+
+        m_smallBufferUsed = false;
+        return m_alloc.allocate(n);
+    }
+
+    void deallocate(void* p, const size_t n) {
+      if (&amp;m_smallBuffer != p)
+          m_alloc.deallocate(static_cast&lt;T*&gt;(p), n);
+      m_smallBufferUsed = false;
+    }
+}</code></pre>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | size_     | current number of elements  |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | capacity_ | total capacity              |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | data_     | --+                         |
+|  +-----------+   |                         |
+|                  |                         |
+|  +-----------+   |                         |
+|  | alloc_    |   |                         |
+|  +-----------+   |                         |
+|                  |                         |
+|  +---------------------+                   |
+|  | LOCAL STORAGE       |                   |
+|  | (built-in buffer)   |&lt;------+           |
+|  | alignas(T) buffer_[N]       |           |
+|  +---------------------+       |           |
+|                                |           |
+|                  Points to:    |           |
+|                                v           |
+|  +-------------------------------+         |
+|  | DATA (local or on the heap)   |         |
+|  |+------+------+------+------+  |         |
+|  || T[0] | T[1] | T[2] | ...  |  |         |
+|  |+------+------+------+------+  |         |
+|  |&lt;-- size_ --&gt;|                 |         |
+|  |&lt;-------- capacity_ ----------&gt;|         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<ul><li><p>events and commands: buffers for user-input event queues, command lists, temporary containers for game actions</p></li><li><p>physics: storing contact lists during collisions (usually 1-4 contacts), temporary intersection-check buffers, accumulating geometry trace results</p></li><li><p>animation: a character's animation tracks, currently blended animations, buffers for skeletal transforms</p></li><li><p>objects: entity components (usually 5-10 components), lists of child objects in scenes, collections of states and effects</p></li><li><p>rendering: buffers for render passes, material lists for objects, active light sources affecting an object</p></li><li><p>resources: lists of active resources for loading/unloading, object dependencies (usually few), caches of recently used resources</p></li><li><p>AI: short navigation segments between path points, lists of targets for enemy AI</p></li><li><p>physics: buffers for active objects, lists of dynamic objects near the player, lists of active connections between objects, joint replications</p></li></ul>
+<p><a href="https://www.boost.org/doc/libs/1_60_0/doc/html/boost/container/small_vector.html" target="_blank" rel="noopener">https://www.boost.org/doc/libs/1_60_0/doc/html/boost/container/small_vector.html</a><br/><a href="https://llvm.org/doxygen/classllvm_1_1SmallVector.html" target="_blank" rel="noopener">https://llvm.org/doxygen/classllvm_1_1SmallVector.html</a><br/><a href="https://llvm.org/doxygen/SmallVector_8h_source.html" target="_blank" rel="noopener">https://llvm.org/doxygen/SmallVector_8h_source.html</a><br/><a href="https://github.com/facebook/folly/blob/main/folly/docs/small_vector.md" target="_blank" rel="noopener">https://github.com/facebook/folly/blob/main/folly/docs/small_vector.md</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/14.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>dirty_vector</h2>
+<p>This is a small variation of the standard container, which marks elements as removed and moves them to the end of the allocated region (or leaves them in place), but doesn't actually free the memory until an explicit cleanup function is called.</p>
+<p>Instead of immediate removal, elements are simply marked as "dirty" (for example, with an additional flag or a special value). The real removal happens when clean() (or compact()) is called, which removes all the marked elements and, if necessary, shrinks the memory, while removal operations are performed in O(1), since they don't require shifting elements.</p>
+<p>Often used for objects within a frame, to shift the work time (removal, moving, copying) on them closer to the end of the frame, for safe removal without modifying the array's structure and minimizing work with allocators during frequent addition/removal of objects.</p>
+<pre style="margin:1.4rem 0"><code>+--------------------------------------------+
+|                                            |
+|  +-----------+                             |
+|  | size_     | visible size (without dirty)|
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | real_size_| actual size with dirty      |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | capacity_ | total capacity              |
+|  +-----------+                             |
+|                                            |
+|  +-----------+                             |
+|  | data_     | --+                         |
+|  +-----------+   |                         |
+|                  |                         |
+|  +-----------+   |                         |
+|  | dirty_flags| -|--+                      |
+|  +-----------+   |  |                      |
+|                  v  v                      |
+|  +-------------------------------+         |
+|  | CONTIGUOUS MEMORY BLOCK       |         |
+|  |+------+------+------+------+  |         |
+|  || T[0] | T[1] | T[2] | ...  |  |         |
+|  || clean| dirty| clean| ...  |  |         |
+|  |+------+------+------+------+  |         |
+|  |&lt;--- size_ ---&gt;|               |         |
+|  |&lt;------ real_size_ -----------&gt;|         |
+|  |&lt;-------- capacity_ ----------&gt;|         |
+|  +-------------------------------+         |
+|                                            |
++--------------------------------------------+</code></pre>
+<ul><li><p>particles: when particles "die", they can be marked as removed, but actually removed only after processing all the particles in the frame, to avoid iteration problems.</p></li><li><p>game objects: objects are marked for removal (for example, enemies, projectiles), but their actual removal is deferred until the end of the frame, to avoid problems with collisions and interactions.</p></li><li><p>object pools: objects aren't actually removed, but marked as inactive and can be reused later.</p></li><li><p>events: for safe removal of event listeners during the processing of the event loop.</p></li><li><p>components: deferred removal of entities and their components, to avoid problems iterating over systems.</p></li><li><p>rendering: grouping operations on graphics objects and minimizing buffer rebuilds.</p></li><li><p>physics: to avoid problems with removing objects in the middle of a simulation step.</p></li><li><p>memory: minimizing fragmentation during frequent creation and removal of objects, especially on consoles.</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/15.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>buddy_vector</h2>
+<p>The concept of the container appeared in the Civilization series of games, as an answer to the need for a simple algorithm for storing a history of values; for example, this is how the movement history of units over the last N turns was stored for smooth interpolation of movements. It's all still based on the standard vector, but with a special element placement scheme. Instead of sequential placement, elements in such a vector are placed "every other one (N)", leaving empty cells between them. This lets you implement a shift of elements without physically moving them in memory.</p>
+<p>The main idea is that the container stores several logical arrays (in our case 2) in one physical one — elements are placed either at even or at odd positions depending on the current state of the offset. The small distance between history elements reduces the overall cost of processing such a structure, and the linear placement of all elements lets you process them all at once without switching between separate arrays, as if they were implemented separately for each object.</p>
+<p>After a certain event completes, the offset changes on element access and writing/reading happens to the neighboring cell. If needed, you can treat the current block as a separate array with sequential access and size cap.</p>
+<ul><li><p>historical data and interpolation: for storing previous states of objects (unit positions, animations), smooth interpolation or showing movement history.</p></li><li><p>undo/redo: lets you efficiently store and move between states without copying all the data.</p></li><li><p>replays and rewinds: efficiently stores key event frames, allowing fast fast-forward and rewind.</p></li><li><p>movement prediction: stores predicted positions and the ability to quickly switch between them when real data arrives.</p></li><li><p>physics: storing and updating collision data over several frames, synchronizing states between the local simulation and the one sent from the server.</p></li><li><p>animations: fast access to several animation frames with the ability to interpolate between them.</p></li><li><p>AI: fast switching between different weights to adapt AI behavior based on the history of the player's actions.</p></li></ul>
+<pre style="margin:1.4rem 0"><code>┌───────────────────────────────────────────────────────┐
+│                    BUDDY VECTOR                       │
+├───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┤
+│ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │10 │11 │12 │13 │  ← index = i + offset % cap
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│ A │   │ B │   │ C │   │ D │   │ E │   │ F │   │ G │   │  ← values
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│ x |   │ x │   │ x │   │ x │   │ x │   │ x │   │ x │   │  ← occupied (x) and empty ( )
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+      ↑       ↑       ↑       ↑       ↑       ↑
+      │       │       │       │       │       │
+      └───────┴───────┴───────┴───────┴───────┘</code></pre>
+
+<h2>Iterators and pointers</h2>
+<p>Although this topic is already familiar to most developers, it's worth looking at it specifically in the context of non-standard containers.</p>
+<p>What is an iterator — it's a "lightweight" object, analogous to a T* pointer. Each container has its own iterator type. iter++ moves the iterator to the next element. *iter returns a reference to the current element, which is important for working with loops (for example, range-for).</p>
+<p>Why do iterators and pointers get invalidated? Invalidation means that an iterator or pointer stops pointing to a correct object. This happens when the container's structure changes; in std::vector after push_back() references to elements may "go stale" if a memory reallocation happened.</p>
+<p>In std::deque push_back() usually doesn't invalidate references to existing elements, since new blocks are added without redistributing the old ones.</p>
+<p>Non-standard containers (for example, static_vector, flat_map) have their own peculiarities of iterator invalidation; for example, in static_vector invalidation happens only when going past the capacity and is effectively a crash. In small_vector the transition from the internal buffer to dynamic memory invalidates all iterators.</p>
+
+    <img src="../../assets/articles/unpacking-containers/16.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>deque</h2>
+<p>Double-ended queues (deque, double ended queue) are containers that can be expanded or shrunk from both ends. Unlike vector, which is a single contiguous array, deque lets you insert elements both at the end (using push_back()) and at the beginning (push_front()). Vectors don't have this ability, since they only support efficient addition at the end.</p>
+<p>It's implemented as a set of fixed-size blocks (chunks) linked together. For example, each block can store 16–512 elements, and when adding elements at the beginning or end a new block is created only when the current ones are full. This lets you perform push_front() and push_back() in O(1) without moving existing elements.</p>
+<ul><li><p>events: processing events with priorities, where new high-priority events are added at the beginning and ordinary ones at the end.</p></li><li><p>pathfinding: bidirectional A* search, where adding and removing nodes from both ends is required.</p></li><li><p>command history: undo/redo systems, new commands are added at the end, and on undo they can be added at the beginning.</p></li><li><p>animations: animation queues, where you can insert an urgent animation at the beginning without moving already scheduled ones.</p></li><li><p>physics: storing a sequence of collisions and contacts, new priority contacts are added at the beginning.</p></li><li><p>AI: an action scheduler, actions can be added either at the beginning or at the end of the sequence depending on priority and the player's behavior.</p></li><li><p>input: buffering user input, where events (for example movement) have priority over mouse events</p></li><li><p>particles: for efficiently managing the particle life cycle, especially when they must be processed in a certain order (smoke and water, after shards and glass).</p></li><li><p>resources: managing the loading and unloading of assets with dependencies</p></li></ul>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+struct simple_deque
+{
+    T* elements;
+    T* first;
+    T* last;
+    size_t capacity;
+};</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/17.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>bcdeque (block-compressed)</h2>
+<p>A variation of the ordinary deque, designed for efficiently storing large double-ended queues (deque) with rarely used regions. It's used to reduce memory usage, and stores rarely used blocks in compressed form, automatically compressing and decompressing blocks as needed. Since the chunks aren't linked to each other, this makes it possible to amortize the complexity of operations to be close to an ordinary deque.</p>
+<pre style="margin:1.4rem 0"><code>+----------------------------------+
+| BLOCK_COMPRESSED_DEQUE&lt;T&gt;        |
+|                                  |
+| +----------------+               |
+| | blocks         |---+           |
+| +----------------+   |           |
+|                      v           |
+| +-----+-----+-----+-----+        |
+| | B0  | B1  | B2  | ... |        |
+| |plain|compr|plain|     |        |
+| +-----+-----+-----+-----+        |
+|   |      |     |                 |
+|   v      v     v                 |
+| +----+ +----+ +----+             |
+| |Data| |Zlib| |Data|             |
+| +----+ +----+ +----+             |
+|                                  |
++----------------------------------+</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/18.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>bounded_priority_deque</h2>
+<p>For a certain kind of task, games also use special structures, like bpdeque. With their help, territory patrol tasks are solved efficiently (NPC guards walk control points with minimal repetition and optimally in terms of memory), in strategies for resource-gathering pathfinding (units optimize routes for collecting wood, iron and so on scattered across the map), in economic simulators they are used to build routes between notional cities and factories, to build road networks and so on.</p>
+<p>There are plenty of examples of use in games: in Civilization transport units and workers use bpdeque for movement tasks over the graph of tiles, in Witcher3 these structures are the basis of the daily movement cycles of townsfolk in settlements, so they don't crowd and don't repeat. In combat it's used to coordinate the actions of units in a group, picking different points on the player's orbit and not letting them attack at the same time.</p>
+<p>Imagine an ordinary queue where priority tasks are pushed to the front, and unimportant ones are thrown out if there isn't enough room. When a lot of events happen in the game at once, we may simply not have time to handle them. This is where such a structure helps, guaranteeing that important tasks will be done first.</p>
+<p>Elements are stored in a partially sorted array, and when a new element is added, the queue is rebuilt so that important elements end up closer to the beginning, and if the queue is full, those that end up at the "tail" are thrown out.</p>
+<p>The main advantage of such a queue is speed and predictability. You always know in advance how much memory will be required, and you can get the top elements.</p>
+<pre style="margin:1.4rem 0"><code>+-----------------------------------+
+|  [HEAD]                    [TAIL] |
+|  +---+---+---+---+---+---+---+   |
+|  | 5 | 3 | 2 | 4 | 7 | 1 | 6 |   |  &lt;- Elements with priorities
+|  +---+---+---+---+---+---+---+   |
+|    ^               ^             |
+|    |               |             |
+| min_priority    max_priority     |
+|    |               |             |
+| [MIN_BOUND]    [MAX_BOUND]       |
++-----------------------------------+
+
+
+INSERTION WITH PRIORITY:
+
+   insert(element, priority)
+
+   If priority &lt; MIN_BOUND:
+      +---+---+---+---+---+---+---+---+
+      | X | 5 | 3 | 2 | 4 | 7 | 1 | 6 |  &lt;- Insert on the left (HEAD)
+      +---+---+---+---+---+---+---+---+
+
+   If priority &gt; MAX_BOUND:
+      +---+---+---+---+---+---+---+---+
+      | 5 | 3 | 2 | 4 | 7 | 1 | 6 | X |  &lt;- Insert on the right (TAIL)
+      +---+---+---+---+---+---+---+---+
+
+   Otherwise (find position by priority):
+      +---+---+---+---+---+---+---+
+      | 5 | 3 | X | 2 | 4 | 7 | 6 |  &lt;- Insert in the middle
+      +---+---+---+---+---+---+---+</code></pre>
+<pre style="margin:1.4rem 0"><code>RESOURCE GATHERING IN STRATEGIES:
+
+         [Wood]    [Iron]
+            |         |
+   [BASE]---+----[Stone]
+            |
+      [Gold]
+
+   BPDeque = [Iron, Wood, Gold, Stone]
+
+   - Priority = resource_value / distance_from_current_position
+   - Limit = max number of resources in the unit's memory
+   - The unit moves toward HEAD for the optimal route</code></pre>
+<pre style="margin:1.4rem 0"><code>Patrol points:
+
+   [S]---[A]---[B]
+    |     |     |
+   [E]---[D]---[C]
+
+   BPDeque = [S, A, B, C, D, E]  &lt;- Control points in traversal order
+
+   - Priority = time of last visit
+   - MIN_BOUND = current time - max interval
+   - The guard always goes to the HEAD of the queue
+   - After a visit, the point is moved to TAIL with an updated priority</code></pre>
+<p><a href="https://rmmilewi.github.io/files/lockfreequeue16.pdf" target="_blank" rel="noopener">https://rmmilewi.github.io/files/lockfreequeue16.pdf</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/19.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>intrusive_deque/list</h2>
+    <img src="../../assets/articles/unpacking-containers/20.jpg" alt="" class="post-image" loading="lazy" />
+<p>The elements contain built-in pointers, which removes the need for a separate array of pointers and lets you place objects in custom allocators, pools and so on. Such structures work especially well in combination with an object pool (intrusive_deque + object_pool): the object pool quickly hands out objects, the deque lets you quickly sort and process them as needed. It's used mainly for temporary objects (particles, projectiles, events, footstep sounds, collisions and so on).</p>
+<pre style="margin:1.4rem 0"><code>typedef struct nodes {
+  struct list *next;
+} nodes;
+
+typedef struct item {
+  int val;
+  nodes items;
+} item;</code></pre>
+<p>Besides lower memory consumption, intrusive structures have better cache locality, which lets you iterate over them faster. In ordinary lists/deques, creating a new object and adding it to the list requires two allocations: one for the object and one for the list node, while here only one allocation is needed (the technical structure is embedded into the object itself) and it gives us fewer errors when working with raw memory. On top of that, we get the ability to debug errors better, because the technical data always lies nearby.</p>
+<p>Nested lists also suffer less from cache misses. Iterating over an ordinary list requires first accessing the list of nodes, then the list of data and the data itself, while an intrusive one only dereferences the next node (and possibly a prefetch load, if we took care of it), and while we're doing the work on the data, the processor loads the data of the next element into the cache.</p>
+<pre style="margin:1.4rem 0"><code>+----------------------------------+
+| INTRUSIVE_DEQUE&lt;T&gt;               |
+|                                  |
+| +----------------+               |
+| | head           |---+           |
+| +----------------+   |           |
+| | tail           |---|---------+ |
+| +----------------+   |         | |
+|                      v         v |
+| +------+      +------+      +------+
+| |Node 0|&lt;----&gt;|Node 1|&lt;----&gt;|Node 2|
+| |      |      |      |      |      |
+| |Value |      |Value |      |Value |
+| +------+      +------+      +------+
+|                                  |
++----------------------------------+</code></pre>
+<p>Intrusive structures are often used for working with objects that are frequently added and removed: the state of game objects (alive, killed, visible, hidden and so on), the list of active entities (NPCs, bullets, particles), in the physics engine for storing active collisions, in rendering for tracking the objects being drawn.</p>
+<ul><li><p>particles: sorting by lifetime for efficient removal, sorting by depth for correct alpha blending for smoke, fire, storing movement history with a bounded size</p></li><li><p>physics: collision queue, physics events</p></li><li><p>projectile pools: efficient reuse of projectile objects</p></li><li><p>sound: prioritizing sounds depending on volume and distance, managing background and one-shot sounds, character footsteps, managing many simultaneous footstep sounds</p></li><li><p>AI: behavior trees, task queues, sorting actions by their utility, managing NPC reactions to events in the world, managing NPC alert levels</p></li><li><p>timers and deferred calls: a queue of functions to call, splitting update logic into stages</p></li><li><p>LOD: LOD updates for nearby objects, texture managers, managing texture loading</p></li></ul>
+<p><a href="https://elixir.bootlin.com/linux/v5.2/source/include/linux/list.h" target="_blank" rel="noopener">https://elixir.bootlin.com/linux/v5.2/source/include/linux/list.h</a><br/><a href="https://github.com/electronicarts/EASTL/blob/master/include/EASTL/intrusive_list.h" target="_blank" rel="noopener">https://github.com/electronicarts/EASTL/blob/master/include/EASTL/intrusive_list.h</a><br/><a href="https://github.com/boostorg/intrusive/blob/develop/example/doc_unordered_set.cpp" target="_blank" rel="noopener">https://github.com/boostorg/intrusive/blob/develop/example/doc_unordered_set.cpp</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/21.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>octree</h2>
+<p>Three-dimensional levels require efficient methods of organizing and manipulating spatial data (enemies, spawn points, triggers, computing physical interactions and so on). Among the many spatial data structures, a special place is held by the octree — a hierarchical structure that recursively divides three-dimensional space into eight smaller parts.</p>
+
+    <img src="../../assets/articles/unpacking-containers/22.jpg" alt="" class="post-image" loading="lazy" />
+<p>The main idea of an octree is the recursive division of space into eight equal subspaces (octants). Each octant can be further divided into eight smaller octants, and so on until the required level of detail is reached.</p>
+<p>Building an octree begins with creating a root node representing the entire space of the scene. This node is divided into eight equal parts by drawing three mutually perpendicular planes through the center of the node. The resulting eight octants become the children of the root.</p>
+<p>The division rule is usually tied to the density of objects in the octant. When the number of objects in a node exceeds some threshold value, the node is divided. This lets you adapt the structure of the octree to the distribution of objects in space, devoting more compute resources to areas with a large number of objects.</p>
+<p>Inserting an object into the octree begins at the root node, then we determine which octants the object is in, and insert it into the corresponding child nodes. If the number of objects exceeds the limit, we divide the node into octants.</p>
+<p>In the renderer it's used for a coarse determination of object visibility and for culling those that are behind the camera frustum, or outside the player's field of view. The octree lets you quickly determine which octants are outside the camera and simply not send objects from there for drawing.</p>
+<p>The second use: physical interactions between the player and objects. The octree lets you reduce the number of checks similarly to the camera case, discarding pairs of objects that are in different octants of space. Instead, we'll only check those objects that are in the same or neighboring nodes of the octree.</p>
+<p>During level generation, octrees help balance the number of objects in each area, or set generation rules and speed up various checks.</p>
+<p>For navigation systems, octrees let you generate graphs for fast checks of the reachability of areas between the player and units.</p>
+<p>The segmented octree concept extends this idea, allowing octants to be created only where it's permitted. Space is divided not only into octants, but also into segments for more efficient memory management, and in each of the segments its own segmentation rules can be set.</p>
+<p><a href="https://github.com/attcs/Octree" target="_blank" rel="noopener">https://github.com/attcs/Octree</a><br/><a href="https://github.com/Eduardop/Octree" target="_blank" rel="noopener">https://github.com/Eduardop/Octree</a></p>
+
+<h3>quadtree/btree</h3>
+<p>Tree-like structures similar to the octree, which divide space respectively into four quadrants and two parts. Each node of a quadtree is a rectangular area that can be recursively divided into four smaller quadrants. This structure is very efficient for spatial queries, navigation, storing statistical data and fast checks at the level.</p>
+<p>One of the most common cases is optimizing collision detection in games — there's no point in fully running physics simulation on objects that are invisible or far from the player in most cases. And in both two- and three-dimensional spaces, before a heavy geometry check you can do a fast check against the level's representation in 2D space, or use a quadtree to reduce the number of checks before the main query. There's no point in checking whether a ray passes through the level geometry if the objects are in unconnected or blocked quadrants. There's no point in fully updating units in areas that are invisible or inaccessible to the player, it only eats up frame time.</p>
+<p>Or before precisely computing a path to some point, a path can first be built over a simplified 2D map to check whether success is possible. In AI a system of LOD-ing the logic is often used as you move away from the player or out of their sight; for example, leg collisions, inverse kinematics or collisions in general are turned off — no one will see that a unit cut through a corner along a simplified path. Although there's one exception here: teeth must always have a full collision model, that's just how it's done in game development, you see.</p>
+<p>Yes, games almost always cheat in navigation and AI, trying to simplify computations wherever possible, otherwise no amount of resources would be enough to keep things running — this doesn't apply to teeth, of course.</p>
+<ul><li><p>rendering (logical culling in 2D): lets you quickly determine which objects don't fall into the camera's view area, the view areas of the player or NPCs, or are occluded by other objects</p></li><li><p>physics: used to speed up collision checks, since it lets you quickly find potentially interacting objects. Physics engines such as PhysX, Havok, Bullet actively use quadtrees or variations of them to presort objects for possible contact</p></li><li><p>nearest-object detection (proximity queries): helps quickly find the nearest enemies, targets or areas of interest, actively used in Age of Empires, StarCraft for finding units.</p></li><li><p>streaming: dividing the world for streaming load (Streaming Worlds) for large worlds, such as in (Skyrim, GTA V), use quadtrees and octrees to determine the area that loads parts of the level.</p></li><li><p>navigation: used for AI navigation, determining coverage zones or blocks of space for determining obstacles and lines of sight.</p></li><li><p>particles and effects (particle systems): particles (smoke, fire, sparks) for more effective display and avoiding clustering are placed in leaf octants or quads</p></li></ul>
+
+    <img src="../../assets/articles/unpacking-containers/23.jpg" alt="" class="post-image" loading="lazy" />
+
+    <img src="../../assets/articles/unpacking-containers/24.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>object_pool</h2>
+<p>They prevent memory fragmentation and the expensive operations of allocating/freeing memory. Instead of creating and destroying objects (bullets or particles, effects), memory for a fixed number of objects is allocated in advance (and possibly they are instantiated) and reused for work without removing the object.</p>
+<p>When an object isn't needed, it's either "frozen" (notionally moved below the level for models) or reset to its initial state, for example a T-pose at the spawn point. The main point of this container is that it holds "live" objects ready for work; it's cheaper for performance to keep a dozen loaded objects in memory than to create them one at a time at the needed moment.</p>
+<ul><li><p>bullet pool: bullets and rockets are created and destroyed very quickly. If you allocate memory for a new object each time, this leads to fragmentation and reduced performance</p></li><li><p>particle systems: particles of smoke, fire, sparks and other effects need to be created quickly and in large numbers, preferably without reallocations</p></li><li><p>AI: when an enemy "dies", its object isn't destroyed, but reset to its initial state and moved to the inactive pool (physically the model can be moved below the scene). When a new enemy appears, it's taken from the pool instead of creating a new one.</p></li><li><p>decals: decals in GTA V, car objects, NPCs or tire tracks stay active only in the player's zone. When they leave, they're deactivated but not removed, so they can be reused later. The size of this pool is fairly large, but not unlimited — you can overload this system and see old objects disappear as new ones appear</p></li><li><p>ui pooling: when you need to have many floating names, damage popups, effect indicators and so on. These elements aren't created anew each time, but taken from the pool.</p></li><li><p>navigation (path pooling): in Age of Empires computed paths aren't destroyed after completion (they're cached for close entry/exit points), but used for other units, to reduce the load on the pathfinding system.</p></li></ul>
+<pre style="margin:1.4rem 0"><code>┌───────────────────────────────────────┐
+│           Object Pool                 │
+│         (Inactive Objects)            │
+├───────┬───────┬───────┬───────┬───────┤
+│  [O1] │  [O2] │  [O3] │  [O4] │  [O5] │
+└───────┴───────┴───────┴───────┴───────┘
+   ▲       │               ▲       ▲
+   │       ▼               │       │
+┌──┴───────────────────────┴───┐   │
+│         Active Objects       │   │
+├──────────────────────────────┤   │
+│  AI      ────► [O2]          │   │
+│  Phys    ────► [O3]          │   │
+└──────────────────────────────┘   │
+                                   │
+                                Render  ────► [O5]</code></pre>
+<pre style="margin:1.4rem 0"><code>template &lt;class T, size_t N&gt;
+class Pool {
+public:
+    using const_iterator = typename std::array&lt;T,N&gt;::const_iterator;
+
+    template&lt;class ...Args&gt;
+    Pool(Args&amp;&amp; ...args)
+        :num_of_avail_(N), storage_{}, status_{}
+    {
+        storage_.fill(T{std::forward&lt;Args&gt;(args)...});
+        status_.set();
+    }
+
+    ...
+
+ private:
+    size_t num_of_avail_;
+    std::array&lt;T,N&gt; storage_;
+    std::bitset&lt;N&gt; status_;
+};</code></pre>
+<p><a href="https://github.com/massimo-marino/object-pool" target="_blank" rel="noopener">https://github.com/massimo-marino/object-pool</a><br/><a href="https://gameprogrammingpatterns.com/object-pool.html" target="_blank" rel="noopener">https://gameprogrammingpatterns.com/object-pool.html</a><br/><a href="https://github.com/bitshifter/objectpool" target="_blank" rel="noopener">https://github.com/bitshifter/objectpool</a><br/><a href="https://www.boost.org/doc/libs/1_83_0/boost/pool/object_pool.hpp" target="_blank" rel="noopener">https://www.boost.org/doc/libs/1_83_0/boost/pool/object_pool.hpp</a></p>
+
+    <img src="../../assets/articles/unpacking-containers/25.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>ring/circullar_buffer</h2>
+<p>They work like a looped tape. When the data reaches the end of the buffer, writing continues from the beginning. These structures are ideal for particle systems, the history of the player's actions, logs or input buffering.</p>
+<p>The basis of a ring buffer is an ordinary fixed-size array. To track positions we set up two pointers: head and tail. The head indicates where we'll read elements from, and the tail where we'll write new ones. When adding a new element, we write it at the tail's position and move the tail forward.</p>
+<p>When we read an element, we take it from the head's position and move the head forward. The most interesting thing happens when the pointers reach the end of the array — they simply "jump" to the beginning. This is what creates the effect of a ring or circle.</p>
+<p>Ring buffers are often used in situations where data arrives in a constant stream and must be processed sequentially: audio, video, event history — new fragments are added at the end, processed ones are removed from the beginning. Exchanging events between the game's subsystems (input processing, UI) or threads (the task system).</p>
+<p>There's a small ambiguity when working — determining whether the buffer is full or empty. In both of these cases head can equal tail; an alternative approach is to leave one position empty. In this case the buffer is considered full when the next position after tail coincides with head.</p>
+<p><a href="https://github.com/dalerank/Akhenaten/blob/master/src/core/circullar_buffer.h" target="_blank" rel="noopener">https://github.com/dalerank/Akhenaten/blob/master/src/core/circullar_buffer.h</a><br/><a href="https://github.com/DNedic/lockfree/blob/main/lockfree/spsc/ring_buf.hpp" target="_blank" rel="noopener">https://github.com/DNedic/lockfree/blob/main/lockfree/spsc/ring_buf.hpp</a><br/><a href="https://github.com/AndersKaloer/Ring-Buffer" target="_blank" rel="noopener">https://github.com/AndersKaloer/Ring-Buffer</a><br/><a href="https://github.com/jnk0le/Ring-Buffer" target="_blank" rel="noopener">https://github.com/jnk0le/Ring-Buffer</a></p>
+<pre style="margin:1.4rem 0"><code>         Circular Buffer
+ +-------------------------------+
+ |                               |
+ v                               |
+ [_, _, _, _, _, _, _, _, _, _, _]
+ ↑
+h,t
+
+ [A, B, C, _, _, _, _, _, _, _, _]
+ ↑        ↑
+ h        t
+
+ [A, B, C, D, E, F, G, H, J, K, L]
+    ↑                           ↑
+    h                           t
+
+ [G, B, C, D, E, F, G, H, J, K, L]
+  ↑  ↑ - ---------------------- -&gt;
+  t  h</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/26.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>cached_hashtable</h2>
+<p>Caching hash tables fit certain game development patterns well, not all of them of course. Because of the way game objects with components are built, most components are used rarely, and only about a third are needed every frame or more often. These are usually movement and AI components, "hot" properties and components.</p>
+<p>This kind of hash table combines the advantages of standard hash tables with a caching mechanism for higher performance — in a standard hash table looking up an element has on average O(1) complexity, but with collisions or a high fill of the table it starts to degrade.</p>
+<p>A cached hash table solves this problem by maintaining an additional table, usually small (32-128 elements), which contains recently used or frequently requested elements to provide faster access.</p>
+<pre style="margin:1.4rem 0"><code>+------------------------------------------------------+
+|                CACHED HASH TABLE                     |
++------------------------------------------------------+
+                       |
+    +------------------+-------------------+
+    |                                      |
+    v                                      v
++-------------+                     +---------------+
+|    CACHE    |&lt;-----------------&gt;|  MAIN TABLE   |
+| (fast       |     Sync            | (persistent   |
+|  access)    |                     |  storage)     |
++-------------+                     +---------------+
+    |                                      |
+    | Lookup element                       | Lookup element
+    | (first)                              | (if not found
+    |                                      |  in cache)
+    v                                      v
++-------------+                     +---------------+
+| [K1] -&gt; V1  |                     | [K1] -&gt; V1    |
+| [K2] -&gt; V2  |                     | [K2] -&gt; V2    |
+| [K3] -&gt; V3  |                     | [K3] -&gt; V3    |
+|     ...     |                     | [K4] -&gt; V4    |
+| [Kn] -&gt; Vn  |                     |     ...       |
++-------------+                     | [Km] -&gt; Vm    |
+    ^                               +---------------+
+    |                                      ^
+    |                                      |
+    +--------------------------------------+
+               Eviction/Replacement</code></pre>
+<p>When looking up an element, the table first checks whether it's in the cache, and returns it if it's there, while its metadata (use counter, time of last access and so on) is updated. If the element isn't found, then a lookup is performed in the main table, this element is added to the cache (evicting or replacing another element if the cache is already full) and returned to the main logic.</p>
+<p>The key component of this approach is the cache management strategy, which determines which elements to keep in the cache and which to evict when the cache is full. Mostly they use LRU (evict the element that hasn't been accessed for a long time), LFU (evict the element that's accessed least often), FIFO (evict elements in the order they were added), or their own custom rule (on one of the projects it was collapsing every second element).</p>
+<p>Why ordinary hash tables may not be enough: for example a game resource system; modern games contain a great many diverse elements — textures, shaders, models, configs of particles and ammo, weapons. And when all of this starts to affect and depend on each other, the number of records reaches thousands and tens of thousands.</p>
+<p>A simple example: a weapon can use different types of ammo, an ammo contains the description of a particle (the bullet, payload), which must correctly interact with the materials on the level, the sound and effect for metal and wood will be different, all of this is written/configured in the game DB and pulled out as needed. The player usually uses several rounds of the same type, i.e. having pulled this information from the DB on a shot, you won't have to look it up again on the next one.</p>
+<p>In the renderer for caching shaders: a shader can't really do branching (it can, but it's expensive), so every if in a shader is just a different shader, which with complex shaders leads to a combinatorial explosion. To avoid compiling it from scratch each time, you can precompute all possible (or most of the combinations of) a shader in advance and put it in the shader cache. But there's also little point in searching the whole table for a shader before sending it to the video card, because not very many of them are used on screen at the same time. Here lookup caches are applied too.</p>
+<p>Interpreters — for caching intermediate results. In many places pseudo-languages of operations over certain parameters of an object are used; calling such an interpreter, even a simple one, parsing an expression, isn't the fastest operation, so you can, for example, make a hash of the expression and remember it in a table, and then get the result without computations.</p>
+
+    <img src="../../assets/articles/unpacking-containers/27.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>handle_container</h2>
+<p>For a number of game engine objects (models, textures, graphics buffers) their data must be laid out contiguously as much as possible, in order to maximize cache locality when working with them. The goal here isn't to come up with a replacement for the standard STL containers, but to make the game as fast as possible on the hardware that's available, and to do it transparently for the programmer.</p>
+<p>Handle-based containers solve the problem of pointer invalidation when moving objects in memory, while also providing good data locality, not without downsides of course (more memory is required for such placement). Instead of direct pointers they use indices or IDs that remain valid even if the underlying array is reallocated.</p>
+<p>What distinguishes handle_container from other associative containers, such as std::map and std::unordered_map? We don't specify a key when inserting data, which is why they're called (handle), but get some control structure or identifier from the container after insertion.</p>
+<p>All modern graphics APIs work through handles, and adopting this practice game renderers also use this approach.</p>
+<p>Game resource systems and the implementation of engine file systems are also often built on these patterns, which removes a lot of headache when working. You pay for this, of course, with a large memory cost.</p>
+<p><a href="https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/game-engine-containers-handle_map-r4495/" target="_blank" rel="noopener">https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/game-engine-containers-handle_map-r4495/</a></p>
+<pre style="margin:1.4rem 0"><code>┌───────────────────────────────────────────────┐
+│           handle_map                          │
+├───────────┬───────────┬───────────────────────┤
+│   Handle  │   Idx     │  Object*              │
+├───────────┼───────────┼───────────────────────┤
+│     H1    │      h1   │  ─────────────────────┐
+├───────────┼───────────┤                       │
+│     H2    │      h2   │  ─────────┐           │
+├───────────┼───────────┤           │           │
+│     H3    │      h3   │  ──┐      │           │
+└───────────┴───────────┘    │      │           │
+                             ▼      ▼           ▼
+                        ┌───────┐┌───────┐┌───────┐
+                        │ Object││ Object││ Object│
+                        │  O1   ││  O2   ││  O3   │
+                        └───────┘└───────┘└───────┘</code></pre>
+
+    <img src="../../assets/articles/unpacking-containers/28.jpg" alt="" class="post-image" loading="lazy" />
+
+<h2>slot_container</h2>
+<p>A special case of handle_container, where the number of objects used is known in advance (for example at the compilation or project generation stage) and the rules of their placement. It provides stable references to elements even when elements are removed from the middle, while supporting contiguous placement in memory for fast iteration.</p>
+<p>It's used for an event system (we can't have notionally arbitrary events, everything is defined at build time): and the event system uses slot_container to store subscribers (handlers) of events. Each slot can be used for a subscriber, and when a subscriber unsubscribes, the slot is freed. A new subscriber either queues up or evicts the old one from the slot; this approach is often used in various frameworks (SDL, SFML, eventpp and others).</p>
+<p>Another use is a component system: usually an object can't use two identical components (for example a movement component, or a damage-handling one), so each component can be tied to a specific slot, which lets you efficiently manage adding, removing and updating components. Because of the known size, you can do a mapping between the linear storage.</p>
+<pre style="margin:1.4rem 0"><code>Initializing a container with 8 weapon slots:
+[ 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 ]   &lt;- Slot indices (weapons)
+[ A | B | C | D | E | F | G | H ]   &lt;- Objects
+
+Removing object "C" and "F":
+[ 0 | 1 | X | 3 | 4 | X | 6 | 7 ]   &lt;- Freed slots (threw grenades)
+[ A | B |   | D | E |   | G | H ]   &lt;- Objects
+
+Adding a new object "I" into the first "free own" slot:
+[ 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 ]   &lt;- Slot indices
+[ A | B |   | D | E | I | G | H ]   &lt;- Picked up a knife (I) added to its slot,
+                                       we can hold two grenades, only one knife
+
+Removing "B" and moving "H" into its place (slots match):
+[ 0 | X | 2 | 3 | 4 | 5 | 6 | 7 ]
+[ A | H |   | D | E | I | G |   ]   &lt;- Data density is maintained, dropped
+                                       the rifle and picked up a shotgun
+
+Replacing with "J" into the first available "own" slot:
+[ 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 ]
+[ A | J |   | D | E | I | G |   ]  &lt;- picked up another shotgun,
+                                      since there are no free slots left, J replaces
+
+Removing object "C" and "F":
+[ 0 | 1 | X | 3 | 4 | X | 6 | 7 ]   &lt;- Freed slots (picked up a grenade)
+[ A | J | K | D | E | I | G |   ]   &lt;- Objects</code></pre>
+
+<h2>Afterword</h2>
+<p>One of the key characteristics of building software is abstraction. Most programming books are devoted to abstractions, which teach us how to loosen the coupling between parts of code so they can be changed more easily. But loose coupling and good abstractions imply access to objects through pointers, and accessing through a pointer always means working with memory, and that means clear cache misses, allocations and frees. The second part of the problem with abstractions is virtual method calls. The CPU first has to find the object's vtable (a pointer again), and then get the pointer to the method being called (another pointer), and again you have to chase pointers.</p>
+<p>To write fast containers, you have to sacrifice abstractions and specialize the working logic. The more your code is oriented toward speed and solving specific performance problems, the less room remains for inheritance, interfaces, virtual calls, and the narrower the working logic becomes.</p>
+<p>And the more all of this comes down to linear arrays, vectors and raw memory. There's no universal solution here — only complex trade-offs and the experience of those who have already walked this road. But that's exactly what makes programming games so fascinating!</p>
+<p>I hope it was interesting! Thanks for reading.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
