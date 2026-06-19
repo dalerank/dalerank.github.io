@@ -34,7 +34,7 @@
       <li><a href="https://habr.com/ru/articles/896958/" target="_blank" rel="noopener">Game++. Heap? Less</a></li>
       <li><a href="https://habr.com/ru/articles/898930/" target="_blank" rel="noopener">Game++. Work hard</a></li>
       <li><a href="https://habr.com/ru/articles/903744/" target="_blank" rel="noopener">Game++. Patching patterns</a></li>
-      <li><a href="https://habr.com/ru/articles/907146/" target="_blank" rel="noopener">Game++. while (!game(over))</a></li>
+      <li><a href="while-game-over.html">Game++. while (!game(over))</a></li>
       <li><a href="https://habr.com/ru/articles/912926/" target="_blank" rel="noopener">Game++. Bonus. Performance traps</a></li>
     </ul>
     <p><code>std::vector</code> and its analogues are often used to store everything from game objects such as entities to textures, network packets and tasks in schedulers. The upside is it's fairly simple to do and maintain. It's a container with sequentially allocated memory that can store an arbitrary number of elements. Each time the capacity grows, the vector allocates a new block of memory for the new size and copies the old elements there. There are pitfalls here too, related to elements that need copy-operation support, which can turn into a rather non-trivial task when some classes can't be copied at all.</p>
