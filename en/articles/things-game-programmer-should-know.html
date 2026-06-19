@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A couple of things a game programmer should know — dalerank</title>
+<meta name="description" content="A collection of sarcastic 'laws' of game development: about std::move, undefined behavior, GameObject and ECS, cert submission and TRC, Heisenbugs, tech debt, // TODO and //TMP, managers, artists and Friday patches — the bitter truth of gamedev in one-liners." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/things-game-programmer-should-know.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/things-game-programmer-should-know.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/things-game-programmer-should-know.html">RU</a><i>/</i><a class="on" href="things-game-programmer-should-know.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>A couple of things a game programmer should know</h1><div class="ameta"><span>Apr 5, 2025</span><span>6 min</span></div></div>
+  <article class="prose">
+
+    <img src="../../assets/articles/things-game-programmer-should-know/01-en.jpg" alt="" class="post-image" loading="lazy" />
+
+<ul>
+<li><p>In std::move nobody moves anywhere</p></li>
+<li><p>In undefined behavior the behavior is quite well-defined — it just crashes the game</p></li>
+<li><p>In GameObject there's neither a game nor an object, only bugs and a pile of anti-patterns</p></li>
+<li><p>The memory leak detector leaks itself</p></li>
+<li><p>There's as much physics in PhysicsEngine as in the tale of the Gingerbread Man</p></li>
+<li><p>Out of 8 working hours, 6 go into trying to build after merging with stable.</p></li>
+<li><p>In ProfileMode everything lags except the profiler</p></li>
+<li><p>In the retrospective meeting they discuss why everything is bad, but leave it as is.</p></li>
+<li><p>The debug build has fewer bugs than the release one and a higher FPS</p></li>
+</ul>
+<hr/>
+<ul>
+<li><p>The cross-platform build of the game compiles only on one machine, in a particular corner of the office, on one compiler, under a full moon</p></li>
+<li><p>In LevelStreaming the whole world loads at once</p></li>
+<li><p>The only game-related thing about C++ is the ability to play on the developers' nerves</p></li>
+<li><p>Refactored legacy code starts taking revenge a week later</p></li>
+<li><p>The tech debt backlog has more debt than features. But features get done, debt doesn't</p></li>
+<li><p>In EntityComponentSystem there's neither a system, nor entities, nor components — only data chaos and hundreds of unrelated calls</p></li>
+<li><p>QA reports a bug that describes everything except how to reproduce it.</p></li>
+<li><p>Code review feedback arrives when you've already pushed to the release branch.</p></li>
+<li><p>The tech lead's "beautiful optimization" usually drops the FPS.</p></li>
+<li><p>In MVP there's neither minimal, nor viable, nor a product</p></li>
+<li><p>In the fire of a deadline everything dies, including the mood in the team.</p></li>
+<li><p>In burnout prevention week there's neither rest nor prevention — just another sprint.</p></li>
+<li><p>In the release build nothing works except the bugs</p></li>
+<li><p>If "Don't worry, it's priority 3" flies in — it's usually already a fire on prod.</p></li>
+<li><p>The cert submission build usually contains more than 200 bugs hacked around with crutches</p></li>
+<li><p>TRC/XR/LOT has more rules than the Criminal Code has articles (Sony has 450)</p></li>
+<li><p>In Xbox GDK, GDK stands for "where's the Docs, Karl?"</p></li>
+<li><p>A cert blocker bug appears only for Sony testers under a full moon, but it had to be fixed yesterday.</p></li>
+<li><p>In server tick the server is supposed to tick, but the tick starts at your place.</p></li>
+<li><p>The prediction system predicts nothing, but breaks everything.</p></li>
+<li><p>In navmesh everything is fine until the AI decides to walk into a wall.</p></li>
+<li><p>In the smart object system the objects are smarter than the characters.</p></li>
+<li><p>In the decision making system there are no decisions, only if-else.</p></li>
+<li><p>Finite State Machines can hang, get stuck, stumble, float and fall</p></li>
+<li><p>A "small level change" usually means 200 drag-and-drops and 500 new bugs.</p></li>
+<li><p>"It's just adding a button" usually has 3 days of UI hell and a conflict with the renderer buried in it.</p></li>
+<li><p>"why is it so expensive?" reviews come from people who didn't buy the game</p></li>
+<li><p>"it's all Unity's fault!" reviews come even if the game is written on your own engine.</p></li>
+<li><p>In the audio system there's always a sound nobody hears (the sound of silence).</p></li>
+<li><p>An FMOD event triggers either never or always, and is described by a float field</p></li>
+<li><p>The sound designer usually sends tasks like "the sound needs to be a bit more alive" with a screenshot — that's the whole task, for the record.</p></li>
+<li><p>The Widget UI system renders nothing, but takes up 40% of the CPU.</p></li>
+<li><p>One-click deploy works only for the person who wrote it, on their machine, under a full moon.</p></li>
+<li><p>In the Unique string ID system the string IDs duplicate and the strings get lost.</p></li>
+<li><p>A non-latin font usually breaks the whole UI.</p></li>
+<li><p>In RTL text everything displays on the right... and at the bottom.</p></li>
+<li><p>In voiceover the actor speaks for 5 seconds and the character stays silent for 10.</p></li>
+<li><p>It's better not to argue with the producer's email "it's not a bug, it's just the translation".</p></li>
+<li><p>In template metaprogramming there's neither meta nor programming — only a 3-screen wall of compile errors.</p></li>
+<li><p>In the task "let's add std::any to X" we lost the type, the debuggability and the performance.</p></li>
+<li><p>The engine code has the most comments starting with // TODO.</p></li>
+<li><p>Virtual destructors kill not objects, but performance and sometimes the build.</p></li>
+<li><p>In third-party libs everything is incompatible, especially the licenses.</p></li>
+<li><p>assert(false &amp;&amp; "should not happen") happens a couple of times a day.</p></li>
+<li><p>The most frequent resolution when closing a bug is CNRD (Can't reproduce in debug)</p></li>
+<li><p>In the save state pattern you can only lose a few hours of your life</p></li>
+<li><p>In constexpr you compile at compile time</p></li>
+<li><p>"Let's rewrite it for ECS" usually ends with your engine broken, but at least there's a 60-slide presentation.</p></li>
+<li><p>"We use our own memory arena." Now nobody knows why it crashes — not even Valgrind.</p></li>
+<li><p>"We enabled C++20 support." The prod build now doesn't compile on any of the compilers</p></li>
+<li><p>RAII solves everything, but creates cycles nobody can fix</p></li>
+<li><p>Encapsulation is good, but a public field saves the release 10 minutes before the deadline</p></li>
+<li><p>Signals and slots are convenient, but now the bugs reproduce randomly</p></li>
+<li><p>We don't use goto, but an 800-line switch-case is fine</p></li>
+<li><p>If a bug is impossible — it'll happen anyway. In the release build with a different stack trace</p></li>
+<li><p>Lines marked //TMP live longer than you work at the studio</p></li>
+<li><p>The closer the milestone, the more often neutrinos fly through the memory sticks and break bits</p></li>
+<li><p>If a bug can't be reproduced — players will reproduce it every time.</p></li>
+<li><p>A feature made the night before a milestone makes it into the trailer.</p></li>
+<li><p>If you change something "in just one place" — it breaks in three others.</p></li>
+<li><p>Every refactoring deletes a little piece of history</p></li>
+<li><p>You know it could be better. But nobody asks for better.</p></li>
+<li><p>We moved the build to CI, now it breaks on its own without any programmer's involvement</p></li>
+<li><p>Someday you'll finish the documentation</p></li>
+<li><p>Anything you spend more than a week on will be replaced by assets from the marketplace.</p></li>
+<li><p>A ninja hotfix breaks two stable branches.</p></li>
+<li><p>Any speedup of loading leads to three new tasks from the artists</p></li>
+<li><p>Nobody knows how that legacy code works. But if you touch it — the whole build breaks.</p></li>
+<li><p>Everything that could be inherited incorrectly has already been inherited</p></li>
+<li><p>If someone said "I cleaned up the code" at the meeting — get ready for a week of Heisenbugs</p></li>
+<li><p>A feature budgeted for half a year will be disabled before release due to "low priority".</p></li>
+<li><p>The dumber the idea, the higher the chance it makes it into the release.</p></li>
+<li><p>Tech debt is just another polite name for someone's unfixed bugs.</p></li>
+<li><p>If the build suddenly became stable, it means you built debug</p></li>
+<li><p>You can't fire the person who wrote this hell. Because he left on his own — two years ago.</p></li>
+<li><p>Every "simple fix" from an artist takes a day away from a programmer</p></li>
+<li><p>You rewrote the event system to make it understandable. Now nobody understands it, including you.</p></li>
+<li><p>When they tell you "nothing critical" — it's always a "priority 3" task, see item 22.</p></li>
+<li><p>If a manager asks for it "real quick", it means he's already sold the feature to the bosses.</p></li>
+<li><p>The mgr/prg ratio correlates with the probability of shipping a product rather than a game. (Subtle, but mgrs take offense)</p></li>
+<li><p>The artist doesn't know how the shader works. The game designer doesn't know how the balance works. The producer doesn't know how the game works.</p></li>
+<li><p>No bugs are as scary as a feature described in the kitchen with the words "you'll figure out what I meant yourself".</p></li>
+<li><p>If the build compiles and launches — that doesn't mean it works</p></li>
+<li><p>You did everything as written in the task. But the one who did it all "by eye" was right. Because he got distracted less.</p></li>
+<li><p>If a patch ships on Friday. Then over the weekend you'd better get far away and turn off your phone.</p></li>
+<li><p>Light gets through concrete, bullets don't. That's what physics in games is.</p></li>
+<li><p>The whole project rests on 3 people the management doesn't listen to.</p></li>
+<li><p>"Retro style" is when the artist can't do lightmaps and a render programmer does their job.</p></li>
+<li><p>The more you say it's a bad idea, the higher the chance of getting it as a task.</p></li>
+<li><p>The probability of being fired is directly proportional to the reliability of the system you built.</p></li>
+</ul>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
