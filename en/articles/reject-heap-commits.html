@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>I reject commits that use the heap and ask colleagues to rewrite that logic — dalerank</title>
+<meta name="description" content="Experience building large C++ games without the heap: why dynamic allocations are dangerous on consoles and mobile (fragmentation, malloc-time degradation, a certification rejection), and what to replace them with — fixed-size containers gtl::vector<T,N>, etl/FastDelegate instead of std::function, CRTP and static polymorphism with std::variant, object pools and placement new." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/reject-heap-commits.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/reject-heap-commits.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/reject-heap-commits.html">RU</a><i>/</i><a class="on" href="reject-heap-commits.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Performance</span><h1>I reject commits that use the heap and ask colleagues to rewrite that logic</h1><div class="ameta"><span>Sep 17, 2025</span><span>11 min</span></div></div>
+  <article class="prose">
+
+<p>I want to share my experience developing large C++ game projects, where performance and stability aren't just nice bonuses but absolutely natural requirements for development. Over the years working on engines and games I realized that the approach to memory management hugely affects the whole project. Unlike many applications, games — especially big ones — often run for hours without interruption and must maintain a stable framerate and responsiveness. When an fps drop or a freeze happens in front of hundreds of thousands of players, no one will help you anymore, the damage is already done, and Steam fills up with reviews about the developers' clumsy hands.</p><p>Once my team finished work on a rather interesting project that we'd been porting to the PlayStation for more than two years. The engine was old, big and powerful, but its memory handling was oriented toward late-2000s PCs, and what amazed me was how heavily most of the codebase depended on dynamic memory at runtime. On limited hardware (not everyone has a PS5 Pro) and under the strict console certification requirements, such decisions quickly turn into a problem.</p><p>In console development (I'll keep quiet about mobile, because the game doesn't even fit into eight gigs of memory) with limited resources, an architecture with frequent allocations isn't just inefficient — it becomes a real threat to the project's stability. Every heap allocation entails overhead: extra !<strong>milliseconds</strong>! (overall per frame) of latency, the risk of heavy memory fragmentation, and unpredictable behavior over a long game session. After two hours of play, constant heap operations literally "burn" half the frame budget.</p><img src="../../assets/articles/reject-heap-commits/01.jpg" alt="" class="post-image" loading="lazy" /><hr/><p><strong>Dynamic memory and problems in game development</strong><br/>In games and game engines, especially on consoles and mobile devices, memory management must be as predictable as possible. That means:</p><ul><li><p>no unexpected latency due to heap fragmentation;</p></li><li><p>no risk of an fps drop due to running out of memory in the heat of battle or on an important scene;</p></li><li><p>no gradual performance degradation during play;</p></li><li><p>no memory-allocation errors that could ruin a match or cause players to crash.</p></li></ul><p>Unlike desktop applications, where the user can "restart" the program and keep doing something, a game must run stably on limited hardware with a fixed amount of memory. If memory runs out — and it physically does run out — the game crashes. On a console or mobile device this isn't a theoretical threat but a practical reality that directly affects the experience of thousands of players. </p><div><div class="table"><table><tbody><tr><td data-colwidth="157" width="157"><p align="left"> Console  </p></td><td data-colwidth="148" width="148"><p align="left">Total memory</p></td><td data-colwidth="167" width="167"><p align="left">Available to the game</p></td><td><p align="left">Architecture notes </p></td></tr><tr><td data-colwidth="157" width="157"><p align="left"><strong>PlayStation 5</strong></p></td><td data-colwidth="148" width="148"><p align="left">16 Gb GDDR6</p></td><td data-colwidth="167" width="167"><p align="left">12.5-13 Gb </p></td><td><p align="left">Unified architecture </p></td></tr><tr><td data-colwidth="157" width="157"><p align="left"><strong>Xbox Series X</strong></p></td><td data-colwidth="148" width="148"><p align="left">16 Gb GDDR6</p></td><td data-colwidth="167" width="167"><p align="left">~11.5 Gb </p></td><td><p align="left">10 Gb high-speed<br/>+ 6 Gb standard  </p></td></tr><tr><td data-colwidth="157" width="157"><p align="left"><strong>Xbox Series S</strong></p></td><td data-colwidth="148" width="148"><p align="left">10 Gb GDDR6</p></td><td data-colwidth="167" width="167"><p align="left">~7 Gb </p></td><td><p align="left">8 Gb high-speed<br/>+ 2 Gb standard  </p></td></tr></tbody></table></div></div><p><strong>The hidden costs of dynamic memory</strong><br/>My measurements show that the time of heap allocation degrades over a long (around three-hour) play session by 2–5x on Xbox and 2–3x on PlayStation 5, directly affecting the game's performance. On mobile such long sessions are rare, but there fragmentation can over time "eat" up to 30% of the available memory in long (more than half an hour) play sessions, which for resource-limited platforms means not only an FPS drop but actual OOM crashes.</p><p>It's a small thing, of course, but different <code>malloc</code> implementations add 24–64 bytes of overhead per allocation for bookkeeping information. And in a game where thousands of small allocations happen per frame — I'm not mistaken, thousands per frame (for example, when creating objects or effects) — this overhead by itself takes up some part of memory.</p><div><div class="table"><table><tbody><tr><th data-colwidth="162" width="162"><p align="left">Allocator</p></th><th data-colwidth="270" width="270"><p align="left">Approximate metadata overhead per allocation</p></th><th><p align="left">Comments</p></th></tr><tr><td data-colwidth="162" width="162"><p align="left"><strong>glibc malloc</strong></p></td><td data-colwidth="270" width="270"><p align="left">16-24 bytes</p></td><td><p align="left">Stores the block size + flags + pointers/links in free-block lists</p></td></tr><tr><td data-colwidth="162" width="162"><p align="left"><strong>jemalloc</strong></p></td><td data-colwidth="270" width="270"><p align="left">"separate from the blocks", but there's still overhead — a few bytes per block, plus an extra structure</p></td><td><p align="left">overhead depends on the allocation size and class. </p></td></tr><tr><td data-colwidth="162" width="162"><p align="left"><strong>TCMalloc</strong></p></td><td data-colwidth="270" width="270"><p align="left">32+ bytes / class — depends on the "size-class" + thread caches + pages</p></td><td><p align="left">extra cost for thread-cache data and "size-class" management; overhead is higher for small allocations.</p></td></tr><tr><td data-colwidth="162" width="162"><p align="left"><strong>Windows/Xbox</strong></p></td><td data-colwidth="270" width="270"><p align="left">48+ (debug) / 30+ bytes (release)</p></td><td><p align="left">Depends on the OS version, the mode (debug / release) and the architecture</p></td></tr><tr><td data-colwidth="162" width="162"><p align="left"><strong>PlayStation </strong></p></td><td data-colwidth="270" width="270"><p align="left">minimum 12 bytes (size + truncated pointer to the next block + flags)<br/>80+ bytes for a debug build</p></td><td><p align="left">No exact figure, depends on the SDK version.</p></td></tr></tbody></table></div></div><h2>Serve me up some heap-free code...</h2><p>Like many of my acquaintances from the gamedev world, I think the language's modern features have become too "heavy" or superfluous for game development, but all this tasty sugar nonetheless lets you write physically less code. You can successfully use lambdas, RAII, static polymorphism and even not-yet-fully-explored C++23 features to create games — not give up modern tools, but apply them sensibly. And, of course, you need to understand the limitations of our systems and use only those language features that don't violate the requirements for performance and predictability. </p><p>At some point the team came to understand that we needed analogs of the familiar STL containers, but with a fixed size. For example, our <code>gtl::vector&lt;T, N&gt;</code> works exactly like <code>std::vector&lt;T&gt;</code>, but can hold at most N elements. This means all the memory for the elements is allocated at the moment the object is created, not dynamically when elements are added. But laziness, old habits and the brain's reactivity don't let you write without mistakes right away, and yet such an approach promises many advantages for development. First, the container's size is known at compile time, which allows static analysis of memory consumption. Second, adding and removing elements happens in predictable time, since it doesn't require calls to the memory-management system. This is important for understanding where frame time goes, and you can also draw pretty presentations for management about how we fight for perf here.</p><p>The standard <code>std::function</code> in C++ uses dynamic allocation to store large objects, which is generally unacceptable for games when every other handler starts using a lambda wrapped in a functor. There are several libraries that solve this problem, for example the FastDelegate library (Don Clugston), written about twenty years ago (<a href="https://mirtk.github.io/apidoc/latest/FastDelegate_8h_source.html" target="_blank" rel="noopener">link</a>) but still relevant, or the functor implementation from ETL (<a href="https://github.com/ETLCPP/etl" target="_blank" rel="noopener">link</a>) <code>etl::function&lt;Signature, StorageSize&gt;</code>, which uses a buffer to store the functional object inside the functor itself, plus at least a couple more good libraries on GitHub. This lets you use all the advantages of functional programming — lambda expressions, functors, function pointers — without the risk of uncontrolled memory allocation. That is, we ourselves define the maximum size of the functional object, and if it exceeds the set limit, the compiler simply produces an error. Now my code often looks like this:</p><pre style="margin:1.4rem 0"><code>// &lt;&lt;&lt;&lt; std::vector&lt;int&gt;
+gtl::vector&lt;int, 64&gt; _unit_options;
+
+// &lt;&lt;&lt;&lt; std::function&lt;void()&gt;
+gtl::function&lt;void(), 32&gt; _unit_death_cb;</code></pre><p>If a programmer tries to add an element to an already-full container or store too large a functional object, the code simply won't compile, and that's much better than getting errors at runtime. Such an approach lets you catch potential problems before the program reaches the player, and static code analysis becomes more effective, since the compiler can precisely determine the maximum memory consumption. </p><h2>... and add a bit of CRTP</h2><p>In traditional OOP in C++ we often use virtual functions to achieve polymorphism. When we have a base class with virtual methods and several descendants. This is the usual approach; we offload part of the work to the compiler, which creates a special virtual function table (vtable). When a method is called, the program first consults this table to determine which function exactly to call.</p><p>This mechanism creates several problems, and although they're no longer as critical as they were ten or fifteen years ago, the problems themselves haven't gone anywhere — the processors just got faster. First, each virtual-function call requires an extra memory access to get the real function address in the table, which slows down execution — conditionally slows down, because the CPU is fast.<br/><br/>Second, polymorphic objects usually require dynamic memory allocation, since the object's size isn't known at compile time. And whereas game developers used to almost always disable rtti, now it's the norm, plus we had to enable it when we started using a new library for the user interface (WPFG) and its code started creeping all over the game. Third, virtual destructors complicate memory management and can lead to unpredictable behavior, but that's a separate case.</p><p>What is this CRTP of yours, anyway? CRTP is a programming pattern in which a class inherits from a template base class, passing itself as the template parameter. </p><p>It sounds complicated, but in practice it's a very elegant solution. For example: <code>class Derived : public Base&lt;Derived&gt;</code>. The base class can call the derived class's methods through static_cast, and all calls are resolved at compile time. Ideal when we know all the possible types at compile time and want to get rid of virtual-function calls. CRTP lets you create function and class templates that work with any types implementing a certain interface, but without the overhead of virtual functions.</p><pre style="margin:1.4rem 0"><code>template &lt;typename Derived&gt;
+class GameObject {
+public:
+    void update() {
+        // Call the derived class method via static_cast
+        static_cast&lt;Derived*&gt;(this)-&gt;updateImpl();
+    }
+
+    void render() {
+        static_cast&lt;Derived*&gt;(this)-&gt;renderImpl();
+    }
+};
+
+class Player : public GameObject&lt;Player&gt; {
+public:
+    void updateImpl() {
+        // Player update logic
+        // "Updating Player position and state\n";
+    }
+
+    void renderImpl() {
+        // "Rendering Player on screen\n";
+    }
+};</code></pre><h3>... and also sprinkle on some static polymorphism</h3><p>An alternative approach is through runtime polymorphism using std::variant, in which the choice of a concrete method implementation happens at compile time rather than at program runtime. The compiler knows in advance which function to call and generates a direct call without intermediate accesses to tables or pointers, which completely eliminates the runtime overhead associated with polymorphism. Everything works just as fast as if you'd called the needed function directly, and at the same time the code stays flexible and extensible — you can easily add new types and implementations without changing existing code. I already partly covered this topic in <a href="heap-less.html">Game++. Heap? Less</a></p><pre style="margin:1.4rem 0"><code>struct ButtonEvent { 
+    int button_id;
+    void process() {} // "Handle button press"
+};
+
+struct TimerEvent {
+    int timer_id;
+    void process() {} // "Handle timer"
+};
+
+struct NetworkEvent {
+    std::string message;
+    void process() {} // "Handle network event"
+};
+
+using Event = std::variant&lt;ButtonEvent, TimerEvent, NetworkEvent&gt;;
+
+// Universal event handler
+struct EventProcessor {
+    template&lt;typename T&gt;
+    void operator()(T&amp; event) const {
+        event.process();
+    }
+};
+
+Event e1 = ButtonEvent{42};
+Event e2 = TimerEvent{7};
+Event e3 = NetworkEvent{"Hello"};
+
+std::visit(EventProcessor{}, e1);
+std::visit(EventProcessor{}, e2);
+std::visit(EventProcessor{}, e3);</code></pre><h2>... then marinate it in placement new and pools</h2><p>You also often need to quickly create and destroy lots of objects — projectiles, effects, particles, ropes and decals. But instead of using ordinary dynamic memory we'll apply static pools, which lets us reallocate objects without the overhead of <code>new/delete</code> and without memory fragmentation, which is especially important on consoles and mobile devices.</p><pre style="margin:1.4rem 0"><code>gtl::pool&lt;Projectile, 64&gt; projectile_pool;
+auto* proj = projectile_pool.allocate();
+
+// Configure and use the projectile
+proj-&gt;velocity = . . .;
+proj-&gt;damage = . . .;
+
+projectile_pool.deallocate(proj);</code></pre><p>Or sometimes it's important to precisely control the order and timing of object initialization — similar to a pool, but not a pool. Imagine that such an approach can be used for startup allocations and for creating game-unique objects — configs, systems, render and sound managers, etc. </p><pre style="margin:1.4rem 0"><code>alignas(GameConfig) char _gameConfigStorage[sizeof(GameConfig)];
+GameConfig* config = new(_gameConfigStorage) GameConfig();
+
+GameConfig-&gt;load_from_file({. . .});
+
+// After use, call the destructor manually
+// or don't call it at all, since this object lives for the whole game
+GameConfig-&gt;~GameConfig();
+
+template&lt;typename T&gt;
+class GameResource {
+    alignas(T) mutable uint8_t _data[sizeof(T)];
+    mutable T* _instance = nullptr;
+
+public:
+    template&lt;typename... Args&gt;
+    T&amp; init(Args&amp;&amp;... args) const
+    {
+        if (_instance) {
+            _instance-&gt;~T();
+        }
+        _instance = new (_data) T(std::forward&lt;Args&gt;(args)...);
+        return *instance;
+    }
+
+    void destroy() const {
+        if (_instance) {
+            _instance-&gt;~T();
+            _instance = nullptr;
+        }
+    }
+
+    T&amp; ref() const { 
+        assert(_instance);
+        return *_instance; 
+    }
+};
+
+GameResource&lt;GameConfig&gt; g_config;
+
+void Game::Init() {
+    . . .
+    g_config.init({100});
+    . . .
+}</code></pre><h2>... and send it off for certification</h2><p>One of the main reasons we suddenly started watching memory usage so closely was complaints from new players and, out of the blue, a certification rejection during testing, which, you know, isn't very pleasant and raises reasonable questions from the company's management.<br/><br/>During certification the vendor's test lab recorded low fps, memory corruption and performance degradation — aha, and we thought they were just playing the build over there — and refused to approve the game for publication. This was an unpleasant surprise for the whole team, and we had to rethink the memory architecture, use fixed allocators and almost completely get rid of dynamic allocations. We didn't get rid of all of them, of course, but now there are hundreds of allocations per frame left in the main thread, whereas there used to be — let's be honest — an order of magnitude more.</p><h2>Why does the hot-dog seller never eat them himself?</h2><p>In my case the hot-dog seller eats them himself and is forced to feed them to the whole team, but the mice cry and complain :) Using C++, you shouldn't "accept" heap usage as a given — you can and should build the architecture so as not to use dynamic memory allocation at runtime. C++ still lets you take advantage of the new standards — lambdas, RAII, templates and even new C++23 features — while keeping the system's behavior predictable.</p><p>The right approach to architecture lets you create reliable code without sacrificing performance. Working without the heap doesn't limit your options; on the contrary, it forces you to write cleaner, more predictable and more robust code. Here in gamedev, predictability is very often more important than flexibility, so when designing your system you need to think in advance about where and how memory will be used.</p><p>Despite the obvious technical advantages — perf graphs, internal presentations, mentoring — introducing all of the above in real projects often runs into team resistance. Many are used to the classic OOP cross-writing with virtual functions, inheritance and sugary sugar, which seems more intuitive and understandable to them. Non-boring programming requires a different way of thinking about code — you have to think about types, usage, template magic and union variants. And yes, the syntax becomes more complicated, which at first can frighten and put people off.</p><p>Unfortunately, practice shows that at the first difficulties or deadlines the team quickly rolls back to familiar habits. "Let's just make a regular interface with virtual methods — it's faster and everyone understands it" — a reaction the author has seen more than once under deadline pressure.</p><p>The approach takes root especially poorly in teams with high turnover or with outsourcers who aren't willing to spend time learning the studio's code style. As a result, the code turns into a mix of styles, which creates technical heterogeneity and generally complicates further maintenance of the project.</p><p>I'm interested to hear the opinion of Habr residents and C++ developers — who among you builds projects without the heap? What techniques and strategies helped you keep the code readable and understandable without sacrificing the language's modern features? Have you faced the need to convince a team to use such practices?<br/><br/>P. S. I won't advertise a Telegram channel — I simply don't have one :)<br/><br/>P.P.S Come to the webinar about optimization in GameDev! I'll talk about custom allocators, and we'll also discuss with colleagues from gamedev and PVS-Studio practical tips for improving projects and ways to speed up the launch of mobile games.<br/><br/>September 25 at 16:00 (MSK)<br/><a href="https://pvs-studio.ru/ru/webinar/" target="_blank" rel="noopener">https://pvs-studio.ru/ru/webinar</a></p><img src="../../assets/articles/reject-heap-commits/02.jpg" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
