@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Сам себе breakpoint — dalerank</title>
+<meta name="description" content="Как устроены программные и аппаратные точки останова: подмена байта на int 3 (0xCC), отладочные регистры x86-64 DR0–DR7 и DR7, условные/функциональные/временные бряки, watchpoint на запись через GetThreadContext, «буферная канарейка» и кнопка hardware breakpoint прямо в редакторе игры на ImGui." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/be-your-own-breakpoint.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/be-your-own-breakpoint.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="be-your-own-breakpoint.html">RU</a><i>/</i><a href="../en/articles/be-your-own-breakpoint.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Сам себе breakpoint</h1><div class="ameta"><span>6 октября 2025</span><span>15 мин</span></div></div>
+  <article class="prose">
+
+<img src="../assets/articles/be-your-own-breakpoint/01.jpg" alt="" class="post-image" loading="lazy" />
+<p>Когда отлаживаешь программу — речь про отладчик в студии или другой IDE — то почти всегда имеешь дело с точками останова (breakpoint, бряками): механизмом, когда выполнение программы приостанавливается, чтобы можно было заглянуть внутрь и понять, что происходит. Точек останова есть всего два основных типа, программные и аппаратные, а остальные все сделаны на их основе. Эти два базовых типа могут вести себя похоже, но устроены по-разному.</p>
+<p>Программные точки останова — это то, с чем сталкивается каждый разработчик, когда вы ставите красную точку в среде разработки (в основном я использую большую студию) или используете команду <code>bp</code> под WinDbg. В этом случае отладчик просто подменяет один байт машинного кода в нужной инструкции на команду <code>int 3</code>. Это специальная инструкция для вызова прерывания отладки (Debug Interrupt), имеет машинный код <code>0xCC</code> и говорит процессору: «Остановись, я хочу передать управление отладчику». Соответственно, когда выполнение доходит до этой инструкции, срабатывает прерывание, и управление передаётся в отладчик. Отладчик «просыпается» и видит, что программа остановилась из-за исключения <code>EXCEPTION_BREAKPOINT</code>, возникшего по конкретному адресу, проверяет свой внутренний список точек останова и находит ту, которая была установлена по этому адресу.</p>
+<p>Дальше происходит небольшая магия: чтобы программа могла продолжить работу после остановки, отладчик восстанавливает оригинальный байт, который был заменён на <code>0xCC</code>, выполняет исходную инструкцию, а потом снова подставляет <code>int 3</code> на её место. В результате вы можете снова дойти до этой точки останова позже, и она снова сработает. Всё это происходит незаметно для вас — вы просто нажимаете «Продолжить», а отладчик делает всю грязную работу.</p>
+<p>Тут возможны два варианта выполнения одной инструкции. Отладчик выполняет её (исходную инструкцию, которая теперь восстановлена), а затем снова записывает <code>0xCC</code> по адресу точки останова, чтобы она сработала в следующий раз. Или второй вариант — продолжаем выполнение программы: тут отладчик тоже переустанавливает точку останова, но при этом использует специальный механизм процессора (флаг Trap Flag, <code>TF</code>), чтобы выполнить всего одну инструкцию, после чего сразу вернуть <code>0xCC</code> на место. Это гарантирует, что точка останова останется активной.</p>
+<p>Если вы когда-нибудь пробовали посмотреть память или дизассемблировать код в месте, где стоит точка останова, то видели, что команды <code>int 3</code> там нет. Это происходит из-за того, что отладчику надо показать оригинальные байты, хотя физически в памяти сейчас уже подставлен <code>0xCC</code> — тем самым сохраняется иллюзия, что код текущего приложения не изменялся.</p>
+<p>Преимущества такого способа в том, что его реализация проста и не сильно отличается в любых средах разработки. Программные точки можно ставить где угодно, их может быть сколько угодно, и они не требуют поддержки со стороны процессора. Но есть важное ограничение — это работает только для кода, и таким образом не получится отследить, когда изменяется конкретная переменная или область памяти.</p>
+<pre style="margin:1.4rem 0"><code>ПАМЯТЬ ДО:                          ПАМЯТЬ ПОСЛЕ:
+┌─────────────────────┐            ┌─────────────────────┐
+│ Адрес: 0x00401000   │            │ Адрес: 0x00401000   │
+│                     │            │                     │
+│ [48 89 E5]          │  ───────&gt;  │ [CC 89 E5]          │
+│  mov rbp, rsp       │   Замена   │  int 3 (0xCC)       │
+│                     │   первого  │                     │
+│ [48 83 EC 20]       │    байта   │ [48 83 EC 20]       │
+│  sub rsp, 0x20      │            │  sub rsp, 0x20      │
+└─────────────────────┘            └─────────────────────┘
+
+ОТЛАДЧИК ХРАНИТ ЗНАЧЕНИЯ:
+┌──────────────────────────┐
+│ BP[0x00401000] = 0x48    | &lt;-- Оригинальный байт
+└──────────────────────────┘</code></pre>
+<p>Тут в игру вступают аппаратные точки останова, и они устроены принципиально иначе — это завязано на возможностях процессора. Процессор умеет следить за определёнными адресами памяти: для этого в архитектуре x86 и x64 есть особые регистры отладки — DR0, DR1, DR2, DR3, а также управляющие DR6 и DR7. Каждый из этих регистров может содержать некий адрес, и процессор будет отслеживать обращения к нему. Как только кто-то читает, записывает или исполняет инструкцию по этому адресу — генерируется особое исключение, и отладчик получает управление. Вместо того чтобы подменять код на лету, мы перекладываем эту работу на процессор.</p>
+<p>Таким образом, аппаратные бряки не изменяют код программы и позволяют реагировать не только на исполнение, но и на чтение или запись данных, что бывает полезно, когда надо отловить баги с порчей памяти или сложным поведением для конкретной переменной. В простых случаях можно отследить момент изменения данных и остановить программу, как только кто-то попытается записать что-нибудь по этому адресу.</p>
+<p>Неудобства здесь в том, что таких аппаратных точек всего четыре — по числу специальных регистров процессора, и каждая точка умеет отслеживать строго определённый диапазон памяти, выровненный по размеру (1, 2, 4 или 8 байт). Поэтому аппаратные точки не годятся для повседневной работы, но позволяют создавать удобные мини-инструменты в помощь разработчику.</p>
+<p>Если вернуться к практике, можно представить, что вы пишете некий компонент, и у вас внезапно оказывается изменена переменная у этого компонента. Программные точки тут оказываются бесполезны, потому что нет понимания, где именно происходит запись. Тут — либо обкладываться логами и «курить сорцы», либо использовать аппаратные бряки, с которыми отладка нужного места решается в один шаг: ставим на адрес переменной бряку, выбираем тип события «на запись», и как только кто-то попытается записать новое значение — отладчик выкинет нас в нужное место.</p>
+<p>Большинство отладчиков умеют работать с обоими типами точек, комбинируя их в зависимости от ситуации. Программные используются для обычного кода — чтобы остановиться в функции, сделать пошаговое выполнение, перейти к вызову. Аппаратные применяются для сложных случаев: когда нужно отследить изменение памяти, поймать гонку между потоками, вычислить момент порчи данных.</p>
+<p>Аппаратные точки останова — достаточно мощный, но простой в применении инструмент, реализацию которого я рассмотрю чуть ниже. Оба механизма не заменяют друг друга, но позволяют видеть поток исполнения программы более полно и точно понимать, что происходит в каждом случае.</p>
+<pre style="margin:1.4rem 0"><code>┌─────────────────────────────────────────────────────────────┐
+│                    SOFTWARE BREAKPOINT                      │
+├─────────────────────────────────────────────────────────────┤
+│ Механизм:  Замена байта на 0xCC (int 3)                     │
+│ Лимит:     Неограничен                                      │
+│ Тип:       Только на выполнение кода                        │
+│ Скорость:  Медленнее (модификация памяти)                   │
+│ Память:    Изменяет код программы                           │
+│                                                             │
+│  [48] → [CC] → [48] → [CC] (цикл восстановления)            │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    HARDWARE BREAKPOINT                      │
+├─────────────────────────────────────────────────────────────┤
+│ Механизм:  Debug-регистры процессора (DR0-DR7)              │
+│ Лимит:     Максимум 4 одновременно                          │
+│ Тип:       Execute / Write / Read+Write                     │
+│ Скорость:  Быстрее (аппаратный уровень)                     │
+│ Память:    НЕ изменяет код                                  │
+│                                                             │
+│  DR0 → [Адрес]                                              │
+│  DR7 → [Условия срабатывания]                               │
+│  CPU сам отслеживает доступ                                 │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+<h2>Расширения к стандартному бряку</h2>
+<p>Так как отладчик умеет управлять программными точками останова, то на них можно накрутить разные расширения, чтобы сделать жизнь программиста легче.</p>
+<p><strong>Conditional Breakpoint (условная точка останова)</strong> — срабатывает, когда выполняется заданное условие, например <code>i == 10</code> или <code>entityName == "Enemy"</code>. Удобно, если код вызывается много раз, но нас интересует лишь конкретный случай. Вместо того чтобы вручную нажимать <em>Continue/F5</em>, можно задать условие, и отладчик остановится только тогда, когда оно выполнится. Но, судя по тому, что в VS условные бряки работают медленно, реализовали их не очень хорошо, и часто бывает проще дописать дебажную логику с условием, чем пользоваться реализацией в отладчике.</p>
+<p><strong>Hit Count Breakpoint (по счётчику попаданий)</strong> — срабатывает не при первом проходе, а после того, как строка была достигнута определённое количество раз. Например, можно задать «остановиться на 100-й итерации цикла». Логически вытекает из предыдущего типа с минимальными изменениями.</p>
+<p><strong>Function Breakpoint (на функции)</strong> — позволяет остановиться при входе в конкретную функцию, даже если у вас нет исходного кода. Это позволяет работать с библиотеками, SDK или сторонними модулями, где исходники недоступны, но присутствуют символы pdb (обычно их поставляют вместе с SDK либо по запросу). Механизм основан на файле отладочных символов, который содержит таблицу с адресами всех функций и переменных: когда разработчик вводит имя функции в отладчике, например <code>MyNamespace::Player::Update</code>, тот ищет её в этой таблице, находит адрес входа и подменяет первый байт инструкции по обычной схеме. Интересно, что даже при отсутствии PDB-файлов отладчик может поставить такую точку — например, если найдёт нужную функцию в таблице экспортов исполняемого файла или DLL, где хранятся имена экспортируемых функций. Ситуация усложняется при включённых оптимизациях, когда компилятор может встроить функцию прямо в вызывающий код, удалить её как неиспользуемую, переставить её блоки или использовать код функции частично. В таких случаях отладчик может не найти функцию вовсе или установить точку в неожиданном месте — прямо внутри инлайна.</p>
+<p><strong>Exception Breakpoint (на исключениях)</strong> — срабатывает, когда программа выбрасывает исключение, например деление на ноль, выход за границы массива или любую ошибку, оформленную через <code>throw</code>. В отладчике можно указать, на каких типах исключений нужно останавливаться — только на необработанных или на всех.</p>
+<p><strong>Tracepoint (логирование без остановки)</strong> — иногда нужно просто узнать, что программа делает в определённый момент, не останавливая выполнение. Для этого есть лог-точки: они выводят сообщение в консоль или окно вывода, не прерывая работу программы.</p>
+<p><strong>Temporary breakpoint (временная точка останова)</strong> — точка срабатывает только один раз, а затем автоматически удаляется. Подходит для случаев, когда надо проверить конкретный момент, но не хочется вручную убирать точку после срабатывания. В Visual Studio временная точка останова — это не отдельный тип, а поведение, которое получается командой <em>Run to Cursor</em>. Студия под капотом ставит временную точку на текущей строке, запускает программу, и как только выполнение дойдёт до этой строки, отладчик останавливается — после чего бряк автоматически удаляется.</p>
+<pre style="margin:1.4rem 0"><code>ОТЛАДЧИК: Set breakpoint on "UpdatePlayer"
+
+1: Поиск адреса функции
+┌─────────────────────────────────────────┐
+│ Ищем в PDB:                             │
+│ "UpdatePlayer" → 0x00401000             │
+│                                         │
+│ Если PDB нет, ищем в Export Table:      │
+│ "UpdatePlayer" → 0x00401050             │
+|                                         |
+| Ищем в DLL Export Table:                |
+|  GameEngine.dll Export Table:           │
+│                                         │
+│ ?XBH@UpdatePlayer@@QEAAXVVector3@@@Z    │
+│  → Адрес: GameEngine.dll + 0x12340      │
+│    (mangled name)                       |
+└─────────────────────────────────────────┘
+           ▼
+2: Установка software breakpoint
+┌─────────────────────────────────────────┐
+│ ПАМЯТЬ:                                 │
+│ 0x401000: [55] → [CC]                   │
+│           push rbp → int 3              │
+│                                         │
+│ СОХРАНИТЬ:                              │
+│ BP_Table["UpdatePlayer"] = {            │
+│   address: 0x401000,                    │
+│   original_byte: 0x55                   │
+│ }                                       │
+└─────────────────────────────────────────┘</code></pre>
+<h2>Простой интерфейс к своим брякам</h2>
+<p>Под спойлером — полный код для работы с аппаратными точками останова; давайте разберём особо интересные части.</p>
+<details style="margin:1.4rem 0"><summary>Код для работы со своими бряками</summary><pre style="margin:1rem 0 0"><code>#pragma warning(push)
+#include &lt;Windows.h&gt;
+#include &lt;cstddef&gt;
+#include &lt;algorithm&gt;
+#include &lt;array&gt;
+#include &lt;cassert&gt;
+#include &lt;bitset&gt;
+#pragma warning(pop)
+
+namespace DebugWatchpoint {
+    // Коды результатов операций с аппаратными точками останова
+    enum class Status {
+        OK,                         // Операция успешна
+        ContextReadFailed,          // Не удалось получить контекст потока
+        ContextWriteFailed,         // Не удалось установить контекст потока
+        AllRegistersInUse,          // Все 4 debug-регистра заняты
+        InvalidCondition,           // Неподдерживаемое условие срабатывания
+        InvalidSize                 // Размер должен быть 1, 2, 4 или 8 байт
+    };
+
+    // Условия срабатывания аппаратной точки останова
+    enum class TriggerCondition {
+        OnReadWrite,    // При чтении или записи
+        OnWrite,        // Только при записи
+        OnExecute       // При выполнении инструкции
+    };
+
+    // Дескриптор установленной аппаратной точки останова
+    struct WatchpointHandle {
+        static constexpr WatchpointHandle CreateError(Status err) {
+            return {0, nullptr, err};
+        }
+
+        uint8_t debugRegIdx;   // Индекс использованного debug-регистра (0-3)
+        void* targetAddr = nullptr; // Адрес памяти, на который установлена точка останова
+        Status statusCode;          // Код результата операции
+    };
+
+    // Функция для безопасного изменения debug-регистров потока
+    // Получает контекст, выполняет действие, записывает контекст обратно
+    template&lt;typename ActionFunc, typename ErrorFunc&gt;
+    auto ModifyDebugContextImpl(ActionFunc action, ErrorFunc onError) {
+        // Подготавливаем структуру контекста потока
+        CONTEXT threadCtx{0};
+        threadCtx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+        
+        // Получаем текущий контекст потока с debug-регистрами
+        if (::GetThreadContext(::GetCurrentThread(), &amp;threadCtx) == FALSE) {
+            return onError(Status::ContextReadFailed);
+        }
+
+        // Битовые маски для проверки занятости каждого из 4 debug-регистров
+        // Dr7 содержит флаги включения для каждого регистра
+        std::array&lt;bool, 4&gt; regInUse{{false, false, false, false}};
+        
+        auto markIfBusy = [&amp;](std::size_t idx, DWORD64 enableMask) {
+            // Проверяем бит включения регистра в Dr7
+            if (threadCtx.Dr7 &amp; enableMask)
+                regInUse[idx] = true;
+        };
+
+        // Проверяем каждый debug-регистр (DR0-DR3)
+        markIfBusy(0, 0b00000001);  // DR0: бит 0
+        markIfBusy(1, 0b00000100);  // DR1: бит 2
+        markIfBusy(2, 0b00010000);  // DR2: бит 4
+        markIfBusy(3, 0b01000000);  // DR3: бит 6
+
+        // Выполняем переданное действие с контекстом
+        const auto result = action(threadCtx, regInUse);
+
+        // Записываем измененный контекст обратно в поток
+        if (::SetThreadContext(::GetCurrentThread(), &amp;threadCtx) == FALSE) {
+            return onError(Status::ContextWriteFailed);
+        }
+
+        return result;
+    }
+
+    // Устанавливает аппаратную точку останова на указанный адрес памяти
+    //   targetAddr - адрес для отслеживания
+    //   byteSize - размер отслеживаемой области (1, 2, 4 или 8 байт)
+    //   condition - условие срабатывания (чтение/запись/выполнение)
+    WatchpointHandle Install(const void* targetAddr, std::uint8_t byteSize, TriggerCondition condition) {
+        return ModifyDebugContextImpl(
+            [&amp;](CONTEXT&amp; ctx, const std::array&lt;bool, 4&gt;&amp; regInUse) -&gt; WatchpointHandle {
+                // Ищем первый свободный debug-регистр
+                const auto freeReg = std::find(begin(regInUse), end(regInUse), false);
+                if (freeReg == end(regInUse)) {
+                    // Все 4 регистра заняты (x86/x64 поддерживает максимум 4 аппаратных точки)
+                    return WatchpointHandle::CreateError(Status::AllRegistersInUse);
+                }
+
+                // Вычисляем индекс найденного регистра (0-3)
+                const auto idx = static_cast&lt;std::uint16_t&gt;(std::distance(begin(regInUse), freeReg));
+
+                // Записываем адрес в выбранный debug-регистр (DR0-DR3)
+                void* addr = const_cast&lt;void*&gt;(targetAddr);
+                DWORD_PTR addrValue = reinterpret_cast&lt;DWORD_PTR&gt;(addr);
+                switch (idx) {
+                    case 0: ctx.Dr0 = addrValue; break;
+                    case 1: ctx.Dr1 = addrValue; break;
+                    case 2: ctx.Dr2 = addrValue; break;
+                    case 3: ctx.Dr3 = addrValue; break;
+                    default:
+                        assert(!"Impossible happened - searching in array of 4 got index &lt; 0 or &gt; 3");
+                        return WatchpointHandle::CreateError(Status::AllRegistersInUse);
+                }
+
+                // Работаем с регистром Dr7 через bitset для удобства манипуляции битами
+                // Dr7 - это control register, содержащий флаги включения и настройки условий
+                std::bitset&lt;sizeof(ctx.Dr7) * 8&gt; controlReg;
+                std::memcpy(&amp;controlReg, &amp;ctx.Dr7, sizeof(ctx.Dr7));
+
+                // Включаем локальную точку останова для выбранного регистра
+                // Биты 0,2,4,6 - локальные флаги включения для DR0-DR3 соответственно
+                // (биты 1,3,5,7 - глобальные флаги, не используются в user-mode)
+                controlReg.set(idx * 2);
+
+                // Устанавливаем тип условия срабатывания в битах 16-31 регистра Dr7
+                // Каждый регистр занимает 4 бита: биты (16 + idx*4) и (16 + idx*4 + 1)
+                // определяют условие: 00=Execute, 01=Write, 11=ReadWrite
+                switch (condition) {
+                    case TriggerCondition::OnReadWrite:
+                        controlReg.set(16 + idx * 4 + 1, true);
+                        controlReg.set(16 + idx * 4, true);
+                        break;
+
+                    case TriggerCondition::OnWrite:
+                        controlReg.set(16 + idx * 4 + 1, false);
+                        controlReg.set(16 + idx * 4, true);
+                        break;
+
+                    case TriggerCondition::OnExecute:
+                        controlReg.set(16 + idx * 4 + 1, false);
+                        controlReg.set(16 + idx * 4, false);
+                        break;
+
+                    default: 
+                        return WatchpointHandle::CreateError(Status::InvalidCondition);
+                }
+
+                // Устанавливаем размер отслеживаемой области в битах (16 + idx*4 + 2) и (16 + idx*4 + 3)
+                // 00=1 байт, 01=2 байта, 10=8 байт, 11=4 байта
+                switch (byteSize) {
+                    case 1:
+                        controlReg.set(16 + idx * 4 + 3, false);
+                        controlReg.set(16 + idx * 4 + 2, false);
+                        break;
+
+                    case 2:
+                        controlReg.set(16 + idx * 4 + 3, false);
+                        controlReg.set(16 + idx * 4 + 2, true);
+                        break;
+
+                    case 8:
+                        controlReg.set(16 + idx * 4 + 3, true);
+                        controlReg.set(16 + idx * 4 + 2, false);
+                        break;
+
+                    case 4:
+                        controlReg.set(16 + idx * 4 + 3, true);
+                        controlReg.set(16 + idx * 4 + 2, true);
+                        break;
+
+                    default: 
+                        return WatchpointHandle::CreateError(Status::InvalidSize);
+                }
+
+                // Записываем измененный Dr7 обратно в контекст
+                std::memcpy(&amp;ctx.Dr7, &amp;controlReg, sizeof(ctx.Dr7));
+
+                return WatchpointHandle{static_cast&lt;std::uint8_t&gt;(idx), (void*)targetAddr, Status::OK};
+            },
+            [](auto errCode) { 
+                return WatchpointHandle::CreateError(errCode); 
+            });
+    }
+
+    // Удаляет аппаратную точку останова
+    void Uninstall(const WatchpointHandle&amp; handle)
+    {
+        // Проверяем, что handle валидный
+        if (handle.statusCode != Status::OK) {
+            return;
+        }
+
+        ModifyDebugContextImpl(
+            [&amp;](CONTEXT&amp; ctx, const std::array&lt;bool, 4&gt;&amp;) -&gt; WatchpointHandle  {
+                std::bitset&lt;sizeof(ctx.Dr7) * 8&gt; controlReg;
+                std::memcpy(&amp;controlReg, &amp;ctx.Dr7, sizeof(ctx.Dr7));
+
+                // Отключаем локальный флаг включения для данного регистра
+                controlReg.set(handle.debugRegIdx * 2, false);
+
+                // Записываем обратно
+                std::memcpy(&amp;ctx.Dr7, &amp;controlReg, sizeof(ctx.Dr7));
+
+                return WatchpointHandle{};
+            },
+            [](auto errCode) { 
+                return WatchpointHandle::CreateError(errCode); 
+            });
+    }
+
+    // Удаляет все аппаратные точки останова (очищает все 4 debug-регистра)
+    void ClearAll() {
+        for (uint8_t i = 0; i &lt; 4; ++i) {
+            Uninstall(WatchpointHandle{i, nullptr, Status::OK});
+        }
+    }
+} // namespace DebugWatchpoint</code></pre></details>
+<p>Процессоры x86-64 предоставляют 8 специальных регистров для отладки:</p>
+<ul><li><strong>DR0–DR3</strong>: хранят адреса памяти для отслеживания (максимум 4 точки)</li><li><strong>DR4–DR5</strong>: зарезервированы (алиасы DR6–DR7)</li><li><strong>DR6</strong>: status register (какая точка сработала)</li><li><strong>DR7</strong>: control register (настройки условий срабатывания)</li></ul>
+<h3>Структура регистра DR7</h3>
+<pre style="margin:1.4rem 0"><code>Биты 0-7:   Флаги включения (L0,G0,L1,G1,L2,G2,L3,G3)
+Биты 8-15:  Зарезервированы
+Биты 16-31: Условия и размеры для DR0-DR3</code></pre>
+<p>Каждый debug-регистр занимает 4 бита в DR7:</p>
+<pre style="margin:1.4rem 0"><code>// Для регистра i (0-3):
+Бит (16 + i*4 + 0): R/W bit 0
+Бит (16 + i*4 + 1): R/W bit 1
+Бит (16 + i*4 + 2): LEN bit 0
+Бит (16 + i*4 + 3): LEN bit 1
+
+// Условия срабатывания (биты R/W):
+00 = Execute (выполнение инструкции)
+01 = Write (запись)
+10 = I/O Read/Write (только для ring 0)
+11 = Read/Write (чтение или запись)
+
+// Размер отслеживаемой области (биты LEN):
+00 = 1 байт
+01 = 2 байта
+10 = 8 байт
+11 = 4 байта</code></pre>
+<p>Перед установкой новой точки сначала надо найти свободный регистр. Каждый регистр имеет два флага: локальный (L) и глобальный (G); для нас доступны только локальные (биты 0, 2, 4, 6). Debug-регистры уникальны для каждого потока, и установка в одном потоке не влияет на другие. А вот на виртуальных машинах аппаратные точки могут работать некорректно: говорить, что работают и установлены, но не срабатывать — или вообще не поддерживаться, при этом отображаясь как активные.</p>
+<pre style="margin:1.4rem 0"><code>std::array&lt;bool, 4&gt; regInUse{{false, false, false, false}};
+
+auto markIfBusy = [&amp;](std::size_t idx, DWORD64 enableMask) {
+    if (threadCtx.Dr7 &amp; enableMask)
+        regInUse[idx] = true;
+};
+
+// Локальные флаги включения в битах 0,2,4,6
+markIfBusy(0, 0b00000001);  // DR0: проверяем бит 0
+markIfBusy(1, 0b00000100);  // DR1: проверяем бит 2
+markIfBusy(2, 0b00010000);  // DR2: проверяем бит 4
+markIfBusy(3, 0b01000000);  // DR3: проверяем бит 6</code></pre>
+<p>Простой пример использования — с «буферной канарейкой»:</p>
+<pre style="margin:1.4rem 0"><code>char buffer[100];
+char canary = 0xCC;  // "Канарейка" после буфера
+
+// Ставим точку на канарейку
+auto wp = DebugWatchpoint::Install(
+    &amp;canary, 1,
+    DebugWatchpoint::TriggerCondition::OnWrite
+);
+
+strcpy(buffer, veryLongString);  // Если кто-то перепишет canary -&gt; сработает бряк</code></pre>
+<h2>Как сделать проще</h2>
+<p>Понятно, что такой подход работает для программистов, которые имеют доступ к исходникам и могут вносить изменения, но он тоже требует понимания, где и что примерно меняется у объекта или компонента. То есть программист в процессе исследования бага тоже потратит N времени, чтобы докопаться до причины гонки или коррапшена памяти.</p>
+<p>Для дизайнеров и QA такое вообще не работает, поскольку они меньше знакомы с кодовой базой или не могут её менять. Тут нам на помощь приходят отладочные средства самой игры или движка — их можно немного доработать, чтобы отлавливать изменения переменных конкретного объекта без вмешательства в код. Дебажный интерфейс в моём случае написан на ImGui, но по схожему принципу это будет работать и в других реализациях.</p>
+<pre style="margin:1.4rem 0"><code>// Глобальный массив для отслеживания активных аппаратных точек останова
+// процессор поддерживает максимум 4 одновременных hardware breakpoints
+// Инициализируем "пустыми" breakpoint'ами (nullptr означает "не используется")
+std::array&lt;HardwareBreakpoint::Breakpoint, 4&gt; gameDebugBreakpoints = {
+    HardwareBreakpoint::Breakpoint{0, nullptr, HardwareBreakpoint::Result::Success},
+    HardwareBreakpoint::Breakpoint{0, nullptr, HardwareBreakpoint::Result::Success},
+    HardwareBreakpoint::Breakpoint{0, nullptr, HardwareBreakpoint::Result::Success},
+    HardwareBreakpoint::Breakpoint{0, nullptr, HardwareBreakpoint::Result::Success}};
+
+// Ищет аппаратную точку останова, установленную на указанный адрес памяти
+HardwareBreakpoint::Breakpoint AOETools_GetDebugBreakpoint(void* ptr)
+{
+    const auto it = std::find_if(
+        gameDebugBreakpoints.begin(),
+        gameDebugBreakpoints.end(),
+        [ptr](const auto&amp; bp) { return bp.m_onPointer == ptr; });
+
+    return (it != gameDebugBreakpoints.end())
+               ? *it
+               : HardwareBreakpoint::Breakpoint::MakeFailed(HardwareBreakpoint::Result::NoAvailableRegisters);
+}
+
+// Проверяет, установлена ли аппаратная точка останова на указанный адрес
+// Возвращает: true если точка установлена и активна, false иначе
+bool AOETools_isDebugBreakpointSet(void* ptr)
+{
+    const auto it = std::find_if(
+        gameDebugBreakpoints.begin(),
+        gameDebugBreakpoints.end(),
+        [ptr](const auto&amp; bp) { return bp.m_onPointer == ptr; });
+
+    return (it != gameDebugBreakpoints.end()) &amp;&amp; (it-&gt;m_onPointer != nullptr);
+}
+
+// Отображает UI-кнопку для установки/удаления аппаратной точки останова на свойство
+// Работает только с числовыми типами (int, float, double и т.д.)
+//   field - имя поля (не используется)
+//   v - ссылка на переменную, которую нужно отслеживать
+//   disabled - флаг отключения (не используется в текущей реализации)
+template&lt;typename T&gt;
+void AOETools_DebugShowPropertyBreakpoint(const char* /*field*/, const T&amp; v, bool disabled)
+{
+    // Compile-time проверка: поддерживаем только целочисленные и floating-point типы
+    // Для других типов (структуры, классы) нужна другая логика
+    static_assert(
+        std::is_integral_v&lt;T&gt; || std::is_floating_point_v&lt;T&gt;,
+        "Only integral or floating point types are supported now");
+    const bool isDebugBreakpointAvailable = AOETools_isDebugBreakpointAvailable();
+    const bool breakpointSet = AOETools_isDebugBreakpointSet((void*)&amp;v);
+  
+    // Кнопка активна, если: есть свободные регистры ИЛИ точка уже установлена (можем удалить)
+    const bool canChangeBreakpoint = (isDebugBreakpointAvailable || breakpointSet);
+
+    // Отключаем кнопку в ImGui, если нельзя изменить состояние breakpoint
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, canChangeBreakpoint == false);
+
+    // Текст кнопки зависит от состояния:
+    // "NA" - недоступно (все регистры заняты)
+    // "||" - пауза (breakpoint установлен, можно удалить)
+    // "&gt;&gt;" - play (breakpoint не установлен, можно установить)
+    const char* buttonText = (canChangeBreakpoint == false) ? "NA" : (breakpointSet ? "||" : "&gt;&gt;");
+    if (ImGui::Button(buttonText))
+    {
+        if (breakpointSet)
+        { // Удаляем существующую точку останова
+            auto breakpoint = AOETools_GetDebugBreakpoint((void*)&amp;v);
+            HardwareBreakpoint::Remove(breakpoint);
+            gameDebugBreakpoints[breakpoint.m_registerIndex] =
+                HardwareBreakpoint::Breakpoint{0, nullptr, HardwareBreakpoint::Result::Success};
+        }
+        else
+        { // Устанавливаем новую точку останова
+            // Создаем hardware breakpoint на запись в переменную
+            // Параметры: адрес, размер типа, условие "Written" (срабатывает при записи)
+            auto breakpoint =
+                HardwareBreakpoint::Set((void*)&amp;v, sizeof(v), HardwareBreakpoint::BreakpointCondition::Written);
+            if (breakpoint.m_onPointer != nullptr)
+            {
+                // Сохраняем breakpoint в массив активных по индексу использованного регистра
+                gameDebugBreakpoints[breakpoint.m_registerIndex] = breakpoint;
+            }
+        }
+    }
+
+    ImGui::PopItemFlag();
+}</code></pre>
+<p>Что происходит на видео (это был питч технической идеи перед командой): в редакторе игры рядом с каждым свойством (здоровье, урон и т.д.) появляется кнопка активной отладки; при нажатии устанавливается hardware breakpoint на запись в эту переменную. Когда игровая логика изменяет переменную → отладчик останавливается → можно посмотреть стек вызовов в Visual Studio: на примере нас выкидывает в подключённый отладчик в момент изменения переменных из редактора свойств. Соответственно, при отладке разных багов появляется возможность без залезания в код понять, кто и откуда изменил или испортил переменную для конкретного юнита, а применительно к коду — программно управлять отладкой для сложных случаев.</p>
+<img src="../assets/articles/be-your-own-breakpoint/02.gif" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← Все статьи</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
