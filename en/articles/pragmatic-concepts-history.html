@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A history of concepts in C++ — dalerank</title>
+<meta name="description" content="The fourth chapter of the PragmatiC++ draft: how C++ concepts evolved from ambitious semantic proposals of the late 1990s (reflexivity, symmetry, transitivity) and the 'heavy' concepts that almost made C++11, to the pragmatic Concepts Lite model adopted in C++20 — checking syntax instead of guaranteeing behavior." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-concepts-history.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-concepts-history.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pragmatic-concepts-history.html">RU</a><i>/</i><a class="on" href="pragmatic-concepts-history.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>A history of concepts in C++</h1><div class="ameta"><span>PragmatiC++ · chapter 4</span><span>9 min</span></div></div>
+  <article class="prose">
+    <p style="color:var(--ink-soft);font-style:italic">This is the fourth chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
+
+<img src="../../assets/articles/pragmatic-concepts-history/01.jpg" alt="A history of concepts in C++" class="post-image" loading="lazy" />
+<p>The history of concepts in C++ is one of the most telling examples of how the language evolves not linearly but through decades of experiments, rollbacks and rethinking. The first ideas that we today call concepts appeared back in the late 1990s, when it became obvious that C++ templates have colossal expressiveness but provide practically no means to describe the programmer's intent. A template could be instantiated with almost any type, but the error showed up either as kilometers of compiler messages or as unexpected behavior at runtime. Already then Stroustrup formulated the problem as "the absence of contracts for templates," when the programmer knows that the type is required to have a + or == operator, but the language doesn't express it.</p>
+<p>Early concept proposals were extremely ambitious and sought to describe not only syntax but also semantics. For example, the EqualityComparable concept was supposed to mean not just the presence of operator== but the fulfillment of the mathematical properties of equivalence: reflexivity, symmetry and transitivity. Similarly, concepts for ordered types assumed a strict weak ordering, and for iterators correct behavior on multiple passes. This reflected an academic view of generic programming, heavily inspired by functional languages and Stepanov's work.</p>
+<p>If you were shown a description of one of the early variants of concepts, you'd think it was some kind of hellish Python (and yes, <code>|</code> here is used as a logical AND that adds conditions):</p>
+<pre style="margin:1.4rem 0"><code>concept Numeric {
+    @abstract operator+(const T&amp;, const T&amp;)
+    |
+    @abstract operator-(const T&amp;, const T&amp;)
+    |
+    @abstract operator*(const T&amp;, const T&amp;)
+    |
+    @abstract operator/(const T&amp;, const T&amp;)
+    |
+    @delete operator&lt;(const T&amp;, const T&amp;) // can't be compared
+    |
+    @allow T(0)  // can be created from 0
+};</code></pre>
+<p>But it fairly quickly became clear that such concepts couldn't be implemented in a real compiler because of their complexity, since semantic properties can't be checked automatically. The compiler can't prove the correctness of operator== for all use cases unless you turn C++ into a language of formal proofs. Moreover, even formalizing such requirements in the standard's specification turned out to be extremely difficult: where exactly does the boundary lie between "the programmer's promise" and "the language's guarantee"? Another variant of a separate language for concepts relied on a mathematical apparatus of expressions to specify constraints:</p>
+<pre style="margin:1.4rem 0"><code>concept Container&lt;typename&gt; {
+    typename value_type
+    typename iterator
+
+    comparable -&gt;
+      T == T -&gt; bool
+      and T != T -&gt; bool
+      and T &lt; T -&gt; bool
+      and T &lt;= T -&gt; bool
+      and T &gt; T -&gt; bool
+      and T &gt;= T -&gt; bool
+};</code></pre>
+<p>Despite all the difficulties, work continued, and by the mid-2000s concepts had become one of the key directions of C++'s development and were actively discussed in the committee; compiler prototypes were developed, and at some point concepts even almost made it into the C++0x standard (the future C++11). But it was precisely here that the first major clash of theory and practice occurred, when the proposed system still turned out to be too complex to implement and too incomprehensible for the ordinary programmer. As a result concepts were excluded from C++11 at the last moment, which of course was perceived by many in the community as a serious defeat.</p>
+<p>However, after this came an important period of rethinking, and instead of trying to solve all the problems of concepts at once, they decided, on the contrary, to simplify the model of use. So the idea of Concepts Lite was born as a lightweight variant of concepts, when semantic requirements were deliberately abandoned and the focus was placed exclusively on what the compiler can check reliably and efficiently — the conditions proposed by the programmer. A key role in this was played by Andrew Sutton, who proposed a simplified model of constraints based on logical expressions, atomic constraints and strict, formalized rules of partial ordering. Here's roughly what concepts would have looked like had they been adopted in 2009:</p>
+<pre style="margin:1.4rem 0"><code>// A concept with axioms to describe semantics
+concept TotalOrder&lt;typename T, typename Op&gt; {
+    requires Predicate&lt;Op, T, T&gt;;
+
+    // Axioms describe semantic properties
+    axiom Reflexivity(Op op, T x) {
+        op(x, x) &lt;=&gt; false;  // an element is not less than itself
+    }
+    axiom Antisymmetry(Op op, T x, T y) {
+        if (op(x, y) &amp;&amp; op(y, x))
+            x &lt;=&gt; y;  // if x &lt; y and y &lt; x, then x == y
+    }
+    axiom Transitivity(Op op, T x, T y, T z) {
+        if (op(x, y) &amp;&amp; op(y, z))
+            op(x, z) &lt;=&gt; true;  // transitivity
+    }
+}</code></pre>
+<p>Concepts Lite weren't a "contract about behavior" but became a language mechanism for specifying template constraints, and a concept in this model essentially became a named logical expression over types and an expression checked at compile time. A concept now only says that "this type supports exactly the operations listed here."</p>
+<p>Such a pragmatic approach turned out to be more suitable for the community, while the implementation itself was simple enough and didn't break existing code, complementing already-existing mechanisms like SFINAE. The constraints also made template behavior more predictable and became part of the overload system rather than a side effect of substitution failures, and it was exactly this version of concepts that was adopted into the C++20 standard.</p>
+<p>Modern concepts became the result of a compromise between expressiveness and implementability. Although they aren't based on checking the semantics and correctness of algorithms, they do allow you to express requirements on types explicitly and substantially improve the readability of interfaces, giving the compiler enough information to choose specialized overloads.</p>
+<p>The history of concepts shows well the philosophy of C++'s development, when the language doesn't strive to be ideally pure from a theoretical standpoint but also doesn't abandon powerful ideas if they can be adapted to reality. Modern concepts are far from the academic ideal of the late 2000s and are more an engineering tool ready for use, and that's exactly why they turned out to be viable.</p>
+
+<h3>Non-empty comments</h3>
+<p>In the very first proposals a concept was regarded as a set of requirements + a semantic contract, and Stepanov's syntax resembled a separate mini-language.</p>
+<p>An example of an equality concept:</p>
+<pre style="margin:1.4rem 0"><code>concept EqualityComparable&lt;typename T&gt; {
+    bool operator==(T, T);
+    bool operator!=(T, T);
+
+    /// semantic requirements:
+    /// == is reflexive
+    /// == is symmetric
+    /// == is transitive
+};</code></pre>
+<p>Here it's fundamentally important that the last lines weren't comments in the spirit of "for documentation" — they were assumed to be part of the formal definition of the concept. The idea came from the work of Gries/Dijkstra and the academic school of generic programming: an algorithm is correct only when the type satisfies mathematical properties.</p>
+
+<h3>The axioms that never happened</h3>
+<p>In later versions of the early concepts the emphasis shifted to the STL, and the concepts themselves were used to constrain algorithms directly:</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename Iter&gt;
+concept RandomAccessIterator
+    : BidirectionalIterator&lt;Iter&gt; -&gt; axiom {
+        i + n;
+        i - n;
+        i[n];
+    };
+
+// And further:
+
+template &lt;RandomAccessIterator Iter&gt;
+void sort(Iter first, Iter last);</code></pre>
+<p>Here it's important to note that semantic inheritance was still implied: RandomAccessIterator doesn't just "have operator+" but guarantees O(1) operation complexity, correct indexing, reference stability, etc. The language formally didn't check this, but the standard <em>promised</em> that if a type was declared as satisfying the concept, it was obliged to behave correctly. In any case, no existing compiler could perform such checks, and it was a contract "on someone's word of honor," so it never got beyond prototypes.</p>
+
+<h2>The heavy 2000s</h2>
+<p>In the versions of concepts that almost made it into C++11, the syntax became significantly closer to ordinary code and more deeply built into the template system.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+concept LessThanComparable -&gt; requires(T a, T b) {
+    { a &lt; b } -&gt; bool;
+};</code></pre>
+<p>And the usage:</p>
+<pre style="margin:1.4rem 0"><code>template &lt;LessThanComparable T&gt;
+T min(T a, T b) {
+    return b &lt; a ? b : a;
+}
+
+// But additional mechanisms also existed:
+template &lt;typename T&gt;
+  requires LessThanComparable&lt;T&gt;
+    void foo(T);</code></pre>
+<p>But the problem was that concepts:</p>
+<ul>
+<li>affected type deduction;</li>
+<li>affected the partial ordering of templates;</li>
+<li>introduced new specialization rules;</li>
+<li>made compiler errors even more complex.</li>
+</ul>
+<p>Even Stroustrup admitted that this version was too complex and still too incomprehensible for the ordinary programmer. The transition to Concepts Lite that we see now is often called a deliberate simplification, but in fact it wasn't a step back but rather a step toward the reality of both existing projects and new codebases. After the failed attempt to include "heavy" concepts in C++11, it became clear that the language had gone too far in its desire to formalize the correctness of programs: a program can be formally correct, but that won't make it work better or be more understandable. It was exactly at this moment that the idea arose to simplify the model and keep only what the compiler is actually able to digest.</p>
+
+<h2>Lightweight concepts</h2>
+<p>At the heart of Concepts Lite lies a simple but very important idea: a concept isn't a philosophical statement from Stepanov's early work about a type's properties, but merely a technical constraint on the permissible substitutions of template parameters. In this case a concept answers not the question "is this the right type" but the question "can this type be used to generate this code." That's why the modern C++20-style EqualityComparable concept only requires the existence of the expressions a == b and a != b and that their result can be converted to bool, while the compiler is left to check exclusively the form of the expression and its type, without trying to draw conclusions about whether the equality operation behaves correctly from a mathematical standpoint.</p>
+<pre style="margin:1.4rem 0"><code>// The concept checks only syntax, not behavior
+template&lt;typename T&gt;
+concept EqualityComparable = requires(T a, T b) {
+    { a == b } -&gt; std::convertible_to&lt;bool&gt;;
+    { a != b } -&gt; std::convertible_to&lt;bool&gt;;
+};</code></pre>
+<p>This means that properties such as reflexivity, symmetry or transitivity, which were present in the first variants of concepts, completely fall outside the area of responsibility of the language and, accordingly, of the compiler. A type may formally satisfy EqualityComparable while having an absurd implementation of operator== that returns random values or depends on global state, and from the compiler's standpoint this is absolutely fine, because its job isn't to prove the correctness of the program but to check that the generated code is possible at all.</p>
+<p>If we compare the old and new concepts, then in the early, mathematically complete approach the statement "the type satisfies EqualityComparable" meant much more than just the presence of operators. Algorithms could rely on equality behaving like an "equivalence relation," and the entire correctness of the STL was built around this assumption, which of course was beautiful in theory, but this theory rested on an unspoken agreement between the type's author and the standard library.</p>
+<p>An equivalence relation is a proof that some elements of a set are "the same" from a certain point of view. For a relation to be an equivalence relation, it must behave just as naturally as ordinary equality. Imagine we have some sign ∼ that says "equivalent," and we want it to have the same intuitive properties as the equals sign.</p>
+<p>For this the relation must satisfy three axioms. Reflexivity, when any element is equivalent to itself (a ∼ a), which sounds obvious but is important to fix explicitly. Symmetry: if a is equivalent to b, then b is equivalent to a (if a ∼ b, then b ∼ a) and the order doesn't matter. And finally, transitivity — if a is equivalent to b, and b is equivalent to c, then a must be equivalent to c (if a ∼ b and b ∼ c, then a ∼ c). Here, for example, is a very simple description of equivalence:</p>
+<pre style="margin:1.4rem 0"><code>A relation ∼ on a set S is called an equivalence relation
+if for all a, b, c ∈ S the three axioms hold:
+
+┌─────────────────────────────────────────────────────────────────┐
+│ REFLEXIVITY                                                     │
+│                                                                 │
+│   ∀a ∈ S: a ∼ a                                                 │
+│                                                                 │
+│   "Every element is equivalent to itself"                      │
+│                                                                 │
+│   Example: 42 = 42, a person equals themselves                  │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ SYMMETRY                                                        │
+│                                                                 │
+│   ∀a, b ∈ S: a ∼ b  ⟹  b ∼ a                                    │
+│                                                                 │
+│   "If a is equivalent to b, then b is equivalent to a"          │
+│                                                                 │
+│   Example: if 6/2 = 3, then 3 = 6/2                             │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ TRANSITIVITY                                                    │
+│                                                                 │
+│   ∀a, b, c ∈ S: (a ∼ b) ∧ (b ∼ c)  ⟹  a ∼ c                     │
+│                                                                 │
+│   "If a∼b and b∼c, then a∼c"                                    │
+│                                                                 │
+│   Example: if a = b and b = c, then a = c                       │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<p>These three properties together guarantee that our relation behaves sensibly and allows the whole set to be split into non-overlapping groups of equivalent elements, i.e. they have an "equivalence relation." Well, how do you like the idea of such a mathematical apparatus in concepts? And another question — how do you describe it?</p>
+<p>The modern approach is far more down-to-earth: if a type satisfies EqualityComparable, this means only one thing — the code that uses == and != in the appropriate places will compile, but the language gives no guarantees of the algorithm's correctness. The responsibility for making operator== actually have meaningful semantics lies entirely with the programmer, while the compiler translates this into a form accessible to the processor.</p>
+
+<h2>What remained in the standard</h2>
+<p>The old concepts didn't survive because semantic requirements can't be checked by the compiler automatically, which means they inevitably turn either into comments or into a source of problems, and formalizing such requirements in the standard turned out to be extremely difficult, and you can't clearly say where the boundary lies between the language's obligation and the developer's code. The implementation of heavy concepts overloaded compilers and made the already complex template rules even more complex, instead of simplifying the programming process. Maybe it's a good thing the committee couldn't manage a mathematically complete implementation of concepts back then, otherwise we'd now be mired in drawing arrows and proving axioms. But concepts didn't become a silver bullet, adding a certain complexity to an already not-so-simple language. As for why "lightweight" concepts nevertheless led to "heavy" hierarchies — we'll discuss that in the next chapter...</p>
+
+    <a class="backlink" href="../index.html#books">← All books</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
