@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Overloads in C++ — dalerank</title>
+<meta name="description" content="The second chapter of the PragmatiC++ draft: overloads not as syntactic sugar but as a mechanism of generic programming. Algorithm before types, exponentiation by squaring, good and bad overload sets, a critique of std::filesystem, and the principles of good overload-set design." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-overloads.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-overloads.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pragmatic-overloads.html">RU</a><i>/</i><a class="on" href="pragmatic-overloads.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Overloads in C++</h1><div class="ameta"><span>PragmatiC++ · chapter 2</span><span>20 min</span></div></div>
+  <article class="prose">
+    <p style="color:var(--ink-soft);font-style:italic">This is the second chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
+
+<img src="../../assets/articles/pragmatic-overloads/01.jpg" alt="Overloads in C++" class="post-image" loading="lazy" />
+<p>About four years ago, at the seam between two projects — when the old one was just being supported and the new one was still in preproduction and pitches of varying completeness (planning and attempts to sell the concept and ideas to uninterested investors) — my team back then somehow ended up with free time, and somewhere between teaching newcomers the wisdom of the custom engine, attempts to switch to the C++20 standard and the backlog retrospective, on a sunny September morning the idea was born to run studio discussions in the style of a C++ theory podcast, to figure out which features were implemented in the engine, what competencies the new hires had, and to generally refresh the theory a bit. So a mini-course of in-house lectures was born, given by different people with different but real experience of applying it, later settling into the local wiki as a set of articles, best practices or just notes with a gamedev focus. So that all this good stuff wouldn't go to waste — since quite a lot of man-hours went into it — I decided to polish these notes and post them in a readable form (there won't be video, unfortunately, because of NDA and all sorts of project spoilers and the local kitchen of development, and no one would listen to those dozens of hours of chatter anyway), but the principles of the language and its features are something copyright has no power over, so in this form it seems okay. Unfortunately, we'll start not with generic programming but with the second podcast about overloads, because the first recordings turned out to be corrupted and restoring them will take time. So, overloading in C++, not the way it's taught at university and given in books...</p>
+<p>Let's talk about overloads and generic programming, but let's start not with syntax and not with templates, the way it's presented in most textbooks and technical literature, but with the idea. In C++, function and method overloading is often perceived as a convenience or a way to "nicely name different things the same way," but in fact it's a far more powerful tool whose skillful use lets you build universal interfaces. Interfaces that can be extended to new data types in such a way that they remain clear and safe.</p>
+<p>To understand this, you need to recall what generic programming and its particular application as overloads are actually founded on. The founders of the STL formulated the key idea of the standard library as simply as possible: first you need to correctly compose (come up with) the algorithm, and only then figure out which types it works for. This phrase is often heard at conferences and in the books of smart people, but in practice it's constantly violated. Violated not because it's hard to do, but because it's very easy to start with types, classes, hierarchies and other base things familiar to a programmer, and only then try to "stretch" an algorithm over them. Generic programming itself offers the opposite path, and if you look at the standard library's algorithms, they're as generic as possible, and in most cases will work both for plain integers and for a complex class with overloaded operators.</p>
+<p>Starting from the algorithm's task, you should always abstract away from concrete data types and ask yourself not "what kind of object is this" but "what operations on it are needed." Do we need to be able to multiply values, compare them, copy them, create a neutral element? The answers to these questions will naturally reveal the requirements on the types, which won't be conjured out of thin air — and to speed up (a physical quantity) of some entity, floats won't suddenly appear (yes, it fits syntactically, but a float wasn't even close semantically); rather, they become a consequence of the algorithm.</p>
+
+<h2>The classic textbook example of overloading</h2>
+<p>What most textbooks write:</p>
+<pre style="margin:1.4rem 0"><code>// "Function overloading lets you use one name
+//  for functions with different parameter types"
+
+// Function to add two integers
+int add(int a, int b) {
+    return a + b;
+}
+
+// Function to add two floating-point numbers
+double add(double a, double b) {
+    return a + b;
+}
+
+// Function to add three integers
+int add(int a, int b, int c) {
+    return a + b + c;
+}
+
+// Function to concatenate strings
+std::string add(const std::string&amp; a, const std::string&amp; b) {
+    return a + b;
+}</code></pre>
+<p>"The compiler will choose the right function based on the types and number of arguments. This is called overload resolution."</p>
+<pre style="margin:1.4rem 0"><code>// Pavlovskaya
+// Area of a circle
+double area(double radius) {
+    return 3.14159 * radius * radius;
+}
+
+// Area of a rectangle
+double area(double width, double height) {
+    return width * height;
+}
+
+// Area of a triangle
+double area(double base, double height, bool is_triangle) {
+    return 0.5 * base * height;
+}
+
+int main() {
+    std::cout &lt;&lt; area(5.0) &lt;&lt; "\n";           // circle
+    std::cout &lt;&lt; area(4.0, 6.0) &lt;&lt; "\n";      // rectangle
+    std::cout &lt;&lt; area(3.0, 4.0, true) &lt;&lt; "\n"; // triangle
+}</code></pre>
+<pre style="margin:1.4rem 0"><code>// Stroustrup
+// Complex numbers
+class Complex {
+    double re, im;
+public:
+    // Constructor from two numbers
+    Complex(double r, double i) : re(r), im(i) {}
+
+    // Constructor from one number (imaginary part = 0)
+    Complex(double r) : re(r), im(0) {}
+
+    // Default constructor
+    Complex() : re(0), im(0) {}
+
+    void print() const {
+        std::cout &lt;&lt; re &lt;&lt; " + " &lt;&lt; im &lt;&lt; "i\n";
+    }
+};</code></pre>
+<p>The examples above are syntactic sugar, and by thinking within the frame of types — "we have int, double, string, let's write a function for each" — the general solution is missed. The invented set of overloads becomes a way to call similar things the same way, so the programmer doesn't have to remember <code>add_int()</code>, <code>add_double()</code>, <code>add_string()</code>. But this is a superficial understanding that doesn't take the programmer beyond procedural thinking — it's not the generic programming you see in std when you dig into the algorithms. It's just syntactic sugar masking a set of separate functions under a single name.</p>
+
+<h2>Generalizing the algorithm</h2>
+<p>In "Notes on Programming" Stepanov writes: "Structured Programming School: Dijkstra, Wirth, Hoare, Dahl. By 1975 I became a fanatical disciple. I read every book and paper authored by the giants. I was, however, saddened by the fact that I could not follow their advice. I had to write my code in assembly language and had to use goto statement. I was so ashamed. And then in the beginning of 1976 I had my first revelation: the ideas of the Structured Programming had nothing to do with the language." (<a href="https://studylib.net/doc/25271030/alexander-stepanov----notes-on-programming--2018-" target="_blank" rel="noopener">Notes on Programming</a>).</p>
+<p>I read both this Stepanov book and Dijkstra's books, and I prefer another approach he borrowed from Gries/Dijkstra (David Gries/Edsger Dijkstra) — also an almost textbook example — raising a number to a power, computing x to the power of n. The very first solution that comes to mind looks trivial: we set up an accumulator variable and multiply it by x n times in a loop. This solution is easy to explain, easy to write and easy to verify, and it's often proposed at interviews. Once the main question wasn't "how to do it" (practically everyone can write the solution), but can it be done faster?</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+T pow_naive(T x, unsigned n) {
+    T result = T{1};
+
+    for (unsigned i = 0; i &lt; n; ++i)
+        result = result * x;
+
+    return result;
+}</code></pre>
+<p>It turns out it can, and significantly. There's an algorithm called exponentiation by squaring. It relies on the binary representation of the exponent and lets you solve the problem in logarithmic time. Instead of doing n multiplications, each time we halve the exponent and square the base. If the current exponent is odd, we additionally multiply the result by the current value of the base.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+T pow_fast(T x, unsigned n) {
+    T result = T{1};
+
+    while (n &gt; 0) {
+        if (n &amp; 1)
+            result = result * x;
+
+        x = x * x;
+        n &gt;&gt;= 1;
+    }
+
+    return result;
+}</code></pre>
+<p>Intuitively this algorithm can be understood like this: any integer can be represented in binary, which means any power can be decomposed into a product of powers of two. For example, x to the 13th is x to the 8th times x to the 4th times x to the 1st. The algorithm sequentially "runs" through the bits of the exponent, starting from the least significant, and each time decides whether the current base participates in the final result.</p>
+<pre style="margin:1.4rem 0"><code>x^13 = x * x * x * x * x * x * x * x * x * x * x * x * x
+
+13₁₀ = 1101₂ = 8 + 4 + 1
+
+x^13 = x^8 * x^4 * x^1
+
+x^1 = x                    (0 multiplications)
+x^2 = x^1 * x^1 = x²       (1 multiplication)
+x^4 = x^2 * x^2 = x⁴       (2 multiplications)
+x^8 = x^4 * x^4 = x⁸       (3 multiplications)
+
+Bits of 13: 1     1    0    1
+            ↓     ↓    ↓    ↓
+           x^8   x^4   _   x^1
+
+    R = x^8 * x^4 * _ * x^1</code></pre>
+<p>It's important to note not so much the algorithm itself as what it actually requires of the data type. The algorithm doesn't care whether <code>x</code> is an integer, a real number, a very large or small integer (int6_t/int128_t), a matrix or something else. All it needs is for a multiplication operation to exist, for there to be a neutral element, and for values to be copyable. Everything else is implementation details.</p>
+<p>And here we arrive at the connection with overloads and generic programming. The algorithm is one and the same, described in abstract terms, while the concrete multiplication operation is chosen depending on the type. For <code>int</code> it's one multiplication, for double another, and for a matrix a third — and it's precisely through overloads and generic interfaces that the language lets you link one algorithm with many concrete implementations.</p>
+<p>And it turns out that overloads become not just a way to avoid different function names, but turn into a mechanism that lets you express the idea: "one and the same algorithm, applicable to different types, if they satisfy certain requirements." Now overloading is an integral part of generic programming rather than its incidental "convenient" effect.</p>
+<p>If you keep this thought in mind, designing interfaces and algorithms starts to look different, when we begin to think not about classes and hierarchies but about the meaning of operations and about which properties of types make an algorithm correct and efficient. That's exactly where truly beautiful and generic code begins.</p>
+
+<h2>Generalizing the conditions</h2>
+<p>Now that we have the algorithm itself, it's logical to ask the next question: how do we make it generic? How do we turn a solution for integers into an algorithm that works not only with <code>unsigned</code> but with other data types too?</p>
+<p>The first impulse is usually very straightforward — you want to just replace the concrete type with a template parameter, a conditional <code>T</code>, and consider the task solved. Formally the code does become templated, but almost immediately it becomes clear that this is only a superficial generalization, not a real one.</p>
+<p>Take, for example, a check of the form <code>x &lt; 0</code>. It only makes sense for signed numeric types. If <code>T</code> is an unsigned type, this expression is meaningless. If <code>T</code> is a matrix, a vector or a user-defined type, such an operation may not exist at all. This is the first signal that the algorithm in its current form is in fact rigidly tied to concrete data types.</p>
+
+<h2>The neutral-element problem</h2>
+<p>Another, even more fundamental problem is connected with initializing the result. And while in the simplest version of the algorithm we start with one — which for integers and reals looks natural — the moment you go beyond scalar arithmetic, the question stops being trivial. For matrices, is "one" the identity matrix? And for complex numbers? And for user-defined types? The algorithm itself shouldn't and can't know what value plays the role of the neutral element for multiplication.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+T power(T x, unsigned n) {
+    if (x &lt; 0)            // problem, a partial solution
+        x = -x;
+
+    T result = 1;         // problem, one doesn't suit everyone
+
+    while (n--)
+        result *= x;
+
+    return result;
+}</code></pre>
+<p>You can try to solve this problem by introducing some global function like <code>identity(T)</code> that returns the neutral element for type <code>T</code>, and at first glance it looks elegant and will even work (for a while), but in reality such a solution is too rigid. It imposes a global convention that may not exist, and requires every type to support a non-standard interface, which immediately reduces the algorithm's universality and makes it harder to integrate into existing code.</p>
+<p>A much more natural and "standard STL-ish" approach is not to try to guess the neutral element inside the algorithm but to pass the initial accumulator value from outside. In this case the algorithm receives already correctly initialized state and simply does its work, without making assumptions about the data type and without implementing logic not directly related to computing the power. Now you understand why STL algorithms often require an initial element?</p>
+<p>This style fully matches the philosophy of the C++ standard library. Algorithms in the STL are a kind of "clean rooms" that don't validate input data for correctness, don't create objects and don't make architectural decisions for the programmer. Their job is to correctly and efficiently perform a given sequence of operations, while the responsibility for preparing arguments, choosing initial values and observing preconditions lies with you and me and the external logic that calls the algorithm.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+T power(T base, unsigned n, T result) {
+    while (n--)
+        result *= base;
+
+    return result;
+}</code></pre>
+<p>Only this way do we get a truly generic algorithm that works with any types for which the necessary operations are defined, while keeping it simple, transparent and easy to verify. That's exactly how generalization and overloads start working not as a language trick with same-named functions, but as a design tool.</p>
+
+<h2>Generalizing the overloads</h2>
+<p>But in practice we almost never deal with a single "universal" function; instead we work with a set of functions united by one property (not necessarily the name). It's not one abstract <code>power/pow</code>, but a whole set of overloaded functions, constructors, operators and methods that exist under one name and together form a single, flexible interface. The programmer sees one name and one concept, while the compiler sees dozens of different implementations you may not even be aware of, and picks the one most suitable for the concrete type. It's precisely this combination of overloads that lets you write code that is at once convenient, expressive and without loss of performance.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T, typename Op&gt;
+T power(T base, unsigned n, T result, Op op) {
+    while (n--)
+        result = op(result, base);
+
+    return result;
+}</code></pre>
+<p>Here it's worth stressing that the zoo of overloads doesn't compete with generic programming but complements it. The templated algorithm sets the general form of the solution, while the overloaded operations and helper functions provide optimal behavior for concrete cases — i.e. we go not from data types to the algorithm, but from the algorithm's capabilities to the permitted data types, and as a result we get a generic interface that seems simple but internally accounts for the differences between types.</p>
+<p>To see this on an example from the standard library itself, you don't need to dig into the implementation of <code>pow</code>; you can take a simple comparison operator for strings. At first glance the task looks elementary: we have <code>std::string</code>, we have the <code>==</code> operator, and we could write it in the most straightforward form — take two strings by reference and compare them via <code>compare</code> — and such code will be correct and clear for most programs and developers, but it contains the "single window" problem, or the "insufficient overload set" problem. Although this is more a descriptive expression than an established term — the "single window" wording is intuitively clear in the Russian community and accurately describes the situation, but in the C++ community it's discussed as part of the broader topic of designing overload sets.</p>
+<p>The problems begin as soon as we step outside the ideal case, because in real code strings are compared with anything, and very rarely specifically with strings. Very often one of the operands will be a string literal, on the left as well as the right, like <code>"hello"</code>, or a <code>const char*</code> pointer obtained from a C interface; and if we have only one version of the operator taking two <code>std::string</code>, the compiler will be forced to perform an implicit conversion. The literal will turn into a temporary string object for which memory must be allocated, the data copied, and then almost immediately all of it destroyed.</p>
+<p>From a semantics standpoint the program remains correct in all cases, but from an efficiency standpoint we get extra work — and the most unpleasant part is that this inefficiency is hidden from the developer by a "convenient" call. The call really does look harmless, even if under the hood dynamic memory allocation happens. And here the power of a set of overloads shows itself: instead of one universal operator, the standard library provides several variants — comparing a string with a string, a string with a C-string, a C-string with a string. They all logically mean the same thing — an equality check — but are implemented so as to avoid unnecessary conversions and temporary objects in each concrete case.</p>
+<pre style="margin:1.4rem 0"><code>string == string
+
+const char* == string
+
+string == const char*</code></pre>
+<p>For the developer the interface stays the same: we just write <code>a == "hello"</code> and think about implementation details only in complex cases, or when we get a compile error, or see performance problems. For the compiler the set of overloads turns into a set of clearly stated rules from which it picks the most appropriate. This is exactly the well-designed interface the STL represents: a single name, a single meaning, but different implementations, each optimal for its set of types.</p>
+<p>From this simple example, which you most likely use every day, an important rule of good design follows — overloads shouldn't change the meaning of the operation, only refine it for different forms of input data. If different overloads do "different things," the interface becomes confusing and treacherous, and the conditions of use slippery. That's exactly how the standard library achieves its balance of universality and convenience, without the need to write specialized code by hand.</p>
+
+<h2>Good overloads</h2>
+<p>Real life of course gives us non-ideal sets of programmatic interfaces, and almost inevitably the question arises — "how well designed are they even?" Formally the code may be correct, compile and even run fast, while still being inconvenient and treacherous to use. The problem is that overloads interact directly with the type system and the call-resolution rules in C++, and that's one of the hardest parts of the language, and with each new standard it doesn't get easier, rather the opposite.</p>
+<pre style="margin:1.4rem 0"><code>void log(const char* msg);
+void log(const std::string&amp; msg);
+void log(const std::string_view&amp; msg);
+
+log("hello");              // which overload?
+std::string s = "world";
+log(s);                    // here it's obvious
+log(s.substr(0, 3));       // and here?</code></pre>
+<p>Sometimes it's customary to joke that a good overload set is the one you wrote yourself (because you understand what you did and how it works). And a bad one is the one someone else wrote, because you have to figure out why the compiler chose this particular overload and not another. As usual, in every joke there's a grain of a joke, but in practice there are quite concrete quality criteria after all.</p>
+<p>These criteria were well formulated by Tim Sweeney (yes, the author of that very Unreal — and before him also Titus Winters, but more generally, and I learned about Titus much later than about Sweeney) many years ago, and the fruits of his approach we now see in the development of the Unreal Engine; and what makes it valuable is that it comes not from abstract "beauty" but from real experience supporting and developing one of the most complex systems in game development.</p>
+<p>The first and perhaps most important principle goes like this: the developer shouldn't have to solve the overload puzzle in their head. If, to call a function correctly, you need to know well all the subtleties of the overload-selection rules in the engine, understand template priorities, implicit conversions and the pitfalls of references and values, this almost always means a bad interface design. A good overload set works intuitively — I look at the function name or the code and immediately understand what will happen and how, without looking into the documentation.</p>
+<pre style="margin:1.4rem 0"><code>void log(std::string_view msg) {
+    write_to_log(msg);
+}
+
+log("hello");
+log(s);
+log(s.substr(0, 3));</code></pre>
+<p>The second principle is closely related to the first — all overloads belonging to one set should have a single clear purpose that can be expressed in one short phrase. For example: "compare two strings for equality" or "raise a value to a power," as in the examples above. If, when explaining each overload, you have to make caveats, write comments or dance with a tambourine, then in fact different operations are hiding under one name, and such an interface starts to mislead, losing its integrity.</p>
+<p>The third principle was developed much later and consists in the fact that each overload should do roughly the same thing. The behavior should be roughly identical regardless of which version the compiler chose. Differences between overloads are permissible only at the level of performance, forms of data representation or ways of passing arguments, but not at the level of meaning. If one overload logically does one thing and another something noticeably different, this is almost guaranteed to lead to bugs and unexpected effects.</p>
+<pre style="margin:1.4rem 0"><code>// the interface-spread problem
+void open(File&amp; f);
+void open(const char* path);
+void open(const char* path, bool create_if_missing);</code></pre>
+<p>It's important to note that the first two principles actually follow from the third, or you could say the third is their generalization. If all overloads really do the same thing, the user doesn't have to puzzle out which one to pick, and their purpose is easily formulated in one phrase. But as soon as this unity is broken, the interface starts to "spread," and overloads turn from a tool of expressiveness into a source of complexity.</p>
+
+<h2>Bad overloads</h2>
+<p>To better feel the boundary between good and bad design, it's useful to consider a deliberately unfortunate example of an overload set. Imagine a function with one name, say <code>resolve</code>, that has two overloads. In one case it takes an integer and, for example, normalizes it, bringing it into some allowed range, and in the other case the same function with the same name takes a string and… parses it as a file path, checking the existence of that file in the file system.</p>
+<p>Formally, from the language's standpoint, syntactically everything looks legal. This really is one overload set, the compiler will without problems pick the right version depending on the argument type, but from the standpoint of usage semantics the problems begin. Under one name two operations are hiding that have almost nothing in common, solve different tasks, work with different application domains and require a different context.</p>
+<p>Try reading such code without comments: the call <code>resolve(x)</code> can still somehow be interpreted if you know the type of <code>x</code>. But on its own it says nothing about the author's intent, and the call <code>resolve("data/config.json")</code> looks even worse: it's unclear what exactly will happen — parsing a string, checking a file, loading data or something else. To understand the behavior, you have to either dig into the documentation or know all the overloads by heart.</p>
+<pre style="margin:1.4rem 0"><code>int resolve(int x)
+{
+    // normalize, pick the nearest allowed value, etc.
+    if (x &lt; 0)
+        return 0;
+    if (x &gt; 100)
+        return 100;
+    return x;
+}
+
+int resolve(const std::string&amp; path)
+{
+    // check existence and read the configuration
+    std::ifstream file(path);
+    if (!file)
+        return -1;
+
+    int value;
+    file &gt;&gt; value;
+    ret
+}</code></pre>
+<p>At this point the comment on the function ceases to be an explanation and turns into part of the code, and that's a sure sign that under one name two different pieces of functionality are actually hidden, which were simply given the same name for some reason.</p>
+<pre style="margin:1.4rem 0"><code>// here we have the secret blueprints
+auto a = resolve(x);
+
+// and here we were wrapping fish
+auto b = resolve("data/config.json");</code></pre>
+<p>"Broken" overload sets are dangerous because they mask a problem of visibility and responsibility. And even if the code compiles, looks tidy and passes review, that doesn't mean you won't have to look at each overload separately when changing it. As soon as the interface starts being used in a larger scope or falls into the hands of another developer, it becomes a source of problems.</p>
+<p>A good rule here is simple: if you can replace an overload with a different name and the code doesn't get worse, then the overload was a bad idea. You should overload only when one concept stands behind one name. It's clear that names are "few" and people prefer to economize on them at the expense of meaning, but such economy stops being expressive and starts only to mislead.</p>
+
+<h2>Another bad example</h2>
+<p>If you look critically at the not-so-old changes to the standard library, you can find examples where the principles of good overload-set design are violated. And one of the most telling cases is <code>std::filesystem</code> — this has been said more than once in committee discussions.</p>
+<p>std::filesystem is often cited as an example of a "modern" and convenient API for working with the file system, and in terms of the capabilities it brings it's indeed rich and a big step on the path of the language's development, but if you look specifically at the implemented overload design, it's far from the standard the algorithms were.</p>
+<p>The problem starts with the central data type <code>std::filesystem::path</code>. This type is conceived as a universal representation of a path, and a huge number of overloaded functions are built around it — i.e. it wasn't the algorithm that was the starting point, but established usage practice and the data type. So almost every operation has several versions: with <code>path</code>, with <code>const char*</code>, with <code>std::string</code>, sometimes with an extra <code>std::error_code</code>, sometimes without it. Formally this should all look like a convenience for the user, but in practice it turns into a complex and ambiguous labyrinth of decisions, where an inexperienced developer usually picks the first suitable solution — note, not the correct one, but the suitable one. I think everyone has seen that funny video; it's sad, but it's exactly what describes how most developers work with std::filesystem.</p>
+<p>For example, the function <code>exists</code>: in one case it takes a <code>path</code> and may throw an exception, in another it takes a <code>path</code> and a <code>std::error_code</code> and doesn't throw exceptions. Semantically these are already two different contracts: one version works through exceptions, the other through error codes, while the function name is one and the same. And looking at the call <code>exists(p)</code>, you don't see in the code which error-handling model is used until you look at the signature or documentation.</p>
+<pre style="margin:1.4rem 0"><code>std::filesystem::exists("data/config.json");
+
+// Throws exceptions
+bool exists(const std::filesystem::path&amp; p);
+
+// Doesn't throw, returns the error via error_code
+bool exists(const std::filesystem::path&amp; p, std::error_code&amp; ec) noexcept;</code></pre>
+<p>The situation gets even worse when implicit conversions come into play — <code>std::filesystem::path</code> is implicitly constructed from a string. As a result, a call that at first glance looks harmless actually involves creating a temporary <code>path</code> object, allocations, an encoding conversion and, again, a choice among several overloads. To know exactly which version will be called and what side effects it will entail, you need to know well all the overloads and their resolution rules.</p>
+<p>A separate problem is overloads that combine operations with different meanings under very general names like <code>status</code>, <code>symlink_status</code>, <code>exists</code>, <code>is_regular_file</code>, <code>is_directory</code> — they look like variations of one idea, but in fact differ in behavior, especially in the presence of symbolic links and errors. And the developer is forced to constantly remember which function follows links, which doesn't, and how each of them reacts to an inaccessible path. Formally it turns out that this isn't one overload but a separate family of APIs that was laid into the linear space of the standard library on a par with the algorithms. But while the algorithms explicitly say what they do inside (I do what you see), here the whole cognitive load (read the docs before using) is shifted onto the developer.</p>
+<p>From the standpoint of the principles described above, several points are violated here at once. We're explicitly forced to "solve the overload puzzle" in our heads, and to use <code>std::filesystem</code> correctly (so as not to be the person in the video above) you need to remember not only the purpose of the functions but also the differences between their versions related to errors, exceptions and implicit conversions. The purpose of the functions couldn't be expressed in one short name, because different behavior models hide under one name. And finally, the overloads don't do quite the same thing — the differences aren't limited to performance, they touch the very meaning of the call.</p>
+<p>This doesn't mean that <code>std::filesystem</code> is "bad" or shouldn't be used. This part of the standard library solves a big and complex task, and the chosen API merely reflects the explicit compromises that were made during standardization. From the standpoint of good design, the local overload set is more a cautionary example than a model to imitate. The code becomes less self-documenting, and understanding what's going on requires knowledge of the library's details — and that's exactly why, when designing your own interfaces, it's useful to remember this example, where even the standard library isn't insured against debatable decisions; but there are of course weighty reasons why it was done this way and why they went for exactly this kind of interface.</p>
+
+<h2>How to do it better</h2>
+<p>If we continue the conversation about good overload sets, it's useful to look at situations where overloading really works "as intended" and strengthens the interface rather than complicating it. Such examples are usually united by one important trait: all the overloads serve one and the same idea, just adapted to different forms of input data or different usage scenarios.</p>
+<p>Let's start with the simplest and perhaps most common case: overloads for related types. Here we can return to working with strings in C++; if you look at your code, you'll see that the representation of strings comes down to two types (std::string and const char*). This looks natural to those who use the language, because both types represent a string, just in a different form, and it's a historical legacy that became a rule.</p>
+<p>A good "historical" practice is to make one of these overloads the base one and the other a thin wrapper. One takes (let's call it the thin wrapper) <code>std::string</code>, the other (the base one) calls the <code>const char*</code> variant. As a result the behavior always stays unified, all the logic is concentrated in one place, and you avoid creating temporary objects and extra memory allocations, without complicating the convenient interface and the implementation.</p>
+<p>Another common and quite justified technique is adding overloads by the number of arguments. Imagine a function <code>concat</code> that assembles a string from several fragments. From the user's standpoint it's convenient to be able to pass one fragment, two or three, without thinking about containers, an argument array or formatting. Calls like <code>concat("Hello")</code>, <code>concat("Hello", world)</code> or <code>concat("Hello", world, '!')</code> look natural and read easily.</p>
+<pre style="margin:1.4rem 0"><code>auto s1 = concat("Hello");
+auto s2 = concat("Hello, ", world);
+auto s3 = concat("Hello, ", world, "!");</code></pre>
+<p>What matters is that in all these cases the goal stays one and the same: build a string. The difference is only in the amount of input data, and the overloads don't change the meaning of the operation, they only make the interface more flexible and convenient. We don't need to know the implementation details, and with high confidence the compiler will simply pick the call form that best fits the current task.</p>
+<p>Another well-known example is <code>std::vector::push_back</code>, where overloading is used no longer for convenience but for performance. There's a version taking <code>const T&amp;</code>, intended for copying an already-existing object, and a version taking <code>T&amp;&amp;</code>, which lets you efficiently move temporary objects or the results of <code>std::move</code>. From the programmer's standpoint both functions do the same thing — namely add an element to the end of the vector — but from the implementation standpoint they differ fundamentally in the cost of the operations.</p>
+<pre style="margin:1.4rem 0"><code>T a;
+vec.push_back(a);            // copy
+vec.push_back(T{});          // move
+vec.push_back(std::move(a)); // explicit move</code></pre>
+<p>That's exactly where the power of such an overload set lies: the semantics stay unified, the behavior predictable, and the differences show up only in efficiency, and we don't have to think about which overload exists, letting the compiler choose the optimal one.</p>
+
+<h2>Conclusion</h2>
+<p>If we generalize these examples, the main principle when working with overloads becomes clear — they should solve one and the same task, but for different forms of input data or different situations. They shouldn't change the meaning of the operation and, even more so, shouldn't mislead the developer. In C++ overloading is a powerful tool for creating convenient and performant interfaces, but only on the condition that the unity of semantics and common sense is preserved. As you've probably noticed, a large number of overloads makes the interface flexible, but at the same time increases the risk of confusion and implicit errors. To keep an overload set predictable and safe, it's important to explicitly state for which types this or that overload is permitted.</p>
+<p>Historically in C++ techniques like SFINAE and <code>enable_if</code> were used for this; they worked, but the code quickly became hard to read and maintain. With the arrival of concepts and <code>requires</code> the situation improved enormously, and type constraints became part of the interface — readable and expressive — while overload management became explicit and controllable. It's exactly this that today lets us build generic APIs that remain powerful while staying understandable to a human, not just the compiler. And that will be the subject of the next chapter...</p>
+
+    <a class="backlink" href="../index.html#books">← All books</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
