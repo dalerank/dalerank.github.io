@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Concept hierarchies in C++ — dalerank</title>
+<meta name="description" content="The fifth chapter of the PragmatiC++ draft: how the compiler picks among several matching template overloads via constraint subsumption and partial ordering. Syntactic identity matters more than logical equivalence, the STL iterator concept hierarchy, and where deep hierarchies hurt code clarity." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-concept-hierarchies.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-concept-hierarchies.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pragmatic-concept-hierarchies.html">RU</a><i>/</i><a class="on" href="pragmatic-concept-hierarchies.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Concept hierarchies in C++</h1><div class="ameta"><span>PragmatiC++ · chapter 5</span><span>13 min</span></div></div>
+  <article class="prose">
+    <p style="color:var(--ink-soft);font-style:italic">This is the fifth chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
+
+<img src="../../assets/articles/pragmatic-concept-hierarchies/01.jpg" alt="Concept hierarchies in C++" class="post-image" loading="lazy" />
+<p>In the previous articles I covered how overloads work and how the compiler finds the right functions in associated namespaces, but what happens when the compiler finds not one but several matching overloads at once? This question becomes especially relevant when working with templates and concepts, because one and the same type can satisfy the requirements of several functions simultaneously, and this is where the mechanism for selecting the most suitable overload comes into play. Without this selection the entire requires-and-concepts system wouldn't work.</p>
+<p>How does the compiler pick the best overload when there are several suitable variants? Intuitively we expect that a more "precise" function should take priority over a more general one, and we often carry this expectation into the rules we give the compiler when writing templates and constraints. The general idea here is the following: overloads can be not just enumerated but arranged into a hierarchy by degree of specificity; then some functions describe a wide class of types, others a subset of it, and once the argument type is known, the compiler should pick the function whose requirements most precisely match that type. This logic is built right into the C++ standard and is called <em>partial ordering</em>, precisely because not all overloads are necessarily comparable with each other.</p>
+<p>At the heart of partial ordering lies the notion of subsumption — or, speaking informally, one set of requirements subsumes another if every type satisfying the stricter requirements automatically satisfies the weaker ones too. In that case the stricter variant is considered more specialized and wins during overload selection.</p>
+<p>Let's return to the resolve() example from the <a href="pragmatic-constraints.html">previous article</a>, where we had two versions of the function:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+void resolve(T x) requires std::integral&lt;T&gt;;
+
+template&lt;typename T&gt;
+void resolve(T x) requires std::integral&lt;T&gt; &amp;&amp; (sizeof(T) &gt; 4);</code></pre>
+<p>The first function takes any integral type, while the second takes only those integral types whose size is greater than four bytes. Obviously the set of types of the second function is a subset of the set of the first, and any type that fits the second version automatically fits the first, but not vice versa.</p>
+<p>And if we call resolve(10ull), then both overloads formally fit: long long is an integral type, and on most platforms its size is greater than four bytes, and the compiler doesn't end up at a dead end, because it compares the constraints and sees that the second version is stricter, i.e. more specialized, and it's exactly the one chosen — without any ambiguity and without the need for additional hints from the programmer.</p>
+<p>This is a very important difference from the old SFINAE-based techniques, when such behavior had to be ensured manually: adding dummy parameters, complicating <em>enable_if</em> conditions, watching the order of overloads and hoping the compiler interprets them the way it was intended.</p>
+<p>With concepts, however, this hierarchy becomes part of the formal model of the language rather than a side effect of tricks, but it's still worth remembering that partial ordering isn't a panacea for all errors either, and there are situations where two sets of requirements don't subsume one another. For example, one concept may constrain a type by size, and another by the presence of a certain operation, and neither is stricter in the general case. In such situations the compiler will honestly report an ambiguity, because from the standpoint of formal logic it really has no grounds to prefer one variant over the other.</p>
+<pre style="margin:1.4rem 0"><code>#include &lt;concepts&gt;
+#include &lt;iostream&gt;
+
+// Concept: the type has a size greater than 4 bytes
+template&lt;typename T&gt;
+concept LargeType = sizeof(T) &gt; 4;
+
+// Concept: the type supports the increment operation
+template&lt;typename T&gt;
+concept Incrementable = requires(T t) {
+    { ++t } -&gt; std::same_as&lt;T&amp;&gt;;
+};
+
+// First overload: requires a large size
+template&lt;LargeType T&gt;
+void process(T value) {
+    std::cout &lt;&lt; "Large type version\n";
+}
+
+// Second overload: requires increment
+template&lt;Incrementable T&gt;
+void process(T value) {
+    std::cout &lt;&lt; "Incrementable version\n";
+}
+
+int main() {
+    long long x = 42;  // Satisfies both concepts!
+
+    process(x);  // Compile error: ambiguity!
+                    // long long is both LargeType and Incrementable,
+                    // but neither concept is stricter than the other
+
+    return 0;
+}
+
+&lt;source&gt;:31:5: error: call to 'process' is ambiguous
+   31 |     process(x);  // Compile error: ambiguity!
+      |     ^~~~~~~
+&lt;source&gt;:18:6: note: candidate function [with T = long long]
+   18 | void process(T value) {
+      |      ^
+&lt;source&gt;:24:6: note: candidate function [with T = long long]
+   24 | void process(T value) {
+      |      ^</code></pre>
+<p>The concept hierarchy and the partial-ordering mechanism together let you build overloads as a system of refining contracts, where you can start with the general case and gradually add more and more specialized versions without fear of conflicts and unexpected behavior. The compiler takes these refinements, builds a table of strict comparisons on their basis, and predictably picks the most suitable function, guided by exactly the requirements we explicitly formulated in the code.</p>
+
+<h3>What "stricter" means</h3>
+<p>Now let's figure out what exactly the word "stricter" means in the context of requires and concepts. Here it should be noted right away that we're talking not about the programmer's subjective feeling (an imprecise agreement as it was in SFINAE) but about a formal relation between conditions that the compiler is able to analyze (constraints).</p>
+<p>The intuitive explanation is fairly simple: if from the fulfillment of condition A the fulfillment of condition B <em>automatically follows</em>, then A is considered more specialized and B more general. Or like this: the set of types satisfying A is a subset of the set of types satisfying B. Now, if the compiler has to choose between overloads, it prefers the one whose requirements are stricter, because it describes a narrower and more precise case.</p>
+<p>For example, the condition std::integral&lt;T&gt; &amp;&amp; sizeof(T) &gt; 4 is stricter than just std::integral&lt;T&gt;, because any type satisfying the first condition necessarily satisfies the second too, but not vice versa. Similarly, requires (sizeof(T) == 4) is stricter than requires (sizeof(T) &gt;= 1): being equal to four bytes automatically means the size is not less than one byte, but that's only a special case of the more general condition.</p>
+<pre style="margin:1.4rem 0"><code>// General condition: any integral type
+template&lt;typename T&gt;
+requires std::integral&lt;T&gt;
+void process(T value) {
+    std::cout &lt;&lt; "General integral version\n";
+}
+
+// Stricter condition: integral type larger than 4 bytes
+template&lt;typename T&gt;
+requires std::integral&lt;T&gt; &amp;&amp; (sizeof(T) &gt; 4)
+void process(T value) {
+    std::cout &lt;&lt; "Large integral version (size &gt; 4)\n";
+}
+
+// Another example with different levels of specificity
+template&lt;typename T&gt;
+requires (sizeof(T) &gt;= 1)  // Very general condition
+void display(T value) {
+    std::cout &lt;&lt; "Any type with size &gt;= 1\n";
+}
+
+template&lt;typename T&gt;
+requires (sizeof(T) == 4)  // Stricter condition
+void display(T value) {
+    std::cout &lt;&lt; "Exactly 4 bytes\n";
+}
+
+int main() {
+    int x = 42;           // 4 bytes on most platforms
+    long long y = 100;    // 8 bytes on most platforms
+    short z = 5;          // 2 bytes
+
+    process(x);   // Calls the first version (int is usually 4 bytes, not &gt; 4)
+    process(y);   // Calls the second version (long long &gt; 4 bytes)
+    process(z);   // Calls the first version (short &lt; 4 bytes)
+
+    std::cout &lt;&lt; "\n";
+
+    display(y);   // Calls the first version (sizeof(long long) &gt;= 1, but != 4)
+    display(z);   // Calls the first version (sizeof(short) &gt;= 1, but != 4)
+
+    return 0;
+}
+
+Program stdout
+&gt;&gt; General integral version
+&gt;&gt; Large integral version (size &gt; 4)
+&gt;&gt; General integral version
+
+&gt;&gt; Any type with size &gt;= 1
+&gt;&gt; Any type with size &gt;= 1</code></pre>
+<p>The compiler isn't a programmer and doesn't reason "intuitively," as shown above, so in the C++ standard these relations are strictly formalized through the notion of <em>subsumption</em> — the subordination of one set of constraints to another. One set of constraints subsumes another if every disjunctive element of the first includes all the conjunctive elements of the second. The wording sounds heavy, but behind it lies quite concrete logic.</p>
+<p>To be able to compare constraints, the compiler first brings them to a structured form and breaks the requires expression into elementary components, treating the logical connectives &amp;&amp; and || not as arbitrary expressions but as logical operations over sets of requirements. After that a pairwise comparison of these elementary conditions takes place.</p>
+<p>Consider a simple example with logical OR:</p>
+<pre style="margin:1.4rem 0"><code>requires (std::integral&lt;T&gt; || std::floating_point&lt;T&gt;)</code></pre>
+<p>This means that the type must be either integral or floating-point: that is, two alternative paths of satisfying the conditions are allowed, and only if neither of them is satisfied is the constraint unmet. This is a disjunction — a set of alternative requirements. And now let's look at an example with logical AND:</p>
+<pre style="margin:1.4rem 0"><code>requires (std::copyable&lt;T&gt; &amp;&amp; std::movable&lt;T&gt;)</code></pre>
+<p>Here the situation is the reverse: both checks must be true simultaneously. The type is obliged to be both copyable and movable. This is a conjunction — a set of requirements, each of which is mandatory.</p>
+<p>The compiler collects requires constraints into logical formulas built from atomic predicates connected by &amp;&amp; and ||, doesn't prove (because the Great Programmer wrote it that way) their truth in the general logical sense, but compares their structure and checks whether one constraint follows from another at the level of syntactic form.</p>
+<p>And here we arrive at a very important and often unexpected detail: two constraints are considered identical only if they syntactically coincide. Logical equivalence plays no role in this case, because the compiler doesn't deal with logical operations and doesn't simplify expressions to a canonical form — well, because that would require introducing into the compiler a mathematical apparatus for proofs of this kind.</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+concept TrueConcept = true;
+
+template&lt;typename T&gt;
+concept AlsoTrueConcept = (C&lt;T&gt; &amp;&amp; true);</code></pre>
+<p>From the standpoint of logic and common sense the concepts <em>TrueConcept</em> and <em>AlsoTrueConcept</em> are equivalent, and this is usually taught to first-year students in logic lectures. Both are always true, but for the compiler these will be different expressions, because their syntactic structure differs, and the standard directly says that such constraints aren't considered equivalent.</p>
+<p>The consequences of such "clever" constraints on the programmer's part can be quite unpleasant. If we overload functions with requires TrueConcept&lt;T&gt; and requires AlsoTrueConcept&lt;T&gt;, then the compiler ends up in a situation where neither overload subsumes the other, because they're logically equal but formally incomparable. As a result we simply get an overload ambiguity, and the standard allows the compiler to issue an error of the form "ambiguous overload, no diagnostics required," i.e. even without the guarantee of an understandable message.</p>
+<p style="color:var(--ink-soft);font-style:italic">"Two atomic constraints are considered identical if they are formed from the same expression at the source level and their parameter mappings are equivalent."</p>
+<img src="../../assets/articles/pragmatic-concept-hierarchies/02.jpg" alt="Comparing constraints by syntactic form" class="post-image" loading="lazy" />
+<p>And this moment illustrates well the general philosophy of constraints and concepts, which make template code more strict and formal but in return require discipline from the programmer. If you want the compiler to see the hierarchy and specialization, express constraints explicitly, simply and uniformly, but don't rely on logical identities and "obvious" transformations — the compiler won't make them, because it has no mathematical apparatus for this.</p>
+
+<h3>How it works in practice</h3>
+<p>Now let's move from the formal model the standard gives us to the practical consequences a developer faces in real code. At this stage many developers start to feel a slight divergence between "<em>how the system seems like it should work</em>" and "<em>how it actually works</em>."</p>
+<p>A situation often arises where, by meaning, one function clearly should "subsume" another, but the compiler "doesn't see" it, and the cause is almost always the same — the constraints are formulated slightly differently. To a human these formulations look equivalent (logically straight) or obviously connected (logically curved), but for the compiler they'll just be different syntactic constructs between which there's no formal relation of connection.</p>
+<p>The typical symptoms are an unexpected overload ambiguity or the selection of a different version of the function than you expected. In such cases the problem is almost never in the requires mechanism itself, but in exactly how the constraints were expressed, so the general and proven technique is: don't duplicate composite constraints by hand, but move them out into a separate concept. For example, instead of writing in several places:</p>
+<pre style="margin:1.4rem 0"><code>requires (Resolvable&lt;T&gt; &amp;&amp; IsPath&lt;T&gt;)</code></pre>
+<p>it's far more reliable to define a single concept:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+concept ResolvablePath = Resolvable&lt;T&gt; &amp;&amp; IsPath&lt;T&gt;;</code></pre>
+<p>and then use it directly:</p>
+<pre style="margin:1.4rem 0"><code>requires ResolvablePath&lt;T&gt;</code></pre>
+<p>Because as soon as you slightly change one of the five places where such a record was, the remaining four places will automatically differ. And it sometimes gets ridiculous.</p>
+<pre style="margin:1.4rem 0"><code>// An attempt to create a general and a specialized version
+template&lt;typename T&gt;
+requires (Resolvable&lt;T&gt; &amp;&amp; IsPath&lt;T&gt;)
+void unified_process(T item) {
+    std::cout &lt;&lt; "General version\n";
+}
+
+// Specialization with IsAbsolute
+template&lt;typename T&gt;
+requires (Resolvable&lt;T&gt; &amp;&amp; IsPath&lt;T&gt; &amp;&amp; IsAbsolute&lt;T&gt;)
+void unified_process(T item) {
+    std::cout &lt;&lt; "Specialized for absolute paths\n";
+}
+
+// Another programmer adds their version, but writes it in a different order
+template&lt;typename T&gt;
+requires (IsPath&lt;T&gt; &amp;&amp; Resolvable&lt;T&gt; &amp;&amp; IsAbsolute&lt;T&gt;)  // Different order!
+void unified_process(T item) {
+    std::cout &lt;&lt; "Another specialized version\n";
+}
+
+// unified_process(fp);  // ERROR: ambiguous
+                         // The compiler sees TWO specializations with IsAbsolute,
+                         // but they're syntactically different and it can't
+                         // determine which one is "more specialized"</code></pre>
+<p>From a human's standpoint a solution with a single entry point, i.e. one concept and constraints, changes nothing, but from the compiler's standpoint the situation becomes fundamentally better — now the constraints have a common name and a single syntactic form, which lets it correctly build the hierarchy, compare overloads and apply partial-ordering rules without surprises. In essence, you help the compiler see the very structure you were holding in your head anyway.</p>
+<p>A good example of a consciously designed concept hierarchy is the standard library's iterator concepts. In the STL they're arranged not as a set of independent checks but as a strict ladder of abstractions, where input_iterator is at the bottom level, then come forward_iterator, bidirectional_iterator and finally random_access_iterator, and each next concept includes the previous one and adds new requirements.</p>
+<pre style="margin:1.4rem 0"><code>                    ┌─────────────────────────┐
+                    │   input_iterator        │
+                    │  (base level)           │
+                    │  - read elements        │
+                    │  - move forward         │
+                    └───────────┬─────────────┘
+                                │
+                                │ includes + adds
+                                │ multi-pass guarantees
+                                ▼
+                    ┌─────────────────────────┐
+                    │  forward_iterator       │
+                    │  - all of input         │
+                    │  + multiple passes      │
+                    └───────────┬─────────────┘
+                                │
+                                │ includes + adds
+                                │ backward movement
+                                ▼
+                    ┌─────────────────────────┐
+                    │ bidirectional_iterator  │
+                    │  - all of forward       │
+                    │  + operator --          │
+                    └───────────┬─────────────┘
+                                │
+                                │ includes + adds
+                                │ random access
+                                ▼
+                    ┌─────────────────────────┐
+                    │ random_access_iterator  │
+                    │  - all of bidirectional │
+                    │  + operator []          │
+                    │  + arithmetic           │
+                    │  + O(1) movement        │
+                    └─────────────────────────┘</code></pre>
+<p>The idea here is simple and elegant: any random_access_iterator is a bidirectional_iterator, any bidirectional_iterator is a forward_iterator, and so on. This is expressed directly in the definitions of the concepts. For example, forward_iterator is formulated through input_iterator and additional requirements on the iterator category. As a result there's a clear subsumption relation between these concepts that the compiler is able to analyze automatically.</p>
+<p>The practical consequence of this hierarchy is clearly visible in overload selection. Imagine two versions of the distance() function:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;std::input_iterator It&gt;
+void distance(It it, It e);
+
+template&lt;std::random_access_iterator It&gt;
+void distance(It it, It e);</code></pre>
+<p>If we call <em>distance()</em> with an iterator of <code>std::vector&lt;int&gt;</code>, the compiler will without hesitation choose the second version, because the vector's iterator satisfies both concepts, but <code>std::random_access_iterator</code> is stricter and therefore more specialized. This is exactly what the programmer expects: for a more powerful iterator a more efficient implementation is used.</p>
+<p>But even with all the formal strictness of concepts, complex and deep hierarchies can lead to unexpected collisions, as Alexandrescu has repeatedly pointed out in his talks, where his position comes down to a simple but mature thought: not every hierarchy is worth encoding through overloads and partial ordering. In real code it sometimes turns out simpler and more reliable to express the selection logic explicitly than to hope for the automatic mechanism, and instead of a multitude of overloads you can write a single function and use if constexpr inside it:</p>
+<pre style="margin:1.4rem 0"><code>if constexpr (std::contiguous_iterator&lt;It&gt;) {
+    // the fastest version
+} else if constexpr (std::random_access_iterator&lt;It&gt;) {
+    // version for random access
+}</code></pre>
+<p>Such code is often easier to read, easier to debug and easier to extend. It explicitly shows the order of priorities and doesn't require the reader to understand the subtleties of subsumption among a dozen concepts. And both Herb Sutter and Alexandrescu noted that it's not always worth chasing maximal genericity at the cost of readability and predictability. Concepts are just a tool, not an opportunity to show off your cleverness; they're good for formalizing interfaces and expressing contracts, but they aren't obliged to solve all your architecture problems for you. Or, for example, overly strict constraints for every sneeze.</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+concept Readable = requires(T t) {
+    { *t };
+};
+
+template&lt;typename T&gt;
+concept Incrementable = Readable&lt;T&gt; &amp;&amp; requires(T t) {
+    { ++t } -&gt; std::same_as&lt;T&amp;&gt;;
+};
+
+template&lt;typename T&gt;
+concept Decrementable = Incrementable&lt;T&gt; &amp;&amp; requires(T t) {
+    { --t } -&gt; std::same_as&lt;T&amp;&gt;;
+};
+
+template&lt;typename T&gt;
+concept Comparable = Decrementable&lt;T&gt; &amp;&amp; requires(T a, T b) {
+    { a &lt; b } -&gt; std::convertible_to&lt;bool&gt;;
+};
+
+template&lt;typename T&gt;
+concept Arithmetic = Comparable&lt;T&gt; &amp;&amp; requires(T a, typename std::iterator_traits&lt;T&gt;::difference_type n) {
+    { a + n } -&gt; std::same_as&lt;T&gt;;
+    { a - n } -&gt; std::same_as&lt;T&gt;;
+};
+
+template&lt;typename T&gt;
+concept IndexAccessible = Arithmetic&lt;T&gt; &amp;&amp; requires(T a, typename std::iterator_traits&lt;T&gt;::difference_type n) {
+    { a[n] };
+};
+
+template&lt;typename T&gt;
+concept FastDistanceMeasurable = IndexAccessible&lt;T&gt; &amp;&amp; requires(T a, T b) {
+    { a - b } -&gt; std::convertible_to&lt;typename std::iterator_traits&lt;T&gt;::difference_type&gt;;
+};
+
+template&lt;typename T&gt;
+concept Contiguous = FastDistanceMeasurable&lt;T&gt; &amp;&amp; std::contiguous_iterator&lt;T&gt;;</code></pre>
+<p>To sum up, the picture is as follows — the compiler picks an overload based on the strictness of the requires constraints and the formal relations between them, which lets you build concept hierarchies and write expressive, type-safe interfaces, but the syntactic identity of constraints matters more than their logical equivalence, and overly complex hierarchies can hurt code clarity.</p>
+<p>As at the end of the previous article, where I talked about the need for moderation in constraints, here too I repeat the thought that good design combines carefully extracted concepts and a sound balance between compiler automation and explicit logic in the code — all of which helps create code that not only works correctly but also stays understandable to other developers. Nevertheless, for all its power, the concept system has limits of applicability, and it's important to understand where those limits lie — and that will be the subject of the next chapter...</p>
+
+    <a class="backlink" href="../index.html#books">← All books</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

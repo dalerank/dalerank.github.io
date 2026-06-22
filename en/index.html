@@ -53,6 +53,9 @@
       </div>
     </div>
     <div class="sphere reveal d3">
+      <a class="s2" href="articles/pragmatic-names.html">names &amp; the compiler</a>
+      <a class="s1" href="articles/pragmatic-constraints-again.html">constraints again</a>
+      <a class="s2" href="articles/pragmatic-concept-hierarchies.html">concept hierarchies</a>
       <a class="s1" href="articles/pragmatic-concepts-history.html">history of concepts</a>
       <a class="s2" href="articles/pragmatic-constraints.html">concepts in C++</a>
       <a class="s3" href="articles/pragmatic-overloads.html">overloads in C++</a>
@@ -121,26 +124,26 @@
       <a class="more" href="articles/index.html">All articles →</a>
     </div>
     <div class="grid">
-      <a class="post reveal d1" href="articles/pragmatic-concepts-history.html">
+      <a class="post reveal d1" href="articles/pragmatic-names.html">
         <span class="arrow">↗</span>
         <span class="tag">C++</span>
-        <h3>A history of concepts in C++</h3>
-        <p>Chapter 4 of the PragmatiC++ draft: how concepts evolved from ambitious semantic proposals of the late 1990s and the "heavy" concepts that almost made C++11 to the pragmatic Concepts Lite model in C++20 — checking syntax instead of guaranteeing behavior.</p>
-        <div class="pmeta"><span>PragmatiC++ · chapter 4</span><span>9 min</span></div>
+        <h3>Do names matter to the compiler</h3>
+        <p>Chapter 7 of the PragmatiC++ draft: how the compiler answers two key questions — what a name means and which variant is right. Name lookup and overload resolution, the coexistence of names of different categories, function/namespace/enum conflicts, and why name mangling from the 80s is behind it all.</p>
+        <div class="pmeta"><span>PragmatiC++ · chapter 7</span><span>8 min</span></div>
       </a>
-      <a class="post reveal d2" href="articles/pragmatic-constraints.html">
+      <a class="post reveal d2" href="articles/pragmatic-constraints-again.html">
         <span class="arrow">↗</span>
         <span class="tag">C++</span>
-        <h3>Concepts and constraints in C++</h3>
-        <p>Chapter 3 of the PragmatiC++ draft: concepts and constraints (requires) as a replacement for SFINAE and enable_if — explicit type contracts right in the signature, requires as part of the signature, requires-expressions, simple and complex constraints and static_assert.</p>
-        <div class="pmeta"><span>PragmatiC++ · chapter 3</span><span>12 min</span></div>
+        <h3>Constraints, once again</h3>
+        <p>Chapter 6 of the PragmatiC++ draft: the fundamental limits of concepts — the ban on recursion and the inability to put a requires on the concept itself, the forms of writing requires, applying them to classes, methods, constructors and local variables, partial ordering and atomic constraints.</p>
+        <div class="pmeta"><span>PragmatiC++ · chapter 6</span><span>8 min</span></div>
       </a>
-      <a class="post reveal d3" href="articles/pragmatic-overloads.html">
+      <a class="post reveal d3" href="articles/pragmatic-concept-hierarchies.html">
         <span class="arrow">↗</span>
         <span class="tag">C++</span>
-        <h3>Overloads in C++</h3>
-        <p>Chapter 2 of the PragmatiC++ draft: overloads not as syntactic sugar but as a mechanism of generic programming — algorithm before types, exponentiation by squaring, good and bad overload sets, and a critique of the std::filesystem design.</p>
-        <div class="pmeta"><span>PragmatiC++ · chapter 2</span><span>20 min</span></div>
+        <h3>Concept hierarchies in C++</h3>
+        <p>Chapter 5 of the PragmatiC++ draft: how the compiler picks among several matching templates via constraint subsumption and partial ordering — syntactic identity matters more than logical equivalence, the STL iterator concept hierarchy, and where deep hierarchies hurt clarity.</p>
+        <div class="pmeta"><span>PragmatiC++ · chapter 5</span><span>13 min</span></div>
       </a>
     </div>
   </section>
@@ -288,7 +291,7 @@
     <div class="sec-head"><h2><span class="n">04</span>Browse by topic</h2></div>
     <div class="topics">
       <a class="chip" href="topics/reverse-engineering.html">Reverse-engineering <b>10</b></a>
-      <a class="chip" href="topics/cpp.html">C++ <b>37</b></a>
+      <a class="chip" href="topics/cpp.html">C++ <b>40</b></a>
       <a class="chip" href="topics/abnormal-programming.html">Abnormal programming <b>16</b></a>
       <a class="chip" href="topics/craft.html">Craft <b>12</b></a>
       <a class="chip" href="topics/game-design.html">Game design <b>12</b></a>

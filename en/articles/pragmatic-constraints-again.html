@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Constraints, once again — dalerank</title>
+<meta name="description" content="The sixth chapter of the PragmatiC++ draft: the fundamental limits of C++ concepts — the ban on recursion in a concept definition and the inability to put a requires on the concept itself, the forms of writing requires, applying concepts to classes, methods, constructors and local variables, partial ordering and atomic constraints." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-constraints-again.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-constraints-again.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pragmatic-constraints-again.html">RU</a><i>/</i><a class="on" href="pragmatic-constraints-again.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Constraints, once again</h1><div class="ameta"><span>PragmatiC++ · chapter 6</span><span>8 min</span></div></div>
+  <article class="prose">
+    <p style="color:var(--ink-soft);font-style:italic">This is the sixth chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
+
+<img src="../../assets/articles/pragmatic-constraints-again/01.jpg" alt="Constraints, once again" class="post-image" loading="lazy" />
+<p>Although concepts really are a powerful and expressive tool, they have fundamental limitations that it's important to know about, so as not to try to use them for the wrong purpose. These limitations aren't accidental and aren't "unfinished business" of the language, but reflect a conscious architectural decision made by the C++ committee.</p>
+<p>The first fundamental limitation is the ban on direct and indirect recursion in a concept definition. Simply put, a concept can't refer to itself, neither directly nor through a chain of other concepts. For example, such a definition is invalid:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+concept Recurse = Recurse&lt;T&gt;;</code></pre>
+<p>Even if you try to disguise the recursion through intermediate concepts, the result will be the same, and the code still won't compile. This limitation was introduced to rule out the possibility of infinite loops at the constraint-checking stage, but unlike ordinary templates, concepts must be checked quickly and predictably, without the risk of looping during compilation.</p>
+<p>The second important limitation is that you can't impose a <em>requires</em> on the concept definition itself, and while inside a concept's body you can write checks, use requires-expressions, logical operations and other concepts, you can't additionally constrain the concept's template from the outside with another <em>requires</em>, because a concept must always remain a self-sufficient logical predicate rather than yet another variant of templates with its own constraints.</p>
+<p>Both of these limitations are closely tied to the philosophy the C++ committee adhered to, so as not to turn concepts into yet another full-fledged metaprogramming language at the type level, as happened with templates. History already knows quite a few examples where the type system becomes so expressive that whole programs start to be written in it, as happened with type classes in Haskell.</p>
+<p>So in C++ they deliberately decided to go a different way and to sacrifice expressiveness for the sake of predictability, bounded complexity and a clear compilation model. Concepts should describe <em>requirements on types</em>, not be a means of computation or recursive abstractions.</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+concept CopyableConcept = std::copyable&lt;T&gt; &amp;&amp; std::movable&lt;T&gt;;</code></pre>
+<p>This approach fits the language model completely: it's clear, readable and works well with the partial-ordering mechanism, when the compiler easily understands that <code>CopyableConcept</code> is stricter than each of the concepts composing it taken separately, and can correctly use this when selecting overloads.</p>
+
+<h3>The forms of writing requires</h3>
+<p>C++ provides several syntactic variants, and each of them is convenient in its own situation. The most explicit form is a direct requires before the function declaration:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+requires std::integral&lt;T&gt;
+void resolve(T x);</code></pre>
+<p>This variant reads well, especially when the conditions are simple and short. The constraint immediately catches the eye, emphasizing that the function exists only for a certain category of types. The second form is the shortened trailing form, when requires is written after the function declaration:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+void resolve(T x) requires std::integral&lt;T&gt;;</code></pre>
+<p>This is convenient to write in cases where the conditions need to use the names of the function's arguments, or when the signature itself is already long enough and you want to visually separate the constraints from the main part of the declaration. And finally, the most compact and often the most readable form — using the concept directly:</p>
+<pre style="margin:1.4rem 0"><code>void print(std::integral auto x);</code></pre>
+<p>Despite its appearance, this is still a template function, just with the template parameter not written out explicitly but constrained by a concept at the point of use. Such syntax makes the code closer to ordinary functions, creating less "technical noise," while preserving all the advantages of static checking of type requirements. Together these forms let you choose a balance between explicitness, compactness and expressiveness, and the limitations imposed on concepts themselves help keep the codebase within reasonable bounds of template-building, without turning it into yet another layer of metaprogramming.</p>
+
+<h3>Applying to classes and variables</h3>
+<p>Now let's look at how constraints and concepts apply not only to free functions but also to classes, methods and even local variables, because here it becomes visible that concepts aren't a "feature for template gurus" but a tool of everyday development for a developer at the junior level and below.</p>
+<p>I'll start with classes and templates, when concepts can be used right in the list of a class's template parameters, restricting the allowed types as early as the declaration stage. For example, if we want our engine class Vec3 to work only with floating-point types, this can be done directly:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;std::floating_point T&gt;
+class Vec3 {
+    // ...
+};</code></pre>
+<p>Such a declaration immediately fixes our intentions, and various attempts to write Vec3&lt;Vasia&gt; or Vec3&lt;bool&gt; will lead us to an invalid-types error, and the compiler won't even try to instantiate the class and emit errors somewhere deep in the implementation, but will stop at the boundary of the interface, making template classes much closer to ordinary "strict" types. It should also be said that concepts work not only at the template level but also at the level of local code, and you can use auto with concepts even for local variables, for example even like this:</p>
+<pre style="margin:1.4rem 0"><code>std::integral auto EntityNumber = 0;
+std::floating_point auto EntitySpeed = 5.2;</code></pre>
+<p>It looks like "syntactic sugar," until you dive into debugging an animation system where the parameter types are all auto and their ends are only visible through ten classes, and the studio is like: sorry buddy, I have no idea what type is here. In practice such a technique makes the code self-documenting, when the reader clearly sees not just "some number here," but "an integer counter here" or "a floating-point speed here."</p>
+<p>The next step is applying requires to class methods. Here, unlike in many other languages, a class's interface can depend on template parameters, and <em>requires</em> lets you express this formally, when you can declare a method so that it exists only for those template parameters that satisfy certain requirements.</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+struct Entity {
+    float mass() requires IsObjectHasMass&lt;T&gt; {
+        // implementation only for objects with mass
+    }
+};</code></pre>
+<p>That is, the method mass() doesn't always exist, but only if T satisfies the <em>IsObjectHasMass</em> concept, and from the language's standpoint such a method simply doesn't exist for some classes, and an attempt to call it leads not to an error inside the implementation but to an ordinary message that the type has no such member. This lets us create "smart" interfaces where the set of available operations depends on the properties of types rather than on implicit agreements at the class-design stage. In the same way you can constrain constructors and any other functions too, which is especially useful for generic wrappers and containers, where the possibility of creating an object depends on the features of the parametric type:</p>
+<pre style="margin:1.4rem 0"><code>template&lt;typename T&gt;
+struct EntityDamagable {
+    EntityDamagable() requires HasDamageFunction&lt;T&gt; = default;
+    EntityDamagable(const T&amp;) requires HasHealth&lt;T&gt;;
+};</code></pre>
+<p>In this case the default constructor exists only when <em>T</em> has some trait-function that allows dealing damage, and the constructor taking const <em>T&amp;</em> exists only if <em>T</em> has "health," i.e. when we can copy its value, letting us automatically adapt to the type's capabilities through the class interface while remaining strictly formalized and compiler-checkable code. In the end we arrive at the fact that concepts permeate the whole language, from template classes and methods to class members and constructors, letting us design interfaces that precisely reflect the capabilities of types but remain strict and predictable and at the same time read well.</p>
+
+<h3>A bit about the partial ordering of overloads</h3>
+<p>In the previous article about <a href="pragmatic-concept-hierarchies.html">concept hierarchies</a> I already showed that the compiler is able to build a partial ordering (<em>partial ordering</em>) between template functions based on which concepts are used in their constraints, and when there are several suitable overloads, it picks not the "first one it comes across" but the most specialized.</p>
+<p>I'll return to the resolve example from the previous article and modify it a little: suppose we have two resolve() functions — one takes any integral type satisfying std::integral, and the second only signed integers satisfying std::signed_integral. Now, on a call resolve(-5), both overloads formally fit, because the type int is both std::integral and std::signed_integral.</p>
+<p>But the compiler picks the second version, because std::signed_integral is logically stricter: every type that is std::signed_integral is automatically std::integral too, but not vice versa. Such ordering of overloads is called partial ordering, but "partial," because not for any two constraints can you unambiguously say which of them is more specialized.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;std::integral T&gt;
+void resolve(T value) {
+    std::cout &lt;&lt; "integral version: " &lt;&lt; value &lt;&lt; '\n';
+}
+
+template &lt;std::signed_integral T&gt;
+void resolve(T value) {
+    std::cout &lt;&lt; "signed integral version: " &lt;&lt; value &lt;&lt; '\n';
+}
+
+int main() {
+    resolve(42);    // int → signed_integral
+    resolve(-5);    // int → signed_integral
+    resolve(42u);   // unsigned int → integral
+}</code></pre>
+<p>When compiling this code, the following happens: for the calls resolve(42) and resolve(-5) the compiler sees two suitable overloads, and both take the type int, which satisfies both std::integral and std::signed_integral. Then it compares the constraints and discovers that std::signed_integral&lt;T&gt; is more specialized, since every type satisfying this concept automatically satisfies std::integral&lt;T&gt; too, so the version for signed integers is chosen.</p>
+<pre style="margin:1.4rem 0"><code>resolve(-5);    // int → signed_integral</code></pre>
+<p>In the case of resolve(42u) the situation is different, because the type unsigned int satisfies std::integral but doesn't satisfy std::signed_integral, which leads to a situation where the second overload is discarded at the constraint-checking stage, and only one version remains. The partial-ordering mechanism is based on comparing the constraints written in requires; for this the compiler reduces them to a set of so-called atomic constraints — minimal logical expressions that can't be decomposed into simpler ones any further — and it's exactly at this level that the comparison happens.</p>
+<p>I'll go through this point once more, because it can slip past attention: atomic constraints are considered identical only on a literal syntactic match, and even logically equivalent expressions like <code>(sizeof(T) &gt; 4)</code> and <code>(sizeof(T) &gt; 4 &amp;&amp; true)</code> will be different constraints for the compiler, but such a rule makes the system's behavior predictable and implementable.</p>
+<p>So I'll repeat the conclusion from the previous article — if you want one concept to be considered more specialized than another, it must explicitly include the other's constraints in the same syntactic form (logically straight), rather than just being logically equivalent (logically curved), otherwise you can get a situation where two overloads turn out to be incomparable and the call becomes ambiguous.</p>
+<p>That broadly concludes the introductory part about concepts, and I'll start dissecting the actual "meat" of how the compiler finds the names of entities in code and what problems there are with this, how it determines which namespace to take an overload from, where ADL comes in and how to break it, and why mangling ate all your types — come along, it'll be terribly interesting.</p>
+
+    <a class="backlink" href="../index.html#books">← All books</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
