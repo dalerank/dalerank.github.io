@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Writing code is easier than writing a book about writing code — dalerank</title>
+<meta name="description" content="How the Game++ series on Habr grew into a book about pragmatic C++ and engine development: what 'good' C++ is, the people who helped make the book happen, editing as a craft of its own, and a big block of answers to the frequent questions about writing and publishing it." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/writing-a-book-about-code.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/writing-a-book-about-code.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/writing-a-book-about-code.html">RU</a><i>/</i><a class="on" href="writing-a-book-about-code.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>Writing code is easier than writing a book about writing code</h1><div class="ameta"><span>Feb 22, 2026</span><span>4 min</span></div></div>
+  <article class="prose">
+
+<img src="../../assets/articles/writing-a-book-about-code/01.jpg" alt="Writing code is easier than writing a book about writing code" class="post-image" loading="lazy" />
+<p>Sometimes a book begins with a single article published at the right moment on the right Habr, and in my case it really all started with the post about allocators, which, despite the abundance of technical material, code and diagrams, got the most upvotes among my articles on C++-adjacent and gamedev development. And then the Game++ series itself gradually grew from separate technical musings about C++, engine architecture and performance into a coherent narrative. Behind Game++ stands even more narrowly-technical material in my company's blog and wiki, and I'd be glad to share it — and I do share it periodically — but you understand, not everything can be posted, and even of what is posted on Habr, a fair bit was often trimmed, because NDA and secret technologies blah-blah-blah. That article was the point when I saw that the scattered texts actually form the skeleton of a future book; you just have to stop treating them as "posts" and start seeing them as chapters. The idea to write a book didn't come out of nowhere — several unrelated people and companies got in touch and proposed rewriting the article series as a book.</p>
+<p>Buy: <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">BHV</a> · <a href="https://www.ozon.ru/product/game-ustroystvo-i-optimizatsiya-igrovogo-dvizhka-3541648050/" target="_blank" rel="noopener">Ozon</a> · <a href="https://www.wildberries.ru/catalog/835326568/detail.aspx" target="_blank" rel="noopener">WB</a></p>
+
+<h3>Table of contents</h3>
+<img src="../../assets/articles/writing-a-book-about-code/02.jpg" alt="Game++ table of contents" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/03.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/04.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/05.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/06.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/07.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/08.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/09.jpg" alt="" class="post-image" loading="lazy" />
+
+<p>And in the process of writing the articles I increasingly noticed that I kept returning to the same questions — what is "good" C++ in an engine, where the boundary lies between philosophy and production code — and at some point it became clear that the article format doesn't always fit and too much context is left out of brackets, too often you have to cut a line of reasoning short because the text already turned out "too long for Habr"; I look at the scroll-throughs and usually people don't read articles past 15 minutes. The book became a way to expand both the volume and the examples and to give more philosophy.</p>
+<p>It's especially important to me that this isn't a book "about a game engine" in the narrow sense — you can take Gregory's classic and there'll be the necessary and important theory of engine development there. Yes, I have a lot of examples from engine development, working with memory, threads, allocators, strings, optimization practices and architectural compromises, but in essence it's a book about C++ as a language of engineering decisions and about how to think in terms of data, lifetime, and the behavior of code on real hardware — and the engine here is only an environment of heightened complexity, a kind of stress test for the language, in which it's clearly visible where concepts work and where they flop.</p>
+<p>A separate part of this story is the people who also became part of the book — Anatoly Mamaev @Serpentine, who gifted the book most of its drawings, Oleg Sivchenko @OlegSivchenko, who oversaw the work with the publisher BHV, and Leonid Kochin, who courageously edited and got into this whole heap of terms. With Oleg and Anatoly the communication gradually went beyond Habr and the book, into more general questions of engineering culture and the quality of technical literature; I hope I can call them my friends and that our communication won't end with the book's release. No less valuable was the communication with Andrey Karpov @Andrey2008 — with his help and that of the PVS company I managed to hold several webinars, which turned out to be a kind of stress test, because explaining your ideas out loud, in a live format where the audience asks questions and catches you on inaccuracies, is not text with pictures. Undoubtedly many fragments of the book got better precisely because they had been spoken through at such meetings. And the guys now also help with translating the book into English, for which a separate thank you — I hope it all works out.</p>
+<p>And of course, a special thanks to Habr and the readers, without you this wouldn't have happened either. Of the whole work process, what I remember most isn't the writing as such — though looking back, gathering the material took about ten years, probably from the moment I actually started writing documentation and articles — but the editing, which is a completely different kind of processing of the material: collecting scattered notes, sheets, napkins, files and just drawings written in different years and different moods, and finding the inner logic, that very "bone" on which the text rests and which runs through the whole book. And yes, a book isn't a collection of articles but a sequence of ideas, where each next chapter answers the question posed by the previous one, and I had to rewrite a lot, throw some things out, rethink some. I also had to align the style, because even articles written by one person turned out to be very different in mood, style and approach. It wasn't easy, and what's in the book is actually already the fourth iteration of the text, in places rewritten almost completely.</p>
+<p>A book doesn't necessarily start from a blank page; sometimes it starts from processing work already done and the question "what if this isn't just nothing?" — and maybe you'll suddenly discover that you already have not just texts but a position, not just articles but a view on the profession. Surprisingly, a fairly narrow-specialized topic got a good response on Habr/LinkedIn/social networks, and a lot of questions came in; I'll leave the frequent ones here, maybe someone will find them interesting:</p>
+
+<p><strong>Q: Did the book take long to work on?</strong><br />A: Almost 10 years, if you count from the moment of gathering the first materials for the article about allocators — a year to prepare the articles, half a year for Game++ on Habr, another year for the draft and work with BHV.</p>
+<p><strong>Q: When does it come out and where to buy it?</strong><br />A: It's out, in online stores. Maybe @OlegSivchenko can tell you where it's available physically to leaf through and take a look.</p>
+<p><strong>Q: Where to buy in Europe?</strong><br />A: Honestly I don't know; I was advised Boxberry, but I haven't ordered books through it.</p>
+<p><strong>Q: Will there be an electronic version or only paper?</strong><br />A: There will be, later.</p>
+<p><strong>Q: Why did you settle on BHV?</strong><br />A: That's how the stars aligned.</p>
+<p><strong>Q: What's the print run?</strong><br />A: 1000.</p>
+<p><strong>Q: Why did it end up with so many pages?</strong><br />A: IMHO it's too few, actually — a third of the material stayed out of scope.</p>
+<p><strong>Q: Do you need experience with game engines to read the book, or is knowing C++ enough?</strong><br />A: Desirable but not mandatory. Most examples really are worked through on a game example, but they apply everywhere.</p>
+<p><strong>Q: Which chapter is better to start with if I already read the series on Habr?</strong><br />A: The material is heavily reworked and expanded, half of it isn't on Habr, I think it's better to start from the beginning.</p>
+<p><strong>Q: When approximately does the English version come out?</strong><br />A: Honestly, I don't know. There's a lot of material and it's not easy to translate.</p>
+<p><strong>Q: Will you keep writing on Habr after the book's release?</strong><br />A: You bet (Engaging Programming).</p>
+<p><strong>Q: Can we invite you to a lecture, seminar, webinar?</strong><br />A: No problem and even necessary, but there are nuances.</p>
+<p><strong>Q: Will there be a second part?</strong><br />A: Let me deal with the first one — haven't thought about it yet.</p>
+<p><strong>Q: How many people worked on the book?</strong><br />A: The texts are mine, the drawings from schemes and descriptions were done by Anatoly, another twenty or so people had access to the draft and left comments and suggestions, on the publisher's side I know five — Oleg can tell you more.</p>
+<p><strong>Q: How did you use AI for help (this apparently worries everyone a lot, because I got about 40 messages with this question)?</strong><br />A: Originality.ai for fact- and material-checking, Claude Sonnet for processing and consolidating diagrams, parsing photos of handwritten text and napkins, PaperRater/Advego/Corrector for syntax and punctuation.</p>
+<p><strong>Q: How to get in touch with you?</strong><br />A: Habr, LinkedIn, Game++ on tg, Boosty, Stepik.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
