@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simple name lookup in C++ — dalerank</title>
+<meta name="description" content="Simple (unqualified) and qualified name lookup in C++: how a namespace and a local variable with the same name coexist, name and overload hiding in inheritance, diamond-inheritance ambiguity, the using-namespace rule in qualified lookup, and the historical differences between GCC, Clang and MSVC." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/simple-name-lookup.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/simple-name-lookup.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/simple-name-lookup.html">RU</a><i>/</i><a class="on" href="simple-name-lookup.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Simple name lookup in C++</h1><div class="ameta"><span>Apr 22, 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/simple-name-lookup/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>This is a continuation of the topic started in <a href="pragmatic-names.html">Do names matter to the compiler</a>, continued in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">At night all cats are grey, and all using's are alike</a> (in Russian) and further in <a href="compilers-confused-names.html">Compilers get confused by names too</a>. If you haven't read them, it's better to skim through. Now we've gotten to such an interesting topic as qualified and unqualified lookup.</p>
+    <p>What is simple lookup of a name <code>n</code> in a scope <code>S</code>? It's the compiler mechanism that finds all declarations of <code>n</code> located directly in that scope. Simple? On the face of it, yes, but even this simple mechanism often doesn't work the way a developer expects.</p>
+    <p>For example, we have a namespace <code>N</code> and a local variable <code>N</code>. Can they coexist? They can, because they live in different scopes. And can a namespace and a global variable with the same name? How did we get to this point — let's figure it out.</p>
+    <p>The proper term from the standard is <em>unqualified name lookup</em>, but the phrase "simple lookup" is often used too. Before reading on, try to say what this simple piece of code prints (<a href="https://godbolt.org/z/3sjjY5zbd" target="_blank" rel="noopener">godbolt</a>).</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5;
+    std::cout &lt;&lt; N &lt;&lt; "\n";
+    std::cout &lt;&lt; N::value &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<details class="code"><summary>Answer and explanation</summary><div class="spoiler-body" style="padding:18px 20px"><pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5; // local variable N
+
+    // Access to the local variable
+    std::cout &lt;&lt; "Local variable N: " &lt;&lt; N &lt;&lt; "\n";
+
+    // Access to the variable in namespace N
+    std::cout &lt;&lt; "Variable N::value: " &lt;&lt; N::value &lt;&lt; "\n";
+
+    return 0;
+}</code></pre></div></details>
+    <p>Here we have a namespace <code>N</code> and a local variable <code>N</code>. They can coexist because they live in different scopes, but a namespace and a global variable with the same name cannot. The local variable <code>N</code> and the namespace <code>N</code> coexist without conflict because they are in different scopes: the variable <code>N</code> is in the scope of the function <code>main</code>, while the namespace <code>N</code> is in the global scope.</p>
+    <p>If we tried to create a global variable <code>int N</code>, the compiler would immediately report an error, because a global variable and a namespace live in the same scope and can't have the same name.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {}  // namespace N
+int N = 42;     // Error! The name is already taken</code></pre>
+    <p>But what's even more interesting is how a local variable and a namespace with the same name coexist, and exactly how the compiler figures out what is meant. Simple lookup and qualified lookup work by completely different rules, and the name <code>N</code> in the expression <code>N += 1</code> is resolved quite differently from the same name <code>N</code> in the expression <code>N::x</code>.</p>
+    <p>Now let's look at another example, the expression <code>N += 1</code>. Here the name <code>N</code> is looked up via simple lookup in the local scope, the compiler finds the local variable, and the lookup ends there. But in the expression <code>N::x</code> the situation is different, because it's a qualified name, and the part before <code>::</code> is looked up separately.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+int main() {
+    int x = 5; // local variable x
+
+    // Unqualified name: simple lookup
+    x += 1;
+    std::cout &lt;&lt; "Local variable x: " &lt;&lt; x &lt;&lt; "\n";
+    // Prints 6
+
+    // Qualified name: the qualifier is looked up separately
+    N::x += 1;
+    std::cout &lt;&lt; "Variable N::x: " &lt;&lt; N::x &lt;&lt; "\n";
+    // Prints 43
+
+    return 0;
+}</code></pre>
+    <p>The key point is that when looking up a name used as a qualifier, the compiler ignores entities that aren't namespaces or classes, and since the local variable <code>N</code> isn't a namespace, it's ignored during such a lookup, and the expression <code>N::x</code> works correctly even if there's a variable <code>N</code> in the current scope.</p>
+    <p>This situation is called name hiding, when a declaration of a name in an inner scope makes a same-named declaration from an outer scope inaccessible, and during simple lookup the compiler simply stops looking further as soon as it finds the first match.</p>
+<pre style="margin:1.4rem 0"><code>int x = 42; // global variable
+
+int main() {
+    int x = 5; // hides the global x
+
+    std::cout &lt;&lt; x &lt;&lt; "\n";   // 5 local, the global one is hidden
+    std::cout &lt;&lt; ::x &lt;&lt; "\n"; // 42 explicit qualification removes the hiding
+}</code></pre>
+    <p>The same thing happens in classes with inheritance, and there the consequences are more surprising, because it's not a single variable that's hidden but the whole overload set (<a href="https://godbolt.org/z/KeM61oqe3" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>struct Base {
+    void foo(int x) { std::cout &lt;&lt; "int base\n"; }
+    void foo(double x) { std::cout &lt;&lt; "double\n"; }
+    // both overloads are available
+};
+
+struct Derived : Base {
+    void foo(int x) { std::cout &lt;&lt; "int derived\n"; }
+    // hides BOTH overloads from Base, not just foo(int)
+};
+
+int main() {
+    Derived d;
+    d.foo(1);      // OK: Derived::foo(int)
+    d.foo(1.0);    // ??? Base::foo(double) is hidden
+    d.Base::foo(1.0); // OK: explicit qualification removes the hiding
+}
+
+&gt;&gt; int derived
+&gt;&gt; int derived
+&gt;&gt; double
+
+// to avoid hiding, you need using:
+struct Derived2 : Base {
+    using Base::foo; // bring all overloads of Base::foo into scope
+    void foo(int x) {} // now it overloads instead of hiding
+};</code></pre>
+    <p>This brings us to the conclusion that name hiding depends on which kind of lookup is performed: hiding works only for the kind of lookup that considers entities of that category. This is a fundamental feature of C++ that helps avoid conflicts between variables, namespaces, and types when qualifiers are used correctly — which, however, didn't always work the same way across compilers.</p>
+    <p><strong>GCC:</strong> in old versions qualified lookup sometimes "incorrectly" took local variables into account when resolving qualifiers, which led to errors or ambiguities in code with identically named variables and namespaces. In GCC before version 3.4 qualified lookup in some cases incorrectly considered local variables when resolving a namespace qualifier, which could lead to the error "N is not a namespace" even when the local variable and the namespace were supposed to coexist correctly. Starting with GCC 3.4 the behavior was brought into line with the standard.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5;
+    // A local variable with the same name
+    // as the namespace
+
+    // The unqualified access works
+    // with the local variable
+    N += 1;
+    std::cout &lt;&lt; "Local variable N: " &lt;&lt; N &lt;&lt; "\n";
+    // Prints 6
+
+    // Qualified name
+    // In old GCC versions this could cause an error
+
+    std::cout &lt;&lt; "Namespace N::value: " &lt;&lt; N::value &lt;&lt; "\n";
+
+    // The compiler could interpret N as a local variable
+    // and report "N is not a namespace" or "ambiguous"
+
+    return 0;
+}</code></pre>
+    <p><strong>Clang:</strong> from its early versions Clang strictly implemented the rule that names from dependent base classes don't participate in the first phase of unqualified two-phase lookup. Code with template inheritance that compiled on GCC without <code>this-&gt;</code> didn't compile on Clang, which surfaced when switching toolchains.</p>
+<pre style="margin:1.4rem 0"><code>// Dependent base classes
+// didn't participate in phase-1 unqualified lookup
+
+template&lt;typename T&gt;
+struct Base {
+    void foo() {}
+};
+
+template&lt;typename T&gt;
+struct Derived : Base&lt;T&gt; {
+    void bar() {
+        foo();
+        // Clang (strictly per the standard): ERROR
+        // old GCC: OK, looked it up in the base at instantiation
+
+        this-&gt;foo();  // the way that works everywhere
+    }
+};</code></pre>
+    <p>The compiler could "fail to notice" the qualifier and use the hidden name <code>Derived::foo</code> instead of <code>Base::foo</code>, which led to errors or unexpected behavior when using <code>using</code> to bring base-class names into the current scope.</p>
+    <p><strong>MSVC:</strong> before VS2015 MSVC in a number of cases didn't correctly separate namespaces and local variables when resolving a qualifier, because of which the local variable <code>N</code> could interfere with the lookup of the namespace <code>N</code> in the qualified expression <code>N::f()</code>, and the compiler reported the error "N is not a namespace" where, by the standard, it should have found the namespace.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    void f() { std::cout &lt;&lt; "Namespace N::f\n"; }
+}
+
+void f() { std::cout &lt;&lt; "Global f\n"; }
+
+int main() {
+    int N = 42;
+    // A local variable with a name
+    // matching the namespace
+
+    // Unqualified call
+    f(); // calls the global f()
+
+    // Qualified call through the namespace
+    // In old MSVC versions the local variable N could interfere
+    // and the compiler mistakenly tried to use N as a qualifier
+
+    N::f();
+    // it was expected that N::f() from the namespace would be called
+    // but old MSVC could report "N is not a namespace"
+
+    return 0;
+}</code></pre>
+    <h3>And the lookup is not so simple after all</h3>
+    <p>The situation gets even more complicated when we need to gather a set of names from the scope of the current class and all of its base classes and then perform the lookup within that set. When we use an unqualified name inside a class or a class template, the compiler doesn't just walk the base classes one by one — it builds a set of subobjects.</p>
+    <p>Consider the by-now classic example where a class <code>C</code> inherits from <code>A</code> and <code>B</code>. If we look up the name <code>x</code>, the compiler will find <code>x</code> in <code>A</code> and <code>x</code> in <code>B</code>, but both are valid finds, and the result is an ambiguity that makes the program ill-formed.</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 1;
+};
+
+struct B {
+    int x = 2;
+};
+
+struct C : A, B {
+    void printX() {
+        // The unqualified name x occurs in
+        // both base classes
+        // The compiler can't unambiguously choose
+        // which x to refer to
+        // This leads to an ambiguity error
+        std::cout &lt;&lt; x &lt;&lt; "\n"; // Error: ambiguity
+    }
+};
+
+int main() {
+    C c;
+    c.printX();
+    return 0;
+}</code></pre>
+    <p>Qualified name lookup in C++ is arranged differently, and that makes it more predictable and resistant to unexpected effects. When the compiler sees a qualified name (<code>C::x</code>), it runs a strictly defined set of rules with a precisely fixed order of steps.</p>
+    <p>First of all, the compiler looks for explicitly declared names directly in the specified scope, and if we write <code>C::x</code>, then it first considers all declarations of <code>x</code> that actually belong to <code>C</code>. These can be static class members, nested types, enumerations, or functions declared directly inside <code>C</code>. If such a declaration is found, the lookup is considered complete, and no external visibility-extension mechanisms play any role at this stage.</p>
+<pre style="margin:1.4rem 0"><code>// A global function with the same name shouldn't interfere
+void x() { printf("global x()\n"); }
+
+namespace N {
+    void x() { printf("N::x()\n"); }
+}
+
+struct C {
+    static int x;
+};
+
+int C::x = 42;
+
+int main() {
+    // Qualified lookup: we look only inside C
+    printf("%d\n", C::x);         // looks only in C, not pulling x() and N::x() into the analysis
+}</code></pre>
+    <p>For <code>C::x</code> the compiler looks only in <code>C</code> and finds <code>static int x = 42</code>. The global function <code>x()</code> and <code>N::x()</code> aren't considered at all, even though under unqualified lookup they would also be candidates. Let's look at another example:</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 42;
+};
+
+struct B : A {};  // B inherits x from A
+struct C : A {};  // C inherits x from A
+
+struct E : B, C { // E inherits from both B and C
+    void foo() {
+        // x = 1; // compilation error!
+        // error: member 'x' found in multiple base classes of different types
+    }
+};</code></pre>
+    <p>At first glance it seems there shouldn't be any problem. After all, the member <code>x</code> is declared only in <code>A</code>, and there's no second <code>x</code> in <code>B</code> or <code>C</code>. However, when the compiler looks up the unqualified name <code>x</code> inside <code>E</code>, it doesn't just "look for a declaration" — it builds a set of base-class subobjects. That set contains:</p>
+    <ul><li><code>A</code>, as a direct base class of <code>C</code></li><li><code>A</code>, as a base class of <code>B</code>, which is itself a base class containing <code>A</code></li></ul>
+    <p>Yes, it's one and the same declaration <code>A::x</code>, but the paths by which it can be reached are different. For the compiler this means the lookup succeeded along two independent routes, and neither of them is preferred. The result is an ambiguity, and the program is considered ill-formed, which brings us to the understanding that lookup in base classes has two levels: what matters is not only which declaration is found, but also by which path the compiler arrived at it (<a href="https://godbolt.org/z/qEsrET84v" target="_blank" rel="noopener">godbolt</a>).</p>
+<pre style="margin:1.4rem 0"><code>// The compiler builds a graph of objects:
+//
+//    A::x     A::x
+//      |       |
+//      B       C
+//       \     /
+//          E
+//
+// Two paths to the same declaration A::x:
+// path 1: E -&gt; B -&gt; A::x
+// path 2: E -&gt; C -&gt; A::x
+//
+// The compiler sees two routes and can't choose a preferred one
+
+int main() {
+    E e;
+
+    // explicit qualification removes the ambiguity:
+    e.B::x = 1;  // OK: explicitly specify the path through B
+    e.C::x = 2;  // OK: explicitly specify the path through C
+
+    // these are two DIFFERENT A subobjects in memory:
+    std::cout &lt;&lt; e.B::x &lt;&lt; "\n"; // 1
+    std::cout &lt;&lt; e.C::x &lt;&lt; "\n"; // 2
+}</code></pre>
+    <p>Next, if no suitable name is found in the scope <code>C</code> itself, the compiler moves on to the next step and starts taking into account names that became visible in that scope through <code>using namespace</code> directives. Here it's worth recalling that we're talking specifically about directives, not using-declarations, so names can be found by qualified lookup, but solely as a fallback, when there are no own declarations in that scope. There's no established term for this rule in the standard, and it's often described through the mechanism rather than a separate name. In the C++ standard the corresponding paragraph is <code>[namespace.qual]</code>, and the rule itself is formulated as follows:</p>
+    <blockquote>If qualified lookup in a scope <code>X</code> finds no own declarations, then names from the namespaces introduced via <code>using namespace</code> directives in <code>X</code> are considered, yielding the "set of associated namespaces".</blockquote>
+    <p>This, in fact, is the main difference between qualified and unqualified lookup: under unqualified lookup, <code>using namespace</code> actively participates in forming the candidate set from the very start, which often leads to unexpected conflicts and ambiguities. Qualified lookup, by contrast, strictly prioritizes explicit declarations and only extends the lookup scope via <code>using namespace</code> in their absence, which makes it considerably more stable and protected against accidental changes of context.</p>
+    <p>A small digression to make the example complete. Let's recall virtual inheritance, which eliminates this behavior (but brings along many other problems), because now there's only a single subobject <code>A</code> (<a href="https://godbolt.org/z/P9qbqaGPs" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 42;
+};
+
+struct B : virtual A {};  // virtual inheritance
+struct C : virtual A {};  // virtual inheritance
+
+struct E : B, C {
+    void foo() {
+        x = 1;  // OK: only one A in the hierarchy
+    }
+};
+
+// the subobject graph now looks different:
+//
+//      B     C
+//       \   /
+//         A      &lt;-- a single instance, a single path
+//
+// no ambiguity
+
+int main() {
+    E e;
+    e.x = 1;       // OK
+    e.B::x = 1;    // OK, the same x
+    e.C::x = 1;    // OK, the same x
+    // all three refer to the same subobject
+}</code></pre>
+    <p>Without virtual inheritance, <code>E</code> contains two physically different subobjects <code>A</code> in memory, and the compiler can't guess which of them to access during unqualified lookup of <code>x</code>, even if both contain the same declaration.</p>
+    <p>Now imagine we have two namespaces. In one of them a name is declared which we'll "mix in" via <code>using namespace</code>, and the other also has its own declaration with the same name.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+    int x = 10;
+}</code></pre>
+    <p>It might seem that inside <code>C</code> there are now two possible <code>x</code>: one of its own (<code>C::x</code>), and a second one that came from <code>N</code> via <code>using namespace</code> — but qualified lookup immediately sorts everything out. Now, if we write:</p>
+<pre style="margin:1.4rem 0"><code>int a = C::x;</code></pre>
+    <p>then the compiler performs qualified lookup for the name <code>x</code> only in the scope <code>C</code> and first looks for explicitly declared names in <code>C</code>, finds <code>int x = 10;</code> there, and the lookup stops at that. The second name <code>N::x</code>, despite the <code>using namespace N</code> directive, isn't even considered. As a result, <code>a</code> gets the value 10. Now let's look at a counterexample where unqualified lookup is performed inside the scope <code>C</code> itself (<a href="https://godbolt.org/z/q1bK5cEG1" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+    int x = 10;
+}
+
+int f() {
+    using namespace C;
+    return x;
+}
+
+int main() {
+    std::cout &lt;&lt; f();
+}
+
+&lt;source&gt;:15:12: error: reference to 'x' is ambiguous
+   15 |     return x;
+      |            ^
+&lt;source&gt;:10:9: note: candidate found by name lookup is 'C::x'
+   10 |     int x = 10;
+      |         ^
+&lt;source&gt;:5:9: note: candidate found by name lookup is 'N::x'
+    5 |     int x = 42;
+      |         ^</code></pre>
+    <p>Here the name <code>x</code> is used without a qualifier, so unqualified lookup applies, which gathers candidates from the current scope and from the namespaces brought in via <code>using namespace</code>. In this case both <code>C::x</code> and <code>N::x</code> end up in the candidate set, and since both declarations have equal "weight", the program becomes ambiguous and the compiler reports an error.</p>
+    <p>Now let's return to qualified lookup and modify the example slightly (<a href="https://godbolt.org/z/P9qbqaGPs" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+}
+
+int main() {
+    int a = C::x; // But C has no x of its own!
+     std::cout &lt;&lt; "Variable N::x: " &lt;&lt; C::x &lt;&lt; "\n";
+    // prints 42
+}</code></pre>
+    <p>Here the situation is different: now there's no explicitly declared <code>x</code> in the namespace <code>C</code>, so qualified lookup first tries to find <code>x</code> directly in <code>C</code>, fails, and after that considers the names that came in via <code>using namespace N</code>, and finds <code>N::x</code> there.</p>
+    <h2>What's next…</h2>
+    <p>One of the examples above showed that name hiding in classes doesn't work the way you'd intuitively expect. A declaration in <code>Derived</code> hides all overloads from <code>Base</code>, not just the matching one, and this behavior is a direct consequence of how name lookup works over the base-class hierarchy.</p>
+    <p>It's precisely for such cases that the using-declaration exists, allowing you to explicitly bring names from a base class into the derived scope without breaking the lookup rules and without creating conflicts. But <code>using</code> isn't only about inheritance: by C++14 it became a full-fledged visibility-management tool that works by its own rules and interacts with name lookup in a predictable and strictly defined way — and I'll talk about that in the next article...</p>
+    <p>I've already accumulated material for two more chapters (the history of concepts and name lookup); I'll publish them on GitHub soon — <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

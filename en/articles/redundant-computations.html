@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Redundant computations — dalerank</title>
+<meta name="description" content="How speculative execution and branch prediction interact with the memory subsystem: why branchless code isn't always faster, the cost of a misprediction versus memory latency, binary search, and benchmarks on the Jaguar (PS4)." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/redundant-computations.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/redundant-computations.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/redundant-computations.html">RU</a><i>/</i><a class="on" href="redundant-computations.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Performance</span><h1>Redundant computations</h1><div class="ameta"><span>Apr 6, 2026</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/redundant-computations/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>If we talk about performance apart from the existing hardware solutions, intuition suggests a fairly simple execution model where the processor processes instructions and memory supplies data, and the faster both are, the faster the program runs.</p>
+    <p>But processors learned to perform billions of operations per second, while memory increases its access speed far more slowly, and the gap between compute speed and data-access speed became so large that waiting on memory turned into the main source of lost performance.</p>
+    <p>The answer to this wasn't speeding up memory but making the processors themselves more complex: they stopped being mere passive executors of code and started solving data-flow management problems — executing instructions out of order, reordering dependencies, and at some point arriving at the idea of speculatively executing code that may not be needed at all.</p>
+    <p>Branch prediction became one of the key mechanisms in this system, meant to remove part of the idle time in the compute stream; but while a correct prediction became an opportunity to start expensive loads early and hide their latency, a misprediction wastes not only the lost cycles but also the memory resources used in vain: the bus, the load buffers, the controller's bandwidth, and the cache lines themselves that could have held useful data.</p>
+    <p>This is exactly where an interesting and non-obvious trade-off arises that lets you, on the one hand, write branchless code and completely get rid of mispredictions, and on the other deprives the processor of the ability to work ahead and start memory accesses early. But depending on where the data sits in memory, one approach or the other will win.</p>
+    <p>If you're going to write branchless code, you have to remember exactly how speculative execution and branch prediction interact with the memory subsystem, because "extra work" sometimes speeds up a program, and in some cases an attempt to make the code more "predictable" leads to the opposite effect.</p>
+    <hr />
+    <p>If you look at early computers, there was no speculation there at all, and the first systems executed code sequentially, dragging one instruction after another, without trying to guess anything or speed things up through assumptions. It was an honest but slow model where the processor did exactly what it was told.</p>
+    <p>Then it turned out that performance is bottlenecked not by the computations themselves but by waiting on data. At first these were stalls due to long operations, then due to memory, and the processor could often execute instructions faster and idled most of the time.</p>
+    <p>One of the first serious steps toward "breaking the sequence" was the IBM System/360 Model 91 project in the mid-1960s, when a team of engineers, among whom was Robert Tomasulo, proposed a dynamic instruction-scheduling algorithm that would later bear his name. This made it possible to execute instructions out of order as soon as their operands became available, rather than strictly in the order in which they're written in the program.</p>
+    <p>This wasn't yet full-blown speculation in the modern sense — there was already a mechanism for out-of-order execution, but not branch prediction in the modern sense, and the processor could reorder independent instructions, yet the choice of branch still required the condition to be resolved.</p>
+    <p>The next step was implementing the idea that if the processor already knows how to execute instructions out of order and has a branch history, then it can go further still and start executing branch blocks before it's even known whether they're needed at all. This is how speculative execution appears.</p>
+    <p>In a more or less modern form it took shape later in the superscalar processors of the 1980s and on. One of the first representatives here was the Intel Pentium Pro (1995), where speculation, reordering, and branch prediction already worked together as a single system, allowing instructions to be executed out of order and to start working "ahead." And a 40-micro-op pipeline allowed dozens of instructions to be kept in flight at once.</p>
+<pre style="margin:1.4rem 0"><code>for (size_t i = 0; i &lt; n; i++) {
+    if (arr[i] &gt;= 0) {
+          ... code_true ...;
+    } else {
+        ... code_false ...;
+    }
+}</code></pre>
+    <p>An ordinary <code>if</code> is a branch at the language level, but at the level of the data flow in the processor it's a point of uncertainty, and to know which branch to execute you first have to load <code>arr[i]</code>. And here we get a performance drop, because at the point of getting <code>arr[i]</code> it may not be in the caches, and in the worst case the stall here can take tens or even hundreds of cycles if the data is in RAM. And believe me, it's not at all a rare case when the data didn't make it into the cache in time.</p>
+    <p>There can be several options here: if you just wait, all instructions depending on this data stop, though the OoO processor will keep executing independent instructions from other chains; if you guess, you can continue working (but there are nuances with the flush when you guess wrong); if you start executing both branches, there's effectively no flush, but part of the resources has to be given to the speculative execution block. Speculative execution has its own nuances too, both positive and not so much, but more on them later.</p>
+    <p>All modern processors predict. For example, based on branch history, that a branch will be, say, true, and they start executing <code>code_true</code> while waiting for data from memory in parallel. If the prediction was correct, part of the work is already done and we continue execution; if not, the results are rolled back and the other branch is executed.</p>
+    <p>Here the cost of a mistake is on the order of 10–20 cycles, but the cost of waiting on memory is many times larger, so on average it pays off. Considering that most branches are built around the same data, with high probability that data for both branches will already be in the cache, whichever branch you start executing.</p>
+    <p>As I already said, speculation affects not only computation but also memory work, and when the processor speculatively executes code it must also initiate loads from memory, occupy cache lines, and use cache resources to execute the "unneeded" branch of code.</p>
+    <p>And if the prediction turned out to be wrong, these resources are "seemingly" wasted. From the programmer's point of view it seems the logical step would be to get rid of branches entirely, so along with the appearance of the branching mechanism, the number of supporters of the branchless approach grows too (I too was a devotee of that school for a long time, until the ps4/5 broke my "faith"). Say you found places in the project's code that look like good spots to apply the "little grey cells":</p>
+<pre style="margin:1.4rem 0"><code>if (arr[i] &gt; 0) {
+    result++;
+}
+-&gt;
+result += (arr[i] &gt; 0);</code></pre>
+    <p>What happens to code where the branch was removed? First — we removed the branches (surprise) and now the code has no misprediction (can't be deferred), so such code "conditionally" has no speculative version. But modern processors are designed for branches and deferred execution, so we get another problem and the processor is now forced to wait for the data before continuing.</p>
+    <p>And here a problem arises because of which our "good intentions" not only failed to improve performance but actually slowed it down. But again, it all comes down to the nuances.</p>
+    <p>If by the time of execution the data <code>arr</code> is in the fast L1 cache, then the latency is minimal and we get a speedup, because we removed the "speculative" branch and freed up processor resources for real work. In this case branchless code often wins.</p>
+    <p>If the data <code>arr</code> is in L2, the fetch time is also fairly small, and the cost of a misprediction becomes less noticeable, but we don't see any overall speedup in computation. In this case branchless code has no effect, except perhaps on the readability of the sources.</p>
+    <p>But if the data comes from L3 or memory, the data latency already becomes the dominant factor, and then it's more important not to mispredict less but to start work earlier, so that by the time of the real computations this data is already in the L1/L2 caches. And so it turns out that the processor, designed for "speculative" execution, was hiding the algorithm's shortcomings and let it run at an acceptable speed.</p>
+    <p>But by getting rid of deferred execution and moving that latency directly to the point of computation, we move that time into the critical path of execution, where there's nothing left to hide it, and we start paying the full cost of a memory access at every step of the loop, losing that very overlap of computation and loads that speculation used to provide.</p>
+    <p>Another example:</p>
+<pre style="margin:1.4rem 0"><code>Value result = default_value;
+for (size_t i = 0; i &lt; n; ++i) {
+    if (keys[i] == target) {
+        result = values[i];
+    }
+}
+return result.</code></pre>
+    <p>This is a "problematic-looking" branch, because <code>keys[i] == target</code> is an almost random condition, and the CPU doesn't know in advance at which <code>i</code> the match will be, so the predictor mispredicts often, and on every misprediction there's a penalty for flushing the pipeline, while <code>values[i]</code> was never read ahead. We decide to rewrite it a bit and make a branchless version.</p>
+<pre style="margin:1.4rem 0"><code>Value result = default_value;
+for (size_t i = 0; i &lt; n; ++i) {
+    result = (keys[i] == target) ? values[i] : result;
+}
+return result;</code></pre>
+    <p>Now we have no branch, no mispredictions. Now <code>values[i]</code> is read unconditionally on every iteration, forcing the CPU to pull in the next elements via prefetch. But the cost of working with memory has changed, because the original loop does a read on a match, and if the key is found at the third element out of ten thousand, it reads only three elements, whereas branchless always walks the entire array, reading both keys and values.</p>
+    <p>The consequences of modern processors being adapted to "speculative" algorithms are clearly seen in the example of binary search. In the branchful version the processor predicts the search direction, computes <code>low</code> and <code>high</code> ahead of time, and can initiate the load of the next element earlier. Yes, roughly half the predictions will be wrong, but the gain from early memory access often outweighs these losses.</p>
+<pre style="margin:1.4rem 0"><code>while (low &lt; high) {
+    size_t mid = low + (high - low) / 2;
+    if (keys[mid] &lt; target)
+        low = mid + 1;  // the CPU predicts this direction
+    else
+        high = mid;     // and starts reading keys[mid] of the next iteration
+}</code></pre>
+    <p>In the branchless version there will be more instructions, loads will start later, memory is used without extra speculative loads, but each iteration is forced to wait for the result of the previous one, and memory latencies are explicitly added to the algorithm's work.</p>
+<pre style="margin:1.4rem 0"><code>while (low &lt; high) {
+    size_t mid = low + (high - low) / 2;
+    size_t step = (high - low) / 2;
+    low  = (keys[mid] &lt; target) ? mid + 1 : low;
+    high = (keys[mid] &lt; target) ? high    : mid;
+    // no branch, but the next mid is computed only after writing low and high
+}</code></pre>
+    <p>In the branchful version the processor sees the <code>if</code> and starts speculatively computing the next <code>mid</code> and reading <code>keys[mid]</code> along the predicted branch, without waiting for the comparison's result. In branchless the next <code>mid</code> depends on the new <code>low</code> and <code>high</code>, which depend on the comparison's result, and the dependency chain doesn't let the processor run ahead.</p>
+    <p>Such nuances come up very often when adapting PC games for consoles, where the processors are historically weaker with their own pitfalls, but the overall picture turns out like this: if the data is random and the array is smaller than the L1 cache, then branchless is almost always faster. If the array is large or the data has a clear access pattern, then branchful can win thanks to speculative loads, but the only way to know for sure is to profile on real data, because the specific processor and the nature of the data change the answer radically. <a href="cache-pollution.html">Right here</a> I talked more concretely about cache effects; if anyone is interested in a practical example of stepping on these rakes, here's a simple binary-search example like the ones above on the Jaguar (PS 4)</p>
+<pre style="margin:1.4rem 0"><code>+----------------------+--------------+--------------+--------------+
+| Benchmark            | Branchful     | Branchless   | For Loop    |
++----------------------+--------------+--------------+--------------+
+| BinarySearch/63      |     1914 ns  |      904 ns  |      704 ns  |
+| BinarySearch/64      |     1984 ns  |      995 ns  |      795 ns  |
+| BinarySearch/65      |     2006 ns  |     1040 ns  |      805 ns  |
+| BinarySearch/66      |     2062 ns  |     1086 ns  |      886 ns  |
+| BinarySearch/67      |     2113 ns  |     1100 ns  |      900 ns  |
+| BinarySearch/68      |     2175 ns  |     1148 ns  |      948 ns  |
+| BinarySearch/125     |     8404 ns  |     3371 ns  |     4371 ns  |
+| BinarySearch/126     |     8216 ns  |     3196 ns  |     4196 ns  |
+| BinarySearch/127     |     8952 ns  |     3894 ns  |     4894 ns  |
+| BinarySearch/254     |    32792 ns  |    32959 ns  |    42959 ns  |
+| BinarySearch/255     |    32950 ns  |    32959 ns  |    42959 ns  |
+| BinarySearch/256     |    60374 ns  |    59989 ns  |    45989 ns  |
+| BinarySearch/257     |    34202 ns  |    33424 ns  |    43424 ns  |
+| BinarySearch/510     |   169570 ns  |   192631 ns  |   352631 ns  |
+| BinarySearch/511     |   175509 ns  |   196467 ns  |   356467 ns  |
+| BinarySearch/513     |   206741 ns  |   225078 ns  |   365078 ns  |
+| BinarySearch/514     |   223825 ns  |   243467 ns  |   373467 ns  |
+| BinarySearch/1022    |  1904859 ns  |  1999431 ns  |  3999431 ns  |
+| BinarySearch/1023    |  1889650 ns  |  1985054 ns  |  3985054 ns  |
+| BinarySearch/1024    |  1898959 ns  |  1992857 ns  |  3992857 ns  |
+| BinarySearch/1026    |  1918389 ns  |  2003320 ns  |  4003320 ns  |
++----------------------+--------------+--------------+--------------+</code></pre>
+    <p>What's interesting in the benchmark results: at small sizes from 63 to 68 elements the linear scan turns out faster than both variants of binary search, which is a direct consequence of the Jaguar architecture with its L1 (32 KB) cache, into which small arrays usually fit entirely. There are no memory latencies here at all, and the linear scan itself has neither the complex logic of computing mid nor dependencies between iterations, so the processor just grinds through it without stopping.</p>
+    <details class="code"><summary>Eager Execution</summary><div class="spoiler-body" style="padding:18px 20px">
+      <p>Some pieces of code can even be rewritten so that both branches really are executed. Instead of choosing one branch via <code>if</code>, the code can be rewritten to compute both variants at once and then pick the right result with a mask. At the data level this looks like executing two branches in parallel without involving the branch predictor.</p>
+<pre style="margin:1.4rem 0"><code>if (cond)
+    x = a;
+else
+    x = b;
+-&gt;
+mask = cond ? 0xFFFFFFFF : 0;
+x = (a &amp; mask) | (b &amp; ~mask);</code></pre>
+      <p>The trick is justified in situations where the data is already in the fast caches and the cost of a misprediction becomes significant, or when there's an opportunity to efficiently parallelize the computation with SIMD. But since both branches are always computed in full on every pass, this greatly increases the load on the memory subsystem.</p>
+    </div></details>
+    <p>Over this same range Branchless outpaces Branchful, which is explained by the fairly weak BPU of the Jaguar, and where Intel/AMD would get away with a 10–15 cycle penalty, the Jaguar pays noticeably more due to its simpler BPU and shallower speculation, so the gain from eliminating branches on small data is higher here than you might expect on the desktop.</p>
+    <p>But starting from 200+ elements the picture changes, and Branchful begins to catch up and overtake Branchless, and at 1022–1024 they're already practically even with a slight advantage for Branchful, because the data ever less often ends up in L1 entirely along with the rest of the working context, and memory latencies start directly affecting computation speed.</p>
+    <p>It turns out that the speculative loads of the Branchful version start to overlap the losses from mispredictions, whereas Branchless is forced to wait each time for the result of the previous iteration. For Loop on large sizes predictably degrades fastest of all with its O(n), and the straight scan stops being worthwhile already on an array of more than 100 elements.</p>
+    <p>In the end we arrive at a fairly non-trivial conclusion that speculation directly interacts with the memory subsystem, simultaneously increasing the load on it and hiding its very latencies. Speculative execution costs resources, but it's exactly what lets you not stand and wait for memory to respond, and it turns out that performance is determined not by some single parameter but by a balance between mispredictions, memory latencies, and available bandwidth. And this balance is different every time depending on the data, the processor, and the access patterns.</p>
+    <p>The architecture of modern hardware in some sense repeats the principle of any complex system: you have to learn to live with the system efficiently, turning losses into an acceptable price for speed.</p>
+    <p>P.S. If you read this far, then you're probably a little interested in the topic of performance in applications and games. Last year I posted the article "<a href="dancing-with-allocators.html">Game++. Dancing with allocators</a>," out of which a whole Game++ series later grew, and then a <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">book that BHV published not long ago</a>.</p>
+    <p>This and a couple of other articles became the basis for one of the book's chapters, entirely devoted to allocation-free programming, pools, stack and custom allocators, other approaches, and how all of it behaves in a real game engine under load. The material in the book turned out fairly dense, but some moments still stayed off-screen, and I wanted to give a chance to work through it by hand rather than just read it. So I made a separate course out of the chapter on Stepik, "<a href="https://stepik.org/a/251888" target="_blank" rel="noopener">Playful programming. C++ without memory allocations</a>."</p>
+    <p>The course is set up so that the theory from a couple of the book's chapters is broken into short blocks, each accompanied by questions and tasks you have to solve yourself rather than just run ready-made code. The exercises are built on real patterns from game development, but without too much hardcore — my main goal was to show how you can work around the language's limitations and improve performance, sometimes with a couple of lines of code.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

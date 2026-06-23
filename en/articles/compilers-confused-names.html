@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compilers get confused by names too — dalerank</title>
+<meta name="description" content="Name lookup in C++: identifiers, unqualified-id, qualified-id, template-id and the 'terminal name', ADL (Koenig lookup) and its history, two-phase lookup in templates, and the historical differences between GCC, Clang and MSVC." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/compilers-confused-names.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/compilers-confused-names.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/compilers-confused-names.html">RU</a><i>/</i><a class="on" href="compilers-confused-names.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Compilers get confused by names too</h1><div class="ameta"><span>Apr 14, 2026</span><span>10 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/compilers-confused-names/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>This is a continuation of the topic started in <a href="pragmatic-names.html">Do names matter to the compiler</a>, and continued in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">At night all cats are grey, and all using's are alike</a> (in Russian), and if you want the full picture of how the compiler turns text into a program, then without understanding name lookup you won't be able to move on.</p>
+    <p>Names in the source text are just convenient labels for humans: variables, functions, types. But for the compiler a name is the entry point into a rather complex algorithm that has to unambiguously determine <em>what exactly you meant</em>. And here's where it gets interesting: the same written name in different contexts can mean completely different things, and sometimes nothing at all, depending on where and how it's used.</p>
+    <p>C++ is especially treacherous here. The language grew over decades, and the name-lookup rules evolved along with it: namespaces, templates, ADL, two-phase lookup were added. All of this not only made the model more complex, it made it non-intuitive in places even for experienced developers — and add to that the fact that different compilers historically implemented these rules differently (each in its own way), and part of those differences still surfaces in code today.</p>
+    <p>You shouldn't treat the compiler as a black box, even though name lookup really does sometimes look like magic; but if you break it into separate steps, you see that behind this "magic" stands a quite strict (though historically loaded) system of rules. Let me try to tell you about it.</p>
+    <hr />
+    <p>To figure out how name lookup works, you first need to understand the system for describing the names we write in code. At the most basic level we have an identifier, which is essentially just a sequence of letters, digits, and underscores, for example speed, foo, or my_var.</p>
+    <p>When we use a template, its name is also an identifier, but when we add template arguments, for example my&lt;T, 1&gt;, we get not just a template name but a qualified template name, or template-id.</p>
+    <p>To unify these notions, the term unqualified-id is introduced. It's a general concept that includes not only ordinary identifiers but also more complex forms of names, such as operators, destructors, or user-defined literals.</p>
+    <p>And when we add the scope-resolution operator ::, we get a qualified-id, for example std::vector, Foo::~Foo, and so on. It's important to understand that in the expression Foo::bar the name bar is qualified, while Foo itself is a qualifier but is itself an unqualified name.</p>
+    <img src="../../assets/articles/compilers-confused-names/02.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>// Unqualified name
+// just an identifier
+
+vector&lt;int&gt; v;
+// 'vector' — unqualified name
+
+sort(v.begin(), v.end());
+// 'sort' — unqualified name
+
+// Qualified name (qualified-id)
+// with the :: operator
+
+std::vector&lt;int&gt; v;
+// 'vector' — qualified,
+// 'std' — qualifier
+
+std::sort(v.begin(), v.end());
+
+struct Foo {
+    ~Foo() {}
+    static void bar() {}
+};
+
+Foo::bar();
+// 'bar' — qualified name
+// 'Foo' — qualifier
+
+Foo::~Foo();
+//'~Foo' — qualified name
+// of the destructor
+
+// template-id — a template name with explicit arguments
+std::vector&lt;int&gt; v1;           // 'vector&lt;int&gt;' — template-id
+std::pair&lt;int, float&gt; p;       // 'pair&lt;int, float&gt;' — template-id</code></pre>
+    <p>What remains is the key concept for name lookup — the terminal name. This is the last lexical name that the lookup algorithm ultimately tries to find. For example, in the expression obj-&gt;f the terminal name is f, and that's exactly what the compiler looks for as the result of all the lookup stages.</p>
+<pre style="margin:1.4rem 0"><code>// The terminal name - the last name the compiler looks for
+obj-&gt;f();      // terminal name: 'f'
+
+std::vector&lt;int&gt;::size_type x; // terminal name: 'size_type'
+
+Foo::bar();    // terminal name: 'bar'
+
+ns::Foo::bar();// terminal name: 'bar', qualifiers: 'ns', 'Foo'
+
+// Where it matters: lookup in dependent contexts
+template&lt;typename T&gt;
+void wrapper(T&amp; obj) {
+    obj.size();
+    // 'size' - terminal unqualified name
+    // the compiler looks for it in type T at instantiation time
+
+    T::value_type x;
+    // 'value_type' - terminal qualified name
+    // without 'typename' the compiler may not understand it's a type
+
+    typename T::value_type y; // this is more correct
+}</code></pre>
+    <p>Understanding the terms "identifier", "template-id", "qualified-id" and especially "terminal name" becomes the key to understanding both the standard and compiler behavior in general. The general rule of name lookup in C++ is simple but confusing, because it developed in jumps from standard to standard, while vendors, large companies, and even famous developers contributed their bit.</p>
+    <p>Until 2017 MSVC didn't support two-phase name lookup (more on this below), and when parsing a template the compiler deferred the lookup of all names until instantiation, whereas the standard required splitting the lookup into two stages already at the template's definition. GCC and Clang followed the standard more strictly; MSVC ignored this requirement for over 20 years.</p>
+    <p>Andrew Koenig proposed a modification of the name-lookup rules related to namespaces, which entered the standard under the name "Koenig lookup" and is officially fixed in the standard as [basic.lookup.koenig], although in everyday use it's more often called ADL — argument-dependent lookup.</p>
+    <p>There's an interesting story with ADL, because Koenig didn't invent ADL but only formulated and pushed through a solution to an already existing problem. In the early 1990s the committee was adding namespaces to the draft standard, but it turned out they conflicted with operator overloading. It was necessary to figure out how to make overloaded operators for user types be found automatically, without explicitly specifying the namespace.</p>
+    <p>The concrete pain point looked like this:</p>
+<pre style="margin:1.4rem 0"><code>namespace sak {
+    struct BigNum {
+        int value;
+    };
+
+    // operator&lt;&lt; defined in namespace sak, next to the type
+    std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const BigNum&amp; n) {
+        return os &lt;&lt; "BigNum(" &lt;&lt; n.value &lt;&lt; ")";
+    }
+}
+
+int main() {
+    sak::BigNum n(42);
+
+    // ADL: the compiler sees that n has type sak::BigNum,
+    // looks for operator&lt;&lt; in namespace sak and finds it
+    std::cout &lt;&lt; n &lt;&lt; "\n";
+
+    // Without ADL you'd have to write something like this:
+    sak::operator&lt;&lt;(std::cout, n) &lt;&lt; "\n";
+
+    // Or like this — but then the whole point of operator overloading is lost:
+    // std::operator&lt;&lt;(std::cout, n);
+    // won't compile, since there's no such thing in std
+}</code></pre>
+    <p>Without ADL the compiler would report an error that it can't find operator&lt;&lt;, because the call doesn't explicitly state that it's in namespace std. The problem was seen even before Koenig, there just was no solution, and Bjarne Stroustrup described the problem in the document P0262 "Name Space Management in C++" (<a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/1993/N0262.pdf" target="_blank" rel="noopener">N0262</a>) back in 1993, in whose appendix D (Appendix D: Overloading and Namespaces) you can see what the world looked like before ADL.</p>
+<pre style="margin:1.4rem 0"><code>// an explicit call kills the whole point of operator overloading
+mylib::operator&lt;&lt;(cout, s);
+
+// or drag operator&lt;&lt; into the global namespace via using
+using mylib::operator&lt;&lt;;
+cout &lt;&lt; s;  // now it works, but you have to write using everywhere</code></pre>
+    <p>ADL is often attributed to Andrew Koenig, although he isn't its inventor, but Koenig published the document N0645 "Reconciling overloaded operators with namespaces" (<a href="https://www.open-std.org/jtc1/SC22/wg21/docs/papers/1995/N0645.pdf" target="_blank" rel="noopener">N0645</a>) in January 1995, where he laid out a concrete solution, and initially his proposal applied only to overloaded operators, not to all functions. Koenig worked at AT&amp;T Bell Labs, where by that time there was already an established practice of similar lookup in the company's own work, and he rather formalized and brought to the committee what was already being used in practice. The alternative was to require explicit qualification everywhere, that is, to write std::operator&lt;&lt;(std::cout, obj) instead of std::cout &lt;&lt; obj. That's technically correct but completely kills the point of operator overloading and makes the code "dirty".</p>
+    <p>But ADL also brought side effects the committee didn't fully foresee, making namespaces less strict and requiring explicit qualification where it otherwise isn't needed, while a dependency on ADL can lead to semantic problems when two libraries expect different behavior from the same unqualified name.</p>
+    <p>At present the algorithm looks like this: in any scope, ordinary unqualified lookup is performed first, then lookup in base classes if applicable, and for function calls ADL is additionally launched, which extends the set of candidates with names from the arguments' namespaces. If the name is qualified, qualified lookup is performed in the specified namespace or class, without ADL and without ordinary unqualified lookup (we go bottom-up).</p>
+    <img src="../../assets/articles/compilers-confused-names/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In template code, lookup is split into two phases: non-dependent names are looked up at the template's definition, and dependent ones at instantiation, and it's in the second phase that ADL kicks in for dependent names.</p>
+    <h2>GCC</h2>
+    <img src="../../assets/articles/compilers-confused-names/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>GCC's historical quirk in template code showed up in that the boundaries between the first and second lookup phases were interpreted differently than in Clang and than the standard requires, because of which ADL for dependent names didn't always fire at the right moment. Code that should have compiled might not compile, or conversely compiled where it shouldn't have.</p>
+    <p>GCC implemented templates before the standard finally formulated these rules, and historically used so-called "lazy parsing", in which the template body wasn't actually fully analyzed on first parse but deferred until instantiation. This meant the first lookup phase essentially wasn't performed at all, and all names, including non-dependent ones, were looked up at instantiation.</p>
+    <p>The practical consequence was this:</p>
+<pre style="margin:1.4rem 0"><code>void foo(int) {}  // global foo
+
+template&lt;typename T&gt;
+void bar(T x) {
+    foo(x);  // dependent name - looked up in phase 2 via ADL, all correct
+    foo(42); // NON-dependent name - should be looked up in phase 1
+             // GCC: deferred until instantiation and found foo(int) - ok
+             // Clang: looked it up in phase 1 and found no matching foo - error
+}
+
+namespace myns {
+    struct MyType {};
+    void foo(MyType) {}
+}
+
+bar(myns::MyType{});
+// GCC: compiled without problems
+// Clang: error: use of undeclared identifier 'foo'</code></pre>
+    <h2>Clang</h2>
+    <img src="../../assets/articles/compilers-confused-names/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>When two-phase lookup was formalized in C++98, the committee faced a conceptual question: what to do with names from a base class if the base class is itself a template?</p>
+    <p>If the base Base&lt;T&gt; isn't fully known at the moment Derived&lt;T&gt; is defined and depends on the parameter T, then different specializations may contain completely different sets of members.</p>
+    <p>The committee decided that dependent base classes don't participate in the first phase of unqualified lookup for the reason that if you allowed lookup in a dependent base in the first phase, then adding a new member to a specialization of the base class could change the meaning of code in the derived class, which violates the principle of template predictability (i.e. it would depend on which arguments it's instantiated with).</p>
+<pre style="margin:1.4rem 0"><code>// Why the committee forbade lookup in a dependent base in phase 1:
+template&lt;typename T&gt;
+struct Base {
+    // the general version has no process method
+};
+
+// specialization for int - has process
+template&lt;&gt;
+struct Base&lt;int&gt; {
+    void process() {}
+};
+
+template&lt;typename T&gt;
+struct Derived : Base&lt;T&gt; {
+    void run() {
+        process();  // if lookup in a dependent base were allowed:
+                    // for T=int - would find Base&lt;int&gt;::process, compiles
+                    // for T=float - would find nothing and fail
+                    // with the same template code we get different behavior
+    }
+};</code></pre>
+    <h2>MSVC</h2>
+    <img src="../../assets/articles/compilers-confused-names/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Historically MSVC had non-standard behavior in template name lookup; two-phase name lookup was for a long time not implemented in accordance with the standard, and until VS 2017 with the /permissive- flag dependent names in templates were looked up only at instantiation, not at definition, which gave a different set of candidates compared to GCC and Clang.</p>
+    <p>This is a real compatibility problem, well known in the C++ community, but deferred parsing, as happens with MSVC, isn't just a choice of name-lookup algorithm. It's a vendor's architectural decision about when the compiler even looks inside the template body, and to redo this behavior means rewriting 80% of the parser.</p>
+    <p>The MSVC team publicly admitted that the old parser physically didn't allow implementing two-phase lookup, so they had to develop a new one, which took several years and effectively meant replacing one of the central components of Microsoft's compiler.</p>
+    <p>If you're wondering why MS didn't implement a correct parser right away given the standard existed, this question again takes us into the company's history and, oddly enough, to the roots of a UI library. The entire Windows-application development stack of the 1990s was built on MFC (Microsoft Foundation Classes), and part of the specifics of its implementation and features affected the compiler, adding quirks to it that were in turn actively exploited in MFC. This created mutual reinforcement, preventing MSVC from becoming truly standard-conforming, because it would break MFC, while MFC couldn't become portable because it relied on the non-standard MSVC. But inside Microsoft this coupling was politically protected, because MFC was the foundation of the Windows developer ecosystem.</p>
+    <p>This is a classic story of technical debt at platform scale, which grew into company scale and started affecting the shipped products, and a once fast and pragmatic decision of 1993 turned into a 25-year architectural constraint that couldn't be fixed without simultaneously rewriting the parser, fixing thousands of Windows SDK components, and fixing MFC, without breaking backward compatibility with the code of hundreds of thousands of developers.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+void call_foo(T x) {
+    foo(x);   // dependent, but MSVC resolved it its own way
+}
+
+void foo(int x) { }   // declared AFTER the template
+
+int main() {
+    call_foo(42);
+    // GCC: error - foo isn't visible at the template's definition point
+    // MSVC: ok - we find foo at instantiation
+}</code></pre>
+    <p>By the standard foo(x) is a dependent name (depends on T), so it should be looked up at instantiation, but only via ADL. But foo(int) isn't found via ADL for int (there's no associated namespace), so GCC correctly gives an error, while MSVC simply looked everything up at instantiation and found it.</p>
+    <h2>What's next…</h2>
+    <p>As I said in the first article, name lookup in C++ is still that part of the language which seems obvious right up until you start digging into the details. Behind the familiar <code>foo</code>, <code>bar</code>, and <code>vector</code> hides not just string matching but a complex and in places historically strange system of rules, compromises, and extensions that appeared as the language developed.</p>
+    <p>I tried to break down the basic building blocks of this system: identifiers, how <code>unqualified-id</code> and <code>qualified-id</code> are formed from them, where <code>template-id</code> appears, and why it makes sense to single out the "terminal name" as the point that the whole lookup algorithm ultimately comes down to. These concepts by themselves don't answer all questions, but without them it's impossible to understand ADL, two-phase lookup, or template behavior.</p>
+    <p>I hope after these articles you understand why in C++ there's no single "name-lookup algorithm" that simply walks the steps one after another, but rather several different mechanisms that kick in depending on the form of the name and the context.</p>
+    <p>If you keep this model in mind as a system of several intersecting mechanisms, then many C++ "oddities" start to look quite "logical." And from this point you can already move on and analyze concrete cases where these rules intersect and start behaving non-obviously. In the next article I'll talk about the most basic mechanism (unqualified lookup) and we'll see how even it alone is capable of creating rather non-trivial situations.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
