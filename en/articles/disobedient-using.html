@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The disobedient using — dalerank</title>
+<meta name="description" content="Why using namespace and ADL make name lookup in C++ unpredictable: argument-dependent lookup and operator&lt;&lt;, hijacking std with a local substitute, checking function viability, the ranks of implicit conversions, and why =delete functions take part in overload resolution as full-fledged candidates." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/disobedient-using.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/disobedient-using.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/disobedient-using.html">RU</a><i>/</i><a class="on" href="disobedient-using.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>The disobedient using</h1><div class="ameta"><span>May 20, 2026</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/disobedient-using/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In the <a href="simple-name-lookup.html">previous article</a> I broke down how qualified lookup works and how <code>using namespace</code> participates in it only as a fallback, when there are no own declarations in the specified scope. The compiler first looks at what's declared directly in the current context, and only on failure moves on to names mixed in via the <code>using</code> directive. The scheme would seem transparent and predictable: there's a lookup scope, there's the priority of explicit declarations, there's the "N-declarations rule" as insurance.</p>
+    <p>But as soon as we move from variables and functions to more general mechanisms in code, this transparency immediately starts to break down — and in the most ordinary code that every developer writes from their first days of learning. By the language rules we can place a <code>using namespace</code> directive anywhere, but if something is declared explicitly in the scope named by the qualifier, qualified lookup will find exactly that declaration, and only if there's no explicitly declared name does the compiler start considering names made visible through <code>using namespace</code>, and so on down the chain.</p>
+    <p>But there's a slippery spot here that most textbooks and courses keep quiet about, sidestepping the topic of operators. For example, the left-shift operator <code>&lt;&lt;</code> can be defined in any namespace.</p>
+<pre style="margin:1.4rem 0"><code>std::cout &lt;&lt; "hello";</code></pre>
+    <p>In essence this code corresponds to a function call, and the compiler sees in it nothing other than</p>
+<pre style="margin:1.4rem 0"><code>operator&lt;&lt;(std::cout, "hello");</code></pre>
+    <p>But for this to work the way we now see it, the function <code>operator&lt;&lt;</code> has to be found in the <code>std</code> namespace, that is, what we actually need is a call of a form that doesn't exist in pure form:</p>
+<pre style="margin:1.4rem 0"><code>std::operator&lt;&lt;(std::cout, "hello");</code></pre>
+    <p>But if you look at the original syntax <code>std::cout &lt;&lt; "hello"</code>, the qualifier <code>std::</code> isn't there in pure form — or rather it is, but only for the left operand <code>cout</code>, and formally <code>std::</code> isn't connected to the operator's name at all. So how does the compiler understand where exactly to look for the right operator?</p>
+    <p>The answer to this question was proposed by Andrew Koenig in the early 1990s, and today we know it as argument-dependent lookup, or ADL, which makes the compiler look for the function in the namespaces associated with the types of the call's arguments. But it will do such unqualified lookup only if it found nothing suitable in the current lookup scope, which also adds headaches both for compiler developers and for the developers who use those compilers.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    struct A {};
+    void f(A);
+}
+
+int main() {
+    N::A a;
+    f(a);
+}</code></pre>
+    <p>On the call <code>f(a)</code>, unqualified lookup of the name <code>f</code> in the current scope finds nothing, thereby enabling ADL. The compiler then sees that the argument <code>a</code> has type <code>N::A</code>, and therefore also sees the namespace <code>N</code> associated with that variable, then looks for <code>f</code> inside <code>N</code>, finally finding <code>N::f</code>. Thus the call <code>f</code> becomes valid.</p>
+    <p>This is also why stream output lookup works: through argument-dependent lookup (ADL) the compiler sees that the left argument <code>std::cout</code> has a type defined in the <code>std</code> namespace, and looks for a suitable <code>operator&lt;&lt;</code> there. But if unqualified lookup found any entity at all — be it a type, a variable, a template, anything — then ADL is turned off completely.</p>
+<pre style="margin:1.4rem 0"><code>typedef int f;
+
+namespace N {
+    struct A {};
+    void f(A);
+}
+
+int main() {
+    N::A a;
+    f(a);
+}</code></pre>
+    <p>Here unqualified lookup of the name <code>f</code> immediately finds <code>typedef int f</code> and is considered successful, that is, we don't look further. Accordingly the compiler interprets <code>f(a)</code> as a functional cast, that is, an attempt to cast <code>a</code> to <code>int</code>. And this is perfectly correct syntactically, but clearly not what the programmer expected. This is exactly why the interaction of ordinary unqualified lookup and ADL sometimes leads to extremely unexpected results, when an "obvious" function turns out to be completely invisible to the compiler.</p>
+    <p>Here's another slippery example (looks safe, right?):</p>
+<pre style="margin:1.4rem 0"><code>namespace std {
+    struct ostream {
+        ostream&amp; operator&lt;&lt;(const char*) {
+            printf("world");
+            return *this;
+        }
+    };
+
+    ostream cout;
+}
+
+using namespace std;
+int main() {
+    cout &lt;&lt; "hello";
+}</code></pre>
+    <p>Here the name <code>std</code> is found by unqualified lookup and refers not to the standard library at all but to our local substitute, whereas the spelling <code>::std::cout</code> unambiguously points to the global namespace and the real <code>std</code>.</p>
+    <p>This is exactly why the standard library always uses fully qualified names with <code>::std::</code> and doesn't rely on unqualified lookup — as you see, it's too easy to "hijack" it with local tricks.</p>
+    <p>This example vividly shows why you need to know which entity you're using in code. But even if we unambiguously specified the namespace, the compiler still has to solve the problem of which specific function candidate to choose among many overloads. Especially if the functions can take different numbers of arguments, have default parameters, or require implicit conversions.</p>
+    <p>And here the concept of function viability comes into play, which we'll discuss further — what it is and why it matters in overload resolution.</p>
+    <h3>Checking a function's viability</h3>
+    <p>First of all, the viability check evaluates whether a particular candidate is suitable for the call with the given set of arguments, by various criteria. For example, if we have a function taking two parameters and we try to call it with one argument, such a candidate is automatically deemed non-viable, and in this case the compiler simply won't be able to match the call to the function definition, excluding the variant from the overload list.</p>
+<pre style="margin:1.4rem 0"><code>// A function with two parameters
+void greet(const std::string&amp; firstName, const std::string&amp; lastName) {
+   cout &lt;&lt; "Hello, " &lt;&lt; firstName &lt;&lt; " " &lt;&lt; lastName &lt;&lt; "!";
+}
+
+int main() {
+    std::string name = "Alice";
+
+    // An attempt to call the function with one argument
+    // greet(name); // Error: no matching overload
+
+    // The correct call with two arguments
+    greet(name, "Smith"); // Works: Hello, Alice Smith!
+
+    return 0;
+}</code></pre>
+    <p>Similarly, a class's private methods can't be chosen as candidates from outside the class, and constructors with the <code>explicit</code> modifier are also taken into account in the check, since they require an explicit call.</p>
+<pre style="margin:1.4rem 0"><code>class Person {
+private:
+    void secretGreet() {
+        std::cout &lt;&lt; "This is a secret greeting!" &lt;&lt; std::endl;
+    }
+
+public:
+    void publicGreet() {
+        std::cout &lt;&lt; "Hello!" &lt;&lt; std::endl;
+    }
+};
+
+int main() {
+    Person p;
+
+    // p.secretGreet(); // Error: the method is inaccessible
+    p.publicGreet();     // Works: the method is public
+
+    return 0;
+}</code></pre>
+    <p>The point is this: an <code>explicit</code> constructor remains a viable candidate for direct initialization (an explicit call), but is excluded from the candidates in copy initialization and implicit conversions. That is, it doesn't "always require an explicit call" in the sense that a private method is "always inaccessible from outside" — it's specifically filtered out in those contexts where an implicit conversion would be required.</p>
+<pre style="margin:1.4rem 0"><code>class MyString {
+public:
+    explicit MyString(const char* s) { /* ... */ }
+};
+
+void print(MyString s) { /* ... */ }
+
+int main() {
+    MyString a("hello");        // OK: direct initialization, candidate is viable
+    MyString b = "hello";       // Error: copy initialization,
+                                // the explicit constructor is excluded
+                                // from the candidates
+    print("hello");             // Error: implicit conversion
+                                // is forbidden
+    print(MyString("hello"));   // OK: explicit conversion
+}</code></pre>
+    <p>This behavior was adopted by the committee as a way to weed out a function in advance, at the stage of forming the candidate list, in certain call contexts, even before the compiler begins comparing viable candidates against each other by quality of argument match.</p>
+    <p>After the compiler discards all unsuitable variants, the stage of choosing the best candidate begins. Here implicit conversion sequences come to the rescue, which the compiler applies to each function parameter with the following priorities: standard conversions, user-defined conversions, and, after everything, variadic parameters denoted by <code>…</code></p>
+    <img src="../../assets/articles/disobedient-using/02.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>struct S {
+    S(int x) { std::cout &lt;&lt; "S(int) constructor called\n"; }
+    // user-defined conversion
+};
+
+void foo(double d) {
+    std::cout &lt;&lt; "foo(double) called\n";
+}
+
+void foo(S s) {
+    std::cout &lt;&lt; "foo(S) called\n";
+}
+
+void foo(...) {
+    std::cout &lt;&lt; "foo(...) called\n";
+    // variadic version
+}
+
+int main() {
+    int x = 42;
+
+    // Which foo will be called?
+    foo(x);
+
+    return 0;
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/9djzdheMK" target="_blank" rel="noopener">godbolt</a></p>
+    <p>Let's look at the example above in more detail. We have three overloads of the function <code>foo</code>:</p>
+    <ul><li>the first takes a <code>double</code>, and for a call with an <code>int</code> argument the standard conversion <code>int → double</code> will be applied here;</li><li>the second overload takes an object of type <code>S</code>, where a constructor <code>S(int)</code> exists, and in this case a user-defined conversion from <code>int</code> to <code>S</code> is required;</li><li>the third version of the function is a variadic overload with <code>...</code>, which can take any argument but has the lowest priority.</li></ul>
+    <p>Now we call <code>foo(x)</code>, where <code>x</code> has type <code>int</code>. The compiler will gather all possible overloads, and all three fit: each of them can be called with an <code>int</code> argument, albeit through different conversions.</p>
+    <p>Now we go through the conversion sequences for each candidate, as the compiler does, which in the end chooses the execution path with the lowest complexity.</p>
+    <ul><li>for <code>foo(double)</code> the standard conversion <code>int → double</code> must be applied, that is, minimal conversions are needed — let's say it has complexity 1;</li><li>for <code>foo(S)</code> a user-defined conversion through the constructor <code>S(int)</code> has to be used, which is a bit harder and has complexity 2;</li><li>for the variadic version <code>foo(...)</code> a variadic conversion will be applied, which involves the most complex logic, with complexity 3.</li></ul>
+    <p>"Complexity 1, 2, 3" is my simplification for the example. In the standard this is called the conversion rank, and ranks don't "add up like complexity." After such an account you might get the impression that the compiler somehow adds up points, but in reality, in real compilers, conversion sequences are compared by the "best on the worst parameter" rule. And every compiler has its own quirks with these rules.</p>
+    <p>Why was exactly this order chosen? Historically it's tied to the evolution of the C++ language itself and to the experience of using it in early C projects, where strict type rules had already settled. The idea is believed to belong to Bjarne and the early C++ development team at Bell Labs, to reduce the computational complexity on the machines of that time when they were designing C++. I think you've once again been convinced that many modern decisions grew out of the 80s–90s, when the language was actively absorbing new ideas but was constrained by hardware performance. This is how it was achieved that the compiler chooses the most "natural" way to call a function without resorting to complex conversions when possible.</p>
+    <h2>And a little more of a historical digression...</h2>
+    <p><strong>Early C++ (Cfront, 1980s):</strong> the first C++ compiler used step-by-step elimination of candidates — first exact type matches were checked, then standard conversions were applied, then user-defined ones, and this process was completely explicit in the compiler's code and based on conversion ranking in the compiler itself.</p>
+    <p><strong>GCC and Clang:</strong> modern compilers keep this hierarchy, but instead of step-by-step elimination they build a candidate table, marking for each parameter the "conversion type" and its rank. So when choosing the best candidate the compiler only needs to take the suitable one from the top of the table to unambiguously pick the function with minimal and least complex conversions.</p>
+    <p><strong>MSVC:</strong> similarly builds conversion sequences and takes their priorities into account, but uses candidate lists (the implementation is optimized for compilation speed and handling large overload sets), using internal "tags" for ranking.</p>
+    <p>But you need to understand that even standard conversions have subranks, and converting <code>char</code> to <code>int</code> is considered more preferable than converting <code>int</code> to <code>double</code>, and the compiler uses subranks to choose the best variant among many possible candidates.</p>
+<pre style="margin:1.4rem 0"><code>void foo(int x) {
+    std::cout &lt;&lt; "foo(int) called\n";
+}
+
+void foo(double x) {
+    std::cout &lt;&lt; "foo(double) called\n";
+}
+
+int main() {
+    char c = 'A';
+
+    foo(c); // Which variant will be called?
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/x5xznr9G1" target="_blank" rel="noopener">godbolt</a></p>
+    <p>In this example we have two candidates: <code>foo(int)</code> and <code>foo(double)</code>. The argument has type <code>char</code>, and the compiler can convert <code>char</code> to <code>int</code> (a small standard conversion), which is preferable. But the compiler can also convert <code>char</code> to <code>double</code> (also a standard conversion), but with a lower priority, because it requires widening first to <code>int</code> and then to <code>double</code>. As a result <code>foo(int)</code> will be called, because the conversion <code>char → int</code> is more "natural" and simpler than <code>char → double</code>.</p>
+    <p>Again, for the article I simplified the subranks of standard conversions. In the standard <code>char → int</code> is an integral promotion (rank exact-match-ish), while <code>char → double</code> is already a floating-integral conversion (a full conversion, of lower rank). Promotion and conversion are different categories, and promotion always beats conversion.</p>
+    <p>Another example with overloads and default values (<a href="https://godbolt.org/z/1dbvsEezE" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>void bar(int x, int y = 10) {
+    std::cout &lt;&lt; "bar(int, int) called\n";
+}
+
+void bar(double x) {
+    std::cout &lt;&lt; "bar(double) called\n";
+}
+
+int main() {
+    int a = 5;
+
+    bar(a); // Which variant will the compiler call?
+}</code></pre>
+    <p>Here we again have two candidates: <code>bar(int, int)</code>, but the second parameter has a default value, so the call <code>bar(a)</code> fits, and there's <code>bar(double)</code>, where <code>int → double</code> can be converted.</p>
+    <p>The compiler weighs the priorities: <code>bar(int, int)</code> requires no conversion (<code>int → int</code>) and uses the default value for the second argument, whereas <code>bar(double)</code> requires an implicit standard conversion (<code>int → double</code>), so <code>bar(int, int)</code> will be called.</p>
+    <h2>=delete</h2>
+    <p><code>=delete</code> begs to be in the article: deleted functions participate in overload resolution as viable candidates and can be chosen as the best, after which the call is rejected. This is the most striking case where "viability" and "availability" diverge, and it nicely illustrates why the notion of viability is needed at all.</p>
+    <p>When we mark a function with <code>= delete</code>, many perceive it intuitively as "the function is gone" and think of something like its removal from the code. In reality it's exactly the opposite: a deleted function fully participates in the viability check and in ranking, behaves like an ordinary candidate, and the compiler can even choose it as the best overload.</p>
+    <p>And only after the choice is made does the compiler look at the <code>= delete</code> mark and reject the call with an error. This illustrates why the notion of viability as a separate stage is needed at all: "viable for participation in resolution" and "can actually be called" are two different things.</p>
+<pre style="margin:1.4rem 0"><code>void process(int x)    { std::cout &lt;&lt; "int\n"; }
+void process(double x) = delete;
+
+int main() {
+    process(42);    // OK: process(int) is called
+    process(3.14);  // error: process(double) is chosen,
+                    //        but it is deleted
+    process(1.0f);  // error: float → double is more precise than float → int,
+                    //        so the deleted process(double) is chosen
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/137nKavoz" target="_blank" rel="noopener">godbolt</a></p>
+    <p>At first glance it seems that since <code>process(double)</code> is "deleted," then on the call <code>process(3.14)</code> the compiler should just ignore it and look for another overload — for example, convert <code>double</code> to <code>int</code>. But it won't do that: the deleted overload remains a viable candidate, wins resolution by the usual ranking rules (for <code>double</code> an exact match is better than a conversion to <code>int</code>), and only then runs into <code>= delete</code>.</p>
+    <p>The overload <code>process(int)</code>, which could accept a <code>double</code> through a standard conversion, isn't even considered — it would be chosen only if <code>process(double)</code> were absent from the candidate list altogether. This gives an idiomatic technique: forbidding a call of a function with certain types not by removing it from the overload set, but on the contrary by leaving it there deliberately so it "intercepts" unwanted arguments.</p>
+<pre style="margin:1.4rem 0"><code>struct Handle {
+    void set(int id);
+    void set(void*) = delete;   // forbid passing raw pointers,
+                                // including nullptr and NULL
+};
+
+Handle h;
+h.set(42);       // OK
+h.set(nullptr);  // compile error, not an implicit conversion to int</code></pre>
+    <p>If <code>= delete</code> meant "removing the function from consideration," then <code>h.set(nullptr)</code> would call <code>set(int)</code> through the conversion <code>nullptr → 0</code>, and we'd get a hard-to-catch runtime bug.</p>
+    <p>But since <code>set(void*)</code> remains a viable candidate and wins resolution (for <code>nullptr</code> a pointer is an exact match, while a conversion to <code>int</code> is not), the compiler catches the error at compile time. This is exactly why formally distinguishing "viable" from "available" is a separate tool within the language, on which a whole class of defensive techniques of modern C++ rests.</p>
+    <h2>What this all means for the developer</h2>
+    <p>In large codebases the process of viability checking and choosing the best candidate can be very complex, because you have to account for the number of parameters, function availability, default values, implicit conversions, and the priorities of various kinds of conversions. This is exactly why one and the same function can be called differently depending on which overloads are available in the current context and which arguments are passed. These are the basic rules for choosing the best candidate in function overloading, and I hope I've given an understanding of how the compiler assesses function viability.</p>
+    <p>As material for the next articles I see covering the processes that govern the types of the arguments and return values themselves in templates. This is where we'll first encounter type deduction — the mechanism by which the compiler deduces the types of template parameters from the passed arguments, and template instantiation, which substitutes these types into the template body to create a concrete function or class.</p>
+    <p>Understanding these mechanisms determines which template overloads will be chosen and how function calls will be resolved — and that's what the next article will be about…</p>
+    <p>P.S. I've published the first 7 chapters of "Playful Programming" on GitHub in ru/en (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>), although <a href="https://habr.com/ru/users/olegsivchenko/" target="_blank" rel="noopener">@OlegSivchenko</a> suggests calling the series "Pragmatic C++" — the questions raised are just too practical and dull. If you feel like fixing the text or the code examples, drop me a message.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
