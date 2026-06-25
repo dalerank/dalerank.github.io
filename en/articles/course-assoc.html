@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>STL associative containers — dalerank</title>
+<meta name="description" content="STL associative containers: set, map, multiset and multimap — how they differ, when keys are unique and when they repeat, with short examples." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-assoc.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-assoc.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/course-assoc.html">RU</a><i>/</i><a class="on" href="course-assoc.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Course · C++</span><h1>STL associative containers</h1><div class="ameta"><span>Jun 25, 2026</span><span>3 min</span></div></div>
+  <article class="prose">
+    <p class="cap">A free lesson from the course <a href="https://stepik.org/a/255930" target="_blank" rel="noopener">“C++ without Memory Allocations”</a> on Stepik.</p>
+<p>Associative containers are data structures where each element is stored in <strong>sorted order</strong> and is accessed through a <strong>key</strong>. Thanks to this, searching for an element does not take time that depends on the size of the array, but works very fast — roughly in <strong>O(log n)</strong> (logarithmic time). In the C++ standard library they are usually implemented using <strong>balanced search trees</strong> (most often red-black trees).</p>
+
+<p>These containers come in two kinds:</p>
+
+<ul>
+	<li>
+	<p>where keys <strong>must be unique</strong> (you cannot insert two identical keys),</p>
+	</li>
+	<li>
+	<p>where keys may <strong>repeat</strong> (several elements with the same key).</p>
+	</li>
+</ul>
+
+<h3><code>set</code> — a set of unique values</h3>
+
+<p><code>std::set</code> stores <strong>keys only</strong> (without values) and guarantees that each key appears <strong>only once</strong>. All elements are automatically kept in sorted order. This is convenient when you need to work with a collection of unique data: numbers, names, ids, etc.</p>
+
+<p>For example, if we insert numbers in any order, <code>set</code> will sort them automatically:</p>
+
+<pre style="margin:1.4rem 0"><code>#include &lt;set&gt;
+#include &lt;iostream&gt;
+int main() {
+    std::set&lt;int&gt; s;
+    s.insert(5);
+    s.insert(1);
+    s.insert(3);
+    s.insert(5); // duplicate value is ignored
+
+    for (int x : s) {
+        std::cout &lt;&lt; x &lt;&lt; " ";
+    }
+    // Output: 1 3 5
+}</code></pre>
+
+<h3><code>map</code> — a dictionary (a mapping of the key → value relationship)</h3>
+
+<p><code>std::map</code> stores data as key-value pairs. Keys are always <strong>unique</strong> and sorted, while values can be anything. You can use a <code>map</code>, for example, as a dictionary: look up the translation by a word, user data by id, a phone number by name, and so on.</p>
+
+<pre style="margin:1.4rem 0"><code>#include &lt;map&gt;
+#include &lt;iostream&gt;
+int main() {
+    std::map&lt;std::string, int&gt; ages;
+    ages["Alice"] = 25;
+    ages["Bob"] = 30;
+    ages["Alice"] = 26; // overwrites the old value
+
+    for (auto&amp; [name, age] : ages) {
+        std::cout &lt;&lt; name &lt;&lt; " -&gt; " &lt;&lt; age &lt;&lt; "\n";
+    }
+    // Output:
+    // Alice -&gt; 26
+    // Bob -&gt; 30
+}</code></pre>
+
+<h3><code>multiset</code> — a set with repeating elements</h3>
+
+<p>Unlike <code>set</code>, <code>std::multiset</code> allows storing <strong>identical keys</strong>. All elements are also kept in sorted order, but now you can insert repeating values. This is useful if, for example, you need to keep statistics on how often numbers or words occur.</p>
+
+<pre style="margin:1.4rem 0"><code>#include &lt;set&gt;
+#include &lt;iostream&gt;
+int main() {
+    std::multiset&lt;int&gt; ms;
+    ms.insert(5);
+    ms.insert(5);
+    ms.insert(1);
+
+    for (int x : ms) {
+        std::cout &lt;&lt; x &lt;&lt; " ";
+    }
+    // Output: 1 5 5
+}</code></pre>
+
+<h3><code>multimap</code> — a dictionary with repeating keys</h3>
+
+<p><code>std::multimap</code> is similar to <code>map</code>, but it can store <strong>several values for one key</strong>. This is useful if, for example, one person has several phone numbers or one product has several reviews.</p>
+
+<pre style="margin:1.4rem 0"><code>#include &lt;map&gt;
+#include &lt;iostream&gt;
+int main() {
+    std::multimap&lt;std::string, std::string&gt; phones;
+    phones.insert({"Alice", "123"});
+    phones.insert({"Alice", "456"});
+    phones.insert({"Bob", "789"});
+
+    for (auto&amp; [name, phone] : phones) {
+        std::cout &lt;&lt; name &lt;&lt; " -&gt; " &lt;&lt; phone &lt;&lt; "\n";
+    }
+    // Output:
+    // Alice -&gt; 123
+    // Alice -&gt; 456
+    // Bob -&gt; 789
+}</code></pre>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/255930" target="_blank" rel="noopener">Take the course on Stepik →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How a vtable works — dalerank</title>
+<meta name="description" content="How a C++ compiler implements virtual functions: the hidden vptr, the vtable and dynamic dispatch — with a hand-rolled implementation of the mechanism using function pointers." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-vtable.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-vtable.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/course-vtable.html">RU</a><i>/</i><a class="on" href="course-vtable.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Course · C++</span><h1>How a vtable works</h1><div class="ameta"><span>Jun 25, 2026</span><span>5 min</span></div></div>
+  <article class="prose">
+    <p class="cap">A free lesson from the course <a href="https://stepik.org/a/255930" target="_blank" rel="noopener">“C++ without Memory Allocations”</a> on Stepik.</p>
+<p>Polymorphism in C++ is achieved with <strong>virtual functions</strong>. It allows calling different implementations of the same function through a pointer or reference to a base class. Thanks to this, you can work with objects of different types uniformly, while the actual implementation is selected automatically at run time.</p>
+
+<pre style="margin:1.4rem 0"><code>class Base
+{
+public:
+    const char* name() { return "Base"; }
+};
+
+class Child: public Base
+{
+public:
+    const char* name() { return "Child"; }
+};
+
+int main()
+{
+    Child child;
+    Base &amp;obj = child;
+    std::cout &lt;&lt; "Object is a " &lt;&lt; obj.name();
+}</code></pre>
+
+<p>For this to work, the compiler uses a special mechanism — the <strong>vtable</strong> (virtual table). If a class has at least one virtual function, the compiler creates&nbsp;a special structure that stores the addresses of the virtual functions.</p>
+
+<p>Every object of such a class receives a hidden pointer <code>vptr</code> that points to the corresponding vtable. If a virtual function is not overridden in a derived class, then the address of the base class implementation is written into the derived class's vtable.</p>
+
+<p>When we call a virtual function through a pointer or reference to a base class, the following is used:<br>
+<code>vptr</code> → vtable → address of the required function.<br>
+Thanks to this, the call is bound not at compile time but at program run time.</p>
+
+<p>Thus, the vtable mechanism provides dynamic binding and makes polymorphism in C++ possible</p>
+
+<h2>Our own vtable implementation</h2>
+
+<p>To understand how this works, let's implement the example above using function pointers.</p>
+
+<pre style="margin:1.4rem 0"><code>struct Base
+{
+    void (*name)(Base* me);
+};
+
+struct Child
+{
+    Base v; // model inheritance
+};
+
+void child_name(Base *ap);
+
+// works like a class constructor
+void init_child(Child *ap)
+{
+    ap-&gt;v.name = &amp;child_name;
+}</code></pre>
+
+<p>The compiler generates slightly different code, since it stores the function pointer in a global virtual table (usually called a "vtable"). The way the compiler does this looks roughly like this:</p>
+
+<pre style="margin:1.4rem 0"><code>// Forward declaration of the virtual table structure
+struct base_vtable;
+
+struct Base
+{
+    // Note: this is a *pointer* to a vtable, not an actual instance
+    // This is needed for our polymorphism implementation - each object stores only a pointer,
+    // not a copy of the entire function table
+    const base_vtable * vtable;
+};
+
+struct base_vtable
+{
+    // The virtual table stores pointers only to functions
+    // This is the foundation of the virtual function mechanism in C++
+    // Each virtual function is represented by a pointer in the vtable
+    void (*name)(Base* me);
+};
+
+void base_name(Base * v)
+{
+    // Note that the actual name() function that will be called
+    // depends on what is stored in the vtable of the specific object
+    v-&gt;vtable-&gt;name(v);
+    // This is called dynamic dispatch - the decision is made
+    // at program run time, not at compile time
+}
+
+struct Child
+{
+    // Modeling inheritance - the "base class" interface is the first member
+    // This guarantees that a pointer to child can be safely cast to a pointer to base,
+    // since both pointers will point to the same address in memory
+    Base v;
+};
+
+// Prototype of the virtual function name() for the child class
+void child_name(Base * ap);
+
+// The virtual table for the child type links the name() call to the child_name() function
+// This vtable is static (const) and is created once at compile time
+// All objects of the child type will point to this same vtable
+const base_vtable child_vtable = {
+    .name = &amp;child_name  // for explicit initialization
+};
+
+// When creating child objects, you must initialize the vtable
+// so that the appropriate virtual functions are called
+// This is the equivalent of a constructor in C++ - it sets the vtable pointer
+// to the correct table for this type
+void init_child(Child *ap)
+{
+    // Important step: link the object to its vtable
+    // After this, base_name() calls will automatically call child_name()
+    // thanks to the indirection through the vtable pointer
+    ap-&gt;v.vtable = &amp;child_vtable;
+}</code></pre>
+
+<p>When we call a virtual function in C++, there are usually <strong>two pointer dereferences</strong>:</p>
+
+<ol>
+	<li>
+	<p>First, through the hidden pointer <code>vptr</code> the object finds its virtual table (<code>vtable</code>).</p>
+	</li>
+	<li>
+	<p>Then the address of the required function is taken from that table, and the call is made at that address.</p>
+	</li>
+</ol>
+
+<p>At first glance this seems like an "expensive" operation, but in practice the compiler can heavily optimize such calls. For example:</p>
+
+<ul>
+	<li>
+	<p>If the compiler can precisely determine the object's type at compile time, it simply substitutes the call directly, without any tables.</p>
+	</li>
+	<li>
+	<p>Sometimes it can even inline the function, which completely removes the overhead of virtuality.</p>
+	</li>
+</ul>
+
+<h3>So why bother with all this?</h3>
+
+<p>First, the vtable mechanism guarantees that calls will work the same way regardless of the specific class we use through a pointer to the base.<br>
+<br>
+Second, it provides uniform behavior for <strong>pointers to member functions</strong>: the compiler has a single way to store and call them, regardless of whether it is an ordinary function or a virtual one.&nbsp;Despite the extra steps, the vtable makes polymorphism in C++ both convenient and predictable, and in most cases the price for this is minimal thanks to optimizations.</p>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/255930" target="_blank" rel="noopener">Take the course on Stepik →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heap vs stack tradeoffs — dalerank</title>
+<meta name="description" content="Heap vs stack: determinism, fragmentation, binary size and memory footprint — why in games and on consoles it pays to minimize the heap." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-heap-stack.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-heap-stack.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/course-heap-stack.html">RU</a><i>/</i><a class="on" href="course-heap-stack.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Course · C++</span><h1>Heap vs stack tradeoffs</h1><div class="ameta"><span>Jun 25, 2026</span><span>6 min</span></div></div>
+  <article class="prose">
+    <p class="cap">A free lesson from the course <a href="https://stepik.org/a/255930" target="_blank" rel="noopener">“C++ without Memory Allocations”</a> on Stepik.</p>
+<p>Using the heap greatly simplifies the programmer's life. For example, when you need to create a string whose size is not known in advance, the heap lets you allocate exactly as much memory as needed at runtime. This is convenient, because you don't have to guess what string size to choose ahead of time.</p>
+
+<p>If, on the other hand, you limit yourself to the stack only, you have to reserve memory for a fixed-size string in advance at compile time. This is inconvenient and dangerous: if the string actually turns out to be longer than the allocated buffer, a <strong>buffer overflow</strong> occurs, which can lead to a program crash or a security vulnerability.</p>
+
+<p>On the other hand, using the stack has its own advantages and tradeoffs. Memory on the stack is allocated very quickly, with almost no CPU cost, and is freed automatically when the function exits. But at the same time you cannot flexibly change the data size at runtime, and the programmer must know in advance how much memory the local variables will require. In other words, the stack is efficient and fast, but less flexible compared to the heap,&nbsp; and it also offers certain properties that the heap does not have:</p>
+
+<ul>
+	<li>Determinism&nbsp;of the stack</li>
+	<li>Fragmentation</li>
+	<li>Increase in binary size</li>
+	<li>Amount of memory used</li>
+</ul>
+
+<h3>Determinism of the stack&nbsp;</h3>
+
+<p>This is one of the big advantages of using the stack compared to the heap. Memory on the stack is allocated only inside functions and freed automatically when the function finishes. This means that the current memory usage depends entirely on which functions are called at the given moment and which stack frames they occupy.</p>
+
+<p><code>void bar() {}<br>
+&nbsp;void foo() { bar(); }<br>
+&nbsp;void foobar() { foo(); } </code></p>
+
+<p>each function creates its own <strong>stack frame</strong> — a small region of memory where local variables, parameters, and the return address are stored. If we know the sizes of all these stack frames, we can precisely calculate how much memory will be used when <code>foobar</code> is called. Moreover, as long as recursion is not used, the program will never exceed this maximum amount of memory — it is deterministic.</p>
+
+<p>Calculating this can be a bit tricky, especially if function pointers or complex calls through other functions are used, but the key difference from the heap is that when working with the stack you don't need to check whether there is enough memory. You simply use the stack frame, and it is guaranteed to be available. The stack works fast and predictably, and errors like memory leaks are very rare, because memory is freed automatically.</p>
+
+<p><strong>Memory fragmentation</strong> is a problem that arises when working with dynamic memory (the heap). Imagine a bookshelf: if you constantly put in and take out books of different sizes, over time small gaps appear between the remaining books. These gaps are too small for large books, even though the total amount of free space may be sufficient.</p>
+
+<p>The same thing happens with computer memory. When a program repeatedly allocates and frees memory blocks of different sizes, small "holes" remain between the occupied regions. These holes cannot be combined to fit a large object, even if their total size would be sufficient.</p>
+
+<p>Let's say we have 4 bytes of available memory on the heap – we expect the following code to work.</p>
+
+<pre style="margin:1.4rem 0"><code>char* x = new char; // 3 bytes free
+char* y = new char; // 2 bytes free
+delete x; // 3 bytes free
+char* z = new char[3]; /// oops!</code></pre>
+
+<p>The reason this doesn't work is that the memory is fragmented. There are 3 bytes available, but only two of them are next to each other. Our heap is "fragmented", so we cannot fully use the available memory.</p>
+
+<p>We can clearly see why Z cannot be allocated if we visualize the memory usage for each line of code:</p>
+
+<pre style="margin:1.4rem 0"><code>/** memory in use:            | 0x0 | 0x1 | 0x2 | 0x3 | */
+//                           |     |     |     |     |
+char* x = new char;       // |  x  |     |     |     |
+char* y = new char;       // |  x  |  y  |     |     |
+delete x;                 // |     |  y  |     |     |
+char* z = new char[3];    // |     |  y  |  z  |  z  | z ????</code></pre>
+
+<p>Unlike the heap, the stack cannot become fragmented: it always grows and shrinks in contiguous blocks in a single direction.</p>
+
+<p>Another determinism problem is that heap allocation does not have a deterministic upper bound on execution time in most implementations. This is problematic in games, applications on mobile platforms, and consoles.</p>
+
+<h3>Problems with the heap</h3>
+
+<pre style="margin:1.4rem 0"><code>// This operation may take a varying amount of time
+char* buffer = new char[1024];</code></pre>
+
+<p>The allocation time depends on:</p>
+
+<ul>
+	<li>The degree of memory fragmentation</li>
+	<li>The size of the requested block</li>
+	<li>The memory manager's algorithm</li>
+</ul>
+
+<h3>Increase in program size</h3>
+
+<p>Using the heap requires program logic to manage previous memory allocations, search for free memory, and so on. If you use the heap, you will notice a significant increase in program size.</p>
+
+<p>We can quickly verify this with a simple program:</p>
+
+<pre style="margin:1.4rem 0"><code>int main()
+{
+#if defined(USE_HEAP)
+    int* dummy = new int{42};
+#endif
+    return 0;
+}</code></pre>
+
+<pre style="margin:1.4rem 0"><code>g++ .\example.cpp -o no_heap.elf --specs=rdimon.specs
+g++ .\example.cpp -o    heap.elf --specs=rdimon.specs -DUSE_HEAP=1</code></pre>
+
+<pre style="margin:1.4rem 0"><code>size heap.elf
+   text    data     bss     dec     hex filename
+ 114144    2796     336  117276   1ca1c heap.elf
+size no_heap.elf
+   text    data     bss     dec     hex filename
+   7460    2420     288   10168    27b8 no_heap.elf</code></pre>
+
+<p>As you can see, the difference is almost 100 KB when the heap is added. Note that this can be optimized, but using the heap remains a serious factor affecting memory footprint.&nbsp; Since the heap is fully managed at runtime, it requires a runtime library, which itself needs memory to track the state of the heap. Add to the fragmentation problem the memory requirements for managing the heap, and you will find that heap memory usage comes with large overhead.</p>
+
+<h3>Problems with the heap in game development</h3>
+
+<p>These problems become especially apparent in game development, where stable performance and efficient use of the limited memory of consoles and mobile devices are required. It can be beneficial to minimize or completely eliminate the standard heap for the following reasons:</p>
+
+<ul>
+	<li><strong>Eliminate unpredictable delays</strong> during memory allocation at critical game moments (for example, during explosions or level transitions)</li>
+	<li><strong>Eliminate the possibility of memory fragmentation</strong>, which can lead to a lack of memory for large assets (textures, models, sounds)</li>
+	<li><strong>Reduce the size of the game engine</strong> by eliminating complex memory allocation routines</li>
+	<li><strong>Lower RAM consumption during gameplay</strong> by eliminating the memory manager's bookkeeping structures</li>
+	<li><strong>Provide predictable response time</strong>&nbsp;for the entire application</li>
+</ul>
+
+<p>However, abandoning the standard heap does not guarantee a solution to all performance problems. Game developers still need to write high-quality code with efficient resource management. This is where specialized memory management techniques in games come in handy.</p>
+
+<h3>Practical solutions for game development (and not only)</h3>
+
+<p>Instead of studying memory management algorithms theoretically, which may turn out to be too abstract for practical game development, in this course we will focus on concrete game scenarios and proven solutions that will let you quickly apply effective memory management patterns in your projects.&nbsp;You will be able to see the impact of each optimization on performance through profilers and benchmarks.</p>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/255930" target="_blank" rel="noopener">Take the course on Stepik →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Что делают new и delete — dalerank</title>
+<meta name="description" content="Чем выражения new/delete в C++ отличаются от malloc/free: вызов конструктора и деструктора, оператор new/delete и работа с сырой памятью — с разбором ассемблера." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-new-delete.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-new-delete.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="course-new-delete.html">RU</a><i>/</i><a href="../en/articles/course-new-delete.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Курс · C++</span><h1>Что делают new и delete</h1><div class="ameta"><span>25 июня 2026</span><span>3 мин</span></div></div>
+  <article class="prose">
+    <p class="cap">Бесплатный урок из курса <a href="https://stepik.org/a/251888" target="_blank" rel="noopener">«С++ без аллокаций памяти»</a> на Stepik.</p>
+<h3><code>new</code> и <code>delete</code> в C++</h3>
+
+<p>Хотя <code>new</code> и <code>delete</code> часто используются как замена функций <code>malloc</code> и <code>free</code> из C, они <strong>не являются их точными аналогами</strong>. Основное отличие в том, что <code>new</code> автоматически <strong>вызывает конструктор</strong> объекта после выделения памяти, а <code>delete</code> — <strong>вызывает деструктор</strong> перед освобождением памяти. В случае с <code>malloc</code> и <code>free</code> этого не происходит: они работают только с сырым блоком памяти.</p>
+
+<p>Кроме того, в C++ можно <strong>перегружать операторы <code>new</code> и <code>delete</code></strong> для своих классов. Это даёт возможность использовать кастомные аллокаторы, вести статистику выделений или отлаживать работу с памятью. Такая гибкость делает <code>new</code>/<code>delete</code> гораздо более мощными инструментами, чем стандартные функции из C.</p>
+
+<h3>Что делают <code>new</code> и <code>delete</code></h3>
+
+<p>Стандартные выражения <code>new</code> и <code>delete</code> <strong>не просто выделяют и освобождают память</strong>. Они также <strong>вызывают конструктор</strong> объекта при создании и <strong>деструктор</strong> при удалении.</p>
+
+<pre style="margin:1.4rem 0"><code>struct car {
+    car();
+    ~car();
+};
+
+void test()
+{
+    auto p = new car;
+    delete p;
+}</code></pre>
+
+<p>Что получается в ассемблере</p>
+
+<pre style="margin:1.4rem 0"><code>test():
+        push    r14
+        push    rbx
+        push    rax
+        mov     edi, 1
+        call    operator new(unsigned long)@PLT
+        mov     rbx, rax
+        mov     rdi, rax
+        call    car::car()@PLT
+        mov     rdi, rbx
+        call    car::~car()@PLT
+        mov     esi, 1
+        mov     rdi, rbx
+        add     rsp, 8
+        pop     rbx
+        pop     r14
+        jmp     operator delete(void*, unsigned long)@PLT
+        mov     r14, rax
+        mov     esi, 1
+        mov     rdi, rbx
+        call    operator delete(void*, unsigned long)@PLT
+        mov     rdi, r14
+        call    _Unwind_Resume@PLT
+
+DW.ref.__gxx_personality_v0:
+        .quad   __gxx_personality_v0</code></pre>
+
+<p>Обратите внимание, что <strong>выражения <code>new</code> и <code>delete</code> не следует путать с самими операторами</strong>, которые можно вызывать как функции. В приведённом примере выражение <code>new</code> сначала вызывает оператор <code>new</code> для выделения памяти, а затем вызывает конструктор объекта.</p>
+
+<p>Следующий код демонстрирует, как с помощью этих операторов можно <strong>выделять и освобождать сырую память</strong>:</p>
+
+<pre style="margin:1.4rem 0"><code>struct car {
+    car();
+    ~car();
+};
+
+void test()
+{
+    auto raw_p = operator new (sizeof(car));
+    operator delete (raw_p, sizeof(car));
+}</code></pre>
+
+<p>И как это выглядит в ассемблере:</p>
+
+<pre style="margin:1.4rem 0"><code>test():
+        push    {r4, lr}
+        mov     r0, #1
+        bl      operator new(unsigned int)
+        mov     r1, #1
+        bl      operator delete(void*, unsigned int)
+        pop     {r4, lr}
+        bx      lr</code></pre>
+
+<p>Мы можем <strong>перегружать эти операторы</strong>, о чём мы поговорим позже. Но на самом деле в C++ существует несколько различных <strong>выражений <code>new</code> и <code>delete</code></strong>, которые можно использовать в разных ситуациях.</p>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/251888" target="_blank" rel="noopener">Пройти курс на Stepik →</a></p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

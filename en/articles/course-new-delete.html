@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What new and delete actually do — dalerank</title>
+<meta name="description" content="How the new/delete expressions in C++ differ from malloc/free: constructor and destructor calls, operator new/delete and working with raw memory — with an assembly walkthrough." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-new-delete.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-new-delete.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/course-new-delete.html">RU</a><i>/</i><a class="on" href="course-new-delete.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Course · C++</span><h1>What new and delete actually do</h1><div class="ameta"><span>Jun 25, 2026</span><span>3 min</span></div></div>
+  <article class="prose">
+    <p class="cap">A free lesson from the course <a href="https://stepik.org/a/255930" target="_blank" rel="noopener">“C++ without Memory Allocations”</a> on Stepik.</p>
+<h3><code>new</code> and <code>delete</code> in C++</h3>
+
+<p>Although <code>new</code> and <code>delete</code> are often used as a replacement for C's <code>malloc</code> and <code>free</code> functions, they are <strong>not exact analogues</strong> of them. The main difference is that <code>new</code> automatically <strong>calls the object's constructor</strong> after allocating memory, while <code>delete</code> <strong>calls the destructor</strong> before freeing the memory. With <code>malloc</code> and <code>free</code> this does not happen: they work only with a raw block of memory.</p>
+
+<p>In addition, in C++ you can <strong>overload the <code>new</code> and <code>delete</code> operators</strong> for your own classes. This makes it possible to use custom allocators, keep allocation statistics, or debug memory usage. Such flexibility makes <code>new</code>/<code>delete</code> far more powerful tools than the standard C functions.</p>
+
+<h3>What <code>new</code> and <code>delete</code> do</h3>
+
+<p>The standard <code>new</code> and <code>delete</code> expressions <strong>do not merely allocate and free memory</strong>. They also <strong>call the object's constructor</strong> when it is created and the <strong>destructor</strong> when it is deleted.</p>
+
+<pre style="margin:1.4rem 0"><code>struct car {
+    car();
+    ~car();
+};
+
+void test()
+{
+    auto p = new car;
+    delete p;
+}</code></pre>
+
+<p>Here is what we get in assembly</p>
+
+<pre style="margin:1.4rem 0"><code>test():
+        push    r14
+        push    rbx
+        push    rax
+        mov     edi, 1
+        call    operator new(unsigned long)@PLT
+        mov     rbx, rax
+        mov     rdi, rax
+        call    car::car()@PLT
+        mov     rdi, rbx
+        call    car::~car()@PLT
+        mov     esi, 1
+        mov     rdi, rbx
+        add     rsp, 8
+        pop     rbx
+        pop     r14
+        jmp     operator delete(void*, unsigned long)@PLT
+        mov     r14, rax
+        mov     esi, 1
+        mov     rdi, rbx
+        call    operator delete(void*, unsigned long)@PLT
+        mov     rdi, r14
+        call    _Unwind_Resume@PLT
+
+DW.ref.__gxx_personality_v0:
+        .quad   __gxx_personality_v0</code></pre>
+
+<p>Note that <strong>the <code>new</code> and <code>delete</code> expressions should not be confused with the operators themselves</strong>, which can be called as functions. In the example above, the <code>new</code> expression first calls the <code>new</code> operator to allocate memory, and then calls the object's constructor.</p>
+
+<p>The following code demonstrates how these operators can be used to <strong>allocate and free raw memory</strong>:</p>
+
+<pre style="margin:1.4rem 0"><code>struct car {
+    car();
+    ~car();
+};
+
+void test()
+{
+    auto raw_p = operator new (sizeof(car));
+    operator delete (raw_p, sizeof(car));
+}</code></pre>
+
+<p>And here is how it looks in assembly:</p>
+
+<pre style="margin:1.4rem 0"><code>test():
+        push    {r4, lr}
+        mov     r0, #1
+        bl      operator new(unsigned int)
+        mov     r1, #1
+        bl      operator delete(void*, unsigned int)
+        pop     {r4, lr}
+        bx      lr</code></pre>
+
+<p>We can <strong>overload these operators</strong>, which we will discuss later. But in fact, C++ has several different <strong><code>new</code> and <code>delete</code> expressions</strong> that can be used in different situations.</p>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/255930" target="_blank" rel="noopener">Take the course on Stepik →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Как работает vtable — dalerank</title>
+<meta name="description" content="Как компилятор C++ реализует виртуальные функции: скрытый указатель vptr, таблица vtable и динамическая диспетчеризация — с ручной реализацией механизма на указателях на функции." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/course-vtable.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-vtable.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="course-vtable.html">RU</a><i>/</i><a href="../en/articles/course-vtable.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Курс · C++</span><h1>Как работает vtable</h1><div class="ameta"><span>25 июня 2026</span><span>5 мин</span></div></div>
+  <article class="prose">
+    <p class="cap">Бесплатный урок из курса <a href="https://stepik.org/a/251888" target="_blank" rel="noopener">«С++ без аллокаций памяти»</a> на Stepik.</p>
+<p>Полиморфизм в C++ достигается с помощью <strong>виртуальных функций</strong>. Он позволяет вызывать разные реализации одной и той же функции через указатель или ссылку на базовый класс. Благодаря этому можно работать с объектами разных типов единообразно, а фактическая реализация будет выбрана автоматически во время выполнения.</p>
+
+<pre style="margin:1.4rem 0"><code>class Base
+{
+public:
+    const char* name() { return "Base"; }
+};
+ 
+class Child: public Base
+{
+public:
+    const char* name() { return "Child"; }
+};
+ 
+int main()
+{
+    Child child;
+    Base &amp;obj = child;
+    std::cout &lt;&lt; "Object is a " &lt;&lt; obj.name();
+}</code></pre>
+
+<p>Чтобы это работало, компилятор использует специальный механизм — <strong>vtable</strong> (виртуальная таблицу). Если в классе есть хотя бы одна виртуальная функция, компилятор создаёт&nbsp;специальную структуру, в которой хранятся адреса виртуальных функций.</p>
+
+<p>Каждый объект такого класса получает скрытый указатель <code>vptr</code>, который указывает на соответствующую vtable. Если виртуальная функция не переопределена в производном классе, то в vtable производного класса записывается адрес реализации из базового класса.</p>
+
+<p>Когда мы вызываем виртуальную функцию через указатель или ссылку на базовый класс, используется<br>
+<code>vptr</code> → vtable → адрес нужной функции.<br>
+Благодаря этому вызов связывается не во время компиляции, а во время выполнения программы.</p>
+
+<p>Таким образом, механизм vtable обеспечивает динамическое связывание и делает возможным полиморфизм в C++</p>
+
+<h2>Своя реализация vtable</h2>
+
+<p>Чтобы понять как это работает, давайте реализуем приведённый выше пример, используя указатели на функции.</p>
+
+<pre style="margin:1.4rem 0"><code>struct Base
+{
+    void (*name)(Base* me);
+};
+
+struct Child
+{
+    Base v; // моделируем наследование
+};
+
+void child_name(Base *ap);
+
+// работает как конструктор класса
+void init_child(Child *ap)
+{
+    ap-&gt;v.name = &amp;child_name;
+}</code></pre>
+
+<p>Компилятор создает немного другой код, так как он сохраняет указатель на функцию в глобальной виртуальной таблице (обычно называемой «vtable»). То, как это делает компилятор выглядит примерно так:</p>
+
+<pre style="margin:1.4rem 0"><code>// Предварительное объявление структуры виртуальной таблицы
+struct base_vtable;
+
+struct Base
+{
+    // Обратите внимание: это *указатель* на vtable, а не конкретный экземпляр
+    // Это нужно для нашей реализации полиморфизма - каждый объект хранит только указатель,
+    // а не копию всей таблицы функций
+    const base_vtable * vtable;
+};
+
+struct base_vtable
+{
+    // Виртуальная таблица хранит указатели только на функции
+    // Это основа механизма виртуальных функций в C++
+    // Каждая виртуальная функция представлена указателем в vtable
+    void (*name)(Base* me);
+};
+
+void base_name(Base * v)
+{
+    // Обратите внимание, что фактическая функция name(), которая будет вызвана,
+    // зависит от того, что хранится в vtable конкретного объекта
+    v-&gt;vtable-&gt;name(v);
+    // Это называется динамическая диспетчеризация (dynamic dispatch) - решение принимается
+    // во время выполнения программы, а не компиляции
+}
+
+struct Child 
+{
+    // Моделирование наследования - интерфейс "базового класса" является первым членом
+    // Это гарантирует, что указатель на child можно безопасно привести к указателю на base,
+    // так как оба указателя будут указывать на один и тот же адрес в памяти
+    Base v; 
+};
+
+// Прототип виртуальной функции name() для дочернего класса
+void child_name(Base * ap);
+
+// Виртуальная таблица для типа child связывает вызов name() с функцией child_name()
+// Эта vtable статическая (const) и создается один раз при компиляции
+// Все объекты типа child будут указывать на эту же vtable
+const base_vtable child_vtable = {
+    .name = &amp;child_name  // для явной инициализации
+};
+
+// При создании объектов child необходимо инициализировать vtable,
+// чтобы вызывались соответствующие виртуальные функции
+// Это эквивалент конструктора в C++ - он устанавливает указатель vtable
+// на правильную таблицу для данного типа
+void init_child(Child *ap) 
+{
+    // Важный шаг: связываем объект с его vtable
+    // После этого вызовы base_name() будут автоматически вызывать child_name()
+    // благодаря косвенному обращению через указатель vtable
+    ap-&gt;v.vtable = &amp;child_vtable;
+}</code></pre>
+
+<p>Когда мы вызываем виртуальную функцию в C++, обычно происходит <strong>два разыменования указателя</strong>:</p>
+
+<ol>
+	<li>
+	<p>Сначала через скрытый указатель <code>vptr</code> объект находит свою виртуальную таблицу (<code>vtable</code>).</p>
+	</li>
+	<li>
+	<p>Затем из этой таблицы берётся адрес нужной функции, и уже по этому адресу выполняется вызов.</p>
+	</li>
+</ol>
+
+<p>На первый взгляд это кажется «дорогой» операцией, но на практике компилятор умеет сильно оптимизировать такие вызовы. Например:</p>
+
+<ul>
+	<li>
+	<p>Если компилятор может точно определить тип объекта на этапе компиляции, он просто подставит вызов напрямую, без всяких таблиц.</p>
+	</li>
+	<li>
+	<p>Иногда он даже может встроить (inline) функцию, что полностью убирает накладные расходы на виртуальность.</p>
+	</li>
+</ul>
+
+<h3>Зачем тогда всё это?</h3>
+
+<p>Во-первых, механизм vtable гарантирует, что вызовы будут работать одинаково, независимо от конкретного класса, который мы используем через указатель на базовый.<br>
+<br>
+Во-вторых, это обеспечивает единообразное поведение для <strong>указателей на функции-члены</strong>: у компилятора есть единый способ хранить и вызывать их, независимо от того, обычная это функция или виртуальная.&nbsp;Несмотря на дополнительные шаги, vtable делает полиморфизм в C++ и удобным, и предсказуемым, а в большинстве случаев цена за это минимальна благодаря оптимизациям.</p>
+    <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/251888" target="_blank" rel="noopener">Пройти курс на Stepik →</a></p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
