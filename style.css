@@ -247,6 +247,18 @@ nav.links a:hover{color:var(--ink)} nav.links a:hover::after{width:100%}
 .prose pre{background:var(--cocoa-2);color:#ede0c6;border-radius:12px;padding:18px 20px;overflow-x:auto;
   font-family:var(--mono);font-size:12.5px;line-height:1.55;margin:0;border:1.5px solid var(--cocoa)}
 .prose pre code{font-family:inherit;white-space:pre}
+/* syntax highlighting (highlight.js) — warm palette on the existing dark code bg */
+.prose pre code.hljs{background:transparent;color:#ede0c6;padding:0}
+.hljs-comment,.hljs-quote{color:#9c876a;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-section,.hljs-meta .hljs-keyword{color:#dbb35a;font-weight:600}
+.hljs-built_in,.hljs-type,.hljs-class .hljs-title,.hljs-title.class_,.hljs-variable.language_{color:#e0b563}
+.hljs-string,.hljs-attr,.hljs-symbol,.hljs-char,.hljs-regexp,.hljs-addition{color:#a8b57e}
+.hljs-number,.hljs-literal.number{color:#e08c57}
+.hljs-title,.hljs-title.function_,.hljs-function .hljs-title,.hljs-name{color:#efcf8c}
+.hljs-meta,.hljs-meta .hljs-string{color:#cf8f5a}
+.hljs-variable,.hljs-template-variable,.hljs-attribute{color:#e0b563}
+.hljs-deletion{color:#cf7a5a}
+.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:700}
 details.code{margin:24px 0;border:1.5px solid var(--line-strong);border-radius:12px;overflow:hidden}
 details.code summary{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.1em;
   color:var(--rust);cursor:pointer;padding:12px 16px;background:var(--card)}
