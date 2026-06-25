@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Course “C++ without Memory Allocations”">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#2A1A0E"/>
+      <stop offset="1" stop-color="#3A2516"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.12" r="0.7">
+      <stop offset="0" stop-color="#DBB35A" stop-opacity="0.28"/>
+      <stop offset="0.55" stop-color="#C56A33" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#2A1A0E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#DBB35A"/>
+      <stop offset="1" stop-color="#C56A33"/>
+    </linearGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/></filter>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect width="800" height="600" fill="url(#glow)"/>
+  <rect width="800" height="600" fill="url(#grain)" opacity="0.05" style="mix-blend-mode:multiply"/>
+
+  <!-- watermark C++ -->
+  <text x="612" y="560" font-family="Georgia, 'Times New Roman', serif" font-weight="700"
+        font-size="360" fill="#DBB35A" opacity="0.07" text-anchor="middle">C++</text>
+
+  <!-- eyebrow -->
+  <g font-family="ui-monospace, 'Courier New', monospace" font-weight="700">
+    <rect x="64" y="78" width="34" height="2.5" fill="#C56A33"/>
+    <text x="112" y="84" font-size="20" letter-spacing="5" fill="#C56A33">STEPIK · C++20</text>
+  </g>
+
+  <!-- struck-out heap -->
+  <g transform="translate(64,150)" font-family="ui-monospace,'Courier New',monospace" font-weight="700">
+    <text x="0" y="34" font-size="44" fill="#A78C63" opacity="0.55">new</text>
+    <text x="130" y="34" font-size="44" fill="#A78C63" opacity="0.55">malloc()</text>
+    <line x1="-8" y1="20" x2="360" y2="20" stroke="#BC4F2A" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- fixed buffer on the stack: row of memory cells -->
+  <g transform="translate(64,250)">
+    <text x="0" y="0" font-family="ui-monospace,'Courier New',monospace" font-size="22"
+          fill="#DBB35A" font-weight="700">std::array&lt;T, N&gt;  // on the stack</text>
+    <g>
+      <rect x="0"   y="22" width="80" height="80" rx="10" fill="url(#cell)"/>
+      <rect x="88"  y="22" width="80" height="80" rx="10" fill="url(#cell)"/>
+      <rect x="176" y="22" width="80" height="80" rx="10" fill="url(#cell)"/>
+      <rect x="264" y="22" width="80" height="80" rx="10" fill="url(#cell)"/>
+      <rect x="352" y="22" width="80" height="80" rx="10" fill="none" stroke="#B0822A" stroke-width="2.5" stroke-dasharray="6 7" opacity="0.7"/>
+      <rect x="440" y="22" width="80" height="80" rx="10" fill="none" stroke="#B0822A" stroke-width="2.5" stroke-dasharray="6 7" opacity="0.7"/>
+    </g>
+    <text x="0" y="150" font-family="ui-monospace,'Courier New',monospace" font-size="20"
+          fill="#A78C63">fixed-size · zero heap · no fragmentation</text>
+  </g>
+
+  <!-- title -->
+  <text x="64" y="520" font-family="Georgia,'Times New Roman',serif" font-weight="700"
+        font-size="46" fill="#FAF0DA">C++ without memory</text>
+  <text x="64" y="568" font-family="Georgia,'Times New Roman',serif" font-weight="700"
+        font-size="46" fill="#DBB35A">allocations</text>
+</svg>
