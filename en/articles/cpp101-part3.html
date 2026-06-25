@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++101 (Part 3) — dalerank</title>
+<meta name="description" content="A catalog of C++ idioms and techniques, part 3: initialization, polymorphism, and containers — calling virtuals during init, construction tracker, NVI and thread-safe interface, acyclic visitor, capability query, covariant return types, virtual friend function, fake vtable, algebraic hierarchy, polymorphic value types, functors, object generator, iterator pair, generic container, erase-remove, safe bool, type safe enum, and attorney-client." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part3.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part3.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/cpp101-part3.html">RU</a><i>/</i><a class="on" href="cpp101-part3.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 3)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
+  <article class="prose">
+    <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <a href="cpp101-part2.html">Part 2</a> · <b>Part 3</b> · <a href="cpp101-part4.html">Part 4</a></p>
+    <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#calling-virtuals-during-initialization">Calling Virtuals During Initialization</a></li><li><a href="#construction-tracker">Construction Tracker</a></li><li><a href="#attach-by-initialization">Attach by Initialization</a></li><li><a href="#non-virtual-interface-nvi">Non-Virtual Interface (NVI)</a></li><li><a href="#thread-safe-interface">Thread-Safe Interface</a></li><li><a href="#acyclic-visitor-pattern-tricky">Acyclic Visitor Pattern (tricky)</a></li><li><a href="#capability-query">Capability Query</a></li><li><a href="#covariant-return-types">Covariant Return Types</a></li><li><a href="#virtual-friend-function">Virtual Friend Function</a></li><li><a href="#fake-vtable">Fake Vtable</a></li><li><a href="#algebraic-hierarchy">Algebraic Hierarchy</a></li><li><a href="#polymorphic-exception">Polymorphic Exception</a></li><li><a href="#polymorphic-value-types">Polymorphic Value Types</a></li><li><a href="#hierarchy-generation">Hierarchy Generation</a></li><li><a href="#function-object-functor">Function Object (Functor)</a></li><li><a href="#object-generator">Object Generator</a></li><li><a href="#object-template">Object Template</a></li><li><a href="#iterator-pair">Iterator Pair</a></li><li><a href="#generic-container">Generic Container</a></li><li><a href="#erase-remove">Erase-Remove</a></li><li><a href="#clear-and-minimize">Clear-and-minimize</a></li><li><a href="#shrink-to-fit">Shrink-to-fit</a></li><li><a href="#safe-bool">Safe bool</a></li><li><a href="#type-safe-enum">Type Safe Enum</a></li><li><a href="#attorney-client">Attorney-Client</a></li></ul></div></details>
+    <h2 id="calling-virtuals-during-initialization">Calling Virtuals During Initialization</h2>
+    <p>This is a set of workarounds around one of the nastiest traps in C++: calling a virtual function from a constructor (or destructor) when it doesn't do what you expect. While the base class is being constructed, the object is still only "a base," the derived part isn't constructed yet, so a virtual call from the base's constructor goes to the base's implementation rather than the derived class's, even if you're creating an object of the derived type. In the destructor it's the mirror image, of course: the derived part is already destroyed, so the call goes to the base.</p>
+    <p>The language's reasoning here is that calling an override in a derived class whose fields aren't yet initialized (or are already destroyed) would mean operating on garbage. So the standard deliberately "demotes" the object's dynamic type down to the class currently being constructed, but for a programmer coming from Java or C#, where a virtual call from a constructor goes to the most-derived class (with its own, far worse problems), this is a surprise.</p>
+    <p>There are several workarounds for cases where you really do need polymorphic behavior at creation time. The most "correct" one, though any "correctness" here is really just UB you haven't been caught at yet, is two-phase initialization: the constructor creates an "empty" object, and a separate (non-virtual, virtual-calling) <code>init()</code> method runs only after full construction, when the object has the correct dynamic type.</p>
+    <p>The second option is to pass the desired behavior as a parameter or via a factory rather than relying on a virtual call from the constructor. But either way, two-phase initialization breaks RAII (the object exists but isn't ready yet) and demands the discipline of "don't forget to call init," which is itself a source of new bugs.</p>
+    <p>The problem and its workarounds were dissected in detail by Scott Meyers in Effective C++ (a dedicated item, "never call virtual functions during construction or destruction"), and this is one of those places where C++'s rules are strictly logical but counterintuitive, and knowing the idiom saves hours spent in the debugger.</p>
+<pre style="margin:1.4rem 0"><code>struct Widget {
+    Widget() { /* do NOT call virtual draw() here — it goes to Widget::draw */ }
+    virtual void draw() { /* base */ }
+    void init() { draw(); }   // safe: the object is already fully constructed
+};
+struct Button : Widget { void draw() override { /* button */ } };
+
+// Two-phase initialization to get polymorphism at "creation" time:
+auto b = std::make_unique&lt;Button&gt;();
+b-&gt;init();   // now draw() goes to Button::draw</code></pre>
+    <p>In game development this trap has historically lived in hierarchies of game objects, UI widgets, and components, where the temptation to "configure myself polymorphically right at creation" is very strong. This is exactly why many engines introduce an explicit object lifecycle with methods like <code>BeginPlay</code> in Unreal or <code>OnEnable</code>/<code>Start</code> in Unity-like architectures, which is precisely explicit two-phase initialization, separating "constructed" from "ready to play," so that virtual calls happen over a fully built object of the correct type.</p>
+    <p>In other words, the industry has effectively baked the workarounds into engine architecture, and you almost never do heavy polymorphic initialization in a game object's constructor; instead you rely on a lifecycle callback that the engine will invoke later.</p>
+    <p>Understanding why it's done this way is a direct consequence of the fact that virtual calls in a constructor aren't polymorphic, and trying to work around that head-on leads to bugs that show up only for certain types in the hierarchy.</p>
+    <h2 id="construction-tracker">Construction Tracker</h2>
+    <p>The Construction Tracker solves the annoying problem where several members in a constructor's initialization list are constructed with a chance of throwing, and you need to know exactly which one failed in order to react correctly or at least report it intelligibly. The thing is, if a member's constructor throws, the already-constructed members will be correctly destroyed (the language guarantees that), but the constructor itself has no simple way of knowing which member broke, and that's sometimes needed for diagnostics or for correctly destroying the object.</p>
+    <p>So you introduce a "tracker," a counter or phase indicator that advances as each member is successfully constructed. Since members are initialized in order, the tracker's value at the moment of the exception tells you how far you got, that is, which member was being constructed when it threw. The tracker is usually itself a member, initialized first, and you advance it through helper expressions in the initialization list (for example, functions that construct a value and increment the tracker along the way).</p>
+    <p>The price you pay is "noise" in the constructor, and the tracker itself is also a source of confusion, so in most cases it's better to handle the possible exceptions inside the members' own constructors, or to move the risky initialization out of the list and into the constructor body, where it's easier to wrap in try/catch with clear context.</p>
+    <p>All of this was described back in the '90s and is closely tied to the function-try-block (a try block around the whole constructor, including the initialization list) and the C++ mechanism that lets you catch exceptions from the initialization list, but does not let you "repair" the object, only giving you a chance for diagnostics before rethrowing.</p>
+<pre style="margin:1.4rem 0"><code>class Pipeline {
+    int phase_ = 0;
+    Stage a_, b_, c_;
+    template &lt;class T&gt; static T track(T&amp;&amp; v, int&amp; phase) {
+      ++phase; return std::forward&lt;T&gt;(v);
+    }
+public:
+    Pipeline(Config cfg)
+    try
+        : phase_(0),
+          a_(track(make_stage_a(cfg), phase_)),   // phase_ -&gt; 1
+          b_(track(make_stage_b(cfg), phase_)),   // phase_ -&gt; 2
+          c_(track(make_stage_c(cfg), phase_))    // phase_ -&gt; 3
+    {}
+    catch (const std::exception&amp; e) {
+        log("pipeline failed at stage %d: %s", phase_, e.what());
+        // we know where it broke
+        throw;
+    }
+};</code></pre>
+    <p>The construction tracker is more of an exotic curiosity, and you won't see it in most code, because game objects rarely have long lists of risky members, and subsystem initialization that can fail is usually made an explicit two-phase process with clear error handling at each step, rather than hidden in an initialization list.</p>
+    <p>But it can come in handy in loaders and tools, where a complex object is assembled from many parts, any of which may fail to load, and it's important to tell the editor's user not just "something broke" but "failed to load this specific material stage." Even there, though, people more often prefer explicit step-by-step assembly with checks over the magic of a tracker in the initialization list, so this is worth knowing about, but not worth using.</p>
+    <h2 id="attach-by-initialization">Attach by Initialization</h2>
+    <p>Yet another mechanism, where an object "attaches" itself to some external system or registry right during its own initialization, usually through a global or static object whose constructor performs the registration. The whole point is to make something happen automatically, without an explicit call from <code>main</code> or from initialization code, where the mere fact of the object's existence (or the inclusion of the file that defines it) triggers the registration.</p>
+    <p>This is the flip side, the "useful" side, of the very same static initialization that was a source of misery in other idioms. Here we deliberately exploit the fact that global objects are constructed before <code>main</code> to perform registration, and a global registrar object, in its constructor, adds a type's factory to a registry, subscribes a handler to an event, registers a test, a plugin, or a command. The programmer only needs to declare such an object (often via a macro), and the "attachment" happens by itself.</p>
+    <p>The price, again, is the static initialization order with all its risks, and the registrar must touch only things that are guaranteed to be ready (usually a registry built via construct-on-first-use, so it definitely exists). Plus, the linker likes to discard object files that nothing explicitly references, and a self-registering object may have no such references, so it silently fails to make it into the build along with its registration.</p>
+    <p>The mechanism took up residence in testing frameworks, factories, and plugin systems long before it was catalogued under this name.</p>
+<pre style="margin:1.4rem 0"><code>// A macro declaring a self-registering global object:
+#define REGISTER_COMPONENT(Type) \
+    static bool s_reg_##Type = (ComponentRegistry::get().add(#Type, []{ return new Type; }), true)
+
+// In a component's file, a single line is enough and it registers itself:
+class HealthComponent : public Component { /* ... */ };
+REGISTER_COMPONENT(HealthComponent);
+// attachment during static initialization</code></pre>
+    <p>As I said above, this is an extremely popular technique for systems that need extensibility without a central list of "all types," like a factory of components and entities where each component registers itself, or type registration for reflection and serialization, or self-registering console commands, cvars, debug widgets, or editor plugins. It lets you add a new type by simply writing its file with a single registration line, without editing any shared registry, which is very valuable in large teams.</p>
+    <p>But this beauty has that same dark side that has burned many: the linker throws away "unused" object files, and the self-registration vanishes from the release build under aggressive optimization. So engines that lean heavily on this technique are obliged to take measures against the linker stripping out self-registrars, and debugging a registration that went missing in release but worked beautifully in debug is one of those classic mysterious bugs that programmers burn unforgettable evenings on.</p>
+    <p>The idea is powerful and very much alive, but it requires understanding what happens between the compiler and the linker, otherwise it will let you down at the worst possible moment.</p>
+    <h2 id="non-virtual-interface-nvi">Non-Virtual Interface (NVI)</h2>
+    <p>Non-Virtual Interface turns the familiar "public = virtual" layout on its head: ALL public methods of the base class are made non-virtual, and only the private (or protected) methods called by those public ones are virtual. From the outside, the class provides a stable non-virtual interface, while the customization points for subclasses are hidden inside. A subclass overrides the private virtual "hooks" but cannot change the public contract.</p>
+    <p>The point is to make the non-virtual public method the single entry point, where the base fully controls the "scaffolding" around the customizable behavior, for example precondition and postcondition checks, logging, timing, lock acquisition, error handling. The base guarantees that all this scaffolding always runs, no matter what the subclass overrides, because the subclass can't bypass the public method; it merely plugs its behavior into a virtual "slot" specifically left for it in the middle. This is the Gang of Four "template method" principle applied as a maximally strict rule.</p>
+    <p>The price is one more level of indirection (the public non-virtual calls the private virtual) and unfamiliarity for those who expect that you override the public methods themselves. Plus, a subclass sometimes wants to override the scaffolding too, and NVI deliberately forbids that, which in rare cases turns out to be too rigid, but the benefit of a single point of control and the subclass's inability to "forget" the mandatory scaffolding usually outweighs it.</p>
+    <p>The idiom was formulated and actively promoted by Herb Sutter as "prefer to make virtual functions private," and he showed that "public" and "virtual" are two different properties that needn't always be combined. After the 2000s this became one of the most influential rethinkings in the language and gave rise to a separate style of programming, and of how to "correctly" design polymorphic interfaces in C++.</p>
+<pre style="margin:1.4rem 0"><code>class Renderer {
+public:
+    void render(const Scene&amp; s) {        // non-virtual: controls the scaffolding
+        ScopedTimer t("render");         // a subclass can't bypass this scaffolding
+        validate(s);
+        do_render(s);                    // here is where the subclass plugs in its own
+        present();
+    }
+private:
+    virtual void do_render(const Scene&amp;) = 0;   // customization point, private
+    void validate(const Scene&amp;);
+    void present();
+};
+
+class VulkanRenderer : public Renderer {
+    void do_render(const Scene&amp; s) override { /* just the render itself, no scaffolding */ }
+};</code></pre>
+    <p>In games NVI maps wonderfully onto systems with a strict lifecycle and mandatory scaffolding around the steps, where a system's or component's base class, in a non-virtual <code>update()</code>, measures time for the profiler, checks state, gathers statistics, while the subclass only implements a private <code>do_update()</code>. This guarantees that no subclass will "lose" the profiling or the checks, no matter how sloppily it's written, and you can see all of this in every "DoUpdate" in the Unity/Unreal/Godot engines.</p>
+    <p>The same approach naturally applies to serialization, where a public <code>save</code> wraps a virtual <code>serialize</code> in writing the header and version, to event handling, to network replication. Everywhere there's a "mandatory around" and a "customizable inside," NVI gives a clean separation and protects invariants at the design level.</p>
+    <h2 id="thread-safe-interface">Thread-Safe Interface</h2>
+    <p>This is the same NVI, but specialized for multithreading, and it solves a specific woe: nested calls to one object's methods lead to an attempt to reacquire an already-held mutex, that is, to a deadlock (if the mutex is non-recursive) or to hidden inefficiency (if it's recursive). If every public method acquires the mutex, and one public method calls another public method of the same object, the second acquisition of the same mutex is a deadlock out of nowhere.</p>
+    <p>So we split the methods into two layers: our public methods are non-virtual, and they're responsible for acquiring the mutex (and only for that, plus delegation), while all the real work happens in private methods that don't touch the mutex and assume the lock is already held by the caller. Then the public method acquires the mutex and calls the private implementation, and if one private implementation needs to invoke another's logic, it calls the private version directly, without reacquiring. This guarantees that the mutex is acquired exactly once on entry from the outside and never from the inside.</p>
+    <p>The price is usage discipline: the private methods can't be called from outside without acquiring the lock, and the public ones can't be called from the private ones (otherwise you get a double acquisition). This invariant has to be maintained by hand, and it's easy to violate, especially during refactoring, plus you're left with all the general complexity of locking, and this approach protects against only one specific class of deadlocks (recursive acquisition), but not against deadlocks between different objects, nor against the other joys of multithreading.</p>
+    <p>All of this was described and named by Herb Sutter in his articles on multithreading, as a development of his own NVI, which it follows directly from the principle "public non-virtual wraps private," where you can see that NVI works and that it's convenient to hang cross-cutting concerns on it like locking, logging, or transactionality, because there's a single controlled entry point.</p>
+<pre style="margin:1.4rem 0"><code>class ResourceCache {
+    std::mutex mtx_;
+    std::unordered_map&lt;Id, Resource&gt; map_;
+
+    void insert_locked(Id id, Resource r) { map_[id] = std::move(r); }  // no acquisition!
+    Resource* find_locked(Id id) { auto it = map_.find(id); return it != map_.end() ? &amp;it-&gt;second : nullptr; }
+public:
+    void insert(Id id, Resource r) {                 // public: acquires the lock
+        std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+        insert_locked(id, std::move(r));
+    }
+    Resource get_or_load(Id id) {                    // calls *_locked, not the public ones
+        std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+        if (auto* r = find_locked(id)) return *r;
+        Resource r = load(id);
+        insert_locked(id, r);                        // no reacquisition
+        return r;
+    }
+};</code></pre>
+    <p>The thread-safe interface is usually useful for services shared between threads, like resource caches accessed by both loading threads and game threads. Or task pools, or logging and telemetry systems writing from many threads. Everywhere an object has several public operations that may call each other and is protected by its own mutex, the split into "public with the lock" and "private without the lock" saves you from accidental recursive deadlocks.</p>
+    <p>That said, modern gamedev generally tries to minimize shared mutable state with locks, preferring lock-free models such as handing out tasks over non-overlapping data, double-buffering state between threads, or message queues instead of shared objects.</p>
+    <p>In this paradigm there are fewer mutex-protected objects, and the need for a thread-safe interface drops, but where a shared protected object really is needed, this idiom is a long-proven way not to shoot yourself in the foot with a deadlock, and you need to know it if you're writing multithreaded engine code.</p>
+    <h2 id="acyclic-visitor-pattern-tricky">Acyclic Visitor Pattern (tricky)</h2>
+    <p>To begin with, you first need to recall the ordinary "visitor" pattern, which lets you add new operations to a class hierarchy without changing the classes themselves, by moving the operation into a visitor object with a <code>visit</code> method. The problem is that the base visitor interface is obliged to know about all the concrete types in the hierarchy (one <code>visit</code> per type), and this creates a rigid dependency cycle, where you added a new type to the hierarchy and now you're obliged to add a <code>visit</code> to all visitors and to their common base interface.</p>
+    <p>The Acyclic Visitor lets you break this cycle: instead of one "fat" visitor interface that knows all types, you make an empty marker base visitor interface and separate small interfaces "I know how to visit this specific type." An element's <code>accept</code> method tries, via <code>dynamic_cast</code>, to figure out whether the incoming visitor implements the "visit me" interface, and if so it calls it, and if not it simply ignores it. This way the visitor doesn't have to know about all types, and a new type doesn't break existing visitors; they just don't implement the interface for it and skip it.</p>
+    <p>The price is a <code>dynamic_cast</code> on every <code>accept</code>, which is a runtime check, plus "skipping" unhandled types can mask errors (you forgot to handle a type or didn't notice). That is, the acyclic visitor gives you dependency decoupling at the cost of performance, and this is often a conscious trade-off in rarely executed code.</p>
+    <p>The mechanism was described by Robert Martin (the very same "Uncle Bob") in the late nineties in his article "Acyclic Visitor," precisely as a solution to the problem of cyclic dependencies and extension fragility in the classic GoF visitor. It's an attempt to preserve the power of the "visitor" pattern (adding operations without editing classes) while removing its main drawback: the need to touch all visitors when adding a type.</p>
+<pre style="margin:1.4rem 0"><code>struct Visitor { virtual ~Visitor() = default; };
+// empty marker
+
+template &lt;class T&gt; struct VisitorFor {
+  virtual void visit(T&amp;) = 0;
+};  // one interface per type
+
+struct Node {
+  virtual void accept(Visitor&amp;) = 0;
+};
+
+struct Mesh : Node {
+    void accept(Visitor&amp; v) override {
+        if (auto* mv = dynamic_cast&lt;VisitorFor&lt;Mesh&gt;*&gt;(&amp;v))
+          mv-&gt;visit(*this);  // knows how — call it
+          // doesn't know how, skip, and Mesh doesn't break old visitors
+    }
+};
+
+// A visitor implements only the types it cares about:
+struct BoundsCollector : Visitor, VisitorFor&lt;Mesh&gt; {
+    void visit(Mesh&amp; m) override { /* collect the mesh's AABB */ }
+};</code></pre>
+    <p>In games the acyclic visitor lives in tools and editors, where processing heterogeneous trees (scenes, asset graphs, script ASTs, UI nodes) and extensibility matter more than perf, and the set of operations over the hierarchy keeps growing and is written by different people. The ability to add a new node type without rewriting all the existing handlers, and a new handler without touching the nodes, is very valuable in long-lived editor tools.</p>
+    <p>In the engine's runtime, visitors (especially acyclic ones, with their <code>dynamic_cast</code>) are used rarely, because dynamic cast may not be available or may be expensive, so people prefer a data-oriented traversal of dense arrays without dispatch by type. But the acyclic visitor is worth keeping in mind as a tool for offline and editor code with rich, extensible hierarchies, not as a way to traverse the game world inside a frame.</p>
+    <h2 id="capability-query">Capability Query</h2>
+    <p>A mechanism to "ask an object whether it can do something" at runtime before asking it to actually do it. So, instead of forcing every object in the hierarchy to implement every conceivable interface (with a pile of empty stubs), you give the object only the capabilities that suit it, and the calling code at runtime queries: "you wouldn't happen to be <code>IDamageable</code>, would you?" and if so, it gets the corresponding interface and works with it, and if not, it simply leaves that capability alone.</p>
+    <p>Technically this is an ordinary <code>dynamic_cast</code> to the interface of interest, and if the object implements that interface, the cast returns a valid pointer; if not, just <code>nullptr</code>, but underneath it's a runtime check of "does the object implement this contract." An alternative would be an explicit <code>query_interface(id)</code> method returning a pointer by interface identifier (as in COM), or a check via a system of flags/capabilities. The idea is the same in all variants: capabilities are optional and are queried dynamically.</p>
+    <p>The price, again, is runtime cost (<code>dynamic_cast</code> or its equivalent), and a philosophical question: how often you need to "query capabilities" is frequently a sign of bad design. If you're constantly asking objects "can you do this? and this?", maybe the capabilities should be moved into separate components that either exist or don't, rather than hidden in an inheritance hierarchy where you have to extract them with dynamic casts.</p>
+    <p>The mechanism was described by Scott Meyers under the name capability query in articles about how and when <code>dynamic_cast</code> is appropriate. It all grew into Microsoft's COM with its <code>QueryInterface</code>, which is the industrial-grade capability query, and any COM object can be asked whether it supports a given interface and get it or a refusal. And today all of this lives throughout the COM model, on which, in particular, DirectX is built.</p>
+<pre style="margin:1.4rem 0"><code>struct Entity { virtual ~Entity() = default; };
+struct IDamageable { virtual void take_damage(int) = 0; };
+struct IInteractable { virtual void interact() = 0; };
+
+struct Barrel : Entity, IDamageable { void take_damage(int) override { /* explosion */ } };
+
+void shoot(Entity&amp; target, int dmg) {
+    if (auto* d = dynamic_cast&lt;IDamageable*&gt;(&amp;target))   // can it take damage?
+        d-&gt;take_damage(dmg);                              // yes — deal it
+    // no — a wall, a decoration: just ignore it
+}</code></pre>
+    <p>In games the capability query is often the only way to express "not all objects can do everything," that some entities can be damaged, others set on fire, others picked up, and a fourth kind talked to, and most objects support only some of these capabilities. Querying the interface before acting lets you write generic code ("a shot checks whether the target can be damaged") without requiring every rock and wall to implement <code>take_damage</code> as an empty stub.</p>
+    <p>But in modern development this very task is already solved not by inheritance with <code>dynamic_cast</code>, but by composition from components, and "can be damaged" becomes the presence of a health component on the entity, and then the check turns into a cheap component query rather than a runtime cast up the hierarchy.</p>
+    <p>So the capability query in the form of <code>dynamic_cast</code> lives most vividly in more classic object-oriented engines and at the boundaries with COM-like APIs (DirectX again), while data-oriented ECS engines achieve the same effect through the presence or absence of components, which is both faster and more flexible. The principle itself, "ask before you demand," remains one of the fundamental ways of working with heterogeneous entities.</p>
+    <h2 id="covariant-return-types">Covariant Return Types</h2>
+    <p>This is a language feature that lets an overridden virtual function in a derived class return a more specific type than the same function in the base. If the base <code>clone()</code> returns <code>Base*</code>, then <code>clone()</code> in <code>Derived</code> can return <code>Derived*</code>, and this counts as a correct override rather than a different function. The return type is "covariant" if it changes in the same direction as the hierarchy, narrowing in the derived classes.</p>
+    <p>This is needed for type safety on the caller's side: without covariance, a virtual <code>clone()</code> would always return <code>Base*</code>, and calling it on an object you know for certain is <code>Derived</code>, you'd get a <code>Base*</code> and be forced to cast back to <code>Derived*</code>. With a covariant return, <code>derivedPtr-&gt;clone()</code> gives you <code>Derived*</code> right away with no casts needed, which removes a whole class of pointless conversions and makes virtual factories and <code>clone</code> pleasant to use.</p>
+    <p>The compiler pays here, and for us it's a "free" and safe language feature; the only limitation is that covariance works for pointers and references but not for return by value (which means you can't return a "more specific" type through a virtual call, because the size is different). So covariant return naturally pairs with returning pointers, which in the case of <code>clone</code> is usually what you want, and a slight rough edge appears when combining it with smart pointers, because <code>unique_ptr&lt;Derived&gt;</code> is not covariant to <code>unique_ptr&lt;Base&gt;</code> at the language level, and for them covariance has to be emulated by hand.</p>
+    <p>Covariant return types weren't added to C++ all at once, and early compilers didn't support them, but the feature settled into the language around the mid-nineties, becoming part of the C++98 standard.</p>
+<pre style="margin:1.4rem 0"><code>struct Shape {
+    virtual ~Shape() = default;
+    virtual Shape* clone() const = 0;
+};
+
+struct Circle : Shape {
+    Circle* clone() const override { return new Circle(*this); }  // covariant: Circle*, not Shape*
+    float radius() const { return r_; }
+private:
+    float r_;
+};
+
+Circle c;
+Circle* copy = c.clone();   // immediately Circle*, no cast — copy-&gt;radius() works</code></pre>
+    <p>This is a handy little detail in game development that makes hierarchies of polymorphic objects with cloning and factories more pleasant to use. Everywhere there's a virtual <code>clone</code>, <code>duplicate</code>, <code>create_instance</code> (prototype systems, editor duplication, undo copies), covariance lets you work with the result as the concrete type wherever the concrete type is known, without littering the code with conversions.</p>
+    <p>There's no special "game-specific" angle to this feature, but since cloning and virtual factories show up regularly in games (especially in tools and more classic object-oriented architectures), the covariant return is simply one of those details whose knowledge distinguishes clean polymorphic code from code strewn with unnecessary <code>static_cast</code>. And the "pointers/references only" limitation is worth understanding, so you're not surprised why the trick doesn't work with <code>unique_ptr</code> directly.</p>
+    <h2 id="virtual-friend-function">Virtual Friend Function</h2>
+    <p>An idea that resolves the contradiction that friend functions (<code>friend</code>) are neither inherited nor able to be virtual. Sometimes you want a friend free function to behave polymorphically, and the most common case is the output operator <code>operator&lt;&lt;</code> for a class hierarchy, which must be a free function (because the left operand is always a stream, not your object), yet must print the object according to its actual type, that is, polymorphically.</p>
+    <p>To do this, the friend free function is made non-virtual and unique (usually in the base class), and it delegates all the work to a virtual method of the class. That is, <code>operator&lt;&lt;</code> is a non-template, non-inheritable friend that internally calls <code>obj.print(stream)</code>, while <code>print</code> is an ordinary virtual method overridden in subclasses. From the outside it looks like a polymorphic free function, but inside it's plain virtual dispatch hidden behind a thin free wrapper.</p>
+    <p>In essence this is a crutch, a workaround, not real "virtual friendship" (there's no such thing in the language and there likely never will be), and the trick is not to get confused about when virtuality comes from the method and when the free function merely forwards into it. There are also subtleties about which class to declare the friend function in so that ADL finds it, and about not breeding one such function in every subclass (only one is needed, in the base). But the result is the natural syntax <code>stream &lt;&lt; obj</code> with polymorphic behavior.</p>
+    <p>The implementation mechanism was described long ago and belongs to the classic body of knowledge about the interaction of friendship, operator overloading, and polymorphism.</p>
+<pre style="margin:1.4rem 0"><code>class Shape {
+public:
+    virtual ~Shape() = default;
+    // free friend — one per hierarchy, delegates to the virtual print
+    friend std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const Shape&amp; s) {
+        s.print(os);            // polymorphism happens here
+        return os;
+    }
+protected:
+    virtual void print(std::ostream&amp; os) const = 0;
+};
+
+struct Circle : Shape {
+  void print(std::ostream&amp; os) const override {
+    os &lt;&lt; "Circle";
+  }
+};
+
+struct Square : Shape {
+  void print(std::ostream&amp; os) const override {
+    os &lt;&lt; "Square";
+  }
+};
+
+Shape* s = new Circle;
+std::cout &lt;&lt; *s;   // prints "Circle" polymorphically through the free operator&lt;&lt;</code></pre>
+    <p>In game development the technique surfaces in debug and tooling code, where you need to polymorphically print or serialize objects of a hierarchy through free functions and operators, for example dumping entity state to a log, or text-serializing polymorphic scene nodes. That is, everywhere you want to write <code>log &lt;&lt; *entity</code> and get output by actual type, the virtual friend function is the standard solution.</p>
+    <p>In the hot path it's of course not used, because neither stream output nor virtual calls have any business there, so the idiom lives in diagnostics, tools, and text formats. Understanding that there is no "virtual friendship" in the language, only a free wrapper over a virtual method, spares you the attempts to declare a <code>virtual friend</code> directly and the bewilderment over why the compiler rejects it.</p>
+    <h2 id="fake-vtable">Fake Vtable</h2>
+    <p>This is a manual implementation of what the compiler usually does for you when it creates the virtual method table. Instead of relying on the built-in virtuality mechanism, you set up your own structure of function pointers (that's the "table") and call the needed function through it via the pointer yourself. In essence it's polymorphism assembled by hand from function pointers, bypassing the language's logic of virtual classes.</p>
+    <p>You often need this when you require control over the layout and you know exactly where the table lives, how much the object weighs, how it's serialized, and you can change the object's "type" at runtime by swapping the pointer to the table (which you can't do with a real vtable).</p>
+    <p>The second case is when you need to ensure portability of a binary format and compatibility with C, where there are no virtual functions at all, yet your library needs them. The price you pay is taking the bread out of compiler developers' mouths, when you take on everything they already do correctly and invisibly: the correctness of the tables, their initialization, the type safety of the calls, maintenance when methods are added.</p>
+    <p>This is hard, expensive, error-prone, and you lose all help from the compiler. So a fake vtable is always a tool of last resort, and in 99% of cases real virtual functions are simpler, faster, and safer.</p>
+    <p>Conceptually it has been known for ages, but understanding it, and along with it understanding what the compiler generates for ordinary virtual classes, makes for a decent guide to development. Manual tables of function pointers are an ancient systems-programming technique in C (this is how all drivers and plugin APIs in the Linux kernel are built), brought into C++ for cases where built-in virtuality, for some reason, doesn't fit.</p>
+<pre style="margin:1.4rem 0"><code>struct AllocatorVTable {                 // the "table" by hand
+    void* (*allocate)(void* self, std::size_t);
+    void  (*free)(void* self, void*);
+};
+
+struct Allocator {
+    const AllocatorVTable* vtable;
+    // pointer to the table like a real vptr
+
+    void* state;
+    void* allocate(std::size_t n) { return vtable-&gt;allocate(state, n); }
+    // manual dispatch
+};
+
+// The allocator's "type" can be swapped at runtime by redirecting the vtable
+// which you can't do with real virtual functions</code></pre>
+    <p>In game development the fake vtable appears in the lowest-level, performance- and platform-sensitive layers, like memory allocator interfaces, backends of platform abstractions, and plugin ABIs that must be stable and C-compatible.</p>
+    <p>Another frequent habitat is rendering, where people want polymorphism but with the ability to "hot-swap" behavior (for example, switching a system's implementation on the fly) or with a cache- and serialization-friendly layout. But this is rare and almost always a conscious trade of clarity for control, and for the vast majority of code real virtual functions remain the most correct choice, and the fake vtable is worth knowing mainly as how virtuality is built from the inside.</p>
+    <h2 id="algebraic-hierarchy">Algebraic Hierarchy</h2>
+    <p>A way to organize a hierarchy of numeric (algebraic) types so that the user works with a single "facade" type behind which several concrete representations are hidden. The classic example is a number that can be integer, rational, real, or complex, but the user operates on one type <code>Number</code>, while inside it dynamically holds one or another concrete representation and picks the optimal one depending on the value and the operations.</p>
+    <p>From the outside <code>Number</code> behaves like an ordinary value (it's copied, added, compared), while inside it holds a pointer to a polymorphic implementation (integer, fraction, float) and delegates operations to it. In operations between different representations, promotion to a common type happens (you added an integer to a fraction and got a fraction), as mathematical systems do, which combines the handle/body, envelope/letter idioms, and ordinary polymorphism in a specific application to numeric towers.</p>
+    <p>The price is allocations and virtual calls on arithmetic, which is orders of magnitude slower than machine <code>int</code> and <code>float</code>, but for a computer-algebra system or an arbitrary-precision calculator this is acceptable, while for hot-path code it would already be a problem. Plus the logic of type promotion and preserving value semantics on top of a polymorphic implementation is often nontrivial to implement.</p>
+    <p>The roots of the idea go back to James Coplien's classic 1992 work, where he dissected "envelope/letter" and numeric towers as an example, but this is largely an academic and niche pattern, illustrating how to build a "smart numeric type" with a dynamic representation while preserving for the user the illusion of an ordinary value.</p>
+<pre style="margin:1.4rem 0"><code>class Number {                                  // value facade
+    std::shared_ptr&lt;const NumberImpl&gt; impl_;
+    // polymorphic representation inside
+public:
+    Number operator+(const Number&amp; o) const {
+      return impl_-&gt;add(o.impl_);
+    }  // type promotion inside
+};
+
+struct NumberImpl {
+  virtual Number add(std::shared_ptr&lt;const NumberImpl&gt;) const = 0; /* ... */
+};
+
+struct IntImpl : NumberImpl {
+  long long v; /* int+int=int, int+rational=rational ... */
+};
+struct RationalImpl : NumberImpl {
+  long long num, den; /* ... */
+};</code></pre>
+    <p>In games the algebraic hierarchy isn't used in its pure form, and frankly game math is built on exactly the opposite principle, where fixed concrete types (<code>float</code>, <code>int</code>, <code>Vec3</code>) are deliberately simplified further, all so the CPU and SIMD can churn through numbers at full speed, while a "smart number" with an allocation on every operation is an antipattern.</p>
+    <p>Where related ideas do surface is in tools and non-runtime systems, like expression editors or scripting languages and data systems, where a value can be "a number, a string, or a vector" (variant types). There a dynamic representation behind a single facade is appropriate, because performance isn't critical while flexibility matters. But in the engine core the algebraic hierarchy is more an example of how not to do it, and understanding why you shouldn't do it that way is useful as an illustration of data-oriented thinking.</p>
+    <h2 id="polymorphic-exception">Polymorphic Exception</h2>
+    <p>This is a mechanism for correctly working with exceptions in a polymorphic hierarchy of exception classes, where you need to throw, catch, and if necessary store and rethrow an exception without losing its actual type.</p>
+    <p>The basic C++ rule is to catch exceptions by reference (<code>catch (const std::exception&amp;)</code>), because catching by value slices the derived type down to the base (object slicing), losing all the specifics of the concrete exception. You should throw a temporary object, while the copy for the "flight" is created by the exception mechanism itself.</p>
+    <p>The difficulty arises when an exception needs to be not merely caught and handled on the spot, but stored, passed to another thread, or rethrown later, and then you face the task of "copy the caught exception while preserving its dynamic type," which is highly nontrivial, because you caught a <code>const std::exception&amp;</code> but don't know which subclass it actually is in order to copy it, and the classic solution leads to virtual methods like <code>raise()</code> (throw myself) and <code>clone()</code> (copy myself) in the base exception class, so that the exception can polymorphically reproduce and transport itself.</p>
+    <p>The price here is manually implementing <code>clone</code>/<code>raise</code> in every exception class, which is tedious and easily broken, and the errors show up at the most inopportune moment, for example already while handling another error higher up the stack.</p>
+    <p>C++11 largely solved the task out of the box, introducing <code>std::exception_ptr</code> and the functions <code>std::current_exception()</code> / <code>std::rethrow_exception()</code>, and now any exception can be captured into an <code>exception_ptr</code> (preserving its exact type), passed anywhere, including another thread, and rethrown later without any manual <code>clone</code>.</p>
+    <p>The idea with virtual <code>raise</code>/<code>clone</code> was described before C++11, and the arrival of <code>exception_ptr</code> in C++11 was in large part motivated precisely by the need to carry exceptions between threads in asynchronous code, which made the manual idiom unnecessary in most cases, though the understanding of the problem in general and of the need to catch by reference remained.</p>
+<pre style="margin:1.4rem 0"><code>// The modern way to carry an exception while preserving its exact type:
+std::exception_ptr captured;
+
+void worker() {
+    try { risky_load(); }
+    catch (...) { captured = std::current_exception(); }   // captured any type
+}
+
+void main_thread() {
+    worker();
+    if (captured) {
+        try { std::rethrow_exception(captured); }          // rethrown here
+        catch (const ResourceError&amp; e) { /* exact type preserved */ }
+        catch (const std::exception&amp; e) { /* catch by reference — no slicing */ }
+    }
+}</code></pre>
+    <p>In games the attitude toward exceptions is, to put it mildly, nonexistent, and a significant part of the industry doesn't use them at all, often building projects with <code>-fno-exceptions</code> so they don't get in the way of certain optimizations. So the core of many engines is built on error codes, <code>std::optional</code>/<code>expected</code>-like results, and <code>assert</code>, rather than on exceptions.</p>
+    <p>Still, polymorphic exceptions are appropriate in tools, editors, asset loaders, and other non-runtime code, where reliable error handling matters more than perf, and where <code>exception_ptr</code> nicely carries failures between threads of an asynchronous load.</p>
+    <h2 id="polymorphic-value-types">Polymorphic Value Types</h2>
+    <p>We've talked about exceptions, but the same problem is relevant for ordinary values too, and the attempt to preserve polymorphic behavior (like objects in a hierarchy behind a pointer to the base) and value semantics (like <code>int</code> or <code>Vec3</code> — copied, placed into a container by value, requiring no manual lifetime management) remains. Usually these two things are opposed, because polymorphism requires pointers and inheritance, which means manual ownership and the risk of slicing, while values copy easily but aren't polymorphic.</p>
+    <p>This is implemented with a wrapper that internally holds a pointer to a polymorphic object of the hierarchy but behaves like a value, and copying it makes a deep copy via a virtual <code>clone</code>, so the copy is an independent object of the correct dynamic type, with no slicing problems and no shared ownership, and destroying it correctly deletes the stored object. From the outside you get an ordinary value that you put into a <code>std::vector</code>, copy, pass around, while inside polymorphism and the exact type are preserved.</p>
+    <p>The price is each copy of such a "value," which 99% of the time does an allocation and a virtual <code>clone</code>, which is more expensive than copying an ordinary value and unacceptable in the hot path or under intensive copying. Plus it requires the whole hierarchy to support <code>clone</code>, which partly kills the convenience and is paid for with the cost of dynamic memory and virtual calls on every copy.</p>
+    <p>The idea was actively promoted by Sean Parent in his talks on "value semantics and concept-based polymorphism," showing how to wrap polymorphism in values and rid the code of manual pointer management and of inheritance in the user-facing API. It made it into the standard as <code>std::polymorphic_value</code>, but it's still criticized, by proponents of inheritance and evangelists of value-oriented design.</p>
+<pre style="margin:1.4rem 0"><code>// The wrapper behaves like a value but stores a polymorphic object:
+template &lt;class Base&gt;
+class PolyValue {
+    std::unique_ptr&lt;Base&gt; p_;
+public:
+    template &lt;class D&gt; PolyValue(D d) : p_(std::make_unique&lt;D&gt;(std::move(d))) {}
+    PolyValue(const PolyValue&amp; o) : p_(o.p_-&gt;clone()) {}
+    // copy = deep clone, no slicing
+    Base* operator-&gt;() { return p_.get(); }
+};
+
+// You can put polymorphic objects into a vector BY VALUE
+std::vector&lt;PolyValue&lt;Shape&gt;&gt; shapes;
+shapes.push_back(Circle{});
+shapes.push_back(Square{});
+auto copy = shapes;   // a deep copy of each, types preserved</code></pre>
+    <p>In games polymorphic value types in pure form are rare due to the allocation, but the idea of "value semantics for polymorphic things" is very appealing for code where simplicity of ownership and safety matter, that is, editors again, data models and undo/redo systems (where deep copying of state is the very essence of undo), or descriptions of configurations and properties.</p>
+    <p>And this same idea has taken root well in indie games, as part of the same drift of the industry from "everything through inheritance and pointers" to value-oriented and data-oriented design and ECS patterns, but that's a separate conversation.</p>
+    <h2 id="hierarchy-generation">Hierarchy Generation</h2>
+    <p>This is a separate technique in which an entire class hierarchy is generated automatically, by templates, from a list of types, instead of writing out each class by hand. You give a list of types to the engine (for example, <code>TypeList&lt;int, float, std::string&gt;</code>) and a "generator" that recursively builds a hierarchy from it, that is, a class inheriting from handlers for each type in the list, or a chain of classes, one level per type.</p>
+    <p>This is often needed to avoid manual duplication when creating families of related classes, and on this were built, in particular, generic functors, abstract factories, and variant-like storages, where you need "one of something per type in the set."</p>
+    <p>All of this is a heavy form of metaprogramming brain-fry, with all its companions in the form of monstrously long type names, unreadable errors, noticeable compilation slowdown with large type lists, and the general difficulty of debugging the generated hierarchy.</p>
+    <p>With the arrival of variadic templates (C++11), hand-rolled <code>TypeList</code>s and recursive generators have largely become obsolete, and now we have parameter packs that can be expanded into hierarchies and data structures directly, without the cumbersome logic of type lists.</p>
+    <p>The idiom in its canonical form was introduced and began to be preached by Alexandrescu in the early 2000s along with the whole infrastructure of <code>TypeList</code> and hierarchy generators in the Loki library, and it was perhaps one of the most impressive demonstrations of the power of template metaprogramming of that time. And it spilled over into modern equivalents with variadic templates, <code>std::tuple</code> (which is, in essence, that very hierarchy generation produced from a type pack), and <code>std::variant</code>.</p>
+<pre style="margin:1.4rem 0"><code>// A linear hierarchy with one inheritance level per type in the pack
+template &lt;class... Ts&gt; struct Handlers;
+template &lt;&gt; struct Handlers&lt;&gt; {};                       // recursion base
+template &lt;class T, class... Rest&gt;
+struct Handlers&lt;T, Rest...&gt; : Handlers&lt;Rest...&gt; {
+    virtual void handle(const T&amp;) = 0;                  // handler for T
+    using Handlers&lt;Rest...&gt;::handle;                    // plus everything below
+};
+
+// An event handler with one handle per event, generated automatically:
+struct EventHandler : Handlers&lt;KeyEvent, MouseEvent, ResizeEvent&gt; {
+    void handle(const KeyEvent&amp;)    override { /* ... */ }
+    void handle(const MouseEvent&amp;)  override { /* ... */ }
+    void handle(const ResizeEvent&amp;) override { /* ... */ }
+};</code></pre>
+    <p>In games all this ancient stuff has long been rewritten with <code>std::tuple</code> and <code>std::variant</code> and variadic templates. As a distinct kind, it has crept into ECS engines, which use packs of component types to generate storages and systems from a list of components, and separately it lives in serialization, which expands a struct's fields by the list of their types. All of these are already implementations and descendants of this idea of hierarchy generation, just in newer and more convenient syntax.</p>
+    <p>Directly writing recursive hierarchy generators from <code>TypeList</code> in new code is almost never justified, because variadic templates do the same thing more simply and compile faster. Hierarchy generation is worth knowing first and foremost as the foundation of how variadic templates work, and this principle is alive and well, it has merely swapped its toolkit from heavy type lists to lightweight parameter packs.</p>
+    <h2 id="function-object-functor">Function Object (Functor)</h2>
+    <p>This is an object that pretends to be a function, because it has an overloaded <code>operator()</code>, but what distinguishes it from an ordinary function is the ability to hold state. In general, a functor is a class with fields (state) and a call operator, and each instance of it can be configured in its own way and remember something between calls or capture parameters at creation, that is, in essence it's "a function with memory."</p>
+    <p>It has two advantages over a function pointer. The first, as I already said, is state: a function pointer always calls the same function in the same way, whereas a functor can be parameterized (a comparator that remembers the sort direction, or a predicate that remembers a threshold). The second is inlining: when you pass a functor to a template algorithm, its type is known at compile time, and <code>operator()</code> is inlined right into the algorithm's body, whereas a call through a function pointer usually stays an indirect call that doesn't inline and hinders the optimizer.</p>
+    <p>There's almost no direct, explicit cost here, and although functors are often more verbose than you'd like (you have to declare a class), which before C++11 was their main pain, and to pass a custom comparator to <code>sort</code> you had to set up a separate class somewhere off to the side from where it's used. But C++11 lambdas solved exactly this problem at the compiler level, wrapping it in syntactic sugar that the compiler unfolds into an unnamed functor with the captured variables as fields. That is, every lambda is a functor, just written concisely and in place.</p>
+    <p>The concept of functors in C++ took shape together with the STL of Stepanov and Lee in the early nineties, where functors (predicates, comparators, operations) were an integral part of generic algorithms, and they're precisely what gave the STL its reputation for "abstraction without overhead." The standard library always preferred functors over function pointers in template algorithms, and C++11 lambdas cemented functors as an everyday tool.</p>
+<pre style="margin:1.4rem 0"><code>// A stateful functor: a comparator that remembers the reference point
+struct DistanceFromCamera {
+    Vec3 camera;
+    bool operator()(const Object&amp; a, const Object&amp; b) const {
+        return dist2(a.pos, camera) &lt; dist2(b.pos, camera);
+        // inlined into sort
+    }
+};
+std::sort(objects.begin(), objects.end(), DistanceFromCamera{cam_pos});
+
+// A lambda is the same functor, written concisely (the compiler generates the class itself):
+std::sort(objects.begin(), objects.end(),
+          [cam_pos](const Object&amp; a, const Object&amp; b){
+            return dist2(a.pos,cam_pos) &lt; dist2(b.pos,cam_pos);
+          });</code></pre>
+    <p>Functors and lambdas are ubiquitous, as comparators for sorting visible objects by distance or by material, predicates for filtering entities, event callbacks, small tasks for a job system, or operations passed into generic passes over data.</p>
+    <p>The difference between a lambda as a functor (the type is known statically, it's inlined, zero overhead) and a lambda wrapped in <code>std::function</code> (type erasure, a virtual call, a possible allocation) tells in the hot path, where <code>std::function</code> loses on speed. The difference isn't huge, but it exists, and understanding this mechanism distinguishes performant code from ordinary code.</p>
+    <h2 id="object-generator">Object Generator</h2>
+    <p>This is a helper function that creates an object, deducing its template parameters from its arguments, so you don't have to write them out by hand. Before C++17, template classes couldn't deduce arguments from the constructor, and to create a <code>std::pair&lt;int, std::string&gt;</code> you had to either write out all the types (<code>std::pair&lt;int, std::string&gt;{1, "a"}</code>) or call <code>std::make_pair(1, "a")</code>, which deduces the types for you, and that very <code>make_pair</code> is the object generator, a factory function that exists solely for type deduction.</p>
+    <p>The point here is to offload type deduction onto the template function argument deduction mechanism, which always worked, unlike deduction for template classes, which didn't exist. A function <code>make_X(args...)</code> looks at the argument types and deduces the template parameters of <code>X</code> from them and returns a constructed <code>X&lt;...&gt;</code>, which removes duplication (no need to repeat types that are already visible from the arguments) and makes the code shorter and more resilient to type changes.</p>
+    <p>The price is separate functions for each template (<code>make_pair</code>, <code>make_tuple</code>, <code>make_shared</code>, <code>make_unique</code>, <code>bind</code>...), and this was clearly a workaround for a missing language feature. C++17 brought CTAD (class template argument deduction), deducing class template arguments straight from the constructor, after which many object generators became unnecessary, and now you can write <code>std::pair{1, std::string{"a"}}</code>, which deduces the types itself.</p>
+    <p>But historically most generators outlived CTAD, because they make for slightly more readable code and are less prone to accidental errors.</p>
+    <p>This idea is one of the fundamental ones in the STL and Boost: <code>std::make_pair</code> (Stepanov and company), which then grew into <code>std::make_tuple</code>, <code>std::make_shared</code>, <code>boost::bind</code>/<code>std::bind</code>, and remained a generic technique after C++17.</p>
+<pre style="margin:1.4rem 0"><code>// Object generator and the types are deduced from the arguments, no need to write them by hand
+template &lt;class A, class B&gt;
+std::pair&lt;A, B&gt; make_pair(A a, B b) { return {std::move(a), std::move(b)}; }
+
+auto p = make_pair(42, std::string{"hp"});   // deduced pair&lt;int, string&gt;
+
+// C++17 CTAD removes the need for the generator in many cases:
+std::pair p2{42, std::string{"hp"}};
+// also pair&lt;int, string&gt;, without make_</code></pre>
+    <p>Object generators in the form of <code>make_unique</code>/<code>make_shared</code> are an everyday tool for creating owning pointers, while <code>make_pair</code>/<code>make_tuple</code> do crop up now and then in generic code, although CTAD has displaced much of that. Engines often write their own generators for their template types in the form of <code>make_handle</code>, <code>make_span</code>, or factories of typed identifiers and wrappers.</p>
+    <p>The value of <code>make_shared</code>/<code>make_unique</code> lies not only in type deduction, but in combining the object's allocation and the control block into one (fewer cache misses, less work for the allocator), and <code>make_unique</code> guarantees no leak under exceptions in complex expressions, so these generators are worth preferring over raw <code>new</code> not just for brevity.</p>
+    <h2 id="object-template">Object Template</h2>
+    <p>The Object Template (not to be confused with C++ templates) is a mechanism about serializable "template" objects that describe how to create and configure an object, separating the description from the instance itself. The idea is that you have description data (template/blueprint/archetype) that specifies the object's initial state and composition, and a factory that produces real objects from that description. The description itself is also data that can be loaded from a file, edited in a tool, or replicated.</p>
+    <p>And the point of the mechanism is to separate "what the object looks like and what it's made of" from "this specific live object." The description exists as editable data, not as code, and therefore can be changed without recompiling, stored in assets, versioned, reused. One "enemy template" produces hundreds of concrete enemies, but editing the template changes all future ones (and sometimes the existing ones), and this is already more of a data-driven approach, where the behavior and composition of objects are defined by data rather than hard-coded into classes.</p>
+    <p>The price is a mechanism for mapping description data onto real types and fields (essentially a form of reflection or type registration), and you have to settle the question of inheritance among the templates-descriptions themselves, where one template extends another, which complicates the whole system. And you have to figure out what to do with already-created objects when their template changes, but the benefit outweighs it, because flexibility and the ability to hand content creation to designers without a programmer is the best thing a programmer can do in an engine.</p>
+    <p>In gamedev object templates are one of the central architectural ideas, known under the names prefab, blueprint, archetype, data template, and its origin lies in data-driven design itself, which the industry developed so that designers could create and configure content without programmers, and so that iterations wouldn't require rebuilding the code.</p>
+<pre style="margin:1.4rem 0"><code>// The "blueprint" description as data (loaded from a file, edited in a tool):
+struct EntityTemplate {
+    std::string name;
+    float max_health = 100;
+    std::vector&lt;ComponentDesc&gt; components;   // which components and with which parameters
+};
+
+// The factory produces live entities from the blueprint:
+Entity spawn_from_template(const EntityTemplate&amp; tmpl, World&amp; world) {
+    Entity e = world.create();
+    for (const auto&amp; c : tmpl.components)
+        component_registry().build(c, e, world);   // mapping data onto real types
+    return e;
+}</code></pre>
+    <p>All of this has evolved into Unity's prefabs, Unreal's blueprints, archetypes in ECS engines, and enemies, items, effects, and even levels are now described by template data that designers create and edit in the editor, and the engine instantiates at runtime. This lets you create enormous volumes of content without a programmer and iterate without rebuilding the game.</p>
+    <p>Beneath this data-driven superstructure there almost always lies C++ infrastructure for reflection, type registration, and factories (often built on attach-by-initialization for self-registering components and on member detector/traits for field serialization). That is, the object template as a high-level idiom relies on a whole set of low-level C++ ideas higher up the list, without which it would be impossible, and this is a good example of how separate abstract template techniques add up into a coherent foundation, on which stands a quite tangible and production-important capability: handing content creation to designers, and giving programmers time to drink a cup or two of coffee.</p>
+    <h2 id="iterator-pair">Iterator Pair</h2>
+    <p>This is a fundamental STL mechanism, which it itself spawned for its algorithms. A range of elements is specified not by a container nor by a pointer with a length, but by a pair of iterators, to the beginning and to "one-past-the-end." All the standard algorithms are built on top of <code>(begin, end)</code>, and this pair fully describes the sequence to work on, knowing nothing about which container it lives in, or whether it lives in one at all.</p>
+    <p>This is how algorithms and containers were decoupled, because <code>std::sort</code> doesn't need to know whether it's sorting a <code>vector</code>, a piece of an array, or a range inside a <code>deque</code>, and a pair of iterators of the right category is enough for it.</p>
+    <p>On this idea rests the entire orthogonality of the STL: "M containers × N algorithms = M+N code instead of M×N," and algorithms are written once for iterators, while containers provide iterators, enabling any algorithm to work with any container.</p>
+    <p>The price is the unspoken agreement that the pair of iterators is correct at the type level. You can easily pass iterators from different containers or mix up the order, getting undefined behavior with no diagnostics whatsoever.</p>
+    <p>On top of that we got the problem of iterator invalidation when the container is modified, as a separate eternal source of bugs. People have tried to solve this problem since the very birth of the language, and it all spilled over into the concept of ranges, where a range became a single object (<code>std::ranges::sort(v)</code> instead of <code>sort(v.begin(), v.end())</code>), but which inside is still a pair of iterators, and from the outside seemingly a single entity, yet one that's already harder to spoil and that can be lazily composed via <code>views</code>.</p>
+    <p>This idea about iterators is the very heart of Stepanov's STL, and he deliberately built the whole library around iterators as a generalization of pointers, and the iterator pair will live with us as long as the STL itself lives. This is perhaps the most influential design decision in history, defining what generic code looks like and will look like for decades to come.</p>
+<pre style="margin:1.4rem 0"><code>// The algorithm works with a pair of iterators, knowing nothing about the container:
+template &lt;class It, class T&gt;
+It find(It begin, It end, const T&amp; value) {
+    for (; begin != end; ++begin)
+        if (*begin == value) return begin;
+    return end;                            // "not found" = iterator to one-past-the-end
+}
+
+std::vector&lt;int&gt; hp = {100, 80, 0, 60};
+auto dead = find(hp.begin(), hp.end(), 0);     // works with vector
+int arr[] = {5, 3, 8};
+auto it = find(arr, arr + 3, 8);               // and with a raw array — the same code
+
+// C++20 ranges: the range as a single object
+std::ranges::sort(hp);</code></pre>
+    <p>It's worth noting separately that the iterator interface lets you apply algorithms to sub-ranges and to non-standard "containers" like chunks of a pool or views over someone else's memory, which comes up constantly in engines. C++20 ranges and <code>std::span</code> (a non-owning view of a range as a "pointer + length" pair) made this even more convenient and safer, and modern engine code increasingly uses <code>span</code>, which has caught on especially well as a way to pass "a view of an array" without binding to a specific container and without copying.</p>
+    <h2 id="generic-container">Generic Container</h2>
+    <p>By this people mean a set of conventions a container follows in order to become a "good citizen" in the STL world, that is, so that standard algorithms and range-based for work with it, and so that it behaves predictably for everyone used to the standard containers. It's a body of rules about which nested types to provide (<code>value_type</code>, <code>iterator</code>, <code>const_iterator</code>, <code>size_type</code>), which methods (<code>begin</code>/<code>end</code>, <code>size</code>, <code>empty</code>), and what copy and swap semantics.</p>
+    <p>These are the rules of "good manners for a container," and if your container provides <code>begin()</code>/<code>end()</code>, it can already be used in a range-based for and in standard algorithms. If it adds the right nested typedefs, <code>iterator_traits</code> and generic code that asks about them work with it. If it has correct <code>swap</code> and value semantics, it plays nicely with containers of containers and copy-and-swap. Following these conventions makes your type interchangeable with the standard ones and embeddable into the existing ecosystem without special code.</p>
+    <p>The price is code, of which you have to write a great deal and by hand, and historically all the rules and conventions were informal (just "do as <code>std::vector</code> does"), and it's easy to miss something and end up with a container that almost works. Plus a full implementation of all the requirements (including allocator-awareness, correct iterator categories, exception safety) is a serious amount of code, and only C++20 formalized a significant part of these implicit conventions in the form of concepts (<code>std::ranges::range</code>, <code>std::input_iterator</code>, etc.).</p>
+    <p>These conventions emerged as the STL evolved and for decades lived as its spirit, in the form of the "container requirements" from the standard, and as the practice of "imitate the standard containers."</p>
+<pre style="margin:1.4rem 0"><code>// The minimum for a custom container to play nicely with range-for and algorithms:
+template &lt;class T, std::size_t N&gt;
+class FixedVector {
+    T data_[N];
+    std::size_t size_ = 0;
+public:
+    using value_type = T;                 // nested typedefs for generic code
+    using iterator = T*;
+    using const_iterator = const T*;
+
+    iterator begin() { return data_; }    // begin/end =&gt; range-for and algorithms work
+    iterator end()   { return data_ + size_; }
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+};
+
+FixedVector&lt;Enemy, 64&gt; enemies;
+for (auto&amp; e : enemies) { /* works */ }
+std::sort(enemies.begin(), enemies.end());   // and algorithms too</code></pre>
+    <p>Most popular engine container libraries (EASTL by Electronic Arts being the best-known example) deliberately replicate the STL interface precisely for this compatibility, differing in implementation (allocators, growth, debug checks) but not in interface. This gives the best of both worlds: control over the memory and performance of your own containers plus compatibility with the entire ecosystem of generic code. So understanding "what makes a container a container" is a practical skill for a developer who cares about more than just academic knowledge of the standard library.</p>
+    <h2 id="erase-remove">Erase-Remove</h2>
+    <p>This is the behavior when removing elements from a sequence container, born from the non-obvious design of the <code>std::remove</code> algorithm, where <code>std::remove</code> (and <code>remove_if</code>) removes nothing, because it works with a pair of iterators and has no access to the container itself to change its size. Instead, <code>remove</code> rearranges the elements and shifts the "wanted" elements to the front, overwriting the "unwanted" ones with them, and then returns an iterator to the new logical end, while the "tail" after it is left with unspecified (but valid) contents.</p>
+    <p>To actually delete the data you now need a second step, the container's <code>erase</code> method, which you pass the range from the new logical end to the old physical end, like <code>v.erase(std::remove_if(v.begin(), v.end(), pred), v.end())</code>. <code>remove_if</code> compacts the wanted elements and returns the boundary, while <code>erase</code> trims the tail. Hence the name.</p>
+    <p>The price of this mechanism is its two-step nature, which generations of programmers have stumbled over, and simply calling <code>remove_if</code> without <code>erase</code> is a classic mistake, after which the "removed" elements remain in the container (the size hasn't changed), merely having moved to the tail.</p>
+    <p>The mechanism is unintuitive and requires you to remember why there are two calls here, and only C++20 finally gave us the direct functions <code>std::erase</code> and <code>std::erase_if</code>, taking a container and a predicate and doing everything in one call, that is, after twenty years of erase-remove the language acknowledged that people just wanted to "remove elements by condition."</p>
+    <p>This is a direct consequence of the STL's design, where algorithms are deliberately decoupled from containers and therefore physically cannot change their size. Meyers devoted separate items in Effective STL to erase-remove, explaining both the idiom itself and why <code>remove</code> is built exactly this way, and those pages saved quite a few people from the "removal that doesn't remove" bug.</p>
+<pre style="margin:1.4rem 0"><code>// Remove all dead enemies from a vector:
+enemies.erase(
+    std::remove_if(enemies.begin(), enemies.end(),
+                   [](const Enemy&amp; e){ return e.hp &lt;= 0; }),   // compacts the living, returns the boundary
+    enemies.end());                                            // erase trims the dead tail
+
+// C++20 — the same thing in one call:
+std::erase_if(enemies, [](const Enemy&amp; e){ return e.hp &lt;= 0; });</code></pre>
+    <p>It's worth noting, though, that in the hot path engines often use the faster swap-and-pop technique if element order doesn't matter, where the element being removed is swapped with the last one and the vector is shortened by one, giving removal in constant time instead of a shift. Erase-remove, on the other hand, is irreplaceable when order matters or when many elements are removed at once by a condition, but in any case you have to understand that <code>std::remove</code> by itself removes nothing.</p>
+    <h2 id="clear-and-minimize">Clear-and-minimize</h2>
+    <p>This mechanism solves a specific problem: how to not merely clear a container of its elements, but also make it return the memory it occupied back to the operating system, because <code>vector::clear()</code> destroys the elements but doesn't free the allocated capacity, and the vector is left with the same reserved memory, ready to fill it again without new allocations. Usually that's what you want, but sometimes you want precisely to return the memory, for example when the container ballooned to a peak and will never be that large again.</p>
+    <p>The classic pre-C++11 solution was "swap with an empty temporary container," <code>std::vector&lt;T&gt;().swap(v)</code>, where an empty temporary vector is created (with zero capacity), it swaps contents with yours, and now your vector is empty and with zero capacity, while the temporary took the old large buffer and immediately dies at the end of the expression, freeing it. An elegant trick that exploits the fact that swap exchanges both the data and the capacity, and the temporary's destructor does the dirty work.</p>
+    <p>But the price is the non-obviousness of the technique itself (to the uninitiated <code>vector&lt;T&gt;().swap(v)</code> looks like pointless nonsense), and not freeing memory. Often keeping the capacity for reuse is more advantageous than returning the memory and then allocating it anew. C++11 finally gave the more readable, if non-binding, <code>shrink_to_fit()</code>, and for a full clear with release, the combination <code>clear()</code> + <code>shrink_to_fit()</code>, which expresses the intent explicitly rather than through the swap trick.</p>
+    <p>The idiom was described by Scott Meyers in Effective STL, but it's often skipped, and many forget that a vector has two independent notions: size (how many elements) and capacity (how much memory is allocated), and that standard operations affect them differently, and that managing capacity requires separate techniques.</p>
+<pre style="margin:1.4rem 0"><code>std::vector&lt;Particle&gt; particles;
+particles.resize(1'000'000);
+// peak load: allocated memory for a million
+
+// ... the surge is over, particles are no longer needed in such volume ...
+
+particles.clear();
+// size 0, but the memory for a million is STILL occupied
+
+std::vector&lt;Particle&gt;().swap(particles);
+// pre-C++11 we genuinely free the memory
+
+// or C++11:
+particles.clear();
+particles.shrink_to_fit();
+// more readable: clear and return the memory</code></pre>
+    <p>In games managing container capacity is still a separate concern, because the memory budget, especially on consoles, often isn't met, and peak surges (loading a level, a mass effect, temporary buffers) can balloon containers to sizes that are no longer needed and simply occupy memory, so Clear-and-minimize lets you return that memory after the surge.</p>
+    <p>But in the hot path the opposite strategy applies, where capacity is precisely retained to reuse buffers between frames without repeated allocations. A particle vector or a list of visible objects is cleared via <code>clear()</code> (keeping the capacity) at the start of each frame and refilled, and this is a classic way to avoid allocations within a frame. So clear-and-minimize and "clear while retaining capacity" are two tools for two opposite situations.</p>
+    <h2 id="shrink-to-fit">Shrink-to-fit</h2>
+    <p>Logically, this idea (and since C++11 a built-in method too) emerged as a special case of the section above, that is, bringing a container's capacity into line with its actual size, when you need to remove the "excess" reserved memory and leave exactly as much as is needed for the current elements. It's a relative of clear-and-minimize, but more general, and it reduces capacity to the size not only for an empty container, but for any container whose capacity noticeably exceeds the number of elements.</p>
+    <p>Vectors have the property of growing with headroom (usually doubling the capacity on overflow, to amortize the cost of growth), and after a series of additions and removals the capacity can turn out to be two or three times larger than actually needed. And if such a container is going to live in this state for a long time, the excess memory is wasted, and Shrink-to-fit says "fit the capacity to the size," returning the surplus.</p>
+    <p>The price is a separate call to <code>shrink_to_fit()</code>, but it's not mandatory and the standard allows an implementation to ignore it and reduce nothing. In practice, though, the major implementations honor it, but you can't rely on guaranteed release. Besides, reducing capacity is usually implemented through reallocation and moving all the elements into a new, precisely fitted buffer, that is, it's not a free operation but a full pass with an allocation, and abusing it in the hot path is a so-so idea. Before C++11 the same effect was achieved with the same swap trick as in clear-and-minimize, only swapping with a copy (<code>std::vector&lt;T&gt;(v).swap(v)</code>).</p>
+<pre style="margin:1.4rem 0"><code>std::vector&lt;RenderCommand&gt; commands;
+commands.reserve(10000);          // reserved with a large margin
+build_commands(commands);         // but actually filled, say, 1200
+
+// The frame is built, the command list will live until the end of the frame — return the excess:
+commands.shrink_to_fit();         // capacity is ~fitted to 1200 (non-binding!)
+
+// pre-C++11 equivalent:
+std::vector&lt;RenderCommand&gt;(commands).swap(commands);</code></pre>
+    <p>In games shrink-to-fit is applied selectively and deliberately, usually for long-lived containers that ballooned and whose excess memory is more advantageous to return than to hold. For example, containers filled during level loading with a margin and then "frozen" for the entire time the player is on the level, and after loading it's reasonable to shrink them, freeing memory for gameplay.</p>
+    <p>But in per-frame, reused containers shrink-to-fit is usually contraindicated, and there the excess capacity is a handy feature that spares you allocations on the next fill, and shrinking such a container would mean paying for a reallocation every frame. So the practical rule in engines is: shrink only what ballooned and won't grow again.</p>
+    <h2 id="safe-bool">Safe bool</h2>
+    <p>This is a solution to a tricky problem before C++11: how to give a class the ability to be used in a boolean context (<code>if (obj)</code>, <code>while (ptr)</code>) without opening the door to dangerous implicit conversions in the process. The naive solution was to add an <code>operator bool()</code>, which generally works but has horrible side effects in the form of an implicit conversion to <code>bool</code>, and <code>bool</code> to <code>int</code>, so that nonsensical expressions like <code>obj &lt;&lt; 1</code>, <code>obj + 5</code>, or comparing two unrelated smart pointers via conversion to bool suddenly start compiling, and the object "leaks" into arithmetic and comparisons where it has no business.</p>
+    <p>Safe bool worked around this by returning not a <code>bool</code> but a pointer to a member function (or another type convertible to bool in a condition but not to int), and such a type is fit for a check in an <code>if</code>, because a pointer is compared against zero, but it doesn't participate in arithmetic and doesn't convert to a number, which cuts off the entire dangerous class of expressions. The implementation was generally cumbersome: you needed a private member type, returning a pointer to a dummy method, and all of it just so that <code>if (obj)</code> would work while <code>int x = obj + 1</code> would not.</p>
+    <p>The price was the verbosity and non-obviousness of the solution, plus it still didn't close all the holes, and only C++11 solved the problem, finally, by introducing explicit conversion operators like <code>explicit operator bool() const</code>. The keyword <code>explicit</code> means the conversion fires automatically in a boolean context (the condition of an <code>if</code>, <code>while</code>, <code>&amp;&amp;</code>, <code>||</code>) but does not fire implicitly anywhere. In a word, exactly what safe bool achieved through a nightmarish workaround is now expressed in a single word.</p>
+    <p>The idea itself in its canonical form was described by Björn Karlsson and popularized by the Boost authors (where it was used in <code>boost::shared_ptr</code> and other smart pointers before C++11), with a detailed breakdown in articles of the period. The appearance of explicit conversion operators in C++11 was largely a matter of dragging their ideas into the standard, when the committee acknowledged that since everyone was cobbling together this idiom, the language needed a proper mechanism.</p>
+<pre style="margin:1.4rem 0"><code>// pre-C++11: safe bool via a pointer to member (cumbersome!)
+class Handle {
+    void (Handle::*safe_bool_)() const;
+    void this_type_does_not_support_comparisons() const {}
+public:
+    operator decltype(safe_bool_)() const {
+        return valid_
+                 ? &amp;Handle::this_type_does_not_support_comparisons
+                 : nullptr;
+    }
+    bool valid_ = false;
+};
+
+// C++11 — the same thing, in one word:
+class Handle2 {
+    bool valid_ = false;
+public:
+    explicit operator bool() const { return valid_; }
+    // works in if, but not in arithmetic
+};
+
+Handle2 h;
+if (h) { /* OK */ }
+// int x = h + 1;   // compile error — and thank goodness</code></pre>
+    <p>In modern engine code this is simply <code>explicit operator bool</code>, and it's worth adding to all handles, optional wrappers, and result types, so they naturally work in an <code>if</code> while staying protected from accidental arithmetic silliness. Safe bool is interesting mainly as a historical lesson, where a whole cumbersome idiom existed only because the language lacked a single keyword, and its disappearance is a good example of how language evolution drags good ideas inside.</p>
+    <h2 id="type-safe-enum">Type Safe Enum</h2>
+    <p>Formerly a separate implementation, and since C++11 a language feature too, for creating enumerations that don't suffer from the type-safety holes of the classic C-style <code>enum</code>. The old unscoped enumerations had three woes: their names "spill" into the surrounding scope (two enums with a member <code>Red</code> conflict), they implicitly convert to <code>int</code> (which lets you add, compare, and confuse values of different enumerations), and their underlying type is unspecified, which hinders forward declaration and size control.</p>
+    <p>Formerly this was cured by wrapping the enumeration in a class, and then the values became static constants or objects of the wrapper class, the scope was confined to the class, and implicit conversions to <code>int</code> were forbidden. The result was a "real" type-safe enum, where the values must be qualified by the type name, and different enumerations can't be mixed. The compiler itself caught attempts to use a value of one enum where another is expected.</p>
+    <p>The price was verbosity, and you had to reproduce all of an enum's behavior by hand (down to use in a <code>switch</code>, as a template parameter, as a value), which was hard and cumbersome.</p>
+    <p>C++11 solved the problem by introducing <code>enum class</code> (scoped enumerations), and such names no longer pollute the scope (<code>Color::Red</code>), there's no implicit conversion to <code>int</code> (an explicit <code>static_cast</code> is needed), and you can specify the underlying type (<code>enum class Flags : std::uint8_t</code>), controlling the size and allowing forward declaration. This is exactly what the wrappers were after before, but now it's part of the language.</p>
+    <p><code>enum class</code> in C++11 was a proposal that came in part from Stroustrup too, and became the canonical solution, while where you want arithmetic/bitwise operations, for which <code>enum class</code> requires either explicit casts or operator overloads, people still write helper wrappers and macros.</p>
+<pre style="margin:1.4rem 0"><code>// C-style enum — leaky:
+enum Color { Red, Green, Blue };        // Red leaks into the scope
+enum Fruit { Apple, Banana, Red2 };     // name conflict if you call it Red
+int x = Red + Blue;                     // compiles (when it shouldn't)
+
+// C++11 enum class — type-safe:
+enum class Team : std::uint8_t { Red, Blue, Neutral };   // size specified
+Team t = Team::Red;                     // name qualified
+// int y = t;                           // error: no implicit conversion
+int y = static_cast&lt;int&gt;(t);            // explicit cast needed — the intent is visible</code></pre>
+    <p>In games type-safe enumerations have long been an everyday thing and a great blessing, because game code is riddled with enumerations, like states (idle/walk/attack/dead), commands, factions, damage, or collisions. The C-style enum in a large codebase was a constant source of bugs, and mixed-up values of different enumerations compiled and masked errors, so <code>enum class</code> catches this at compile time. So type safe enum in the form of <code>enum class</code> became a "free" practice that costs nothing at runtime but noticeably reduces a class of errors, and it's worth applying by default everywhere, except for cases of compatibility with an old C API.</p>
+    <h2 id="attorney-client">Attorney-Client</h2>
+    <p>This idea solves a problem inherent in the <code>friend</code> mechanism: when you declare a class or function a friend, you give it access to all the private members at once, and there's no way to say "be friends only with these three methods, and not with the rest," which violates encapsulation. And a friend often needs access to one or two details, but it gets the keys to the whole apartment.</p>
+    <p>The idea is that the "client" (your class with private members) is friends not directly with whoever needs access, but with a "holder" class (attorney), or counsel. The attorney is a friend of the client and therefore sees everything private, but exposes outward only a narrow, carefully chosen set of static methods that open exactly those details a specific acquaintance needs. The acquaintance is now not your friend, but works through the attorney and gets access only to what the attorney decided to provide. This way a big friendship becomes only the necessary acquaintance.</p>
+    <p>The price is an extra layer of template code, purely to configure access, which complicates understanding and is needed fairly rarely. Often the need for attorney-client is a sign that you've made the class too large and should reconsider its architecture (perhaps the private detail should be a separate entity). Plus it's still not real protection, and the keys to the apartment are now with the attorney, and sufficiently motivated code can still bypass encapsulation. The idea expresses intent but doesn't guarantee the absence of keys to the apartment altogether. This is a niche but elegant technique for libraries that need to open part of their internals to specific cooperating components without flinging them open to the whole world.</p>
+<pre style="margin:1.4rem 0"><code>class Renderer {
+    void set_internal_state(int);     // private detail
+    friend class RendererAttorney;    // friends only with the attorney
+};
+
+// The attorney exposes EXACTLY ONE method outward, and only to trusted code
+class RendererAttorney {
+    static void set_state(Renderer&amp; r, int s) { r.set_internal_state(s); }
+    friend class DebugOverlay;        // here's who the attorney permits
+};
+
+// DebugOverlay gets access to
+// one detail, without seeing the rest of Renderer's private parts</code></pre>
+    <p>In games attorney-client appears in specific places at the boundaries of engine subsystems, where, say, a serializer or a debug inspector needs to dig into a class's private guts, but only into strictly defined ones, not all of them. Instead of making the serializer an all-encompassing friend of every class (flinging open all the encapsulation just to save a couple of fields), the attorney opens up exactly the needed fields to it.</p>
+    <p>But in general, large engines more often solve this task through reflection systems that register serializable fields explicitly, or through a well-thought-out split into public/private interface, than through attorney-client. The idiom remains more of an elegant tool from the library author's arsenal, useful to know so you can recognize it in someone else's code and understand that what you're looking at is an attempt to make friendship granular. In everyday game code you'll see it rarely, and that's probably fine, and if you find yourself frequently doling out private access, it's usually simpler to reconsider who owns what.</p>
+
+    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part4.html">Part 4 →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++101 (Part 1) — dalerank</title>
+<meta name="description" content="A catalog of ~100 C++ idioms, ideas, and techniques that grew out of the Game++ section. Part 1: resource management and compilation — RAII, scope guard, copy-and-swap, smart pointer, intrusive refcounting, copy-on-write, Pimpl and Fast Pimpl, interface class, include/inline/export guards, CRTP, Barton-Nackman, EBO, non-copyable mixin, and metafunction." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part1.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part1.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/cpp101-part1.html">RU</a><i>/</i><a class="on" href="cpp101-part1.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 1)</h1><div class="ameta"><span>Jun 21, 2026</span><span>38 min</span></div></div>
+  <article class="prose">
+    <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <b>Part 1</b> · <a href="cpp101-part2.html">Part 2</a> · <a href="cpp101-part3.html">Part 3</a> · <a href="cpp101-part4.html">Part 4</a></p>
+    <img src="../../assets/articles/cpp101-part1/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>There's an old joke about C++ that anything can be done five different ways, four of which compile, three of which work, two of which are correct, and one of which depends on the phase of the moon. Such jokes and idioms often settle into the community's collective memory, recording which of these paths is the right one in each particular situation.</p>
+    <p>Most of these examples were born in the pre-C++11 era, when the language had neither smart pointers in the standard, nor move semantics, nor <code>constexpr</code>, nor concepts, and you had to assemble certain constructs by hand out of templates and overloads — constructs that later standards hand you almost for free. Many of these idioms, examples, and ideas are worth reading in two senses at once: as a historical artifact explaining "why old code looks the way it does," and as a living technique still used in engines and games.</p>
+    <p>Game development isn't here by accident, because a game engine is usually where abstractions meet the profiler — and lose to it more often than one would like. Legacy patterns bloom and stink because of someone's crutches forgotten in a corner, but most things are perfectly correct, in active use, and save you from bugs. Many of these come up — if not verbatim, then at least in a couple of words — when good leads interview you before inviting you onto the team, and just by grabbing a random 5-6 of these items you can form an impression of whether the new person has run into certain problems before.</p>
+    <p>When I was assembling the table of contents for <em>Game++</em>, the section on C++ idioms, ideas, patterns, and mechanisms was planned as the sixth and final one, and was supposed to run about a hundred pages, one per item — but the further I gathered material, the clearer it became that each section drags a history behind it, each history demands context, and context in game development is never simple. In the end the text grew to a size at which it would simply have broken the structure of the book, and I had to choose between "trim it beyond recognition" and "let it live on its own." I had to pick the second option.</p>
+    <p>What you have before you is what could have become <a href="https://www.ozon.ru/product/game-ustroystvo-i-optimizatsiya-igrovogo-dvizhka-3541648050" target="_blank" rel="noopener">half of <em>Game++</em></a>, but instead became a standalone piece. Here are gathered the C++ idioms, ideas, patterns, and mechanisms that the community has shaped over several decades and that continue to live in the codebases of game engines — sometimes under their own names, sometimes under others, sometimes with no name at all, because people long ago stopped explaining them. Most of them do have names, and a history with an answer to why it's done this way and not otherwise.</p>
+    <p>You'll probably need to recall some of the rules of template argument deduction, and what a constructor and destructor are, how the stack differs from the heap, and that an object has a lifetime — but no promises. I've also deliberately stripped out edge-case handling and various checks from the code, which in real code would take up half the text and drown the actual idea in details. The pattern of the mechanism matters more, in my case, than the concrete implementation, and almost every one of them exists in a dozen variations for different compilers and standards.</p>
+    <details class="code"><summary>Contents — all idioms in the series</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#raii-resource-acquisition-is-initialization">RAII (Resource Acquisition Is Initialization)</a></li><li><a href="#scope-guard">Scope Guard</a></li><li><a href="#resource-return">Resource Return</a></li><li><a href="#copy-and-swap">Copy-and-swap</a></li><li><a href="#non-throwing-swap">Non-throwing swap</a></li><li><a href="#smart-pointer">Smart Pointer</a></li><li><a href="#checked-delete">Checked delete</a></li><li><a href="#intrusive-reference-counting">Intrusive reference counting</a></li><li><a href="#copy-on-write">Copy-on-write</a></li><li><a href="#thread-safe-copy-on-write">Thread-safe Copy-on-write</a></li><li><a href="#free-function-allocators">Free Function Allocators</a></li><li><a href="#pimpl-handle-body-compilation-firewall-cheshire-cat">Pimpl (Handle Body, Compilation Firewall, Cheshire Cat)</a></li><li><a href="#fast-pimpl">Fast Pimpl</a></li><li><a href="#interface-class">Interface Class</a></li><li><a href="#concrete-data-type">Concrete Data Type</a></li><li><a href="#final-class">Final Class</a></li><li><a href="#include-guard-macro">Include Guard Macro</a></li><li><a href="#inline-guard-macro">Inline Guard Macro</a></li><li><a href="#export-guard-macro">Export Guard Macro</a></li><li><a href="#curiously-recurring-template-pattern-crtp">Curiously Recurring Template Pattern (CRTP)</a></li><li><a href="#barton-nackman-trick">Barton-Nackman trick</a></li><li><a href="#empty-base-optimization-ebo">Empty Base Optimization (EBO)</a></li><li><a href="#non-copyable-mixin">Non-copyable Mixin</a></li><li><a href="#parameterized-base-class">Parameterized Base Class</a></li><li><a href="#metafunction">Metafunction</a></li><li><a href="cpp101-part2.html#traits">Traits</a></li><li><a href="cpp101-part2.html#tag-dispatching">Tag Dispatching</a></li><li><a href="cpp101-part2.html#int-to-type-integer-to-type-map">Int-To-Type (Integer-to-Type Map)</a></li><li><a href="cpp101-part2.html#type-selection">Type Selection</a></li><li><a href="cpp101-part2.html#sfinae-substitution-failure-is-not-an-error">SFINAE (Substitution Failure Is Not An Error)</a></li><li><a href="cpp101-part2.html#enable-if">enable-if</a></li><li><a href="cpp101-part2.html#member-detector">Member Detector</a></li><li><a href="cpp101-part2.html#policy-based-design">Policy-based Design</a></li><li><a href="cpp101-part2.html#policy-clone-metafunction-wrapper">Policy Clone (Metafunction wrapper)</a></li><li><a href="cpp101-part2.html#type-erasure">Type Erasure</a></li><li><a href="cpp101-part2.html#type-generator-templated-typedef">Type Generator (Templated Typedef)</a></li><li><a href="cpp101-part2.html#thin-template">Thin Template</a></li><li><a href="cpp101-part2.html#named-template-parameters">Named Template Parameters</a></li><li><a href="cpp101-part2.html#coercion-by-member-template">Coercion by Member Template</a></li><li><a href="cpp101-part2.html#shortening-long-template-names">Shortening Long Template Names</a></li><li><a href="cpp101-part2.html#expression-template">Expression-template</a></li><li><a href="cpp101-part2.html#the-result-of-technique">The result_of technique</a></li><li><a href="cpp101-part2.html#exploding-return-type">Exploding Return Type</a></li><li><a href="cpp101-part2.html#return-type-resolver">Return Type Resolver</a></li><li><a href="cpp101-part2.html#named-constructor">Named Constructor</a></li><li><a href="cpp101-part2.html#virtual-constructor">Virtual Constructor</a></li><li><a href="cpp101-part2.html#computational-constructor">Computational Constructor</a></li><li><a href="cpp101-part2.html#construct-on-first-use">Construct On First Use</a></li><li><a href="cpp101-part2.html#nifty-counter">Nifty Counter</a></li><li><a href="cpp101-part2.html#runtime-static-initialization-order">Runtime Static Initialization Order</a></li><li><a href="cpp101-part2.html#base-from-member">Base-from-Member</a></li><li><a href="cpp101-part3.html#calling-virtuals-during-initialization">Calling Virtuals During Initialization</a></li><li><a href="cpp101-part3.html#construction-tracker">Construction Tracker</a></li><li><a href="cpp101-part3.html#attach-by-initialization">Attach by Initialization</a></li><li><a href="cpp101-part3.html#non-virtual-interface-nvi">Non-Virtual Interface (NVI)</a></li><li><a href="cpp101-part3.html#thread-safe-interface">Thread-Safe Interface</a></li><li><a href="cpp101-part3.html#acyclic-visitor-pattern-tricky">Acyclic Visitor Pattern (tricky)</a></li><li><a href="cpp101-part3.html#capability-query">Capability Query</a></li><li><a href="cpp101-part3.html#covariant-return-types">Covariant Return Types</a></li><li><a href="cpp101-part3.html#virtual-friend-function">Virtual Friend Function</a></li><li><a href="cpp101-part3.html#fake-vtable">Fake Vtable</a></li><li><a href="cpp101-part3.html#algebraic-hierarchy">Algebraic Hierarchy</a></li><li><a href="cpp101-part3.html#polymorphic-exception">Polymorphic Exception</a></li><li><a href="cpp101-part3.html#polymorphic-value-types">Polymorphic Value Types</a></li><li><a href="cpp101-part3.html#hierarchy-generation">Hierarchy Generation</a></li><li><a href="cpp101-part3.html#function-object-functor">Function Object (Functor)</a></li><li><a href="cpp101-part3.html#object-generator">Object Generator</a></li><li><a href="cpp101-part3.html#object-template">Object Template</a></li><li><a href="cpp101-part3.html#iterator-pair">Iterator Pair</a></li><li><a href="cpp101-part3.html#generic-container">Generic Container</a></li><li><a href="cpp101-part3.html#erase-remove">Erase-Remove</a></li><li><a href="cpp101-part3.html#clear-and-minimize">Clear-and-minimize</a></li><li><a href="cpp101-part3.html#shrink-to-fit">Shrink-to-fit</a></li><li><a href="cpp101-part3.html#safe-bool">Safe bool</a></li><li><a href="cpp101-part3.html#type-safe-enum">Type Safe Enum</a></li><li><a href="cpp101-part3.html#attorney-client">Attorney-Client</a></li><li><a href="cpp101-part4.html#making-new-friends-tricky">Making New Friends (tricky)</a></li><li><a href="cpp101-part4.html#non-member-non-friend-function-tricky">Non-member Non-friend Function (tricky)</a></li><li><a href="cpp101-part4.html#small-object-optimization-soo-sso">Small Object Optimization (SOO/SSO)</a></li><li><a href="cpp101-part4.html#prohibiting-heap-based-objects">Prohibiting Heap-based Objects</a></li><li><a href="cpp101-part4.html#storage-class-tracker">Storage Class Tracker</a></li><li><a href="cpp101-part4.html#execute-around-pointer">Execute-Around Pointer</a></li><li><a href="cpp101-part4.html#temporary-proxy">Temporary Proxy</a></li><li><a href="cpp101-part4.html#address-of">Address Of</a></li><li><a href="cpp101-part4.html#nullptr">nullptr</a></li><li><a href="cpp101-part4.html#move-constructor">Move Constructor</a></li><li><a href="cpp101-part4.html#implicit-conversions">Implicit conversions</a></li><li><a href="cpp101-part4.html#recursive-type-composition-tricky">Recursive Type Composition (tricky)</a></li><li><a href="cpp101-part4.html#temporary-base-class">Temporary Base Class</a></li><li><a href="cpp101-part4.html#boost-mutant">Boost mutant</a></li><li><a href="cpp101-part4.html#multi-statement-macro">Multi-statement Macro</a></li><li><a href="cpp101-part4.html#named-loop">Named Loop</a></li><li><a href="cpp101-part4.html#named-parameter">Named Parameter</a></li><li><a href="cpp101-part4.html#named-external-argument">Named External Argument</a></li><li><a href="cpp101-part4.html#deprecate-and-delete">Deprecate and Delete</a></li><li><a href="cpp101-part4.html#function-poisoning">Function Poisoning</a></li><li><a href="cpp101-part4.html#inner-class">Inner Class</a></li><li><a href="cpp101-part4.html#rule-of-zero-three-five">Rule of Zero/Three/Five</a></li><li><a href="cpp101-part4.html#most-vexing-parse">Most Vexing Parse</a></li><li><a href="cpp101-part4.html#pass-key">Pass-key</a></li><li><a href="cpp101-part4.html#defaulted-comparisons-and-the-operator-spaceship">Defaulted Comparisons and the &lt;=&gt; operator (Spaceship)</a></li></ul></div></details>
+    <h2 id="raii-resource-acquisition-is-initialization">RAII (Resource Acquisition Is Initialization)</h2>
+    <p>RAII is perhaps the most fundamental idiom in C++, and at the same time the one least grasped by newcomers, because it's invisible. The idea is that acquiring any resource (memory, a file, a mutex, a texture handle, a GPU fence) is tied to an object's constructor, and releasing it — logically enough — to the destructor. From there the language itself guarantees that when the object leaves its scope, the destructor will be called, no matter how you leave: through a normal <code>return</code>, with an exception in the middle of the function, or a <code>break</code> out of the middle of a loop.</p>
+    <p>The main value here isn't that you won't forget to write <code>free</code> or <code>unlock</code> — though that too — but that release becomes correct in the face of exceptions. Without RAII, any <code>throw</code> between acquisition and manual release is a leak, and in code that throws exceptions from a dozen places, tracking all the exit paths by hand is physically hard, so RAII offloads all this bookkeeping onto the compiler, which unwinds the stack and calls destructors in strictly the reverse order of construction.</p>
+    <p>The catch is that RAII works exactly as well as the destructor is written, and throwing exceptions from a destructor in C++ is still a one-way ticket to <code>std::terminate</code> station. That's why RAII wrappers are obligated to release the resource with no margin for error, and any logic that can fail must live in ordinary methods.</p>
+    <p>The term was coined by Bjarne Stroustrup back in the early days of the language, initially thinking mostly about memory and lifetime, and the name turned out, by his own admission, to be not the most fortunate, because "resource acquisition is initialization" emphasizes half the idea (acquisition in the constructor) and entirely fails to emphasize the other, far more important half (release in the destructor).</p>
+    <p>Over time, more expressive names appeared for special cases: Scoped Locking for mutexes in Douglas Schmidt's work, or Execute-Around Object for wrappers that do something on entry and something on exit from a scope.</p>
+<pre style="margin:1.4rem 0"><code>class ScopedTextureBind {
+public:
+    explicit ScopedTextureBind(GLuint texture) {
+        glBindTexture(GL_TEXTURE_2D, texture);
+    }
+    ~ScopedTextureBind() {
+        glBindTexture(GL_TEXTURE_2D, 0);  // release no matter what happens
+    }
+    ScopedTextureBind(const ScopedTextureBind&amp;) = delete;
+    ScopedTextureBind&amp; operator=(const ScopedTextureBind&amp;) = delete;
+};
+
+void draw_hud() {
+    ScopedTextureBind bind(hud_atlas);
+    submit_quads();   // even if an exception flies out here,
+                      // the texture will be unbound on exit
+}</code></pre>
+    <p>In games RAII lives literally everywhere, but often under different names. Any <code>ScopedTimer</code> that measures how long a chunk of the frame took and writes the result to the profiler in its destructor is also RAII. Any <code>RenderPassScope</code> that opens a render pass in the constructor and closes it in the destructor is also RAII. Command buffers, GPU state bindings, locks held while streaming resources from a background thread are accessed: all of these are wrappers that guarantee the symmetry of "opened/closed" even when the logic inside a frame branches off into the inscrutable depths of a programmer's mind.</p>
+    <h2 id="scope-guard">Scope Guard</h2>
+    <p>This is RAII taken to its logical summit: instead of writing a separate wrapper class for each resource, you create a universal object to which, in the constructor, you hand an arbitrary action (a lambda, a functor, a function pointer), and that action is executed in the destructor. The result is "deferred code" that is guaranteed to fire when the scope is exited.</p>
+    <p>There's the option to "disarm" the guard by calling something like <code>dismiss()</code> if the operation ultimately succeeded and nothing needs to be rolled back, which turns Scope Guard into the perfect tool for transactional logic. Now you can take a step, set a guard to roll it back, take the next step, and if everything is fine at the end, dismiss all the guards; but if something fails midway, the destructors will roll back the already-completed steps in reverse order.</p>
+    <p>The idiom was popularized by Alexandrescu and Marginean in articles from the early 2000s, and that's where the name ScopeGuard comes from. Later Alexandrescu reconceived it in light of move semantics and, in C++11, presented <code>SCOPE_EXIT</code>/<code>SCOPE_FAIL</code>/<code>SCOPE_SUCCESS</code> as variants that fire, respectively, always, only on an exception, and only on a normal exit. In its modern form this lives in Facebook's folly library and seeped into <code>std::experimental::scope_exit</code>.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class F&gt;
+class ScopeGuard {
+    F func_;
+    bool active_ = true;
+public:
+    explicit ScopeGuard(F f) : func_(std::move(f)) {}
+    ~ScopeGuard() { if (active_) func_(); }
+    void dismiss() { active_ = false; }
+    ScopeGuard(ScopeGuard&amp;&amp; o) : func_(std::move(o.func_)), active_(o.active_) {
+      o.dismiss();
+    }
+};
+
+template &lt;class F&gt;
+ScopeGuard&lt;F&gt; make_guard(F f) { return ScopeGuard&lt;F&gt;(std::move(f)); }
+
+void load_level(Level&amp; lvl) {
+    auto* mem = pool.allocate(lvl.size);
+    auto cleanup = make_guard([&amp;]{ pool.free(mem); });  // rollback by default
+
+    decompress_into(mem, lvl.archive);
+    register_resources(mem);
+    cleanup.dismiss();   // made it to the end, the memory stays with the level
+}</code></pre>
+    <p>Scope Guard is indispensable wherever loading a resource consists of several steps, each of which can fail — for example, you allocated memory in a pool, started decompression, registered handles in the resource manager. If decompression fails midway, you need to return the memory to the pool and remove the already-registered handles, otherwise the pool leaks and the resource manager ends up referencing garbage.</p>
+    <p>Or toolchains and level editors, because there are even more rollback-prone operations there. Importing an asset that touches several systems at once must either apply in its entirety or leave no trace of its work. Scope Guard lets you write such transactional logic linearly, top to bottom, without nested "cleanup ladders," which sharply reduces the number of bugs.</p>
+    <h2 id="resource-return">Resource Return</h2>
+    <p>This idiom is about how a function hands ownership of a resource to the outside world without letting the calling code accidentally lose it. In the naive version a function returns a raw pointer (<code>Texture* load_texture(...)</code>), and from there it's a lottery: the caller might forget to delete it, or delete it twice, or lose the pointer entirely in an intermediate variable during an exception. Resource Return demands that you return not the raw resource but an object that itself knows how to release that resource.</p>
+    <p>In the classic pre-C++11 form this meant returning by value an owning object with carefully thought-out copy semantics (often via <code>auto_ptr</code>, with all its oddities of transferring ownership on copy). The idea was to make the scenario of "got the resource and lost it" impossible. With the arrival of C++11 the idiom almost entirely dissolved into the language in the form of <code>std::unique_ptr</code> or <code>std::shared_ptr</code>, and move semantics guarantee that ownership is transferred without copies or losses.</p>
+    <p>What used to be a conscious idiom with subtleties became so natural that the modern programmer doesn't even think of it as the RR technique, but simply writes a function returning a smart pointer. Historically, Resource Return grew out of the problems with <code>std::auto_ptr</code> from the nineties, which tried to solve this task, but because of its "copying that is actually moving" created so many traps that it was eventually recognized as a design mistake and removed from the standard. C++11 move semantics is, in essence, <code>auto_ptr</code> done right, and the Resource Return idiom finally lived to see the language catch up with it.</p>
+<pre style="margin:1.4rem 0"><code>// returns ownership explicitly and safely
+std::unique_ptr&lt;Mesh&gt; load_mesh(const std::string&amp; path) {
+    auto mesh = std::make_unique&lt;Mesh&gt;();
+    mesh-&gt;upload(read_vertices(path));
+    return mesh;            // move, not a single extra copy of the vertex buffer
+}
+
+void build_scene(Scene&amp; scene) {
+    scene.add(load_mesh("rock.obj"));   // ownership flows into the scene
+    // there's physically nowhere to lose the mesh
+    // either it's in scene, or in the temp that was moved from
+}</code></pre>
+    <p>In engines Resource Return has de facto lived since the very appearance of those engines, and loaders for meshes, textures, sounds, and materials return owning handles or smart pointers, not raw pointers. This mattered when loading resources that could break at any step, and returning an owning object means that a partially loaded resource will release itself correctly if you suddenly don't pass ownership along.</p>
+    <p>In practice many engines go further and return not even a pointer but a lightweight value-handle (something like a <code>TextureHandle</code> with an index and a generation), but the idea remains the same: what's handed to the outside isn't a bare resource that's easy to lose, but an object with clear ownership semantics and a lifetime.</p>
+    <h2 id="copy-and-swap">Copy-and-swap</h2>
+    <p>This is an idiom for writing an assignment operator that works correctly in the face of exceptions and at the same time solves the self-assignment problem without requiring an explicit check for it. The essence is to make a local copy of the right-hand operand, exchange its innards with <code>*this</code> via <code>swap</code>, and let the destructor of the local copy carry away the old contents. If the copy fails with an exception, it fails before we've touched <code>*this</code>, and the object remains in its original valid state.</p>
+    <p>The idiom gives you the strong exception guarantee for free: assignment either goes through entirely or the object isn't changed at all, and no intermediate "half-destroyed" state exists. And all of this without manually duplicating the logic of releasing old resources.</p>
+    <p>The price for this is an extra copy. Copy-and-swap always makes a full copy, even when you could have gotten by with reassigning fields in place, and in a hot path this is sometimes unacceptable — so in C++11 the idiom is often augmented by passing the parameter by value: then for an lvalue a copy is triggered, while for an rvalue there's a move, and a single <code>operator=(T value)</code> covers both copy and move assignment at once.</p>
+    <p>The idiom crystallized in the community around the turn of the millennium; Herb Sutter analyzed it actively in Exceptional C++ (1999) in the context of exception safety, and it firmly entered the canon as "the right way to write <code>operator=</code>." The combination "copy and swap" as a settled name took hold a bit later, largely thanks to discussions on Stack Overflow.</p>
+<pre style="margin:1.4rem 0"><code>class Buffer {
+    std::size_t size_ = 0;
+    float* data_ = nullptr;
+public:
+    friend void swap(Buffer&amp; a, Buffer&amp; b) noexcept {
+        std::swap(a.size_, b.size_);
+        std::swap(a.data_, b.data_);
+    }
+    Buffer(const Buffer&amp; o) : size_(o.size_), data_(new float[o.size_]) {
+        std::copy(o.data_, o.data_ + size_, data_);
+    }
+    // by-value parameter: catches both copy and move
+    Buffer&amp; operator=(Buffer other) noexcept {
+        swap(*this, other);
+        return *this;             // self-assignment is correct on its own
+    }
+    ~Buffer() { delete[] data_; }
+};</code></pre>
+    <p>In game development copy-and-swap is encountered rarely, because extra copies are often impermissible and move is preferred, but tools, editors, and serialization — where correctness matters more — may drag it in. The classic scenario is loading a config or asset on top of an existing one: you build the new object in its entirety, and only if it built successfully do you substitute it for the old one via swap.</p>
+    <p>This gives editors the property of "hot reloading" of resources: while the new material or shader is being loaded and parsed, the working copy stays untouched, and if parsing fails on a corrupt file, the game keeps running on the old version instead of being left with a half-overwritten object or crashing.</p>
+    <h2 id="non-throwing-swap">Non-throwing swap</h2>
+    <p>This one is both a requirement and an idiom at once. <code>swap</code> for your type is obligated to be <code>noexcept</code>, that is, never to throw exceptions — which may sound like a minor technical detail, but half the safety guarantees in C++ rest on it, including the copy-and-swap we just analyzed, which without a <code>noexcept</code> swap loses its strong side.</p>
+    <p>The idiom is implemented by exchanging pointers and primitive fields, not by copying contents. Now, relying on this contract, we can swap two pointers without provoking an allocation or an exception, because swapping pointers is an operation that simply cannot fail. A correct <code>swap</code> for a class with dynamic memory never copies buffers, but only moves ownership of them between objects.</p>
+    <p>Usually the standard prescribes defining a free function <code>swap</code> in the same namespace as the type (so that ADL finds it) and calling it through the pattern <code>using std::swap; swap(a, b);</code>. This lets standard containers and algorithms pick up your <code>swap</code> instead of the default one, which makes three copies and is therefore slow.</p>
+    <p>The importance of non-throwing swap was recognized after the work of Scott Meyers, who devoted a separate item to it in Effective C++, insisting on specializing <code>swap</code>. In C++11 this was formalized through the move constructor and move assignment marked <code>noexcept</code>, which let containers like <code>std::vector</code> move elements instead of copying them on reallocation.</p>
+<pre style="margin:1.4rem 0"><code>class Image {
+    int w_ = 0, h_ = 0;
+    std::uint8_t* pixels_ = nullptr;
+public:
+    // swapping pointers can't throw, noexcept
+    friend void swap(Image&amp; a, Image&amp; b) noexcept {
+        using std::swap;
+        swap(a.w_, b.w_);
+        swap(a.h_, b.h_);
+        swap(a.pixels_, b.pixels_);
+    }
+};
+
+// Somewhere in an engine container
+std::vector&lt;Image&gt; textures;
+textures.reserve(1024);   // thanks to noexcept-move the vector moves</code></pre>
+    <p>Standard containers: <code>std::vector</code> and game entities must move elements rather than copy them when they grow and reallocate, and it can do this safely only if your move/swap are marked <code>noexcept</code>. Forget the <code>noexcept</code> and you get copying, turning an innocent <code>push_back</code> into a source of extra allocations and stutters out of nowhere.</p>
+    <p>This is one of those cases where a tiny annotation on a component type changes the performance of the entire system that operates on that type. In ECS architectures, where entities and components are constantly shuffled between pools and re-sorted for better cache locality, a cheap non-throwing swap becomes the foundation of all the logic.</p>
+    <h2 id="smart-pointer">Smart Pointer</h2>
+    <p>A smart pointer behaves like an ordinary pointer (and you can dereference it via <code>*</code> and <code>-&gt;</code>), but at the same time it manages the lifetime of whatever it points to. This is a direct application of RAII to the most common resource of all, i.e. heap memory. Now, instead of remembering the paired <code>delete</code> for each <code>new</code>, you wrap the pointer in an object whose destructor does the <code>delete</code> automatically.</p>
+    <p>The smart-pointer family divides by ownership policy. <code>unique_ptr</code> is the sole owner, which cannot be copied, only moved, and so it's free in overhead (it's just a pointer with the right destructor). <code>shared_ptr</code> already creates shared ownership via a reference count, which releases the object when the last owner dies. <code>weak_ptr</code> is merely an observer that sees the object but doesn't prolong its life, and it's needed to break cyclic references, in which two <code>shared_ptr</code>s can hold each other and neither ever dies.</p>
+    <p>The catch of shared_ptr, as usual, is its cost. The reference count is atomic, because shared_ptr is obligated to be thread-safe with respect to counting, and each copy becomes an atomic increment, while each destruction is correspondingly an atomic decrement with a check. In hot paths pointers can be copied tens of thousands of times per frame, and this all adds up to noticeable losses, so in engines they try to pass shared_ptr by reference and not breed copies without need.</p>
+    <p>The idiom traveled a long road from the ill-fated <code>std::auto_ptr</code> of the late nineties with its "copy-move," being reborn in Boost in the early 2000s in the form of <code>scoped_ptr</code>, <code>shared_ptr</code>, and <code>weak_ptr</code> — and it was precisely these implementations, polished by years of use, that entered the standard in C++11. The key contribution to the design was made by Greg Colvin, Beman Dawes, and Peter Dimov; remember these people, we'll come back to them.</p>
+<pre style="margin:1.4rem 0"><code>struct AudioClip { /* ... */ };
+
+class SoundBank {
+    std::unordered_map&lt;std::string, std::shared_ptr&lt;AudioClip&gt;&gt; clips_;
+public:
+    std::shared_ptr&lt;AudioClip&gt; get(const std::string&amp; name) {
+        auto&amp; slot = clips_[name];
+        if (!slot)
+            slot = std::make_shared&lt;AudioClip&gt;(load_from_disk(name));
+        return slot;   // the caller shares ownership with the bank
+    }
+};
+
+// unique_ptr and sole ownership, zero overhead
+std::unique_ptr&lt;ParticleSystem&gt; ps = std::make_unique&lt;ParticleSystem&gt;(1024);</code></pre>
+    <p>In games the attitude toward smart pointers is coolly pragmatic; for example, <code>unique_ptr</code> is loved and used freely, because it's free and expresses ownership, whereas <code>shared_ptr</code> is something many engines deliberately restrict or forbid outright because of the atomic counters and because shared ownership blurs the understanding of who actually manages an object's lifetime, which in large codebases turns into a source of hard-to-catch leaks.</p>
+    <p>Instead of pervasive shared_ptr, engines often use generational handles, intrusive counters, or pools with explicit lifetimes; but for rarely destroyed things — singletons, shared resources, loaded textures, or network sessions — shared_ptr remains appropriate, and the trade-off "a few atomic operations for the sake of simple ownership" is usually justified here.</p>
+    <h2 id="checked-delete">Checked delete</h2>
+    <p>A tiny idiom that solves the problem that you can legally write <code>delete p</code> when <code>p</code> points to a type declared via a forward declaration but not defined at that point. The compiler doesn't see the full definition, doesn't know whether the type has a destructor, and simply frees the memory without calling the destructor, which in the best case raises a compiler warning that's easy to miss, and ultimately leaves you with a resource leak.</p>
+    <p>The idiom cures this by forcing <code>delete</code> to happen only where the type is fully defined. This is done through a check that won't compile for an incomplete type. You take <code>sizeof(T)</code>, which for an incomplete type amounts to a compile error, and feed the result into a dummy array or a static assertion. If the type is incomplete, the build fails with a clear error at the point of deletion. Without checked delete, a <code>unique_ptr</code> to an incomplete type could quietly "delete" the object without calling the destructor, and the whole idea of RAII would crumble in the most unexpected place, which is why the standard deleters are built around this check.</p>
+    <p>The idiom was introduced by Boost in the early 2000s through the functions <code>boost::checked_delete</code> and <code>boost::checked_array_delete,</code> which appeared as a protective layer inside their smart pointers, and from there the idea migrated into the standard's requirements for <code>unique_ptr</code> and <code>shared_ptr</code>, which are obligated to diagnose deletion of an incomplete type in certain scenarios.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+inline void checked_delete(T* p) {
+    // if T is incomplete, sizeof won't compile
+    using complete = char[sizeof(T) ? 1 : -1];
+    (void) sizeof(complete);
+    delete p;
+}</code></pre>
+    <p>This is especially relevant at module boundaries and in Pimpl wrappers, where headers deliberately keep types incomplete in order to cut compilation dependencies and speed up the build (and the build time of a large engine is a separate pain, measured in hours). It's precisely there that it's easiest to accidentally delete an incomplete type, and precisely there that checked delete catches the error at compile time.</p>
+    <p>In practice, modern code almost never writes checked delete by hand — the standard smart pointers already do it for you — but understanding why a <code>unique_ptr</code> to a Pimpl type requires the class's destructor to be defined in the .cpp, where the type is complete, is impossible without knowing this idiom.</p>
+    <h2 id="intrusive-reference-counting">Intrusive reference counting</h2>
+    <p>Shared ownership in which the reference count lives not in a separate control block next to the object, as with <code>shared_ptr</code>, but right inside the object itself. The object carries a counter field within itself, and the smart pointer merely increments and decrements this built-in field. When the counter drops to zero, the object deletes itself.</p>
+    <p>The main advantage over <code>shared_ptr</code> is compactness and efficiency. <code>shared_ptr</code> has a separate control block, which means two allocations (the object and the block) at creation that land in different regions of memory, and you have to jump between them to get the counter and, separately, the data.</p>
+    <p>With an intrusive counter everything is in one object; you get one allocation and effectively one pointer. The price for this is an intrusion into the type itself — hence the name "intrusive" — now the object is obligated to know in advance that it will be owned by reference count and to carry the counter within itself, which means you can't wrap some other class from a third-party library in such a pointer, since it knows nothing about the counter. This couples the type's design with the ownership policy, and for some objects that's fine, while for others it's unacceptable.</p>
+    <p>The idiom is very old and the name "Counted Body" was given to it by James Coplien in the book Advanced C++ Programming Styles and Idioms (1992), where he analyzed it together with the related Handle/Body idiom. That is, the intrusive counter is older than <code>shared_ptr</code> itself by almost a decade, and for many years it was the main way to do shared ownership in C++. Later Boost formalized it as <code>intrusive_ptr</code>, and Microsoft built COM around the same idea with its <code>AddRef</code>/<code>Release</code>.</p>
+<pre style="margin:1.4rem 0"><code>class RefCounted {
+    mutable std::atomic&lt;int&gt; refs_{0};
+public:
+    void add_ref() const { refs_.fetch_add(1, std::memory_order_relaxed); }
+    void release() const {
+        if (refs_.fetch_sub(1, std::memory_order_acq_rel) == 1) delete this;
+    }
+    virtual ~RefCounted() = default;
+};
+
+class Texture : public RefCounted { /* pixels, format, mip levels */ };
+
+// intrusive_ptr calls add_ref/release, the counter lives inside Texture itself
+boost::intrusive_ptr&lt;Texture&gt; tex(load_texture("wall.png"));</code></pre>
+    <p>In gamedev intrusive counters are the main workhorse of resource management, and resources like textures, meshes, and shaders are "heavy" objects anyway, ones that don't mind carrying four bytes of counter, while the savings on allocations and cache misses when sharing them among hundreds of materials and entities are quite tangible. A base class with <code>add_ref</code>/<code>release</code> can be seen as a typical pattern in render engines.</p>
+    <p>All of DirectX and COM, on which the Windows graphics stack rests, is an intrusive object with <code>AddRef</code>/<code>Release</code>, and wrappers like <code>ComPtr</code> from WRL are <code>intrusive_ptr</code> under a different name. Unreal Engine with its <code>TRefCountPtr</code> and <code>FRefCountedObject</code> does exactly the same thing.</p>
+    <h2 id="copy-on-write">Copy-on-write</h2>
+    <p>This is an optimization in which several objects share the very same data until someone tries to modify it, and at that moment a real copy happens. As long as everyone is only reading, there's one copy for all, and copying the object costs almost nothing; but as soon as someone wants to write, they make their own private copy.</p>
+    <p>The idea is seductive — to get cheap copying "on demand"; it promises memory savings on identical data and transparency for the user — but inside it hides a shared buffer with a reference count, and every mutating method begins with the check "am I the sole owner? if not, then I'll split off."</p>
+    <p>COW has so many pitfalls that many frameworks have abandoned it. Any mutating operation pays for the uniqueness check, and in single-threaded code we get overhead out of nowhere. It also interacts treacherously with iterators and references, and an innocent read operation that internally triggers a copy split can invalidate a reference handed out earlier. It's precisely because of COW that the old GCC implementation of <code>std::string</code> delivered so many surprises, and in C++11 the standard effectively banned COW strings by tightening the invalidation requirements.</p>
+    <p>The idiom came from systems programming, where the operating system uses copy-on-write for memory pages when a process forks. In C++ it flourished in the nineties and aughts as a way to make copyable classes cheap; it was actively used in Qt (its containers and <code>QString</code> are still COW) and in that very libstdc++ implementation.</p>
+<pre style="margin:1.4rem 0"><code>class CowBuffer {
+    std::shared_ptr&lt;std::vector&lt;std::uint8_t&gt;&gt; data_;
+    void detach() {                       // split off before writing
+        if (data_.use_count() &gt; 1)
+            data_ = std::make_shared&lt;std::vector&lt;std::uint8_t&gt;&gt;(*data_);
+    }
+
+public:
+    std::uint8_t read(std::size_t i) const { return (*data_)[i]; }
+    void write(std::size_t i, std::uint8_t v) {
+        detach();                         // a private copy only now
+        (*data_)[i] = v;
+    }
+};</code></pre>
+    <p>In games COW is regarded coolly, and in a hot path you'll almost never encounter it — the unpredictability of when the copy happens, which sits poorly with a frame budget, is to blame. But it's quite alive in tools and editors, like those same strings in Qt-based level editors, shared data structures in undo/redo systems, or state snapshots that are cloned cheaply and diverge into copies only on edit.</p>
+    <p>Conceptually, more modern techniques like data structures with a shared immutable part (persistent data structures) are close to COW; they're used in undo systems and in network replication, where the world state is cheaply "forked." So the idea of "we share while we only read" is alive in development, it's just that it's usually implemented not with classic COW with a counter on every class, but more pointedly and deliberately.</p>
+    <h2 id="thread-safe-copy-on-write">Thread-safe Copy-on-write</h2>
+    <p>Add multithreading to copy-on-write and all its hidden complexities come to light and multiply. A seemingly simple COW with an ordinary reference count, in a multithreaded environment, leads to a data race: two threads copy the object, both see the counter equal to one (or both fail to see the other's increment), both decide they're the sole owner or, conversely, that they share the buffer, and from there it's either a double free or writing over someone else's data.</p>
+    <p>Thread-safe COW requires, first, an atomic reference count, so that increments and decrements don't lose track of each other. But that alone isn't enough, because the problem remains in the window between the check "am I the sole owner?" and the actual write, and between these two actions another thread can attach to the buffer or detach from it, and the decision "copy or not," made without accounting for multithreading, manages to go stale within one clock tick. Closing this window has to be done either with locks or with cunning atomic protocols involving retries.</p>
+    <p>And this is where the idiom starts to lose to itself, because the synchronization overhead on every write operation exceeds what COW saves on copying, and you get an optimization that makes things worse. So the industry's general conclusion is roughly this: if you need thread-safe COW, you most likely don't need it, but rather a different data structure or a different ownership model.</p>
+    <p>The painfulness of the topic is well documented in Herb Sutter's series of articles on <code>shared_ptr</code> and atomicity, as well as in discussions of the memory model. C++11, with its formal memory model and atomics, was the first to give the tools to even reason about this rigorously, and at the same time confirmed that COW structures have no place in the standard anymore.</p>
+<pre style="margin:1.4rem 0"><code>class TsCowBuffer {
+    std::shared_ptr&lt;const std::vector&lt;int&gt;&gt; data_;  // const: the shared data is immutable
+    std::mutex mtx_;
+public:
+    int read(std::size_t i) const { return (*data_)[i]; }
+    void write(std::size_t i, int v) {
+        std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+        auto copy = std::make_shared&lt;std::vector&lt;int&gt;&gt;(*data_);  // always a private copy
+        (*copy)[i] = v;
+        std::atomic_store(&amp;data_, std::shared_ptr&lt;const std::vector&lt;int&gt;&gt;(copy));
+    }
+};</code></pre>
+    <p>In games thread-safe COW is an even rarer guest than the ordinary kind, for the same reason: the cost is unpredictable, and synchronization in a hot path is expensive. Where the idea really works is the pattern "one writer publishes an immutable snapshot, many readers read it," but that's no longer real COW. As an example, the game thread assembles the frame, atomically publishes an immutable scene state, and the render thread reads the published version, and while it's reading it, it physically doesn't change.</p>
+    <p>This idea has degenerated into the behavior where, instead of "copy on write," you use "never change what's published, always publish something new." The double and triple buffering of state between the game and render threads, which nearly all major engines use, is a close relative of thread-safe COW, reconceived so as to make a pointer swap to an immutable snapshot instead of synchronizing on every write.</p>
+    <h2 id="free-function-allocators">Free Function Allocators</h2>
+    <p>The idea of free-function allocators is to overload the global or class-level <code>operator new</code> and <code>operator delete</code> in order to take memory allocation into your own hands. The language gives a built-in mechanism, and you can define <code>operator new</code> at the class level, and then all allocations of objects of that class will go through your function rather than the standard <code>malloc</code> mechanism — but you can also overload it globally, intercepting absolutely every allocation in the program.</p>
+    <p>Why is this needed? The standard general-purpose allocator is universal, which means it's not optimized for anything in particular; it can allocate blocks of any size in any order, and pays for this flexibility with fragmentation, overhead, and unpredictable latency. If you know that your class is always allocated in hundreds of chunks of the same size, a specialized allocator or a pool of fixed blocks will do it many times faster and without fragmentation.</p>
+    <p>There's a price for everything, and here we pay with globality and invasiveness. An overloaded global <code>operator new</code> affects literally everything, including third-party libraries, and debugging a problem in someone else's memory that you quietly redirected into your own allocator is an occupation for a monsieur who knows a thing or two about certain matters. Plus there are subtleties with alignment, with the new/delete pairing (you can't free with the "wrong" allocator), with handling the <code>nothrow</code> versions, and with the <code>new[]</code>/<code>delete[]</code> forms.</p>
+    <p>The mechanism for overloading <code>operator new</code>/<code>delete</code> has existed in C++ since the earliest versions and is described back in Stroustrup's The C++ Programming Language. And its full use for pools and arenas took shape in the nineties and was actively analyzed by Scott Meyers in Effective C++ (separate items on how to overload new/delete) and became one of the pillars of how C++ customarily customizes memory management without dropping down to manual malloc/free.</p>
+<pre style="margin:1.4rem 0"><code>class Projectile {
+    static PoolAllocator pool_;     // a pool of fixed blocks of sizeof(Projectile)
+public:
+    static void* operator new(std::size_t) { return pool_.allocate(); }
+    static void  operator delete(void* p)  { pool_.free(p); }
+    // ... projectile fields: position, velocity, damage, owner ...
+};
+
+// new Projectile now takes a block from the pool rather than the general heap
+// fast and without fragmentation, even when there are thousands of projectiles on screen</code></pre>
+    <p>In game development custom allocators are the very stuff of real life, because calling the system <code>malloc</code> in the middle of a frame is a potential stall, so engines almost universally substitute allocation with pools, stack allocators, and arenas that operate by their own rules.</p>
+    <p>Overloading <code>operator new</code> is one of the standard ways to hook into the memory-allocation mechanism transparently to the rest of the code, though many big engines go further and forbid bare <code>new</code> entirely, forcing everything to go through explicit allocator interfaces. But the basic idea — "don't trust general-purpose allocation for something that's allocated on a hot path" — remains exactly this idiom.</p>
+    <h2 id="pimpl-handle-body-compilation-firewall-cheshire-cat">Pimpl (Handle Body, Compilation Firewall, Cheshire Cat)</h2>
+    <p>"Pointer to implementation," a technique in which a class hides all of its private members behind a pointer to a hidden implementation structure. In the header there remains the public interface and a single field with a pointer to an incomplete type <code>Impl</code>, while all the real substance (fields, private methods, dependencies) moves into the .cpp file, where this structure is defined.</p>
+    <p>This kind of conspiracy is needed for two things. The first and main one: so that private fields are no longer visible in the header, so that changing the class's innards doesn't require recompiling everyone who includes that header. In a large project, where a base header is pulled into a thousand translation units, adding a single private field without Pimpl means rebuilding everything, whereas with Pimpl it's rebuilding one .cpp. The second reason is true binary encapsulation and ABI stability, where the size and layout of the class don't change from the outside, which matters for libraries that don't want to break compatibility with every update.</p>
+    <p>You have to pay for everything, and here we pay with indirection and allocations. Every access to a field now goes through a pointer (an extra hop through memory, a potential cache miss), and the <code>Impl</code> object itself lives on the heap, so constructing the class drags a dynamic allocation along with it. For an object that's created rarely and lives long, this is unnoticeable, but for a small object it's effectively a death sentence if we want to use it in rendering, for example.</p>
+    <p>The idiom is rooted in James Coplien's Handle/Body of 1992, while the resonant names were gifted to it by others. "Cheshire Cat" — the Cheshire cat, where all that remains of the class is a smile-interface while the body vanishes — is attributed to John Carolan, and "Compilation Firewall" and "Pimpl" itself were popularized by Herb Sutter in Exceptional C++ and the Guru of the Week series.</p>
+<pre style="margin:1.4rem 0"><code>// physics_world.h the header knows nothing about the internals
+class PhysicsWorld {
+public:
+    PhysicsWorld();
+    ~PhysicsWorld();                 // declared here, defined in the .cpp
+    void step(float dt);
+private:
+    struct Impl;                     // incomplete type
+    std::unique_ptr&lt;Impl&gt; impl_;
+};
+
+// physics_world.cpp — here is where all the reality lives
+struct PhysicsWorld::Impl {
+    btDiscreteDynamicsWorld bullet;  // the heavy header didn't leak outside
+    std::vector&lt;RigidBody&gt; bodies;
+};
+PhysicsWorld::PhysicsWorld() : impl_(std::make_unique&lt;Impl&gt;()) {}
+PhysicsWorld::~PhysicsWorld() = default;   // here Impl is complete, checked delete is happy
+void PhysicsWorld::step(float dt) { impl_-&gt;bullet.stepSimulation(dt); }</code></pre>
+    <p>In games Pimpl is valued first and foremost for build time and for isolating heavy third-party dependencies. The classic usage scenario is a wrapper over a physics engine, an audio library, or a network stack, when we don't want the headers of Bullet, FMOD, or some monstrous SDK to leak into the engine's files. There Pimpl locks these headers in a single .cpp, and the rest of the project builds without knowing of their existence.</p>
+    <p>At the same time, in the rendering hot path Pimpl is consciously avoided, and no one will hide a <code>Vector3</code> or a transform component behind a pointer, because the indirection and allocation would kill performance. So Pimpl in games is a tool for "large" subsystems, the engine API, and editor classes, not for small values.</p>
+    <h2 id="fast-pimpl">Fast Pimpl</h2>
+    <p>This is Pimpl with its main drawback taken away: the dynamic allocation. Instead of holding <code>Impl</code> on the heap via a pointer, we reserve a chunk of memory for it right inside the object (a byte array of the needed size with the needed alignment) and construct <code>Impl</code> there, via placement new. From the outside the class still hides its innards, but inside there's no heap anymore and the object lives entirely on the stack, or wherever its owner placed it.</p>
+    <p>The benefit is obvious, and you preserve the very idea of Pimpl while removing the allocation and the extra indirection through the heap, and therefore the cache miss on accessing the implementation. The object becomes "flat" in memory, and in essence this is an attempt to get both encapsulation and performance at once, without choosing between them.</p>
+    <p>You have to pay for everything, and here we pay with size and alignment. Now <code>Impl</code> has to be specified in the header by hand, as a number, even though <code>Impl</code> itself is invisible in the header, and that's rather fragile. You added a field to <code>Impl</code>, exceeded the reserved size, and in the best case you get a compile error from a static check, in the worst (if there's no check) memory corruption. That's why Fast Pimpl is always accompanied by a <code>static_assert</code> that compares the real <code>sizeof(Impl)</code> against the size reserved in the .cpp, to catch the desync at build time.</p>
+    <p>The idiom, again, was analyzed in detail by Herb Sutter in Exceptional C++ under the name "The Fast Pimpl Idiom," showing both the naive version with a fixed buffer and the subtleties of alignment. In modern C++ it's done more cleanly via <code>std::aligned_storage</code> (and from C++23 via <code>alignas</code> and explicit byte buffers), but the essence hasn't changed since the nineties: the implementation hides, but doesn't run off to the heap.</p>
+<pre style="margin:1.4rem 0"><code>// fast_pimpl.h
+class SoundEmitter {
+public:
+    SoundEmitter();
+    ~SoundEmitter();
+    void play();
+private:
+    struct Impl;
+    static constexpr std::size_t kSize  = 64;   // chosen to fit sizeof(Impl)
+    static constexpr std::size_t kAlign = 16;
+    alignas(kAlign) std::byte storage_[kSize];
+    Impl* impl() { return reinterpret_cast&lt;Impl*&gt;(storage_); }
+};
+
+// fast_pimpl.cpp
+struct SoundEmitter::Impl { /* mixer fields, voices, fades */ };
+static_assert(sizeof(SoundEmitter::Impl) &lt;= 64,  "increase kSize");
+static_assert(alignof(SoundEmitter::Impl) &lt;= 16, "increase kAlign");
+SoundEmitter::SoundEmitter()  { new (storage_) Impl(); }
+SoundEmitter::~SoundEmitter() { impl()-&gt;~Impl(); }</code></pre>
+    <p>In games Fast Pimpl surfaces wherever you want both to hide the internals (for the sake of build time and a clean API) and at the same time not pay for the allocation, because the object is created often or lives in a dense array. Typical candidates are wrappers over platform-dependent handles (a socket, a file descriptor, a high-resolution timer), where <code>Impl</code> is tiny and of fixed size, and the object itself may be created in batches.</p>
+    <p>It's worth admitting that in big engines Fast Pimpl is encountered even more rarely than Pimpl, because the manual size synchronization is an eternal source of irritation, and the usage profile (hot path + the desire to hide internals) comes up rarely.</p>
+    <h2 id="interface-class">Interface Class</h2>
+    <p>A class made up entirely of pure virtual methods, carrying no state and no implementation — a pure contract describing "what an object can do," without a single line of implementation. C++ has no <code>interface</code> keyword, so an interface is expressed as an abstract class with all-<code>= 0</code> methods and a mandatory virtual destructor, while concrete classes inherit from it and fulfill the contract.</p>
+    <p>The point of the idiom is to sever the link between whoever uses an object and how the object is built. Code working with <code>IRenderer*</code> knows nothing about the DirectX or Vulkan behind that interface and doesn't get rebuilt when the implementation changes — it depends only on the contract. This is exactly dependency inversion, where upper layers depend on abstractions rather than on specifics, which gives you swappable implementations, mocks for tests, and clean boundaries between modules.</p>
+    <p>Everything has its price, and here the price is dynamic dispatch. Every call through the interface is a virtual call and a jump through the vtable — extra indirection, an obstacle to inlining and to the branch predictor. For "coarse-grained" calls (poking the render backend once per frame) this is pocket change, but for a call inside a loop over a million objects it's a disaster, which is why interfaces are only good on the seams between subsystems.</p>
+    <p>The concept of a pure interface is as old as object-oriented programming itself, but its canonical form in C++ ("Interface Class") was once again pinned down by Herb Sutter, including in Exceptional C++ Style, where he explained why interfaces should be built exactly this way and why the destructor must be virtual. Languages like Java and C# later made interfaces a syntactic entity, while C++ stayed put with the pure-virtual idiom.</p>
+<pre style="margin:1.4rem 0"><code>class IRenderer {
+public:
+    virtual ~IRenderer() = default;            // must be virtual
+    virtual void begin_frame() = 0;
+    virtual void draw(const Mesh&amp;, const Material&amp;) = 0;
+    virtual void end_frame() = 0;
+};
+
+class VulkanRenderer : public IRenderer { /* ... Vulkan implementation ... */ };
+class D3D12Renderer  : public IRenderer { /* ... D3D12 implementation ... */ };
+
+// The game knows only the contract, not the backend:
+void render_world(IRenderer&amp; r, const World&amp; w) {
+    r.begin_frame();
+    for (auto&amp; obj : w.visible) r.draw(obj.mesh, obj.material);
+    r.end_frame();
+}</code></pre>
+    <p>As I already said, interface classes live on the big architectural seams: as abstractions over a graphics API, the platform layer (file system, input, window), the audio backend, editor plugins. That is, anywhere you need to swap the implementation per platform or hide it behind a stable boundary, an interface is the natural choice, and the overhead of a virtual call is negligible against the cost of the operation itself.</p>
+    <p>But in the simulation core, the attitude toward interfaces is very cautious. Old object-oriented engines had a base <code>Entity</code> with a virtual <code>update()</code> and a pile of descendants, and that worked while there were few entities, but a million virtual <code>update</code> calls run straight into cache misses, vtable indirection, and the impossibility of inlining. Hence the industry's drift toward ECS and data-oriented design, where instead of an interface with virtual methods, data sits in dense arrays and the logic walks over them without any dispatch.</p>
+    <h2 id="concrete-data-type">Concrete Data Type</h2>
+    <p>This is essentially the antipode of the previous idiom and a reminder that not everything in the world has to be polymorphic. A concrete data type is designed as a full-fledged "value": it isn't inherited from, has no virtual functions, is copied and moved like an ordinary quantity, lives on the stack or inside other objects, and behaves predictably, like a built-in type. <code>Vector3</code>, <code>Color</code>, <code>Quaternion</code>, <code>Rect</code> — all that stuff.</p>
+    <p>We deliberately gave up polymorphism and inheritance where they aren't needed, and in return we got everything C++ can give to values: stack placement with no allocations, no vtable and no virtual calls, full transparency for inlining, dense packing in arrays and containers. The compiler sees right through such a type and optimizes it aggressively, because there isn't a single point where behavior is determined at runtime.</p>
+    <p>Everything has its price, and here we pay with design discipline: such a concrete type must be "closed" in the sense of value semantics. It usually has no virtual destructor (it isn't meant to be inherited from or deleted through a base pointer), its invariants are simple, and its interface is complete and self-sufficient. Trying to later "tack on inheritance" from such a type is almost always a mistake, and many engines mark such classes <code>final</code> to lock in the intent.</p>
+    <p>The term and the discipline itself come from Bjarne Stroustrup, who in The C++ Programming Language contrasted "concrete types" with "abstract types" as two different ways to use classes. One kind exists to build new values of the language, the other to build hierarchies of behavior. This contrast became one of the fundamental forks of design in C++, and understanding which side to take in each particular case is what separates mature code from a mush of needless virtuals.</p>
+<pre style="margin:1.4rem 0"><code>struct Vec3 {                       // pure value: no vtable, no inheritance
+    float x = 0, y = 0, z = 0;
+    Vec3 operator+(Vec3 o) const { return {x + o.x, y + o.y, z + o.z}; }
+    Vec3 operator*(float s) const { return {x * s, y * s, z * s}; }
+    float dot(Vec3 o) const { return x * o.x + y * o.y + z * o.z; }
+};
+
+// Dense array of values: zero indirection, perfect for cache and SIMD
+std::vector&lt;Vec3&gt; positions(100000);
+for (auto&amp; p : positions) p = p + velocity * dt;   // the compiler inlines and vectorizes</code></pre>
+    <p>Such data types are literally the foundation of all math and low-level structures: vectors, matrices, quaternions, colors, bounding volumes, animation keys. They're all designed as values precisely because they get created, copied, and ground through by the millions, and any virtuality or allocation here would be an unthinkable luxury. These types have to be transparent to the compiler so it can inline and vectorize them.</p>
+    <p>Take a wider view and this turns out to be the heart of data-oriented design, the philosophy that has pushed naive OOP aside in modern gamedev. When a game entity is represented not as an object with virtual methods but as a set of concrete value types laid out in dense arrays, the processor reads them as a stream and SIMD instructions process several of them per cycle. Concrete Data Type is exactly the idiom that makes such an approach possible, and it was precisely the undervaluing of it in the "everything is an object" era that cost games a sizable share of their performance.</p>
+    <h2 id="final-class">Final Class</h2>
+    <p>This is a class that's forbidden to inherit from. Before C++11 there was no such prohibition in the language, and it had to be emulated with clever tricks, but C++11 introduced the <code>final</code> keyword and the idiom turned into a one-liner. By marking a class <code>final</code>, you tell both the compiler and the reader that this point of the hierarchy is terminal — no further extension allowed.</p>
+    <p>This is needed for two distinct reasons. The first is an expression of intent and protection of invariants: if a class is designed as a value and isn't ready to serve as a base (for instance, it has a non-virtual destructor), <code>final</code> physically forbids a mistake that someone would otherwise eventually make. The second, of course, is optimization: now the compiler knows that a virtual call through a pointer to this type cannot dispatch to an unknown descendant, which means the call can be devirtualized — turning a virtual call into a direct one and inlining it.</p>
+    <p>Devirtualization in this case is no longer a theoretical possibility; now a virtual call in the hot path doesn't obstruct inlining and lets the compiler collapse it into an ordinary call and expand the function body right at the call site.</p>
+    <p>Everything has its price, and here we pay with extensibility nailed firmly shut, and if it later turns out that inheriting is necessary after all (for mock tests, say, or for a platform-specific variant), you'll have to come back and lift the restriction.</p>
+    <p>Before C++11 the idiom was depicted via a private virtual base class with friendship and other dark magic (a well-known trick was described, in particular, by Bjarne Stroustrup in discussions, and variations made the rounds on C++ forums), but all of it was so ugly that it was almost never used. So the idiom's real life began only with C++11, when <code>final</code> (along with <code>override</code>) became part of the language as a keyword.</p>
+<pre style="margin:1.4rem 0"><code>// A leaf of the hierarchy: no further inheritance, and the compiler exploits that
+class StaticMeshComponent final : public Component {
+public:
+    void update(float dt) override;   // override + final class =&gt; devirtualization
+};
+
+// A call through StaticMeshComponent* can be turned into a direct call and inlined
+void tick(StaticMeshComponent&amp; c, float dt) { c.update(dt); }</code></pre>
+    <p><code>final</code> is usually placed on "leaf" component and system classes not only for cleanliness but also deliberately for the sake of devirtualization. Unreal Engine, for example, recommends marking <code>final</code> on classes that aren't meant to be inherited from, precisely for performance reasons, and this gives the compiler a chance to remove virtual calls where the hierarchy has effectively ended.</p>
+    <p>This is one of those rare cases where adding a single keyword converts directly into frame time, and a profiler on a heavy scene is quite capable of showing the difference between a virtual and a devirtualized <code>update</code> across tens of thousands of components. So in modern engines <code>final</code> is no longer a reviewer's stylistic nitpick but part of the performance culture, alongside <code>noexcept</code> and a well-thought-out data layout.</p>
+    <h2 id="include-guard-macro">Include Guard Macro</h2>
+    <p>The most basic and most ubiquitous preprocessor idiom, without which no remotely large C++ project will build. The problem it solves is elementary: the same header almost always ends up in a translation unit several times through chains of <code>#include</code>, and if it contains definitions (of classes, structs), a repeated inclusion produces a "redefinition" error. An include guard guarantees that the header's contents are processed exactly once.</p>
+    <p>The mechanics are trivial: at the start of the header it checks whether a unique guard macro is defined, and if not — it defines it, and the body follows; on a repeated inclusion the macro is already defined, and the preprocessor skips everything up to the closing <code>#endif</code>. The guard's name must be unique across the whole project, and it's usually built from the file path so as not to accidentally collide with someone else's.</p>
+    <p>There are almost no pitfalls, save one: a collision of guard names. If two different headers happen to use the same macro (say, a banal <code>UTILS_H</code>), the second of them will be silently skipped in its entirety, and you'll get mysterious "unknown type" errors where the type is clearly defined. That's why large projects either generate guards from the full path or switch to <code>#pragma once</code>.</p>
+    <p>The idiom is as old as the C preprocessor itself, that is, it goes back to the seventies and Dennis Ritchie's C, and it carried over into C++ by inheritance, unchanged. The alternative, <code>#pragma once</code>, appeared as a non-standard but in practice universally supported compiler extension; it's shorter and immune to name collisions, but is formally outside the standard and in rare exotic cases (tricky symbolic links, networked file systems) can get it wrong, failing to recognize one and the same file.</p>
+<pre style="margin:1.4rem 0"><code>// transform.h
+#ifndef GAME_CORE_TRANSFORM_H   // name from the path, to avoid collisions
+#define GAME_CORE_TRANSFORM_H
+
+struct Transform { Vec3 position; Quat rotation; Vec3 scale; };
+
+#endif  // GAME_CORE_TRANSFORM_H
+
+// Many people just write this instead:
+// #pragma once</code></pre>
+    <p>When headers number in the thousands, include guards (and their variant <code>#pragma once</code>) are not so much about correctness as about the sanity of the build. Most projects default to <code>#pragma once</code> for brevity, but in codebases that must compile with exotic or old compilers, the classic <code>#ifndef</code> guard still shows up as the more portable option.</p>
+    <p>A guard doesn't stop the preprocessor from opening and reading the file again, it merely keeps its body from reaching the translation unit, so on top of guards engines apply various include-what-you-use, forward declarations, and Pimpl to cut down the number of inclusions, because the fastest <code>#include</code> is the one that isn't there.</p>
+    <h2 id="inline-guard-macro">Inline Guard Macro</h2>
+    <p>A narrower relative of the include guard, aimed at the one-definition rule (ODR) for functions. If you define an ordinary (non-inline, non-template) function in a header, and that header is included into several translation units, the linker will see several identical symbols and fall over with a "multiple definition" error. The inline guard is a set of techniques to keep definitions in a header from violating the ODR.</p>
+    <p>Historically the idiom came down to wrapping function definitions in a header either with the <code>inline</code> keyword (which is precisely what permits multiple identical definitions across different translation units), or in conditional compilation via a macro that "turns on" the real definition only in one chosen translation unit and leaves merely a declaration in the rest. The second variant is the actual "inline guard macro": a macro that switches between "definition here" and "declaration only here."</p>
+    <p>Contrary to the naive understanding, <code>inline</code> in the modern language means not "be sure to inline the call" (that's just a hint to the optimizer, which it's free to ignore), but precisely "this symbol is allowed to have several identical definitions in the program." The confusion between these two meanings of the word is a classic source of misunderstanding, and it's exactly the ODR meaning that makes <code>inline</code> a tool for header-only code.</p>
+    <p>The idiom's roots lie in that same era of separate compilation in C and in the evolution of the meaning of <code>inline</code> from C to C++. With the arrival of header-only libraries (Boost, and later countless single-header libs) and especially with C++17, which gave us <code>inline</code> variables, the need for manual switch macros dropped off sharply. Now almost anything you need to put in a header can honestly be marked <code>inline</code> and you can forget about ODR problems.</p>
+<pre style="margin:1.4rem 0"><code>// math_utils.h — header-only, safe to include from anywhere
+inline float fast_inv_sqrt(float x) {   // inline =&gt; multiple definitions OK
+    // ... implementation ...
+    return x;
+}
+
+// C++17: even a global constant is now safe in a header
+inline constexpr float kPi = 3.14159265f;</code></pre>
+    <p>The inline guard in its old macro form is all but extinct, but its spirit lives on in the pervasive love of header-only and <code>inline</code> functions for math and small utilities. Vector math, small helpers, <code>constexpr</code> tables are put in headers with <code>inline</code> so the compiler sees the body in every translation unit and can inline it without violating the ODR. Speed matters more than saving on duplication, and <code>inline</code> here is more about inlining across file boundaries.</p>
+    <p>Where the idiom still shows up explicitly is in "amalgamated" (single-header) library builds, which gamedev loves for the simplicity of integration. A single .h library, where definitions are activated by a <code>#define IMGUI_IMPLEMENTATION</code> macro in exactly one .cpp, is a direct descendant of the inline guard macro with the same "definition here, declarations only everywhere else" trick, just scaled up to the level of an entire library. You can see exactly how this works in Sean Barrett's famous stb libraries.</p>
+    <h2 id="export-guard-macro">Export Guard Macro</h2>
+    <p>This idiom is already about the boundaries of dynamic libraries, and about how one and the same header manages to work both for whoever builds the library (and must mark symbols as exported) and for whoever uses the library (and must mark those same symbols as imported). On Windows this is expressed through the <code><strong>declspec(dllexport)</strong></code><strong> and </strong><code>declspec(dllimport)</code> attributes, on other platforms — through visibility attributes like <code><strong>attribute</strong>((visibility("default")))</code>.</p>
+    <p>This is solved with a macro that expands differently depending on whether the library is being built or consumed. Inside the library build a special flag macro is defined, and then the "export" macro expands to <code>dllexport</code>; outside there's no flag, and the same macro expands to <code>dllimport</code> — and the user doesn't need to know anything about this machinery to include the header.</p>
+    <p>The pitfalls here are a whole scattering of them, and all platform-dependent. Exporting C++ classes across a DLL boundary hinges on a match of compilers, runtime versions, and build options on both sides, because name mangling, class layout, and the exception model all have to match. Passing STL types or throwing exceptions across a DLL boundary is the classic way to get mysterious crashes, which is why stable plugin boundaries are made on a pure C interface or on interface classes with COM-like rules.</p>
+    <p>The idiom arose together with shared libraries: on Windows with DLLs and the <code>__declspec</code> that appeared in Microsoft's compilers, on Unix with shared objects and symbol visibility control in GCC (the <code>visibility</code> attribute became prominent around GCC 4.0). Cross-platform projects have ever since been obliged to wrap all these differences in a single macro for the sake of portability.</p>
+<pre style="margin:1.4rem 0"><code>// engine_api.h
+#if defined(_WIN32)
+  #if defined(ENGINE_BUILD_DLL)
+    #define ENGINE_API __declspec(dllexport)   // building the library
+  #else
+    #define ENGINE_API __declspec(dllimport)   // using the library
+  #endif
+#else
+  #define ENGINE_API __attribute__((visibility("default")))
+#endif
+
+class ENGINE_API Engine {
+public:
+    void run();
+};</code></pre>
+    <p>In game development, export guards are everywhere in any project that splits into several modules or supports plugins: the engine core, the editor, game modules, third-party extensions are often made as separate libraries with marked-up export boundaries. Unreal Engine, for example, generates such macros (<code>ENGINE_API</code>, <code>CORE_API</code> and hundreds of others, one per module) automatically through its build system, and every public class of a module is marked with the corresponding macro.</p>
+    <p>A project that builds for Windows, consoles, and desktop Unix systems is obliged to hide all the export/import/visibility differences behind such macros, otherwise one and the same header simply won't build on all platforms at once, and such guards become the price of cross-platform modularity.</p>
+    <h2 id="curiously-recurring-template-pattern-crtp">Curiously Recurring Template Pattern (CRTP)</h2>
+    <p>Many of the developers I know consider such templates a violation of cause and effect, where a class inherits from a template parameterized by itself, that is, <code>class Derived : public Base&lt;Derived&gt;</code>. The derived class isn't fully defined yet, and it's already passing itself as a template argument to its base class, which already sounds like black magic, but the compiler handles it calmly, because by the time the base class's methods are instantiated, the derived class is already fully known.</p>
+    <p>This makes static polymorphism possible, that is, polymorphism without virtual functions, where the base class can call the derived class's methods by casting to it via <code>static_cast&lt;Derived*&gt;(this)</code>. And since the exact type is known at compile time, the call is resolved directly, without a vtable. It's the same "base calls the descendant's implementation" dispatch as with virtual functions, but its runtime cost is "zero," because all the work is done by the compiler.</p>
+    <p>Everything has its price, and here what we pay is complexity. CRTP gives you polymorphism only where the type is known statically, and you can't stuff different <code>Derived</code> classes into one container of pointers to a common base and iterate over them polymorphically, because <code>Base&lt;Cat&gt;</code> and <code>Base&lt;Dog&gt;</code> are now completely different, unrelated types. CRTP trades runtime flexibility for speed, and is applicable only when the concrete type is known at the call site, plus mistakes in it produce monstrous template compiler messages.</p>
+    <p>The strange name "curiously recurring" was coined by James Coplien in 1995 in a column in C++ Report, when he noticed that this "curiously recurring" pattern keeps cropping up in code again and again, independently, among different people. The technique itself is actually about five years older and was used for various purposes, but over time CRTP became one of the pillars of high-performance C++ and underpinned a multitude of libraries, from Eigen to serialization frameworks.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class Derived&gt;
+struct Shape {
+    float area() const {                       // base calls the descendant's method
+        return static_cast&lt;const Derived*&gt;(this)-&gt;area_impl();
+    }
+};
+
+struct Circle : Shape&lt;Circle&gt; {
+    float r;
+    float area_impl() const { return 3.14159f * r * r; }   // inlined, no vtable
+};
+
+template &lt;class S&gt;
+float total_area(const std::vector&lt;S&gt;&amp; shapes) {
+    float sum = 0;
+    for (auto&amp; s : shapes) sum += s.area();   // direct call, the compiler sees everything
+    return sum;
+}</code></pre>
+    <p>CRTP is a favorite tool for optimizing hot paths, and systems that need a shared infrastructure with customizable behavior but without runtime dispatch are built on it. The base template provides the common framework (iteration, registration, a common API), and the descendant plugs in the concrete logic. Typical uses are math libraries with expressions over vectors and matrices (Eigen itself is built entirely on CRTP), component systems, and various "mixin" add-ons that add comparison operators or arithmetic on the basis of one or two of the descendant's methods.</p>
+    <p>Anywhere you want code reuse without the virtuality penalty, CRTP turns out to be the answer, and an understanding of this idiom is practically a prerequisite for reading modern performant C++ code.</p>
+    <h2 id="barton-nackman-trick">Barton-Nackman trick</h2>
+    <p>The Barton-Nackman trick is a continuation of the previous idiom, a way to define a free function (most often an operator, for example <code>operator==</code>) right inside the definition of a template class via a <code>friend</code> function. The trick is that such a friend function, defined inside a template, is automatically created anew for each instantiation of the template and is found exclusively through ADL, neither cluttering the global namespace nor taking part in ordinary overload resolution until it's called with the right arguments.</p>
+    <p>Originally the trick solved a concrete historical problem, back when C++ compilers couldn't yet handle template functions and their overloading properly. The mechanism was raw, and defining, say, <code>operator==</code> as a separate template so that it would correctly be found and instantiated was either impossible or fraught with errors in instantiating individual templates. So defining the operator as a friend inside the class circumvented these limitations, and the operator appeared as an ordinary non-template function for each concrete instantiation.</p>
+    <p>Today the original motivation (compensating for the crookedness of early compilers with template overloading) is completely obsolete, but the technique itself — "a friend function inside a template" — has remained useful for a different reason. Now it's a clean way to provide type-specific non-member operators that are visible only through ADL and don't interfere with overload resolution for unrelated types.</p>
+    <p>Everything has its price, and here we pay with the amount of code, because for each instantiation its own copy of the function is generated, and with a large number of instantiations this bloats the code considerably.</p>
+    <p>The trick was named after a paper by John Barton from the early nineties, where he applied it in the context of scientific computing and systems of units of measurement. Curiously enough, it was precisely in Barton's code that the very "curiously recurring" pattern of inheritance — which Coplien would later christen CRTP — first explicitly appeared, so these two idioms are close historical relatives.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+struct Comparable {
+    // friend inside a template: a separate one for each T, found only through ADL
+    friend bool operator==(const T&amp; a, const T&amp; b) { return a.equals(b); }
+    friend bool operator!=(const T&amp; a, const T&amp; b) { return !(a == b); }
+};
+
+struct Vec2 : Comparable&lt;Vec2&gt; {
+    float x, y;
+    bool equals(const Vec2&amp; o) const { return x == o.x &amp;&amp; y == o.y; }
+};
+// operator== for Vec2 is generated automatically; in the global namespace it "doesn't exist"</code></pre>
+    <p>In game development the Barton-Nackman trick has by now all but disappeared, because old compilers are long gone and the problems went with them, but its modern reinterpretation as "hidden friends" — friend operators inside template mixins — is quite alive in math libraries, physical-units libraries, and utilities where you need to hand out comparison and arithmetic operators to types en masse, without polluting the global namespace and without slowing compilation with superfluous candidates during overload resolution.</p>
+    <p>Modern physical-quantity libraries (the kind that count meters and seconds and won't let you add one to the other) actively use hidden friends in the spirit of Barton-Nackman, so that at the type level you can't mix up, say, world coordinates with screen coordinates, or seconds with ticks. So an idiom born as a crutch for weak compilers was reborn as a tool for namespace cleanliness and build speed — not a bad fate, in my view, for a trick three decades old.</p>
+    <h2 id="empty-base-optimization-ebo">Empty Base Optimization (EBO)</h2>
+    <p>The empty base is less an idiom than a guarantee that an empty class (with no non-static data members) won't take up any size. Normally even an empty class must occupy at least one byte, so that two different objects have different addresses, but when such an empty class acts as a base class, the compiler is permitted not to allocate a single byte for it and can "collapse" the empty base to zero size inside the derived object.</p>
+    <p>Why exploit this? For starters, C++ is full of empty but useful types: behavior policies, tags, stateless functors, default allocators or comparators. If you store such an empty type as a field, it eats at least a byte (and, accounting for alignment, often more), and in a struct this turns into wasted memory. But if you inherit from it instead of storing it as a field, EBO lets it cost nothing at all.</p>
+    <p>Everything has its price, and here we pay with inheritance for the sake of saving a byte, and with dedicated optimizations in the compiler itself purely for this behavior, which goes against the intuition of "inheritance = is-a relationship," and abusing it makes the code a bit strange. The rule also breaks with multiple inheritance from several empty bases of the same type (the addresses must still differ) and requires care, which is why C++20 introduced the <code>[[no_unique_address]]</code> attribute, which gives the same saving for member fields without the need to inherit, and expresses intent far more clearly.</p>
+    <p>The possibility of EBO has long been enshrined in the standard, and its systematic application for library purposes was popularized by Nathan Myers, who proposed the "base-from-member" technique and compressed pairs. EBO is exactly what <code>boost::compressed_pair</code> rests on, and it's thanks to EBO that the standard containers don't pay extra bytes for their default allocators and comparators, which are almost always empty.</p>
+<pre style="margin:1.4rem 0"><code>struct DefaultDeleter {};   // empty policy, 0 useful bytes
+
+// Without EBO: the deleter would take up space. With EBO as a base, still zero bytes.
+template &lt;class T, class Deleter = DefaultDeleter&gt;
+class UniquePtr : private Deleter {   // inherit from the empty policy
+    T* ptr_;
+public:
+    // sizeof(UniquePtr) == sizeof(T*), the Deleter costs nothing
+};
+
+// C++20, no inheritance needed:
+template &lt;class T, class Deleter = DefaultDeleter&gt;
+class UniquePtr2 {
+    [[no_unique_address]] Deleter deleter_;
+    T* ptr_;
+};</code></pre>
+    <p>Games have historically used EBO everywhere, and engines make heavy use of policies and empty functors. Every time a container is parameterized by a stateless allocator or comparator, that parameterization is free in terms of memory, and in structures that a game has by the millions, saving even one or two bytes per element adds up to megabytes and to better packing density in the cache.</p>
+    <h2 id="non-copyable-mixin">Non-copyable Mixin</h2>
+    <p>A little base class whose sole task is to forbid copying of whoever inherits from it. You make a class with a deleted (or, before C++11, private and undefined) copy constructor and assignment operator, and anyone who inherits from it automatically loses the ability to be copied, because the compiler can't generate the derived class's copy operations, running up against the base's inaccessible operations.</p>
+    <p>This is done because for many objects copying makes no sense or is outright dangerous, and an object that owns a unique resource (a mutex, a socket, a GPU handle, a file) would, when copied, spawn two "owners" of one resource, which leads to a double free. And copying managers and singletons is pointless, so forbidding copying at the type level turns a potential runtime error into a compile error, which is always cheaper.</p>
+    <p>Everything has its price, and historically you had to pay with cryptic error messages and with the fact that the class's friends and members could still invoke a copy, getting an error only at the link stage. C++11 explicitly cured this with the <code>= delete</code> keyword, which gives a readable compile error, and declaring the copy operations (even deleted ones) suppresses the autogeneration of move operations, so a non-copyable type is by default also non-movable, unless you declare move explicitly.</p>
+    <p>The best-known implementation of this idiom is <code>boost::noncopyable</code>, which appeared in Boost very long ago and became the canon before C++11. The idiom in its private-and-undeclared form was described as far back as Scott Meyers in Effective C++ as a way to "disallow the functions the compiler generates on its own," and after C++11 the need for a special base class largely fell away — it's simpler to write <code>= delete</code> right in the class — but <code>boost::noncopyable</code> and its analogues still live on in code as an expressive marker of the author's intent.</p>
+<pre style="margin:1.4rem 0"><code>struct NonCopyable {
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable&amp;) = delete;
+    NonCopyable&amp; operator=(const NonCopyable&amp;) = delete;
+};
+
+class GpuBuffer : private NonCopyable {   // a GPU resource cannot be copied
+    GLuint id_;
+    // declare move explicitly if needed — copying is forbidden
+public:
+    GpuBuffer(GpuBuffer&amp;&amp;) noexcept;
+    GpuBuffer&amp; operator=(GpuBuffer&amp;&amp;) noexcept;
+};</code></pre>
+    <p>In game development this is a long-standing technique for anything that owns resources or is required to exist as a single instance. GPU buffers, textures, command queues, file streams, network sessions, subsystem managers: these are all types whose accidental copying is almost always a bug, and marking them non-copyable catches that bug at compile time, rather than in the form of a mysterious double <code>glDeleteBuffers</code> at runtime.</p>
+    <p>Many engines have their own marker base class, something like <code>FNoncopyable</code>, for exactly this purpose, and it's also often combined with a ban on moving for strictly place-bound singletons. This is one of those idioms that govern the health of the project and your mental health too, cutting down the time spent in the debugger. The more invalid operations a type forbids at the compiler level, the fewer ways a tired person right before release is left to misuse it.</p>
+    <h2 id="parameterized-base-class">Parameterized Base Class</h2>
+    <p>This is about inheriting from a template parameter, where a class gets its base not as something fixed but in the form of a template argument: <code>template &lt;class Base&gt; class Mixin : public Base</code>. In this way the inheritance hierarchy is assembled from building blocks at compile time, layering one slice of behavior over another in whatever order you need, and each layer adds its own functionality on top of what came from below.</p>
+    <p>This is the foundation of what's called mixins via inheritance, where each mixin is a template parameterized by a base, adding one aspect (logging, serialization, reference counting, thread safety), and the final type is assembled as a chain of them. The order and composition of the layers are specified at the point of use, which gives combinatorial flexibility, and out of a dozen mixins you can assemble hundreds of behavior variants without writing any one of them out by hand in full.</p>
+    <p>Everything has its price, and here the cost is deep chains of template inheritance with long, unreadable type names and monstrous error messages, and sometimes nontrivial constructors (which layer gets constructed? when? how do you forward arguments through the whole chain to the right layer?). On top of that this is static composition, and the set of layers is fixed at compile time, and you can't change it at runtime, unlike composition through aggregation of objects.</p>
+    <p>The idiom as the foundation of "mixin-based programming" was worked out in detail in academic papers of the nineties by Smaragdakis and Batory, and in practical C++ it was unfolded in full force by Andrei Alexandrescu in Modern C++ Design back in 2001, where parameterized inheritance is the load-bearing structure for policy-based classes, which are assembled from policies precisely through inheritance from template parameters.</p>
+<pre style="margin:1.4rem 0"><code>// Each layer is parameterized by its base and adds one aspect
+template &lt;class Base&gt;
+struct WithLogging : Base {
+    void update(float dt) {
+        log("update start");
+        Base::update(dt);          // delegate down the chain
+        log("update end");
+    }
+};
+
+template &lt;class Base&gt;
+struct WithProfiling : Base {
+    void update(float dt) {
+        ScopedTimer t("update");
+        Base::update(dt);
+    }
+};
+
+struct CoreSystem { void update(float) { /* the real work */ } };
+
+// Assemble the type from layers in the desired order:
+using DebugSystem = WithLogging&lt;WithProfiling&lt;CoreSystem&gt;&gt;;</code></pre>
+    <p>In game development it barely lives, and parameterized inheritance is applied where you need to assemble behavior variants from reusable pieces, such as debug/release wrappers over systems that are configured at compile time for instrumentation.</p>
+    <p>But on the whole, deep mixin towers are treated with caution, precisely because of their effect on readability and compile time, since a chain of five template layers produces a type whose name doesn't fit on screen and an error that's impossible to read. The full combinatorial power of the technique unfolds rather in general-purpose libraries and in policy-based design, which we'll return to.</p>
+    <h2 id="metafunction">Metafunction</h2>
+    <p>This is a "function" that works not with runtime values but with types and compile-time constants at compile time, and it's implemented as a template whose parameters are the "arguments" and whose nested members (<code>::type</code> for the result type, <code>::value</code> for the result constant) are the "return value." The compiler, by instantiating the template, effectively computes this function, and the result becomes part of the program before it has even begun to execute.</p>
+    <p>This is the foundation of all template metaprogramming, and with metafunctions you can compute anything you like at compile time: from "is this type a pointer" to a factorial and sorting lists of types. The naming convention (<code>::type</code> and <code>::value</code>) turns disparate templates into a single metaprogramming "language," where metafunctions can be composed, passed into one another, and applied to lists of types.</p>
+    <p>Everything has its price, and here we pay with everything: from the syntax to compile time. Metaprogramming is traditionally verbose (<code>typename</code>, <code>template</code> disambiguators, nested <code>::type</code>), the error messages plunge even Claude into gloom, and heavy metacomputation noticeably slows compilation, because the compiler materializes a multitude of intermediate types. C++11 (<code>constexpr</code>), C++14, and especially C++17/20 (<code>if constexpr</code>, concepts, <code>constexpr</code> computations) made life much easier, often letting you write ordinary code instead of template acrobatics.</p>
+    <p>The discovery that C++ templates can be used as a computation language is attributed to Erwin Unruh, who in 1994 wrote a program that made the compiler print prime numbers in its error messages and accidentally proved the Turing-completeness of templates. This was then systematized by Todd Veldhuizen (in the context of his work and scientific computing), and shaped into a canonical discipline by Alexandrescu in Modern C++ Design and by Abrahams and Gurtovoy in C++ Template Metaprogramming.</p>
+<pre style="margin:1.4rem 0"><code>// Predicate metafunction: "is T a pointer"
+template &lt;class T&gt; struct is_pointer_t      {
+  static constexpr bool value = false;
+};
+template &lt;class T&gt; struct is_pointer_t&lt;T*&gt;  {
+  static constexpr bool value = true;  };
+
+// Metafunction that computes a result type
+template &lt;class T&gt; struct remove_ref      { using type = T; };
+template &lt;class T&gt; struct remove_ref&lt;T&amp;&gt;  { using type = T; };
+
+static_assert(is_pointer_t&lt;int*&gt;::value);
+using Clean = remove_ref&lt;int&amp;&gt;::type;   // == int, computed by the compiler</code></pre>
+    <p>Metafunctions are the foundation of modern serialization, reflection, and generic-container systems. And if an engine can automatically save and load any structure, beneath that there are almost certainly metafunctions that work out at compile time whether a type is trivially copyable (then it can be serialized with a single <code>memcpy</code>), whether it has a user-defined serialization function, whether it's a container that needs to be traversed element by element.</p>
+
+    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part2.html">Part 2 →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++101 (Part 4) — dalerank</title>
+<meta name="description" content="A catalog of C++ idioms and techniques, part 4: friendship, object memory, and modern C++ — making new friends, non-member non-friend, SOO/SSO, prohibiting heap, execute-around pointer, temporary proxy, address of, nullptr, move constructor, recursive type composition, boost mutant, named loops and parameters, deprecate and delete, function poisoning, rule of zero/three/five, most vexing parse, pass-key, and the spaceship operator." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part4.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part4.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/cpp101-part4.html">RU</a><i>/</i><a class="on" href="cpp101-part4.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 4)</h1><div class="ameta"><span>Jun 21, 2026</span><span>38 min</span></div></div>
+  <article class="prose">
+    <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <a href="cpp101-part2.html">Part 2</a> · <a href="cpp101-part3.html">Part 3</a> · <b>Part 4</b></p>
+    <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#making-new-friends-tricky">Making New Friends (tricky)</a></li><li><a href="#non-member-non-friend-function-tricky">Non-member Non-friend Function (tricky)</a></li><li><a href="#small-object-optimization-soo-sso">Small Object Optimization (SOO/SSO)</a></li><li><a href="#prohibiting-heap-based-objects">Prohibiting Heap-based Objects</a></li><li><a href="#storage-class-tracker">Storage Class Tracker</a></li><li><a href="#execute-around-pointer">Execute-Around Pointer</a></li><li><a href="#temporary-proxy">Temporary Proxy</a></li><li><a href="#address-of">Address Of</a></li><li><a href="#nullptr">nullptr</a></li><li><a href="#move-constructor">Move Constructor</a></li><li><a href="#implicit-conversions">Implicit conversions</a></li><li><a href="#recursive-type-composition-tricky">Recursive Type Composition (tricky)</a></li><li><a href="#temporary-base-class">Temporary Base Class</a></li><li><a href="#boost-mutant">Boost mutant</a></li><li><a href="#multi-statement-macro">Multi-statement Macro</a></li><li><a href="#named-loop">Named Loop</a></li><li><a href="#named-parameter">Named Parameter</a></li><li><a href="#named-external-argument">Named External Argument</a></li><li><a href="#deprecate-and-delete">Deprecate and Delete</a></li><li><a href="#function-poisoning">Function Poisoning</a></li><li><a href="#inner-class">Inner Class</a></li><li><a href="#rule-of-zero-three-five">Rule of Zero/Three/Five</a></li><li><a href="#most-vexing-parse">Most Vexing Parse</a></li><li><a href="#pass-key">Pass-key</a></li><li><a href="#defaulted-comparisons-and-the-operator-spaceship">Defaulted Comparisons and the &lt;=&gt; operator (Spaceship)</a></li><li><a href="#what-to-do-with-all-this">What to do with all this</a></li></ul></div></details>
+    <h2 id="making-new-friends-tricky">Making New Friends (tricky)</h2>
+    <p>From the previous section comes the realization that correct declarations of friend functions for template classes can ensure that every instantiation of a template class has its own friend function, correctly bound to it. When you declare a friend function inside a template, you get either "one function template that befriends all instantiations" or "a separate one just for a single instantiation."</p>
+    <p>The canonical approach is to define the friend function right inside the body of the template class (this is the very "hidden friend" trick, a relative of the Barton-Nackman trick); then for each instantiation of the template a separate non-template friend function is generated, visible only through ADL and working correctly with exactly that instantiation. This "makes a new friend" for every concrete type, hence the name, but you can also declare a friend template, or a friend of a specific instantiation, which requires forward declarations and delicate fiddling to make the types match.</p>
+    <p>What we pay here is the combinatorics of the interaction between templates, friendship, ADL, and name-lookup rules, and it is very easy to get it "wrong": you can end up with a function that isn't found, or is found but is the wrong one, or conflicts across multiple instantiations. The modern consensus is to always prefer hidden friends (definition in the class body), because they are both simpler and more efficient at overload resolution (they don't pollute the global candidate set).</p>
+    <p>The idiom was described long ago and is discussed in detail in Vandevoorde's works, and its relevance has grown in recent years thanks to the "revival" of hidden friends as recommended practice in work on compilation-time optimization and error-message quality, where it has been shown that hidden friends noticeably unload the compiler compared to operators declared at namespace scope.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+class Vector3 {
+    T x_, y_, z_;
+
+public:
+    // hidden friend and a separate non-template function for each Vector3&lt;T&gt;,
+    // found only through ADL, correctly bound to this instantiation
+    friend Vector3 operator+(const Vector3&amp; a, const Vector3&amp; b) {
+        return {a.x_ + b.x_, a.y_ + b.y_, a.z_ + b.z_};
+    }
+
+    friend T dot(const Vector3&amp; a, const Vector3&amp; b) {
+        return a.x_*b.x_ + a.y_*b.y_ + a.z_*b.z_;
+    }
+};
+
+Vector3&lt;float&gt; a, b;
+auto c = a + b;     // finds "its own" friend through ADL</code></pre>
+    <p>This is used when writing templated math, of which games have plenty in the form of templated vectors, matrices, and quaternions parameterized by a scalar type (<code>float</code>, <code>double</code>, <code>half</code>, fixed-point). They all need operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>dot</code>, <code>cross</code>), and defining these operators as hidden friends inside the template is the cleanest and most efficient way, giving the operator the correct binding to each instantiation without polluting the global namespace.</p>
+    <p>The practical benefit of hidden friends in a large templated codebase is not so much correctness as the effect on compilation speed and error-message quality: now operators hidden inside classes don't participate in overload resolution for unrelated types, and the compiler has to consider fewer candidates.</p>
+    <p>In an engine with extensive templated math this adds up to a tangible difference in build time, so making new friends is no longer only about "how to make it compile" but also about "how to make it compile fast and with understandable errors."</p>
+    <h2 id="non-member-non-friend-function-tricky">Non-member Non-friend Function (tricky)</h2>
+    <p>From the two previous sections a design principle was born, which states that if a function can be implemented as a free function that is neither a member of a class nor its friend (that is, using only the public interface), then that is exactly how it should be done. It sounds counterintuitive, because we are used to stuffing everything into class methods.</p>
+    <p>But encapsulation is measured by the number of functions that can break when a class's private data changes, and every method and every friend has access to the private members, which means it potentially depends on them and may suffer when they change. A free function that is not a friend has no access to the private data and can only work through the public interface, so changing the class's internals cannot affect it.</p>
+    <p>Consequently, the more functionality is moved out into such free functions, the less code is tied to the private details, and the higher the encapsulation. Paradoxically, moving functions out of the class actually makes the class more encapsulated, not less.</p>
+    <p>The price for this is a move away from "object-oriented" programming toward global functions, and it requires a conscious effort, which often sparks arguments within a team. On top of that, free functions need to live somewhere (usually in the same namespace as the class, so that ADL finds them), and there end up being many of them. And not everything can be moved out, but the idea itself, that a class provides a minimal complete set of primitive operations as methods, and everything else (convenient combinations, algorithms) as free functions on top of them, is still alive among game developers today.</p>
+    <p>The principle was formulated and fiercely defended by Scott Meyers in Effective C++, and was later backed by Herb Sutter; under their influence it found its way into the standard library, where the algorithms are the most vivid examples of free functions, and even many string operations are pulled outside. After C++11 this became one of the directions of the modern "interface-minimalist" class design in development.</p>
+<pre style="margin:1.4rem 0"><code>class Vec3 {
+    float x_, y_, z_;
+public:
+    float x() const { return x_; }       // minimal public interface
+    float y() const { return y_; }
+    float z() const { return z_; }
+    void set(float x, float y, float z) { x_=x; y_=y; z_=z; }
+};
+
+// length, normalize, lerp are free, via the PUBLIC interface.
+// Changing the private layout cannot break these functions.
+float length(const Vec3&amp; v) {
+  return std::sqrt(v.x()*v.x() + v.y()*v.y() + v.z()*v.z());
+}
+
+Vec3 lerp(const Vec3&amp; a, const Vec3&amp; b, float t) {
+    return {a.x()+(b.x()-a.x())*t, /* ... */};
+}</code></pre>
+    <p>From the standard library this principle "leaked" into all the modern math and geometry types of engines, which have a huge set of operations. Making <code>length</code>, <code>normalize</code>, <code>lerp</code>, <code>reflect</code>, <code>project</code>, <code>angle_between</code> members of <code>Vec3</code> would mean bloating the class and tying all these operations to its internals, whereas moving them into free functions keeps <code>Vec3</code> compact, with a minimal set of basic operations, while a rich library of operations on it is built on the outside without touching the private data.</p>
+    <p>This also gives practical flexibility: new operations on the type can be added without editing the type itself (important when the type lives in someone else's library), and they can be grouped by purpose rather than dumped into one bloated class. That is why compact math types plus extensive namespaces of free functions over them have become a practical way to keep the key engine types small, resistant to change, and extensible.</p>
+    <h2 id="small-object-optimization-soo-sso">Small Object Optimization (SOO/SSO)</h2>
+    <p>This is a technique in which small objects are stored right inside the wrapper, in an embedded buffer, instead of allocating memory for them on the heap; if the object is small enough to fit into the space reserved inside the wrapper, no allocation happens at all. And if it is larger, the wrapper falls back to the heap.</p>
+    <p>The most famous special case is Alexandrescu's Small String Optimization (SSO), where short strings (usually up to 15-22 characters) live right inside the <code>std::string</code> object, without going to the allocator.</p>
+    <p>The motivation was to get rid of heap allocations, which are expensive and unpredictable, while strings are more often short than long. The second candidate is <code>std::function</code>, which more often wraps a small lambda than a huge functor. It is usually implemented through a union of an embedded buffer and a pointer plus a flag/discriminator "am I small or large right now," and all the logic is hidden behind the interface.</p>
+    <p>The price you pay is the complexity of the implementation and the larger size of the class, which is deliberately bloated to hold more data: a larger buffer means rarer allocations but worse density in arrays. The "small/large" logic with unions, placement new, and manual dispatch of copy/move is highly nontrivial and easily contains bugs. Plus, moving an object with active SOO means physically copying the buffer (you can't just steal a pointer), which is sometimes more expensive than for the heap variant.</p>
+    <p>This is long-standing practical knowledge about implementing strings and containers, and SSO has been used in implementations of <code>std::string</code> for decades (libc++, libstdc++, MSVC STL, each with its own threshold and layout), while <code>std::function</code>, <code>std::any</code>, and many type-erasure wrappers use SOO to avoid allocating for small callable objects.</p>
+<pre style="margin:1.4rem 0"><code>// Schematically: a small value lives in the buffer, a large one on the heap
+template &lt;class T, std::size_t N = 32&gt;
+class SmallBuffer {
+    alignas(T) std::byte inline_[N];
+    T* ptr_;
+
+    bool on_heap_;
+public:
+    template &lt;class... Args&gt;
+    SmallBuffer(Args&amp;&amp;... a) {
+        if constexpr (sizeof(T) &lt;= N) {
+            // fits, put it inside
+            ptr_ = new (inline_) T(std::forward&lt;Args&gt;(a)...);
+            on_heap_ = false;
+        } else {
+            // doesn't fit, allocate on the heap
+            ptr_ = new T(std::forward&lt;Args&gt;(a)...);
+            on_heap_ = true;
+        }
+    }
+    // ... destructor, move, copy taking on_heap_ into account ...
+};</code></pre>
+    <p>In games SOO is traditionally considered one of the most valuable optimizations, because engines are obsessed with avoiding per-frame allocations, and small objects are everywhere. The SSO idea led to custom engine string types, and to containers like <code>inline_vector</code>/<code>fixed_vector</code> (storing the first N elements inline and going to the heap only on overflow), and even to maps and lists, where it is used for short lists (a few collisions, a couple of child nodes, or a handful of tags) that would otherwise spawn allocations, while EASTL and similar libraries provide such containers out of the box.</p>
+    <p>A well-chosen buffer threshold turns "an allocation for every sneeze" into "an allocation only for the rare large cases," and in a memory profile this shows up as a sharp drop in the number of allocator calls. That is why understanding SOO and the ability to use inline containers is a common practical skill in optimization, as one of the most direct ways to remove allocations from the hot path.</p>
+    <h2 id="prohibiting-heap-based-objects">Prohibiting Heap-based Objects</h2>
+    <p>In games it is common to distinguish where certain objects are allowed or forbidden to live: only on the heap, only on the stack, or anywhere. Sometimes the design requires that objects of a certain class be created exclusively through <code>new</code> (for example, because they are managed by a reference counter that calls <code>delete this</code>, which means an object on the stack would lead to a crash on the attempt to delete itself). And sometimes the opposite: an object must live only on the stack (for example, a scope guard, where the whole point is being bound to a scope, and creating it on the heap would be a usage error).</p>
+    <p>You can forbid heap creation by making <code>operator new</code> private (or deleted) — then <code>new MyClass</code> won't compile, and the object can only be created as a local/member variable. The reverse is forbidding stack creation, which is done with a private destructor: if the destructor is inaccessible from the outside, the compiler can't create an automatic object (it has nowhere to call the destructor on scope exit), but creation through <code>new</code> works, and deletion goes through a special public method <code>destroy()</code>, which calls <code>delete this</code> from inside, where the destructor is accessible. This "forcibly" drives the object onto the heap.</p>
+    <p>The price for both restrictions is fragility and usage discipline, which violate the user's expectations ("why can't I create this on the stack?!"), and a private destructor on top of that breaks inheritance and value membership. The idiom almost always signals that a class has an unusual lifetime model, and it is worth accompanying it with a fat comment.</p>
+    <p>All of this was discussed in detail by Scott Meyers in More Effective C++ (a separate item on "how to limit the number of objects" and related techniques about placement on the heap/stack), and it is a classic method for taking control of the object-creation model, tightly tied to reference-counting (Counted Body) and to special lifetime requirements.</p>
+<pre style="margin:1.4rem 0"><code>// Heap only: a private destructor prevents creation on the stack
+class RefCountedResource {
+    ~RefCountedResource() = default;
+    // private =&gt; can't be on the stack
+    int refs_ = 1;
+public:
+    void release() { if (--refs_ == 0) delete this; }
+    // deletion from inside, where the dtor is accessible
+};
+// RefCountedResource r;        // error: destructor inaccessible
+// auto* p = new RefCountedResource;  // OK
+
+// Stack only: a deleted operator new prevents heap creation
+class ScopedLock {
+public:
+    static void* operator new(std::size_t) = delete;
+    // can't go through new
+};</code></pre>
+    <p>In game development the "heap only" case naturally arises for objects with an intrusive reference counter (resources, RHI objects), which manage their own lifetime through <code>delete this</code> and therefore must not live on the stack. And "stack only" is needed for RAII wrappers like scope guards, profiler timers, and locks, whose semantics are rigidly bound to a scope, and creating them on the heap would be a logical error that cancels the whole point of RAII.</p>
+    <p>But in modern engine code these restrictions are more often expressed more softly: instead of a private destructor they make a factory returning an <code>intrusive_ptr</code>/<code>shared_ptr</code> (which already directs to the heap and at the same time provides safe ownership), and instead of forbidding <code>new</code> they simply put <code>[[nodiscard]]</code> on the scope guard's constructor and catch it in review.</p>
+    <p>The hard versions of the idiom are reserved for cases where the compiler really must catch the error, because the cost of incorrect placement is most likely a runtime crash. They are worth knowing in order to understand unusual classes with private destructors and deleted <code>new</code>, and not to try to use them "normally" and run into mysterious compilation errors that hide a deliberate restriction of the lifetime model.</p>
+    <h2 id="storage-class-tracker">Storage Class Tracker</h2>
+    <p>A rare and rather complex idiom that lets an object find out at runtime where it is placed: on the stack, on the heap, or in static memory. It is related to the previous idiom, but it solves not "forbid" but "find out and react," when the object wants to behave differently depending on its storage class, or at least make sure it was created correctly.</p>
+    <p>The implementation is tied to comparing addresses to determine the approximate boundaries of the stack (for example, by the address of a local variable in the current frame) and the heap and to compare the address of <code>this</code> against them. One technique is to override <code>operator new</code>, which sets a flag "the next object is being created on the heap" right before the allocation, and the constructor then checks this flag; if it wasn't set, then the object was born not through <code>new</code>, i.e. on the stack or statically, and resetting and setting the flag around the allocation lets the constructor distinguish a heap object from the rest.</p>
+    <p>The price you pay is undefined behavior and portability, because comparing addresses with the stack/heap boundaries relies on assumptions about the memory layout that the standard doesn't guarantee, and the flag trick in <code>operator new</code> breaks with multiple inheritance, arrays, and multithreading. This is a very fragile technique that works "usually, on this platform, under these conditions," which is why it is avoided in production, and more often the correct answer is to design the class so that it is known by placement (factories, ownership policies).</p>
+    <p>It is used more as a curious technique than as working code, and it illustrates how far you can go in trying to find out about your own placement, and at the same time why you usually shouldn't, because there is no reliable and portable way to do it in standard C++.</p>
+<pre style="margin:1.4rem 0"><code>// Fragile technique: a "being created on the heap" flag set by operator new
+class TrackedObject {
+    static thread_local bool heap_flag_;
+    bool on_heap_;
+
+public:
+    static void* operator new(std::size_t n) {
+      heap_flag_ = true;
+      return ::operator new(n);
+    }
+
+    TrackedObject() : on_heap_(heap_flag_) {
+      heap_flag_ = false;
+    }  // the constructor reads it
+    bool is_on_heap() const { return on_heap_; }
+};
+// Unreliable with arrays, exceptions, multiple inheritance</code></pre>
+    <p>In games the storage class tracker is not used in production because of its fragility, when you need to work stably across many platforms and compilers, where objects are extremely sensitive to platform differences in memory layout. Any technique that relies on comparing addresses with "the stack" and "the heap" may behave unpredictably on a console, due to active stack-protection methods.</p>
+    <p>But in debugging and diagnostic tools, like memory trackers and leak detectors that need to classify allocations, you can give it a try. Even there, though, they prefer more reliable mechanisms like custom allocators, which know exactly what they allocated and where, because they did it themselves, instead of guessing after the fact from addresses.</p>
+    <p>So the storage class tracker is worth knowing mostly as an illustration of the boundary between "theoretically possible" and "shouldn't be done," as the mere fact that an object can try to find out its storage class by comparing addresses.</p>
+    <h2 id="execute-around-pointer">Execute-Around Pointer</h2>
+    <p>This is the idea of using a "smart pointer" that runs some code before and after every access to the wrapped object, transparently to the caller. You write <code>ptr-&gt;method()</code> as usual, but between your call and the real method some wrapping logic is inserted: something happens before every method call and something happens after it. This is the application of the "execute around" idea to individual method calls.</p>
+    <p>Now when you write <code>wrapper-&gt;foo()</code>, the compiler first calls the wrapper's <code>operator-&gt;</code>, which returns not the object itself but yet another temporary proxy object, and this proxy also has an <code>operator-&gt;</code> that returns the real object. The temporary proxy is constructed before the call to <code>foo</code> (its constructor is the "before") and destroyed after the full expression completes (its destructor is the "after"). Thus the constructor/destructor of the temporary proxy wrap every method call with "before" and "after" code, and this works for any method of the object without enumerating them all.</p>
+    <p>What you pay is non-obviousness (the double <code>operator-&gt;</code> and the temporary proxies, which are hard to grasp at first glance) and the overhead on every method call, when a proxy object is created and destroyed. Plus the "before/after" is the same for all methods and you can't handle different methods differently without complicating the scheme. The lifetime semantics of the proxy (it lives until the end of the full expression) introduces subtleties if the calls are chained. This is a treacherous technique, appropriate in narrow scenarios.</p>
+    <p>The mechanism was described by Kevlin Henney in the article "Function-Object and Execute-Around Pointer" as a special case of the broader execute-around theme (to which both RAII and scope guard belong), applied specifically to intercepting method calls through a proxy and a double <code>operator-&gt;</code>. This is a classic example of how operator overloading in C++ lets you embed behavior into syntax familiar to the user.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+class LockingPtr {
+    T* obj_;
+    std::mutex&amp; mtx_;
+    struct Proxy {
+        T* obj_; std::mutex&amp; mtx_;
+        Proxy(T* o, std::mutex&amp; m) : obj_(o), mtx_(m) {
+          mtx_.lock();
+        } // "before" the call
+        ~Proxy() {
+          mtx_.unlock();
+        } // "after" the call
+
+        T* operator-&gt;() { return obj_; }
+    };
+public:
+    LockingPtr(T* o, std::mutex&amp; m) : obj_(o), mtx_(m) {}
+    Proxy operator-&gt;() { return Proxy(obj_, mtx_); }
+    // the temporary proxy wraps the call
+};
+
+LockingPtr&lt;Inventory&gt; inv(&amp;inventory, inv_mutex);
+inv-&gt;add_item(sword);   // automatically lock -&gt; add_item -&gt; unlock</code></pre>
+    <p>In games the execute-around pointer finds use where you want to transparently attach some wrapping to every access to an object, like automatic locking/unlocking when accessing a shared object, or logging, or profiling every method call on an object being debugged, checking invariants before and after a modification, dirty flags (marking the object as changed after any mutating access).</p>
+    <p>But in the hot path the overhead of a proxy object on every call is usually unacceptable, so all this lives in debugging and infrastructure code, where convenience and transparency matter more than performance.</p>
+    <h2 id="temporary-proxy">Temporary Proxy</h2>
+    <p>This is a mechanism in which <code>operator[]</code> (or another access operator) returns not the element itself and not a reference to it, but a temporary intermediary object that can distinguish reads from writes and react to them differently. It is needed when detecting the fact of a write to an element through an ordinary reference is impossible, because the reference doesn't know whether it is being read from or written to. The proxy, however, intercepting <code>operator=</code> (write) and <code>operator T()</code> (read), can tell these situations apart.</p>
+    <p>The classic application is the implementation of <code>std::vector&lt;bool&gt;</code>, where the elements are packed bit by bit and you can't return "a reference to a bit" (a bit isn't addressable), so <code>operator[]</code> returns a proxy that on read fetches the bit and on assignment sets it. Another example is copy-on-write strings, where the proxy on reading a character doesn't trigger detaching a copy, but on writing it does. The proxy here is an "interceptor" inserted between the access syntax and the real data.</p>
+    <p>What you pay is "proxy leakage": <code>auto x = container[i]</code> will store the proxy rather than the value (the classic <code>vector&lt;bool&gt;</code> trap, which is why it is considered a "broken container"). The proxy is not a real reference, and code expecting a <code>T&amp;</code> doesn't work with it, because you can't take the address of an element through a proxy. These mismatches make proxy containers treacherous, and <code>vector&lt;bool&gt;</code> is the prime example of why a "smart <code>operator[]</code>" can be more of a curse than a good solution.</p>
+    <p>All of this was discussed by Meyers (including in the context of <code>operator[]</code> distinguishing reads from writes, in More Effective C++), and <code>std::vector&lt;bool&gt;</code> with its proxy <code>reference</code> was standardized back in C++98, and it serves both as the canonical example of how people want to do it and as the canonical cautionary tale of "how it turned out" at the same time.</p>
+<pre style="margin:1.4rem 0"><code>// The proxy distinguishes reading and writing a bit in a packed bitset
+class BitArray {
+    std::vector&lt;std::uint64_t&gt; words_;
+    struct BitProxy {
+        std::uint64_t&amp; word; int bit;
+
+        operator bool() const {
+          return (word &gt;&gt; bit) &amp; 1;
+        }   // read
+
+        BitProxy&amp; operator=(bool v) {
+            // write
+            if (v) word |=  (1ull &lt;&lt; bit);
+            else   word &amp;= ~(1ull &lt;&lt; bit);
+            return *this;
+        }
+    };
+
+public:
+    BitProxy operator[](std::size_t i) { return {words_[i/64], int(i%64)}; }
+};</code></pre>
+    <p>In games proxy access shows up in packed and bit data structures, of which there are many, like flag bitsets and masks, packed color or normal formats, where the element physically isn't addressable as an ordinary object and you can't get at it without a proxy. There the proxy is a necessity, and the only way to provide a convenient <code>[]</code> is to build your own syntax on top of non-addressable data.</p>
+    <p>But proxy containers must be treated with caution, because there is the <code>auto</code> trap, the incompatibility with code expecting real references, and the overhead of proxy objects, all of which make them a tool for special cases rather than for general-purpose containers.</p>
+    <p>Many engines deliberately avoid <code>std::vector&lt;bool&gt;</code> precisely because of its proxy nature, providing explicit bitsets with clear <code>set</code>/<code>test</code> methods instead of a deceptively transparent <code>[]</code>. So it is useful to know about the temporary proxy, to know when it is justified, and to recognize why some <code>[]</code>s behave unlike ordinary ones, and not to fall into the traps associated with that.</p>
+    <h2 id="address-of">Address Of</h2>
+    <p>A well-known mechanism for getting the real address of an object even when its class has an overloaded <code>operator&amp;</code>. Yes, in C++ you can overload the unary address-of operator, and some classes do (usually for the sake of clever proxies, COM-like smart pointers, or DSLs), but the trouble is that after such an overload the expression <code>&amp;obj</code> returns not the address of the object but whatever the overloaded operator decided to return, and generic code that needs the real address (for example, to construct an object via placement new or to store a pointer) ends up deceived.</p>
+    <p>You have to get around the overloaded <code>operator&amp;</code> and obtain the address "the back way," so the object is cast to a reference to a character type (through a series of reinterpret_cast or const_cast), for which <code>operator&amp;</code> is guaranteed not to be overloaded, the address of this character reference is taken, and the result is cast back to the desired pointer type. The chain of casts looks frightening, but the idea is simple: you just descend to the "raw bytes" level, where taking the address definitely gives the real address, and climb back up.</p>
+    <p>What you pay for is the dubious ability to overload <code>operator&amp;</code>, which many consider a language design mistake (overloading address-of almost always does more harm than good, breaking generic code and intuition). That is, it is treating the symptom of a bad practice, and the implementation is fragile and verbose, and you shouldn't write it by hand.</p>
+    <p>The mechanism was born in the discussions around Boost, and its canonical implementation <code>boost::addressof</code>, which later entered the standard as <code>std::addressof</code> (C++11). It is exactly what the standard containers and allocators use internally when they need the real address of an element, in order to work correctly even with user types that have overloaded <code>operator&amp;</code>. C++17 added a <code>constexpr</code> version, and the need for the idiom has been entirely shifted onto the library.</p>
+<pre style="margin:1.4rem 0"><code>// A class with an overloaded operator&amp; (e.g., a proxy) deceives a naive &amp;obj:
+struct Sneaky {
+    int* operator&amp;() { return nullptr; }   // &amp;obj returns nullptr, not the address!
+};
+
+Sneaky s;
+Sneaky* wrong = &amp;s;                  // nullptr — surprise
+Sneaky* right = std::addressof(s);   // the real address, bypassing operator&amp;
+
+// Generic code (containers, allocators) internally always uses std::addressof,
+// so as not to be deceived by an overloaded operator&amp;</code></pre>
+    <p>In games <code>std::addressof</code> is rarely written directly, but it quietly works inside any generic code that manipulates object addresses, for example in custom containers and allocators, serialization systems, or object pools with placement new. Everywhere code has to take the real address of an arbitrary user type, in order to place an object there or store a pointer, <code>std::addressof</code> is the insurance against types that for some reason overloaded <code>operator&amp;</code>.</p>
+    <p>Address Of works as a sanitation method that exists to fix the consequences of a dubious language feature, and the best way to interact with it is not to give it any work to do.</p>
+    <h2 id="nullptr">nullptr</h2>
+    <p>This is a typed null pointer, which appeared in C++11 and solved the long-standing ailment of representing a "pointing nowhere" pointer. Before it, people used either the literal <code>0</code> or the macro <code>NULL</code> (which in C++ was usually just <code>0</code> or <code>0L</code>) for this. But the problem is that <code>0</code> is first and foremost an integer, and its "null-pointer-ness" is only a special case, which gave rise to confusion between "the number zero" and "a null pointer," especially painful during overload resolution.</p>
+    <p>The classic example of the trouble is when there are two overloads, <code>f(int)</code> and <code>f(char*)</code>, and the call <code>f(NULL)</code> intended to select the pointer version, but <code>NULL</code> is <code>0</code>, that is, an <code>int</code>, so <code>f(int)</code> was selected, sometimes without an error and with wrong behavior. <code>nullptr</code> has a special type <code>std::nullptr_t</code>, which converts to any pointer but not to <code>int</code>, so <code>f(nullptr)</code> unambiguously selects the pointer overload. At the same time <code>nullptr</code> doesn't break template type deduction the way <code>0</code> does, and reads more clearly, saying directly "this is a null pointer" rather than "this is maybe zero, maybe a pointer."</p>
+    <p>A rare case where the mechanism comes at no cost, and the only "danger" is that old code is still littered with <code>NULL</code> and <code>0</code> in the role of pointers, and during modernization they are worth replacing. Before C++11 people tried to emulate the idiom with hand-written "nullptr" classes (that very return-type resolver with a templated <code>operator T*</code>), but those were half-measures. <code>nullptr</code> itself is essentially a standardized and polished-up version of such a class.</p>
+    <p>The predecessor idiom (a hand-written <code>nullptr</code>) was described by Scott Meyers and Herb Sutter even before C++11, and <code>nullptr</code> entered the language on a proposal by Herb Sutter and Bjarne Stroustrup precisely to eliminate the problems of <code>NULL</code>/<code>0</code> with overloads and templates.</p>
+<pre style="margin:1.4rem 0"><code>void spawn(int count);
+void spawn(Entity* parent);
+
+spawn(0);          // calls spawn(int), but what if you wanted parent?
+spawn(NULL);       // also spawn(int)! NULL is 0 and it's an int, a bug.
+spawn(nullptr);    // unambiguously spawn(Entity*), exactly what's needed
+
+Entity* e = nullptr;        // reads clearly
+if (e == nullptr) { /* ... */ }</code></pre>
+    <p>There is no particular "game-specific" angle here, it is just general hygiene of modern C++, but in large engine codebases with thousands of pointer operations the consistent use of <code>nullptr</code> noticeably reduces a class of errors and improves the readability of intent. The practical advice is simple: in new code only <code>nullptr</code>, and when working with old code you should replace <code>NULL</code>/<code>0</code> pointers with <code>nullptr</code> at the first opportunity. This is one of those little things that cost nothing but make the code a little bit safer in each of the many places where it touches pointers.</p>
+    <h2 id="move-constructor">Move Constructor</h2>
+    <p>The Move Constructor (and its paired move assignment operator) became a cornerstone of C++11 move semantics, allowing resources to be "moved" from one object to another instead of copying them. When the source object is something like a temporary (rvalue) or is explicitly marked as "no longer needed" (via <code>std::move</code>), its internals (a buffer pointer, a handle, ownership) don't have to be copied but can simply be stolen, i.e. the pointers are flipped over into the new object, and the old one is left in an empty but valid state, which turns a potentially expensive deep copy into a cheap swap of a few pointers.</p>
+    <p>Before C++11 there was no such mechanism, and returning a heavy object from a function or inserting it into a container meant a real copy (expensive), or contrivances like the ill-fated <code>auto_ptr</code> with its "copy-as-move." Move semantics gave the language the notion of "a source whose contents can be taken away," i.e. rvalue references (<code>T&amp;&amp;</code>) distinguish temporary/handed-over objects from ordinary ones, and the move constructor takes exactly such a reference, taking the resources and nulling out the source, while <code>std::move</code> is just a cast to an rvalue reference, saying "treat this object as expendable."</p>
+    <p>What you pay is the presence of an "empty but valid" state of the source after the move (you can no longer read meaningful data from it, but the destructor and assignment must work), and the mandatory marking of move operations as <code>noexcept</code>, without which containers (as discussed in non-throwing swap) fall back to copying. Plus, the rules for auto-generating move operations are still subtle, and declaring a destructor or copy operations suppresses the automatic generation of move, and then the "move" turns into a copy, which is easy to miss.</p>
+    <p>Move semantics in C++11 were designed by Howard Hinnant, Bjarne Stroustrup, and Dave Abrahams, and it was one of the most significant and complex changes to the language, rethinking how C++ works with values and resources. In hindsight it made "correct" what people had spent years achieving with idioms like resource return and computational constructor, and it became the foundation on which the entire modern standard library stands.</p>
+<pre style="margin:1.4rem 0"><code>class Mesh {
+    std::size_t count_ = 0;
+    Vertex* verts_ = nullptr;
+public:
+    // Move constructor: steal the buffer
+    // null out the source. noexcept is mandatory
+    Mesh(Mesh&amp;&amp; o) noexcept : count_(o.count_), verts_(o.verts_) {
+        o.count_ = 0; o.verts_ = nullptr;
+        // the source is empty but valid
+    }
+    Mesh&amp; operator=(Mesh&amp;&amp; o) noexcept {
+        delete[] verts_;
+        count_ = o.count_; verts_ = o.verts_;
+        o.count_ = 0; o.verts_ = nullptr;
+        return *this;
+    }
+    ~Mesh() { delete[] verts_; }
+};
+
+Mesh load();
+// returning a heavy mesh is now cheap (move, not copy)
+std::vector&lt;Mesh&gt; meshes;
+meshes.push_back(load());
+// the mesh is moved into the vector without copying the vertex buffer</code></pre>
+    <p>In game development move semantics were received very well, because game code constantly moves heavy objects, like a mesh with vertex buffers, textures, sound samples, and containers with frame data. But in most engines the move (returning such an object from a loader or inserting it into a container) had already been done in their own way, and many did not abandon those mechanisms, simply adding move semantics as a wrapper over them.</p>
+    <h2 id="implicit-conversions">Implicit conversions</h2>
+    <p>A body of knowledge and cautions about the implicit type conversions that C++ performs automatically. The language generously converts one thing into another without asking: <code>int</code> into <code>double</code>, a derived class into a base, types via single-argument constructors, types via conversion operators. Sometimes this is convenient and readable, and sometimes a source of bugs, when a conversion fires where you didn't expect it, and code that shouldn't have compiled does.</p>
+    <p>The main control tools are the keyword <code>explicit</code> and (since C++11) <code>explicit</code> on conversion operators. A single-argument constructor by default defines an implicit conversion: <code>void f(Widget)</code> can be accidentally called as <code>f(42)</code> if <code>Widget</code> has a constructor <code>Widget(int)</code>, and the compiler will silently build a temporary <code>Widget</code> from the number. By marking the constructor <code>explicit</code>, you forbid this implicit conversion, leaving only the explicit <code>Widget(42)</code>. The same goes for conversion operators: <code>explicit operator bool()</code> works in a condition but doesn't sneak into arithmetic (as we saw in safe bool).</p>
+    <p>What you pay is balance and readability. Too many implicit conversions make the code fragile and full of surprises (chains of conversions and their interaction with overloads are especially dangerous), while too few force you to write tedious explicit casts where the conversion is obvious and safe.</p>
+    <p>The general rule here is to make single-argument constructors <code>explicit</code>, and to allow implicitness consciously and only where it really improves readability and is safe (for example, converting <code>Seconds</code> into <code>Duration</code>).</p>
+    <p>These rules were systematized by Meyers (several Effective C++ items about <code>explicit</code> and about the dangers of implicit conversions), and they evolve from standard to standard, reflecting that the community increasingly leans toward "explicit is better than implicit" as the default.</p>
+<pre style="margin:1.4rem 0"><code>class Health {
+    int hp_;
+public:
+    explicit Health(int hp) : hp_(hp) {}
+    // explicit: no implicit int -&gt; Health
+};
+
+void apply(Health h);
+// apply(100);            // error: don't confuse a number with health
+apply(Health{100});       // explicit and clear
+
+// And here implicitness IS APPROPRIATE and improves readability
+class Seconds {
+    float s_;
+public:
+    Seconds(float s) : s_(s) {}
+    // intentionally implicit: 2.0f -&gt; Seconds naturally
+};
+
+void wait(Seconds);
+wait(2.0f);
+// reads as "wait 2 seconds"</code></pre>
+    <p>In games caution with implicit conversions has historically "hurt," because game code teems with wrapper types over primitives (handles, identifiers, typed quantities, flags), and implicit conversions between them and raw <code>int</code>/<code>float</code> are often a direct path to UB and "passed an entity ID where a component ID was expected" or "mixed up time and quantity," so marking wrapper constructors <code>explicit</code> turns such places into compilation errors.</p>
+    <p>The practical line in engines is usually this: typed handles, IDs, and units of measurement are made with <code>explicit</code> constructors, so the type system catches the confusion, while the few genuinely natural conversions (for example, a scalar into a vector of identical components, or a literal into a safe wrapper) are deliberately left implicit.</p>
+    <p>This is part of the broader theme of "make incorrect code uncompilable," and the more meaningless type mixings the compiler rejects, the fewer bugs survive to runtime. That is why controlling implicit conversions through <code>explicit</code> has long been an everyday design tool for safe engine APIs, not an abstraction, and the habit of putting <code>explicit</code> by default saves a fair amount of time catching swapped-up arguments.</p>
+    <h2 id="recursive-type-composition-tricky">Recursive Type Composition (tricky)</h2>
+    <p>This is a system for building types that recursively contain themselves (more precisely, instantiations of the same template) at compile time, forming tree-like or list-like structures of types. The classic example is a type list (typelist), where a "list" is represented as a "head + tail" pair, and the tail is again a list, and so on down to an empty terminator tail. Or an expression, where a node contains subtrees of the same node type, and the data structure exists not at runtime but in the type system, unfolding recursively at compile time.</p>
+    <p>Why build structures out of types? Because metaprogramming operates on types, and to process sets or trees of types (to generate code, hierarchies, storage from them), you have to structure them somehow. Recursive composition gives a way to represent a list or tree of types of arbitrary length and to traverse it recursively with metafunctions: process the head, recursively process the tail, stop at the terminator. This is, in essence, functional programming on types, with lists and recursion instead of loops.</p>
+    <p>The problem is usually the recursion depth and the compilation time. Each level of recursion is a new template instantiation, and for long lists/deep trees the compiler materializes a multitude of intermediate types, which seriously slows down the build and can hit the instantiation-depth limit.</p>
+    <p>With the arrival of variadic templates (C++11) manual recursive "head+tail" composition has largely become obsolete, and parameter packs (<code>Ts...</code>) now represent sets of types directly, while fold expressions (C++17) process them without explicit recursion.</p>
+    <p>All of this is the legacy of Alexandrescu and his <code>Typelist</code>, built exactly as recursive composition, and of Boost.MPL, where it was the foundation of metaprogramming in the 2000s, when variadic templates didn't yet exist and sets of types had to be encoded with nested pairs. The modern equivalent is <code>std::tuple</code> and variadic packs, which do the same thing but noticeably more easily.</p>
+<pre style="margin:1.4rem 0"><code>// Recursive composition
+// a typelist as head + tail (pre-C++11)
+struct Nil {};
+template &lt;class Head, class Tail&gt; struct TypeList {};
+
+using Components =
+  TypeList&lt;Transform, TypeList&lt;Physics, TypeList&lt;Render, Nil&gt;&gt;&gt;;
+
+// Length metafunction and recursive traversal:
+template &lt;class L&gt; struct Length;
+template &lt;&gt; struct Length&lt;Nil&gt; { static constexpr int value = 0; };
+template &lt;class H, class T&gt; struct Length&lt;TypeList&lt;H, T&gt;&gt; {
+    static constexpr int value = 1 + Length&lt;T&gt;::value;
+};
+
+// C++11+, the same thing with a variadic pack, without manual recursion
+template &lt;class... Ts&gt; struct Components2 {
+  static constexpr int count = sizeof...(Ts);
+};</code></pre>
+    <p>In games recursive type composition in the Alexandrescu style is rarely written by hand today, but its modern forms, in the shape of variadic templates and tuples, permeate the generic infrastructure in ECS engines, which describe the sets of components a system needs with variadic packs (<code>System&lt;Transform, Velocity&gt;</code>) and unfold storage access over them.</p>
+    <p>So recursive type composition should be understood as an idea that hasn't gone anywhere, only changed form. The principle "represent a set/tree of types as data for compile-time processing" is alive and central to generic engine code, the tooling has simply become more humane, and variadic templates and fold expressions instead of recursive pairs have become the replacement for type lists.</p>
+    <h2 id="temporary-base-class">Temporary Base Class</h2>
+    <p>An old and almost completely obsolete optimization idiom, related to expression templates and the fight against temporary objects in expressions. Its goal was to represent the intermediate results of complex expressions (over matrices, vectors) as special temporary wrapper types inheriting a common base class, which allowed algorithms and operators to work uniformly with these temporaries and to avoid unnecessary copies and allocations when evaluating compound expressions.</p>
+    <p>The idea echoes expression templates, but instead of immediately creating a heavy temporary object for every suboperation, the expression is represented as lightweight temporary nodes that defer the computation. The "temporary base class" gave these nodes a common interface through which the final operation (assignment) could evaluate them in a single pass. This was one of the early attempts to solve the temporaries problem in numerical C++ before expression templates and move semantics took their final shape.</p>
+    <p>The implementation mechanism is complex and fragile and has today been almost entirely displaced by move semantics, which removed most of the pain of temporary objects (a temporary is now moved cheaply rather than copied), while copy elision eliminated many temporary objects altogether. So the temporary base class is mostly of historical interest and is a step in the evolution toward modern solutions.</p>
+    <p>The idea was born in the nineties; it comes from the same circle of ideas as Blitz++ and early work on high-performance linear algebra, where people tried to eliminate every temporary object while the language still had few tools to fight them.</p>
+<pre style="margin:1.4rem 0"><code>// Conceptually: temporary expression nodes with a common base interface,
+// so that assignment computes everything in a single pass
+// without heavy intermediate matrices
+struct MatExprBase { /* common element-computation interface */ };
+
+template &lt;class L, class R&gt;
+struct MatSumExpr : MatExprBase {
+    // a lightweight temporary node instead of a full matrix
+    const L&amp; l; const R&amp; r;
+    float at(int i, int j) const { return l.at(i,j) + r.at(i,j); }
+};
+
+// Today this is done with expression templates + move semantics,
+// not a separate temporary base</code></pre>
+    <h2 id="boost-mutant">Boost mutant</h2>
+    <p>A frankly "hacker" idiom that lets you access the same set of data through different structures, interpreting the same memory now as one type, now as another. The name refers to its origin from the depths of Boost. The classic example is a <code>(first, second)</code> pair that you want to access both as <code>(first, second)</code> and as <code>(second, first)</code> (reversed), without duplicating the data, by overlaying two different structure "views" onto the same memory.</p>
+    <p>This is usually implemented through a <code>union</code> of structures with identical layout, or through <code>reinterpret_cast</code> between types that the programmer is sure have the same field arrangement in memory. That is, having several "facades" over the same bytes, choosing the convenient one for a particular operation, without physically duplicating or copying the data. This allows, for example, reusing algorithms written for one layout for data in another, by "renaming" the fields through the mutant.</p>
+    <p>The problem is in the very idea and the balancing on the edge (and often beyond the edge) of undefined behavior, when accessing an object through a pointer/reference of an incompatible type violates aliasing (strict aliasing), and interpreting one structure as another through a <code>union</code> has subtle "active member" rules, and the compiler is entitled to optimize all of this in ways that break your expectations. The idiom works "on this compiler with these flags," but portability and correctness are in question. This is a typical "clever hack" that modern code tries to keep its distance from.</p>
+    <p>As I already said, the idea came from Boost (hence the name) more as a curious exhibit than as a recommendation, and it reflects the spirit of early Boost, where for the sake of efficiency and expressiveness people resorted to techniques that today would be considered too risky, and where the boundaries of undefined behavior were explored rather boldly.</p>
+<pre style="margin:1.4rem 0"><code>// Conceptually: two "views" of the same bytes (risky, on the edge of UB)
+struct Pair      { int first;  int second; };
+
+struct ReversedPair { int second; int first; };
+// the same layout, fields the other way around
+
+union Mutant {
+    Pair pair;
+    ReversedPair reversed;
+};
+
+Mutant m;
+m.pair = {1, 2};
+// access through m.reversed treats the same bytes as (second=1, first=2)
+// portability and correctness are very much in question</code></pre>
+    <p>But despite the hacks, the idea has caught on in games, although most engines keep their distance from it, because it leads to bugs that show up only in a release with aggressive optimization. Mostly it is done "legally" when working with raw data, like parsing binary formats, network packets, GPU buffers, when doing a bitwise conversion between types of the same size without violating aliasing, or copying through <code>memcpy</code>, which the compiler optimizes perfectly.</p>
+    <p>So the boost mutant is worth knowing as an example of how not to do it, and as a reason to remember <code>std::bit_cast</code>, a more legal and portable replacement for cases when you really do need to look at the same bytes under different types. Such hacks with <code>union</code> and <code>reinterpret_cast</code> are, after all, a legacy of an era when there were no safe tools for this.</p>
+    <h2 id="multi-statement-macro">Multi-statement Macro</h2>
+    <p>This is the idea of writing macros that expand into several statements. The problem is that the C/C++ preprocessor dumbly substitutes text without understanding the syntax, and a macro of several statements breaks in the most ordinary contexts. If the macro is <code>do_a(); do_b();</code>, then using it in <code>if (cond) MACRO;</code> without braces expands so that only the first statement falls under the <code>if</code>, while the second executes always, a classic bug.</p>
+    <p>The canonical cure is to wrap the macro body in <code>do { ... } while(0)</code>. This construct groups several statements into a single syntactic block, which at the same time behaves like a single statement and correctly requires a semicolon after it (<code>MACRO;</code>), naturally fitting into <code>if/else</code> and loops. The <code>while(0)</code> guarantees exactly one iteration, and the compiler trivially throws it away, so there is no overhead. This is the idiomatic, recognizable way to say that "this macro is a single compound statement."</p>
+    <p>The price? Macros are evil in general, and this idiom merely makes one of their manifestations less dangerous without eliminating the root problems of the preprocessor, namely the lack of scoping, the multiple evaluation of arguments, or the invisibility to the debugger. So <code>do/while(0)</code> solves the narrow problem of "several statements as one" rather than anything else, but it doesn't make a macro a good idea in itself, and modern C++ (inline functions, templates, <code>constexpr</code>, lambdas) lets you replace most macros with normal code, which is almost always more correct.</p>
+    <p>The idea goes back to the early days of the language and the Unix/Linux kernel codebase, where <code>do { } while(0)</code> in macros is found everywhere, but in C++ it was inherited, and it is perhaps the most recognizable C "handshake": if you see <code>do/while(0)</code> around a macro body, you understand that the author came from the C world.</p>
+<pre style="margin:1.4rem 0"><code>// Bad: breaks in an if without braces
+#define LOG_AND_COUNT(msg) log(msg); ++log_count_
+
+// if (verbose) LOG_AND_COUNT("hi");
+// ++log_count_ executes ALWAYS — a bug!
+
+// Good: do/while(0) makes the macro a single statement
+#define LOG_AND_COUNT(msg) do { log(msg); ++log_count_; } while(0)
+
+if (verbose) LOG_AND_COUNT("hi");      // now correct: both under the if
+else do_nothing();                     // and else works too</code></pre>
+    <p>In game development multi-statement macros are still encountered often, despite the general "macros are evil," because they have niches where there are few alternatives, like debugging and logging macros (which need <code>__FILE__</code>/<code>__LINE__</code> and conditional compilation), registration macros (of components, tests, reflection), platform wrappers, asserts. In all these cases, if a macro contains several statements, <code>do/while(0)</code> is mandatory, otherwise it will plant a mine in someone's <code>if</code>. This is one of those little things, ignorance of which leads to bugs that are impossible to explain by looking at the place of use (everything looks correct there, while the bug hides in the macro expansion), and a recognizable <code>do/while(0)</code> is a sign that the macro's author has been through the school of late-night debugging.</p>
+    <h2 id="named-loop">Named Loop</h2>
+    <p>The idea of getting labeled loops and control over nested loops, which C++ doesn't have in the form that, say, Java does (where you can write <code>break outer;</code> and exit the outer loop at once). In C++ <code>break</code> and <code>continue</code> act only on the nearest enclosing loop, and when there are several nested loops, exiting all of them at once or jumping to the next iteration of the outer one is nontrivial. The idiom offers ways to express this.</p>
+    <p>Historically and practically there have been several approaches, and the most direct and "honest" one was to use <code>goto</code> to a label after the outer loop: yes, that very <code>goto</code> that is usually considered bad form, but for exiting deeply nested loops it is, oddly enough, one of the cleanest options, and even Dijkstra didn't object to such limited use. The alternatives have been boolean flag variables, checked in the conditions of all the loops (verbose and cluttering the logic), or moving the nested loops out into a separate function, from which a <code>return</code> exits everything at once (often the cleanest option, simultaneously improving the structure of the code).</p>
+    <p>Each approach has its own price: <code>goto</code> frightens unprepared readers and in large quantities is genuinely harmful, although for exiting forward out of loops it is safe. Flags smear the exit logic across several places and easily contain errors, while moving into a function sometimes artificially fragments cohesive code. C++ never acquired labeled <code>break</code>/<code>continue</code> (there were proposals, but they didn't pass), so the idiom remains a set of compromises, and the choice between them is only a matter of taste and context.</p>
+    <p>The discussion around the practice of its use became part of the eternal argument about the appropriateness of <code>goto</code>, going back to Dijkstra's famous letter "Go To Statement Considered Harmful" all the way from 1968, and about the fact that "harmful in the general case" does not mean "harmful always."</p>
+<pre style="margin:1.4rem 0"><code>// Search in a 2D grid with an exit from both loops at once
+bool found = false;
+for (int y = 0; y &lt; height &amp;&amp; !found; ++y)       // the flag variant
+    for (int x = 0; x &lt; width; ++x)
+        if (grid[y][x] == target) {
+          found = true;
+          break;
+        }
+
+// The goto variant — for exiting forward this is clean and readable:
+for (int y = 0; y &lt; height; ++y)
+    for (int x = 0; x &lt; width; ++x)
+        if (grid[y][x] == target)
+          goto done;
+done:;
+
+// Often the best variant is simply to move it into a function and return
+std::optional&lt;Cell&gt; find_in_grid(...) {
+  ... return Cell{x,y};
+  ... return std::nullopt;
+}</code></pre>
+    <p>In games nested loops are often an everyday thing, and the same traversal of 2D/3D grids (tilemaps, voxels, navigation cells), iterating over pairs of objects for collisions, searching in matrices will always be there, so the need to "exit everything at once on the first match" arises regularly.</p>
+    <p>In practice engines most often prefer the cleanest of the variants, like moving the nested loops out into a separate function with a <code>return</code>, because it both solves the exit problem and usually improves the readability and testability of the code, giving the search operation a meaningful name.</p>
+    <p>But the <code>goto</code>-to-a-label is also quite alive in engine code, where moving into a function is undesirable (for example, so as not to interfere with inlining or not to drag a lot of context through parameters), and where <code>goto done;</code> for exiting forward out of a hot nested loop is the most direct and fastest way without overhead. So the named loop is mostly about the conscious choice between "move into a function" (clean, the default) and "an honest forward goto" (when every little thing in the hot path matters), and about understanding that the taboo on <code>goto</code> is a general rule with legitimate exceptions, not a religious dogma.</p>
+    <h2 id="named-parameter">Named Parameter</h2>
+    <p>A mechanism that gives C++ something resembling named function arguments, which the language doesn't have (unlike, say, Python with its <code>func(width=100, height=50)</code>). When a function or constructor has many parameters, especially same-typed ones with default values, a positional call turns into an unreadable string like <code>create(800, 600, true, false, true, 4, false)</code>, where it is impossible to understand what is what, and easy to mix up the order.</p>
+    <p>The most common implementation is method chaining through a builder object, where you create an intermediate parameter object whose setter methods return a reference to itself, which lets you chain them into a sequence <code>.width(800).height(600).fullscreen(true)</code>, and then you pass this object into the function itself. Each "parameter" is named explicitly by its own method, the order becomes unimportant, and only the needed ones are specified (the rest take default values). This is the same idea as named template parameters, but for runtime function arguments.</p>
+    <p>You have to pay with the verbosity of the implementation, when you need a whole builder class with a method for each parameter, and with the small overhead of creating an intermediate object (usually eliminated by the optimizer). Plus these are not real named arguments and the compiler won't force you to specify the mandatory ones, so C++20 gave a partial alternative for aggregates in the form of designated initializers (<code>Config{.width=800, .height=600}</code>), which let you initialize struct fields by name, which for config structs covers most of the need.</p>
+    <p>The builder parameter is a long-standing practice, and at the library level it was perfected by Boost.Parameter, where it is one of the most frequent answers to the question "why can't you call a function in C++ with named arguments." You can't directly, but you can emulate it.</p>
+<pre style="margin:1.4rem 0"><code>// Builder with method chaining
+// the parameter names come back into the call
+struct WindowDesc {
+    int width_ = 1280, height_ = 720;
+    bool fullscreen_ = false, vsync_ = true;
+    WindowDesc&amp; width(int w)      { width_ = w; return *this; }
+    WindowDesc&amp; height(int h)     { height_ = h; return *this; }
+    WindowDesc&amp; fullscreen(bool f){ fullscreen_ = f; return *this; }
+    WindowDesc&amp; vsync(bool v)     { vsync_ = v; return *this; }
+};
+
+Window create_window(const WindowDesc&amp;);
+
+// Instead of create_window(800, 600, true, false)
+// readable and without confusing the order
+auto win = create_window(WindowDesc{}.width(800).height(600).fullscreen(true));
+
+// C++20 makes it simpler for aggregates
+auto win = create_window({.width_=800, .height_=600, .fullscreen_=true});</code></pre>
+    <p>In games the named parameter, in the form of builders and config structs, is an almost classic technique, because engines are full of APIs with many parameters, from window creation to render pipeline configuration and texture descriptors. They all have dozens of settings, most with reasonable default values, and a positional call would be an unreadable nightmare, where <code>true, false, true</code> tells the reader nothing.</p>
+    <p>And the next-generation graphics APIs (Vulkan, D3D12, Metal) are entirely built on descriptor structs filled out field by field; this is exactly named parameter in the form of a config struct, and the engines on top of them continue the same tradition. Modern game development increasingly uses C++20 designated initializers for such descriptors, because they give named initialization without writing a builder class, which is both shorter and more efficient.</p>
+    <p>So named parameter in games is mostly about config structs and descriptors, and about the choice between a classic builder (works everywhere, you can validate) and designated initializers (simpler, C++20). In both cases the goal is the same: that a call with a dozen parameters can be read and not mixed up.</p>
+    <h2 id="named-external-argument">Named External Argument</h2>
+    <p>Close to the previous one, but a narrower idea: to make individual arguments "named" through wrapper types that carry the argument's meaning in their name. Instead of passing a bare <code>bool</code> or <code>int</code>, whose purpose at the call site is unclear, you wrap it in a small named type, and then the call documents itself: not <code>set_visible(true)</code> with a non-obvious <code>true</code>, but something where the intent is explicitly expressed by the argument's type.</p>
+    <p>Now such a "label" gives the argument meaning, and this can be a tag wrapper (<code>Visible{true}</code> instead of <code>true</code>), a strong type alias (a separate type <code>Width</code> over <code>int</code>), or a named constant flag. This is especially valuable for boolean arguments, notorious for their unreadability: a chain of <code>true, false, true</code> in a call is a riddle, whereas <code>Visible::Yes, Cached::No, Async::Yes</code> reads without consulting the documentation, and at the same time strong types prevent swapping arguments of the same base type.</p>
+    <p>You have to pay with the wrapper types, and if there are many of them, some noise from small types appears. Plus these are not full-fledged named parameters (order still matters), but rather "self-documenting arguments," but in combination with <code>explicit</code> and strong typing all this gives a tangible gain in both readability and safety, suppressing the class of errors "mixed up which of the three bools is responsible for what."</p>
+<pre style="margin:1.4rem 0"><code>// Bare bools — unreadable and easy to mix up:
+// player.respawn(true, false, true);   // what is what???
+
+// Named external arguments — the type carries the argument's meaning:
+enum class Invulnerable : bool { No, Yes };
+enum class KeepInventory : bool { No, Yes };
+enum class AtCheckpoint : bool { No, Yes };
+
+void respawn(Invulnerable, KeepInventory, AtCheckpoint);
+
+// The call documents itself and is protected from swapping:
+player.respawn(Invulnerable::Yes, KeepInventory::No, AtCheckpoint::Yes);</code></pre>
+    <p>In game development this is often a foundation of an engine, because game APIs abound with boolean flags and same-typed numeric parameters, and unreadable calls like <code>spawn(pos, true, false, true, 3)</code> are a frequent source of bugs from swapping arguments. That is why wrapping flags in named <code>enum class</code>es (which, as we saw in type safe enum, are also type-safe) turns such calls into self-documenting and error-resistant ones.</p>
+    <p>Strong types for quantities (separate types <code>Health</code>, <code>Damage</code>, <code>EntityId</code>, <code>Seconds</code> instead of bare <code>int</code>/<code>float</code>) is the same idea, protecting against mixing semantically different but representation-identical values, and saving a fair amount of debugging time on "mixed up an ID with a quantity" and "passed milliseconds where seconds were expected." So named external argument is a good practice of "don't pass bare primitives where a type can carry meaning," and it combines beautifully with <code>enum class</code>, <code>explicit</code>, and strong types into the overall culture of "make an incorrect call uncompilable, or at least obviously wrong when read." It is cheap, costs nothing at runtime, and noticeably improves both the readability and the reliability of the code.</p>
+    <h2 id="deprecate-and-delete">Deprecate and Delete</h2>
+    <p>The idea is that you can't just up and remove a function that is being used, because that would break someone else's code, and the right path is to first mark it as deprecated, so that the compiler issues a warning on use, giving users time to migrate, and then, in the next major version, to remove or explicitly forbid it.</p>
+    <p>Both mechanisms work at different stages. <code>[[deprecated("use X")]]</code> (a C++14 attribute, and earlier the compiler-specific __declspec_(deprecated)/__attribute__((deprecated))) marks a function as undesirable, but code with it still compiles, while the compiler warns, often with your message about where to migrate. And <code>= delete</code> (C++11) goes further and explicitly forbids the function, and an attempt to call it gives a compilation error. <code>delete</code> is used both for the final "removal" of something deprecated and (this is its main use) for forbidding undesirable operations, like copying, dangerous overloads, implicit conversions.</p>
+    <p>The price is mostly process discipline rather than a technical solution, and you need to maintain the cycle "marked → waited → removed," without rushing the removal and without forgetting about the deprecated warnings forever. <code>= delete</code> is more powerful than it seems, and with it you can forbid a specific overload (for example, <code>= delete</code> for <code>f(double)</code>, to forbid calling an integer function with a fractional argument and not let it silently convert), which finely controls overload resolution.</p>
+    <p>Both mechanisms came in C++11 (the <code>[[deprecated]]</code> attribute in C++14) from long-standing compiler extensions. And <code>= delete</code> was designed, among other things, to replace the "private undeclared method" idiom (as in boost::noncopyable), and previously copying was forbidden with a private undeclared constructor, while now it is done with a clear <code>= delete</code> and an understandable error. This is part of the language's general movement toward expressing intent with explicit language means instead of idiomatic workarounds.</p>
+<pre style="margin:1.4rem 0"><code>class Texture {
+public:
+    Texture(const Texture&amp;) = delete;
+    // forbid copying — with a clear error
+    Texture&amp; operator=(const Texture&amp;) = delete;
+
+    [[deprecated("use load_async instead of load")]]
+    void load(const char* path);
+    // still works, but warns
+    void load_async(const char* path);
+};
+
+void bad(double);
+void bad(int) = delete;     // forbid the call with int: bad(5) is a compilation error</code></pre>
+    <p>Managed deprecation is critical for engines that have users, other teams, modders, licensees, and breaking someone else's code on every API update is unacceptable. <code>[[deprecated]]</code> provides a civilized migration path, where the old function is marked, the replacement is documented, users get warnings and time to switch, and only then, in a major version, is the function removed. Unreal and other large engines systematically use deprecation macros precisely for this.</p>
+    <p><code>= delete</code> meanwhile has long been an everyday design tool in games for safe types, and the forbidding of copying resources and non-copyable objects (with a clear error instead of a link error), the forbidding of dangerous implicit conversions and undesirable overloads, an explicit "this operation is meaningless for this type."</p>
+    <p>This is the same cross-cutting theme of "make incorrect code uncompilable," and <code>= delete</code> turns a whole class of potential usage errors into compilation errors with a clear message. So deprecate-and-delete in games is both about the polite evolution of an engine's public API (<code>deprecated</code>) and about the hard suppression of incorrect type usage (<code>delete</code>), and both mechanisms have long become a standard part of an engine designer's toolkit.</p>
+    <h2 id="function-poisoning">Function Poisoning</h2>
+    <p>This is the idiom of deliberately "poisoning" certain functions, so that their use becomes a compilation error or at least a warning, but unlike deprecate-and-delete, aimed at the evolution of your own API, poisoning is usually aimed at forbidding dangerous, unsafe, or project-banned functions. Most often someone else's, standard, or system functions, which for some reason you don't want to see in your codebase.</p>
+    <p>There are several ways, and the most direct at the tooling level is <code>#pragma GCC poison name</code>, which makes the compiler reject any appearance of the specified identifier (literally "poisons" the name). The second is, at the code level, to declare the forbidden function with <code>= delete</code> or with <code>[[deprecated]]</code>, or to override it with your own version that doesn't compile or produces a <code>static_assert</code>. The goal is the same: to suppress the use of functions like the unsafe <code>strcpy</code>/<code>sprintf</code>/<code>gets</code>, the unwanted <code>malloc</code>/<code>free</code> (if in the project everything must go through your own allocator), <code>printf</code> (if direct output is forbidden), or any others that are banned in the given project.</p>
+    <p>The price for poisoning someone else's, especially standard, functions is that it is fragile and non-portable, and that same <code>#pragma poison</code> is not available on all compilers and can conflict with the headers themselves, where the "poisoned" name is legitimately used (poison <code>malloc</code> and the standard headers that use it internally will stop compiling). That is why poisoning requires care about exactly where it is enabled, and it is often confined to a special header included only in "your own" code, but not where system headers are included.</p>
+    <p>The idiom is described in works on GCC/Clang extensions, and it appeared as a tool for forbidding unsafe functions in codebases with strict safety requirements. It is part of the broader practice of enforced coding standards, as the enforcement of coding standards by compiler means rather than only by review.</p>
+<pre style="margin:1.4rem 0"><code>// forbidden.h is included in your own code (but not where system headers are)
+#pragma GCC poison strcpy strcat sprintf gets   // any use is an error
+
+// In a project where all memory goes through your own allocator,
+// you can forbid bare new:
+void* operator new(std::size_t) = delete;
+// forces the use of the engine allocators
+
+// Forbidding a specific unsafe overload through = delete:
+char* strcpy(char*, const char*) = delete;
+// "don't use it, there's safe_copy"</code></pre>
+    <p>In games function poisoning is usually applied on consoles, which is, in essence, all serious engines and especially certification, and they forbid unsafe C string functions (a source of buffer overflows), direct system allocations bypassing the engine allocator (so that all memory is accounted for and goes through the right pools), system calls forbidden on consoles, and slow or non-portable functions.</p>
+    <p>This is part of the "enforced cleanliness" infrastructure of a codebase, when instead of relying on every developer remembering all the prohibitions and on the reviewer catching them, the engine poisons the forbidden functions, and the compiler catches violations automatically, even before review.</p>
+    <p>For large teams this becomes a coding standard that enforces itself, more reliable than any document that everyone "has read." So function poisoning is about automatically enforcing the project's rules by compiler means, and although the technique is technically a bit fragile (especially poisoning standard names), in a disciplined codebase with a properly isolated prohibitions header it saves a lot of effort and prevents whole classes of problems that on a console could cost a certification failure.</p>
+    <h2 id="inner-class">Inner Class</h2>
+    <p>The use of nested (inner) classes is needed for solving problems of encapsulation, implementing interfaces, and organizing tightly related types. In C++ a nested class is a full-fledged class in the scope of the outer one, having (with some caveats) access to its private members through an object and logically belonging to it.</p>
+    <p>There are several uses, and the first is precisely hiding implementation details, when an inner class declared in the private section is invisible from the outside and serves as a helper structure (a list node, a container iterator, a state machine's state) without cluttering the outer namespace. The second is made for implementing an interface "from inside," when the outer class doesn't inherit the interface itself (so as not to bloat its public contract and not to breed conflicts), but provides an inner class that implements the interface and has access to the outer one's internals, this is a way to "implement several interfaces" without multiple inheritance and its problems. And the third is grouping tightly related types under an owner name (<code>Graph::Node</code>, <code>Graph::Edge</code>).</p>
+    <p>What you pay is the complexity of the declaration (especially with templates: <code>typename Outer&lt;T&gt;::Inner</code> with its <code>typename</code> ceremonies), and it is important to remember that nesting is about scope and access, not about lifetime. An object of an inner class is not automatically bound to an object of the outer one and can live separately, while excessive nesting worsens readability. Plus there are historical subtleties about exactly what access an inner class has to the outer one's private members (the rules were refined from C++98 to C++11).</p>
+    <p>Nested classes are a long-standing part of the language, and their use (especially for container iterators and for implementing interfaces from inside) is standard practice, visible in any STL implementation, where <code>iterator</code> is implemented through a nested type of the container.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+class LinkedList {
+    struct Node {
+        // nested, hidden: an implementation detail
+        T value;
+        Node* next;
+    };
+    Node* head_ = nullptr;
+public:
+    class iterator {
+        // nested, public: part of the container's interface
+        Node* cur_;
+    public:
+        T&amp; operator*() { return cur_-&gt;value; }
+        iterator&amp; operator++() { cur_ = cur_-&gt;next; return *this; }
+        bool operator!=(const iterator&amp; o) const { return cur_ != o.cur_; }
+    };
+    iterator begin() { return {head_}; }
+};</code></pre>
+    <p>In games nested classes are also an everyday tool for organizing code, and custom engine containers provide nested <code>iterator</code>/<code>const_iterator</code> (as the generic container idiom requires) and hidden <code>Node</code> structures, while state machines hide their states as nested classes. Systems provide nested descriptor and handle types under the system's name (<code>Renderer::CommandBuffer</code>, <code>Physics::Contact</code>), and all this keeps tightly related types together, in the scope of their owner, and removes them from the global namespace, where they would only get in the way.</p>
+    <h2 id="rule-of-zero-three-five">Rule of Zero/Three/Five</h2>
+    <p>The rule of three, five, and zero is a body of recommendations about which of a class's special functions need to be defined together, so that the class manages its resources correctly. The rule of three (the C++98 era) states that if you needed to define at least one of the trio "destructor, copy constructor, copy assignment operator," then you almost certainly need all three, because their presence signals manual management of a resource, and the compiler-generated versions of the other two will do it wrong (a shallow copy of a pointer leads to a double free).</p>
+    <p>The rule of five is the extension of the trio into the C++11 era, and to the destructor and copy operations were added the move constructor and the move assignment operator, and now "all or nothing" extends to the whole quintet. If a class manages a resource manually and you define a destructor with copying, you should also define moving, otherwise it will either not be generated (and moving will silently become copying, losing performance) or be generated incorrectly.</p>
+    <p>And the rule of zero turns everything above on its head, and the best way to satisfy the rules of three and five is not to write any of these functions at all. Then each member of the class itself correctly manages its own lifetime (this is <code>std::vector</code>, <code>std::string</code>, <code>std::unique_ptr</code>, not raw pointers and handles), and the compiler-generated versions of all five functions automatically turn out to be correct.</p>
+    <p>The rule of three is a fairly old rule, which Marshall Cline and others recorded back in the nineties, while the rule of five took shape with the move semantics of C++11, and the rule of zero was formulated and popularized by R. Martinho Fernandes in 2012, and it was picked up by the Core Guidelines as the preferred approach.</p>
+<pre style="margin:1.4rem 0"><code>// Rule of five: a class with a raw resource must define all five
+class Buffer {
+    float* data_; std::size_t size_;
+public:
+    ~Buffer() { delete[] data_; }                         // 1
+    Buffer(const Buffer&amp;);                                // 2
+    Buffer&amp; operator=(const Buffer&amp;);                     // 3
+    Buffer(Buffer&amp;&amp;) noexcept;                            // 4
+    Buffer&amp; operator=(Buffer&amp;&amp;) noexcept;                 // 5
+};
+
+// Rule of zero: write nothing, and the members manage themselves, and that's correct
+class Mesh {
+    std::vector&lt;float&gt; vertices_;
+    // copies, moves, cleans up itself
+    std::string name_;
+    // no destructor, no copy/move — the compiler does everything correctly
+};</code></pre>
+    <h2 id="most-vexing-parse">Most Vexing Parse</h2>
+    <p>This is not a technique but a C++ syntax trap, knowledge of which is mandatory in order not to lose an hour to a mysterious error. The essence is in a grammar rule: if something can be parsed both as a function declaration and as an object definition with initialization, the standard prescribes parsing it as a function declaration. That is, when you write what looks to you like creating an object, the compiler sometimes sees a function declaration, and this happens in the most innocent-looking places.</p>
+    <p>The canonical example: you want to create an object <code>Widget w(Gadget());</code>, passing a temporary <code>Gadget</code> into the constructor. But the compiler parses this line as a declaration of a function <code>w</code> that returns a <code>Widget</code> and takes... a pointer to a function with no arguments returning a <code>Gadget</code>. No object is created, and a function is declared, while the subsequent use of <code>w</code> as an object gives a cascade of incomprehensible errors, none of which say a word about <code>w</code> actually being a function. Even more treacherous are empty parentheses: <code>Widget w();</code> is no longer "create a <code>Widget</code> with the default constructor" but a declaration of a function <code>w</code> returning a <code>Widget</code>.</p>
+    <p>This is cured by resolving the ambiguity in favor of "this is definitely an object" and adding extra parentheses around the argument (<code>Widget w((Gadget()));</code>), which make parsing it as a function impossible. The modern and far cleaner way, and you should use brace list-initialization (<code>Widget w{Gadget{}};</code> or <code>Widget w{};</code> for the default one), which in principle cannot be parsed as a function declaration and therefore kills the most vexing parse outright.</p>
+    <p>The name "most vexing parse" was coined by Scott Meyers in Effective STL, and it caught on instantly, because it precisely conveys the feeling that this is the most vexing of all the ways in which C++ grammar can deceive you.</p>
+<pre style="margin:1.4rem 0"><code>struct Gadget {};
+struct Widget { Widget(Gadget); Widget(); void use(); };
+
+// The trap: these are FUNCTION DECLARATIONS, not object creations!
+Widget a();              // a function a() returning Widget, not an object!
+Widget b(Gadget());      // a function b(pointer to function), not an object!
+// a.use();              // error: a is a function, it has no .use()
+
+// Solutions:
+Widget c;                // an object (no parentheses) — default constructor
+Widget d{};              // an object (braces) — unambiguous
+Widget e{Gadget{}};      // object + braces kill the ambiguity</code></pre>
+    <h2 id="pass-key">Pass-key</h2>
+    <p>This is an elegant way to give access to a specific method of a class strictly to certain other classes, without making them full-fledged friends and without opening up everything private to them. It solves the same problem of "friendship in C++ is too coarse" as Attorney-Client, but with a different, in many cases cleaner technique. The method stays public, but requires in its arguments a "key," an object of a tiny type that only the permitted class can construct.</p>
+    <p>An empty key class with a private constructor is created, and it declares as its friends exactly those classes that are allowed to use it. The target public method takes this key as a parameter, and since only a friend of the key can create the key, only the one who can construct the key, that is, only the permitted classes, can call the method.</p>
+    <p>Everyone else sees the public method but cannot create the key to call it and gets a compilation error. Friendship thereby becomes tight, and the "golden key" opens access to one specific method for specific classes, rather than to the whole class at once.</p>
+    <p>The advantage over an ordinary <code>friend</code> and over Attorney-Client is precision and the absence of transitivity: while an ordinary friend sees absolutely everything private, the pass-key opens exactly one method, and you don't need a separate intermediary class with forwarding, a tiny key type is enough.</p>
+    <p>The idiom got its name and popularity in the C++ community of the early 2010s (it was described in discussions on Stack Overflow and in blogs under the names "passkey" and "pass-key"), as a lighter alternative to attorney-client for the frequent case of "give access to a constructor or a single method only to a factory or a manager."</p>
+<pre style="margin:1.4rem 0"><code>class Entity;
+
+class EntityKey {
+    // the key: only EntityManager can create it
+    EntityKey() = default;
+    friend class EntityManager;
+};
+
+class Entity {
+public:
+    // the method is public but requires a key
+    // which means only a friend of the key can call it
+    void set_id(int id, EntityKey) { id_ = id; }
+private:
+    int id_ = 0;
+};
+
+class EntityManager {
+public:
+    void assign(Entity&amp; e, int id) { e.set_id(id, EntityKey{}); }
+    // is able to create the key
+};
+// any other code: e.set_id(5, EntityKey{});
+// error, the key's constructor is inaccessible</code></pre>
+    <p>In games the pass-key fits well onto the common pattern "only the manager/factory has the right to this operation." Only <code>EntityManager</code> should assign IDs to entities; only <code>ResourceManager</code> may change a resource's internal state, or only the loading system may call an object's "raw" initializer. The pass-key expresses this at the type level, without making the manager an all-encompassing friend of every class and without flinging open all encapsulation for the sake of one trusted operation.</p>
+    <p>This works around the classic problem "a private constructor isn't friends with <code>make_unique</code>." So the pass-key is a practical tool for managers and factories, where you need to carefully restrict who has the right to sensitive operations, and it often turns out cleaner and lighter than both a bare <code>friend</code> and a full-fledged Attorney-Client.</p>
+    <h2 id="defaulted-comparisons-and-the-operator-spaceship">Defaulted Comparisons and the &lt;=&gt; operator (Spaceship)</h2>
+    <p>Defaulted comparisons is a C++20 feature for asking the compiler to generate the comparison operators for you, and the idiom "don't write comparisons by hand if they are trivial" was a historical pain, and to make a type comparable you had to define up to six operators (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>), by hand at that, consistently and without errors, and so for every comparable type.</p>
+    <p>These were mountains of boilerplate, in which it was easy to make a mistake (to write <code>&lt;</code> inconsistently with <code>==</code>), and each one bloated the class with its implementation. The <code>&lt;=&gt;</code> operator (formally "three-way comparison," colloquially "spaceship" for its appearance) and the defaulted <code>==</code> solve this in that you write <code>auto operator&lt;=&gt;(const T&amp;) const = default;</code> and the compiler generates all the ordering operations (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>), comparing the members lexicographically in declaration order.</p>
+    <p>Separately, <code>bool operator==(const T&amp;) const = default;</code> gives <code>==</code> and <code>!=</code>, so one or two lines instead of six hand-written operators, and they are guaranteed to be consistent with each other. <code>&lt;=&gt;</code> moreover returns not a <code>bool</code> but a special "comparison category" type (<code>strong_ordering</code>, <code>weak_ordering</code>, <code>partial_ordering</code>), precisely expressing what kind of ordering this is. The <code>&lt;=&gt;</code> operator was designed by Herb Sutter (together with Jens Maurer) and introduced in C++20 precisely to put an end to comparison boilerplate, one of the most tedious chores in C++.</p>
+<pre style="margin:1.4rem 0"><code>struct Version {
+    int major, minor, patch;
+    auto operator&lt;=&gt;(const Version&amp;) const = default;
+    // gives &lt;, &gt;, &lt;=, &gt;= all at once
+    bool operator==(const Version&amp;) const = default;
+    // gives == and !=
+};
+
+Version a{1, 2, 0}, b{1, 3, 0};
+bool older = a &lt; b;
+// works: lexicographically by major, minor, patch
+bool same  = a == b;
+// also works
+
+// std::sort, std::set, std::map&lt;Version,...&gt;
+// now work without hand-written operators</code></pre>
+    <h2 id="what-to-do-with-all-this">What to do with all this</h2>
+    <p>Looks like I have enough material for a sequel to Game++ :) But seriously, several cross-cutting lines emerge that are more important than any individual idiom, idea, or mechanism.</p>
+    <p>A good half of these idioms are crutches. Crutches that programmers carved out by hand because the language lacked a feature, while the work had to be done today. Safe bool was waiting for <code>explicit operator bool</code>. Resource return and computational constructor were waiting for move semantics. Int-to-type and enable-if were waiting for <code>if constexpr</code> and concepts. Type generator was waiting for alias templates. The nullptr wrappers were waiting for <code>nullptr</code>. And when the language finally caught up, the idiom collapsed into a single line or dissolved into the syntax, leaving behind only an archaeological layer in old code. These idioms are worth reading in the same double sense as the console memory architectures from one of my articles, as a historical artifact explaining why ancient code looks exactly the way it does, and as a living technique where the old standard is still in service.</p>
+    <p>The second line is about the eternal trade-off between flexibility and speed, and game development takes a very definite side in it. Virtual functions, type erasure, polymorphic value types, acyclic visitor: all of these buy runtime flexibility at the cost of indirection, allocations, and cache misses, and all of these the engines deliberately push out of themselves into tools and editors, not letting them into the engine core. And there what rules is CRTP, traits, tag dispatching, policy-based design, concrete data types, and a small army of techniques that move decisions from runtime to compile time, so that the processor doesn't do anything unnecessary.</p>
+    <p>And the last one is the rule "make incorrect code uncompilable." Non-copyable, <code>= delete</code>, <code>explicit</code>, type safe enum, named external argument, strong types, function poisoning, checked delete: they are all about having the error caught by the compiler rather than by runtime, QA, or certification. In a large team where the code is written by dozens of people of varying experience, this is perhaps the most valuable category of idioms, and every stupidity forbidden at the type level is a bug that never got born in production.</p>
+    <p>All of these are ways to tell the compiler more about our intentions, so that it does more for us and less is left at runtime, and some of them the language has already made unnecessary, while some will outlive us all.<br/><br/>P.S. <a href="https://habr.com/ru/users/Boomburum/" target="_blank" rel="noopener">@Boomburum</a> Will you give me an achievement for the longest article on Habr in 20 years? Because I <a href="architecture-tradeoffs.html">came up just a touch short here</a>.</p>
+    <p>P.P.S. I think I broke the Habr editor, and now it refuses to save such a long text.</p>
+    <p>P.P.P.S. Oh wait, no, it saved after ten minutes... Phew...</p>
+    <p>P.P.P.P.S. Habr-cake! Thanks to everyone who sends in corrections.</p>
+    <p>If you liked it, drop by <a href="https://t.me/game_cpp_book" target="_blank" rel="noopener">https://t.me/game_cpp_book</a>, I write rarely</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

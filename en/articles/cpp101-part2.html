@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++101 (Part 2) — dalerank</title>
+<meta name="description" content="A catalog of C++ idioms and techniques, part 2: metaprogramming and templates — traits, tag dispatching, int-to-type, type selection, SFINAE and enable-if, member detector, policy-based design, type erasure, type generator, thin template, named template parameters, expression templates, result_of and return type resolver, plus named and computational constructors and base-from-member." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part2.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part2.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/cpp101-part2.html">RU</a><i>/</i><a class="on" href="cpp101-part2.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 2)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
+  <article class="prose">
+    <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <b>Part 2</b> · <a href="cpp101-part3.html">Part 3</a> · <a href="cpp101-part4.html">Part 4</a></p>
+    <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#traits">Traits</a></li><li><a href="#tag-dispatching">Tag Dispatching</a></li><li><a href="#int-to-type-integer-to-type-map">Int-To-Type (Integer-to-Type Map)</a></li><li><a href="#type-selection">Type Selection</a></li><li><a href="#sfinae-substitution-failure-is-not-an-error">SFINAE (Substitution Failure Is Not An Error)</a></li><li><a href="#enable-if">enable-if</a></li><li><a href="#member-detector">Member Detector</a></li><li><a href="#policy-based-design">Policy-based Design</a></li><li><a href="#policy-clone-metafunction-wrapper">Policy Clone (Metafunction wrapper)</a></li><li><a href="#type-erasure">Type Erasure</a></li><li><a href="#type-generator-templated-typedef">Type Generator (Templated Typedef)</a></li><li><a href="#thin-template">Thin Template</a></li><li><a href="#named-template-parameters">Named Template Parameters</a></li><li><a href="#coercion-by-member-template">Coercion by Member Template</a></li><li><a href="#shortening-long-template-names">Shortening Long Template Names</a></li><li><a href="#expression-template">Expression-template</a></li><li><a href="#the-result-of-technique">The result_of technique</a></li><li><a href="#exploding-return-type">Exploding Return Type</a></li><li><a href="#return-type-resolver">Return Type Resolver</a></li><li><a href="#named-constructor">Named Constructor</a></li><li><a href="#virtual-constructor">Virtual Constructor</a></li><li><a href="#computational-constructor">Computational Constructor</a></li><li><a href="#construct-on-first-use">Construct On First Use</a></li><li><a href="#nifty-counter">Nifty Counter</a></li><li><a href="#runtime-static-initialization-order">Runtime Static Initialization Order</a></li><li><a href="#base-from-member">Base-from-Member</a></li></ul></div></details>
+    <h2 id="traits">Traits</h2>
+    <p>Metaprogramming quickly grew Traits as a special kind of metafunction that attaches a bundle of accompanying information to a type without touching the type itself. Instead of adding members to a class like "what is my element type" or "how should I be copied," you move this information out into a separate trait template, which can be specialized for each type, including built-in types and types from third-party libraries that you have no right to modify.</p>
+    <p>This solves a fundamental problem of generic code: an algorithm needed to know something about the type it works with, but requiring the type to have specific nested members means excluding from generic code everything that lacks those members (for example, raw pointers that "act like iterators" but are not classes and carry no members). Traits provide the necessary layer of indirection: the algorithm itself queries the type through the trait, and the trait can be defined externally for any type after the fact.</p>
+    <p>You always have to pay for everything, and the price here is again verbosity and the need to keep traits in sync with types, plus the classic question of where to specialize a trait so it gets found. But the benefit of being open to extension outweighs these costs and makes traits a mechanism for non-intrusive adaptation.</p>
+    <p>The idiom was introduced and named by Nathan Myers in his 1995 paper "Traits: a new and useful template technique," using the example of how <code>char</code> and <code>wchar_t</code> are served by the same string and stream templates through <code>char_traits</code>. Later, traits permeated the entire standard library through <code>iterator_traits</code> and made possible the generic STL algorithms that work identically with both pointers and iterator classes, ultimately becoming one of the most widely used techniques in C++.</p>
+<pre style="margin:1.4rem 0"><code>// A trait describing the properties of an iterator type
+template &lt;class It&gt;
+struct iterator_traits {
+    using value_type = typename It::value_type;
+    using difference_type = typename It::difference_type;
+};
+
+// Specialization for raw pointers, which have no nested typedefs
+template &lt;class T&gt;
+struct iterator_traits&lt;T*&gt; {
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+};
+
+// The algorithm queries the trait, not the type itself, so it works with both:
+template &lt;class It&gt;
+typename iterator_traits&lt;It&gt;::value_type front_value(It it) { return *it; }</code></pre>
+    <p>Traits are a working tool for any generic low-level code. Serialization systems ask traits how to handle a type, and math libraries use traits to learn a vector's "scalar type" (<code>float</code>, <code>double</code>, <code>half</code>) and its dimensionality so that the same code works for all of them. Containers use traits to find out whether a type can be moved trivially and choose between <code>memcpy</code> and element-by-element moving.</p>
+    <p>You can teach a reflection or serialization system to work with a type from a third-party math or physics library by specializing a trait, without touching someone else's sources. This is essentially the basic goal of traits in large codebases stitched together from many libraries: to make it possible to adapt foreign types from the outside to the types inside.</p>
+    <h2 id="tag-dispatching">Tag Dispatching</h2>
+    <p>If traits give you the ability to perform a kind of "type coercion," then tags are a way to pick one of several implementations of a function at compile time based on a type's properties, but without any <code>if</code>. The idea is to turn a compile-time property (usually obtained from a trait) into a "tag" type, a tiny empty struct, and pass it as the last argument to an overloaded function. The compiler picks the right overload by the tag's type, and this decision is made at compile time, with no runtime checks.</p>
+    <p>The beauty of the trick is that the choice is free at runtime (an empty tag carries no data and is optimized away via EBO), yet the different branches can contain code that wouldn't compile at all for "the wrong" types. The overload for random-access iterators can do pointer arithmetic, while the overload for forward iterators cannot, and they peacefully coexist because the compiler instantiates only the matching one.</p>
+    <p>You always have to pay for everything, and here we pay in redundant logic: every tag needs its own overload function, which is far more verbose than a single <code>if</code>. With the arrival of <code>if constexpr</code> in C++17, many tag dispatching cases can now be written as a single function branching on a <code>constexpr</code> condition, and that is often more readable, although tag dispatching remains indispensable when there are many branches or when the set of overloads needs to be extended from the outside.</p>
+    <p>The canonical example, and effectively the source of the idiom, is the implementation of <code>std::advance</code> and <code>std::distance</code> in the STL designed by Stepanov, where the <code>iterator_category</code> from traits selects the optimal implementation: for random-access iterators <code>advance</code> is a single addition, while for the rest it is a loop. The term "tag dispatch" itself became established in the STL and Boost literature.</p>
+<pre style="margin:1.4rem 0"><code>struct random_access_tag {};
+struct forward_tag {};
+
+template &lt;class It&gt;
+void advance_impl(It&amp; it, int n, random_access_tag) { it += n; }   // O(1)
+
+template &lt;class It&gt;
+void advance_impl(It&amp; it, int n, forward_tag) {                     // O(n)
+    while (n-- &gt; 0) ++it;
+}
+
+template &lt;class It&gt;
+void advance(It&amp; it, int n) {
+    advance_impl(it, n, typename iterator_traits&lt;It&gt;::category{});  // the tag decides
+}</code></pre>
+    <p>Tag dispatching works in the same places as traits, i.e. in generic containers, algorithms, and serialization, selecting the optimal path by a type's property without runtime logic. One tag for trivially copyable types goes to the fast <code>memcpy</code>, another to an element-by-element walk, and the choice is made by the compiler from the type's trait. The same goes for math, where a tag based on a vector's dimensionality or the presence of SIMD support goes to a specialized implementation.</p>
+    <p>Dispatching is already part of a broader philosophy of "decide at compile time everything that can be decided," which in performance code is valued above code beauty and architectural patterns, because what's moved out of runtime into compile time is a branch of logic removed from the hot path that the processor no longer has to predict. Modern code increasingly does this through <code>if constexpr</code> and concepts, but under the hood of many libraries the engine stands on, classic tag dispatching still works.</p>
+    <h2 id="int-to-type-integer-to-type-map">Int-To-Type (Integer-to-Type Map)</h2>
+    <p>A small but important <s>proud birb</s> trick that turns a compile-time constant into a distinct type. A template like <code>template &lt;int N&gt; struct Int2Type {};</code> produces for each value of <code>N</code> its own unique type, such as <code>Int2Type&lt;0&gt;</code> and <code>Int2Type&lt;1&gt;</code>, which are already different types rather than just different values of one type. This lets you dispatch overloads by a numeric constant the same way tag dispatching dispatches by property tags.</p>
+    <p>If you recall that function overloading in C++ works by types, not values, it follows that you cannot write two overloads differing by the value of an <code>int</code> argument, but you can by the differing types <code>Int2Type&lt;0&gt;</code> and <code>Int2Type&lt;1&gt;</code>. That turns a compile-time number (a flag, a dimensionality, an algorithm version) into a tool for selecting an implementation at compile time, where the branches inapplicable to a given number aren't even compiled.</p>
+    <p>You always have to pay for everything, and here we pay for the idiom's age. It flourished in an era when there was no <code>if constexpr</code>, no partial specialization of function templates, and no convenient compile-time conditions, and Int2Type was a workaround to at least somehow branch on a number at compile time. Today, almost everything it was used for is expressed more directly through <code>std::integral_constant</code>, <code>if constexpr</code>, or template specialization.</p>
+    <p>The idiom was introduced and named by Andrei Alexandrescu in Modern C++ Design in 2001, where <code>Int2Type</code> (together with <code>Type2Type</code>) was one of the basic building blocks of his Loki library. He used it, in particular, to select an implementation depending on whether a type is polymorphic, or to unroll algorithms by a compile-time flag. The standard later gave us the equivalent in the form of <code>std::integral_constant</code>, on which <code>std::true_type</code> and <code>std::false_type</code> rest.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;int N&gt; struct Int2Type {};
+
+// Different implementations for different compile-time optimization flags
+template &lt;class T&gt; void process(T* data, int n, Int2Type&lt;0&gt;) { /* scalar path */ }
+template &lt;class T&gt; void process(T* data, int n, Int2Type&lt;1&gt;) { /* SIMD path        */ }
+
+template &lt;int SimdLevel, class T&gt;
+void process(T* data, int n) {
+    process(data, n, Int2Type&lt;SimdLevel&gt;{});   // the number selects the implementation
+}</code></pre>
+    <p>In development you won't often meet a direct use of Int2Type today; as I said above, it has been displaced by newer language features, but the idea "a compile-time number selects an implementation" is absolutely alive and permeates the entire render hot path. Loop unrolling for a fixed number of iterations, path selection by SIMD level (SSE/AVX/NEON), specialization of shader permutations, the dimensionality of math objects. All of this is dispatching by a compile-time number, just written in modern syntax.</p>
+    <p>So Int2Type is worth knowing first and foremost as a historical key to reading old code and as a vivid illustration of a principle that hasn't gone anywhere. If you see <code>std::integral_constant&lt;int, N&gt;</code> or <code>std::true_type</code>/<code>std::false_type</code> passed into an overload in modern code, these are the direct descendants of Int2Type doing the same thing.</p>
+    <h2 id="type-selection">Type Selection</h2>
+    <p>This is already a compile-time analogue of the ternary operator, except it selects not a value but a type. A metafunction (canonically <code>Select&lt;bool, T, U&gt;</code> or the standard <code>std::conditional&lt;bool, T, U&gt;</code>) returns, based on a compile-time boolean constant, either type <code>T</code> or type <code>U</code>, which makes it possible to write generic code that uses different types depending on a condition, and this is resolved, naturally, at compile time.</p>
+    <p>It's implemented through template specialization on the boolean parameter, where the primary template for <code>true</code> stores the first type in <code>::type</code>, and the partial specialization for <code>false</code> stores the second. The compiler, instantiating the right version, substitutes the corresponding type, and the rest of the code then works with the selected type as if it had been written explicitly.</p>
+    <p>This is needed so that generic code can tailor its internal types to its parameters. For example, a container can choose its iterator type depending on whether it's const or not, or a math template can choose the accumulator type so as not to lose precision, or a wrapper can store a value by value for small types and by reference/pointer for large ones.</p>
+    <p>You always have to pay for everything, and here we pay in redundant logic. Both branches of <code>Select</code> must be valid types, even the unselected one, because <code>std::conditional</code> instantiates ALL of its arguments, so you can't slip in a type that's invalid for the given case without additional contortions.</p>
+    <p>And once again this idiom came from Alexandrescu's arsenal in Modern C++ Design, where <code>Select</code> was a basic tool of his metaprogramming. Now the standard has cemented it as <code>std::conditional</code> (and <code>std::conditional_t</code>) in <code>&lt;type_traits&gt;</code> in C++11, after which it became an everyday tool underlying countless template classes that need to choose an internal type by a condition.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;bool B, class T, class U&gt; struct Select      { using type = T; };
+template &lt;class T, class U&gt;          struct Select&lt;false, T, U&gt; {
+  using type = U;
+};
+
+// Small types we store by value, large ones by const reference
+template &lt;class T&gt;
+struct StorageFor {
+    using type = typename Select&lt;(sizeof(T) &lt;= sizeof(void*)), T, const T&amp;&gt;::type;
+};
+
+// A wider accumulator so it doesn't overflow when summing
+template &lt;class T&gt;
+using accumulator_t = std::conditional_t&lt;std::is_integral_v&lt;T&gt;,
+                                         std::int64_t, double&gt;;</code></pre>
+    <p>It shows up in generic math, containers, and systems that tailor data layout to their parameters. A vector template can choose between a scalar and a SIMD representation by dimensionality, or between inline storage of small objects and heap storage of large ones, which is the basis of small object optimization, which we'll get to.</p>
+    <h2 id="sfinae-substitution-failure-is-not-an-error">SFINAE (Substitution Failure Is Not An Error)</h2>
+    <p>This is a language rule on which half of C++'s template magic rests, and it goes like this: if substituting template arguments into an overload candidate produces an invalid type or expression, that is not a compilation error but merely a reason to drop that candidate from consideration. The compiler doesn't throw a tantrum and spit out a wall of unreadable log; it crosses the unsuitable overload off the list and keeps looking for a suitable one among the rest.</p>
+    <p>This turns a "substitution failure" from an error into a tool for deliberately constructing overloads, so that substitution succeeds for some types and fails for others, thereby enabling or disabling overloads depending on a type's properties.</p>
+    <p>This mechanism underlies all of <code>enable_if</code>, member detectors, and, before concepts arrived, every way of saying "this function exists only for types satisfying such-and-such a condition."</p>
+    <p>You always have to pay for everything, and here we pay in code comprehensibility, and SFINAE deservedly took up residence in the repertoire of meta-grimoire dark wizards. Only the "immediate context" of substitution works correctly, and if the error happens deep inside the function body, the compiler throws a tantrum and emits unreadable error messages. This was only solved by concepts, which essentially became a human-readable wrapper over the same overload selection, while making most SFINAE tricks unnecessary.</p>
+    <p>The term and the expansion "Substitution Failure Is Not An Error" were introduced by David Vandevoorde, and the mechanism formalized as templates matured in the nineties, while Vandevoorde and Josuttis brought it into the wider C++ world in C++ Templates: The Complete Guide; for many years SFINAE was the only way to make "conditional" templates, and mastery of the dark arts was considered a mark of a serious template programmer.</p>
+<pre style="margin:1.4rem 0"><code>// The overload is "enabled" only for integral types;
+// for the rest, the enable_if substitution fails — and that's not an error
+template &lt;class T&gt;
+std::enable_if_t&lt;std::is_integral_v&lt;T&gt;, T&gt; half(T x) { return x / 2; }
+
+template &lt;class T&gt;
+std::enable_if_t&lt;std::is_floating_point_v&lt;T&gt;, T&gt; half(T x) { return x * 0.5; }
+
+// half(10) picks the first, half(3.0f) picks the second; unsuitable ones simply dropped out</code></pre>
+    <p>As it happens, SFINAE goes hand in hand with game engines; though it's almost never written by hand today, it sits under the hood of everything that adapts behavior to a type's properties. Serialization systems, reflection, generic math libraries, containers. In modern engines that have moved to C++17/20, SFINAE is increasingly being replaced with <code>if constexpr</code> and concepts, which do the same thing readably and with human error messages. But understanding SFINAE is still necessary, because a huge mass of existing code is written on it, including the standard library and Boost, and for the next decade or so they're not going anywhere.</p>
+    <h2 id="enable-if">enable-if</h2>
+    <p>This is already a manifestation of SFINAE that became a practical development tool. By itself it's a tiny metafunction: <code>enable_if&lt;Condition, T&gt;</code> has a nested <code>::type</code> equal to <code>T</code> if <code>Condition</code> is true, and no nested <code>::type</code> at all if it's false. That very "has no ::type" is the substitution failure that, by the SFINAE rule, disables the overload.</p>
+    <p>By substituting <code>enable_if</code> into a template's signature, you effectively hang an "active only if" condition on the overload, and you can hang several conditions, spreading them across different overloads so that for any type exactly one is active, thereby implementing selection of an implementation by arbitrary type properties at compile time.</p>
+    <p>You always have to pay for everything, and here the cost is syntactic clumsiness. Code with heavy <code>enable_if</code> is hard to read and even harder to debug, which is why C++20 offered concepts and the shorthand <code>requires</code> syntax as a direct, readable replacement, leaving <code>enable_if</code> to the realm of compatibility with older standards.</p>
+    <p><code>enable_if</code> was born in Boost (<code>boost::enable_if</code>) in the 2000s, with Jaakko Järvi and Jeremy Siek as its main parents, and was presented as a reusable wrapper over the SFINAE tricks that everyone had previously reinvented from scratch. In C++11 it entered the standard as <code>std::enable_if</code> (and <code>std::enable_if_t</code> was added in C++14 for brevity), and for a decade it became the main way to write conditional templates, until concepts pushed it aside.</p>
+<pre style="margin:1.4rem 0"><code>// Active only for types that have a .gpu_upload() method
+template &lt;class T,
+          class = std::enable_if_t&lt;has_gpu_upload_v&lt;T&gt;&gt;&gt;
+void upload(T&amp; resource) { resource.gpu_upload(); }
+
+// C++20 — the same thing, but readable:
+template &lt;class T&gt;
+    requires has_gpu_upload_v&lt;T&gt;
+void upload2(T&amp; resource) { resource.gpu_upload(); }</code></pre>
+    <p>Like the other tricks, <code>enable_if</code> shows up in generic engine code written before the universal move to C++20: math, containers, serialization, type reflection systems. It lets one overload serve, say, all arithmetic types and another all types with a custom method. If your compiler supports C++20, prefer concepts and <code>requires</code> over <code>enable_if</code>, because they give an order of magnitude clearer errors, which in a large team saves real hours of your time, but <code>enable_if</code> isn't going anywhere, and being able to read it is mandatory as the "lingua franca" of pre-concepts-era templates.</p>
+    <h2 id="member-detector">Member Detector</h2>
+    <p>A sibling of the previous trick, letting you find out at compile time whether a type has a particular method with a given name, a nested type, or a field. In essence it's another specialized predicate metafunction that answers "yes/no" to the question "does <code>T</code> have a <code>serialize</code> method?" or "is a nested <code>iterator</code> type defined in <code>T</code>?", and the answer is available as a <code>constexpr bool</code>.</p>
+    <p>The classic implementation is syntactic acrobatics on SFINAE with the "sizeof of two different types" trick, where you make two overloads of a helper function: one takes something that's valid only if the sought member is present (via <code>decltype</code> of accessing it), and the other, the "omnivorous" one with an ellipsis, catches everything else and is therefore picked only when the first fell off via SFINAE. Yep, it's him again, we'll be coming back to him for a while yet.</p>
+    <p>Their return types are of different sizes, and the <code>sizeof</code> of the result determines which overload was picked, and thus whether the member exists. You always have to pay for everything, and here we pay for what we don't even use, literally word for word, and this is perhaps the ugliest of all the SFINAE idioms, with its dummy <code>yes</code>/<code>no</code> types, ellipses, and <code>decltype</code> expressions you have to compose, or else the detector always says "no."</p>
+    <p>C++ long had no proper way to do this, and everyone wrote their own detector with all the bells and whistles, until the situation was improved by <code>std::experimental::is_detected</code>, and then by C++20 concepts, in which checking for a member's presence is written in a single line of <code>requires</code>.</p>
+    <p>The idiom crystallized in the era of Boost and early metaprogramming libraries (characteristic macros like <code>BOOST_MPL_HAS_XXX</code> appeared precisely for generating such detectors), and its canonical modern form with <code>is_detected</code> was proposed by Walter Brown in one of the standard proposals, generalizing this whole zoo of hand-rolled bells and whistles into a single reusable mechanism.</p>
+<pre style="margin:1.4rem 0"><code>// Detector for a serialize(Archive&amp;) method via SFINAE + decltype
+template &lt;class T, class = void&gt;
+struct has_serialize : std::false_type {};
+
+template &lt;class T&gt;
+struct has_serialize&lt;T, std::void_t&lt;decltype(std::declval&lt;T&amp;&gt;().serialize(std::declval&lt;Archive&amp;&gt;()))&gt;&gt;
+    : std::true_type {};
+
+// C++20 — in a single line:
+template &lt;class T&gt;
+concept Serializable = requires(T&amp; t, Archive&amp; a) { t.serialize(a); };</code></pre>
+    <p>Like the two previous tricks, this one is the heart of serialization and reflection systems, which must handle types differently depending on what they can do. Does the type have <code>serialize</code>? Call it. Doesn't it? Then try a trivial copy. And if it has a nested <code>value_type</code>, then treat it as a container and walk it element by element. All of this is resolved by detectors at compile time, and as a result one piece of generic code correctly serves POD structs, complex classes, and containers alike, without requiring them to share a common base class.</p>
+    <p>In the end the engine gets the ability to call a component's <code>on_attach</code> method if it defined one, and simply do nothing if it didn't. Modern engines may express this with concepts, but the idea "detect a type's capability at compile time and generate the corresponding code" remains exactly the member detector, and without it the engine's generic systems would be either inflexible or riddled with runtime checks.</p>
+    <h2 id="policy-based-design">Policy-based Design</h2>
+    <p>If you read the three previous sections carefully, you'll easily understand this approach. Now a class's behavior is not hardwired but assembled from interchangeable "policies-cum-enable_if" passed as template parameters. Each policy is responsible for one orthogonal aspect (how to allocate memory, how to count references, how to check bounds, whether it's thread-safe), and the host class inherits or holds these policies, combining them into a finished type. By swapping a policy, you change one aspect of behavior without touching the others and without paying for runtime flexibility.</p>
+    <p>The difference from inheritance with virtual functions is in runtime mode. A policy passed as a type gets inlined, its methods are called directly, empty policies collapse via EBO, and you get combinatorial flexibility of strategies without a single virtual call.</p>
+    <p>You always have to pay for everything, and here the price is the combinatorics of the couplings. Type names become monstrous (<code>SmartPtr&lt;Widget, RefCounted, NoChecking, SingleThreaded&gt;</code>), and the policies themselves must be carefully designed as orthogonal, or else they start implicitly depending on each other, and all that elegance falls apart. Plus the flexibility is fixed at compile time, and you can no longer choose a policy at runtime.</p>
+    <p>This is the central idea of Andrei Alexandrescu's 2001 book Modern C++ Design, and it was he who introduced the terms "policy" and "policy-based design," showing, using the example of a smart pointer and other components of the Loki library, how to assemble classes from policies. The approach had a huge influence on the standard library, allocators and containers, <code>char_traits</code> in strings, the deleter in <code>unique_ptr</code>, comparators. It all grew out of Alexandrescu's work.</p>
+<pre style="margin:1.4rem 0"><code>// Two orthogonal policies: thread safety and checking
+struct SingleThreaded { void lock() {} void unlock() {} };
+struct MultiThreaded  { std::mutex m; void lock(){m.lock();} void unlock(){m.unlock();} };
+
+struct NoChecking   { static void check(void*) {} };
+struct AssertChecked { static void check(void* p) { assert(p); } };
+
+template &lt;class T, class Threading = SingleThreaded, class Checking = NoChecking&gt;
+class SmartPtr : private Threading, private Checking {
+    // EBO: empty policies are free
+    T* p_;
+public:
+    T* operator-&gt;() { Checking::check(p_); return p_; }
+};
+
+using FastPtr = SmartPtr&lt;Widget&gt;;                              // nothing extra
+using SafePtr = SmartPtr&lt;Widget, MultiThreaded, AssertChecked&gt;; // everything enabled</code></pre>
+    <p>In game development they try not to use policy-based design, but you can see it in custom containers or in-house smart pointers parameterized by an allocator and a growth strategy. But deep policy-based design in large engines is viewed negatively, because the unbearable type names and compile times kill all the value of the approach. So in practice you more often encounter one or two policies (usually an allocator and some flag) rather than an Alexandrescu six-story stack of policies.</p>
+    <h2 id="policy-clone-metafunction-wrapper">Policy Clone (Metafunction wrapper)</h2>
+    <p>A narrow helper idiom from the Alexandrescu world, solving the specific problem of "transferring" a policy from one type to another. When you have, say, a smart pointer <code>SmartPtr&lt;Foo, SomePolicy&gt;</code> and need to get <code>SmartPtr&lt;Bar, the same policy&gt;</code>, the policy doesn't always transfer directly, because many policies are themselves templates parameterized by the host type. Here you need a mechanism to "clone the policy, reconfiguring it onto the new type."</p>
+    <p>This is solved through a new metafunction wrapper (hence the second name, "metafunction wrapper"), where the policy provides a nested "rebinder" template of the form <code>template &lt;class U&gt; struct rebind { using other = Policy&lt;U&gt;; };</code>, which can produce a version of the same policy for a different type. When the host class needs to convert itself into a version for a different type, it turns to this rebinder and gets the correctly reconfigured policy.</p>
+    <p>For everything... well, you get it. Cloning policies is a fairly esoteric detail, mostly important to standard library authors, and most application programmers will never learn about it. It's needed where the policies themselves depend on the host type and must be able to "move" along with it during conversions, and outside such scenarios it looks like superfluous ceremony.</p>
+    <p>The most famous example of the same mechanism in the standard is <code>rebind</code> on allocators: <code>allocator&lt;T&gt;::rebind&lt;U&gt;::other</code> gives <code>allocator&lt;U&gt;</code>, and that's how containers get allocators for their internal nodes (a list needs an allocator not for <code>T</code> but for <code>Node&lt;T&gt;</code>).</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+struct PoolPolicy {
+    template &lt;class U&gt; struct rebind { using other = PoolPolicy&lt;U&gt;; };
+    // clone for U
+    T* allocate(std::size_t n) { /* ... */ }
+};
+
+// The container needs an allocator not for T, but for its own node Node&lt;T&gt;:
+template &lt;class T, class Alloc = PoolPolicy&lt;T&gt;&gt;
+class List {
+    struct Node { T value; Node* next; };
+    using NodeAlloc = typename Alloc::template rebind&lt;Node&gt;::other;
+    // the same pool, but for Node
+    NodeAlloc node_alloc_;
+};</code></pre>
+    <p>In games, policy clone in pure form is almost never encountered, for the same reason as in ordinary development, but it works under the hood of any custom engine container parameterized by an allocator. Engines write their own containers instead of the standard ones for the sake of memory control, and if such a container respects the allocator interface, it has to support <code>rebind</code> in order to allocate memory not for the user type but for its internal nodes, or else a list or tree won't be able to obtain an allocator for its housekeeping structures.</p>
+    <p>So the practical value of this idiom for the programmer is simply to understand why <code>rebind</code> lives in allocators and why a custom allocator is obliged to provide it. So as to get along with standard and engine containers.</p>
+    <p>This is one of those things that go unnoticed until you write your own allocator, and then it suddenly turns out that without policy clone, containers won't accept it.</p>
+    <h2 id="type-erasure">Type Erasure</h2>
+    <p>This is a way to get polymorphism without a common base class and to hide an object's concrete type behind a single external interface, so that from the outside all objects look the same. The classic example from the standard would be <code>std::function</code>: you can put a lambda, a function pointer, and a functor into it, and they have no common ancestor, but <code>std::function&lt;int(int)&gt;</code> handles them all identically.</p>
+    <p>It works through a combination of templates and virtual functions hidden inside the wrapper. The wrapper holds a pointer to a small internal interface with virtual methods, while the concrete implementation of this interface is a template, parameterized by the actual type, and it forwards the calls to the real object.</p>
+    <p>For the flexibility of runtime polymorphism you have to pay with a virtual call and usually a heap allocation for the hidden object (although small objects are often placed inline via small object optimization). That is, it's slower than the static polymorphism of CRTP and templates, and in the hot path type erasure is applied deliberately.</p>
+    <p>On the other hand, it frees your hands where a common base class isn't needed, letting you make types into values so they can be stored in ordinary containers.</p>
+    <p>The idiom matured gradually since the days of <code>boost::any</code> (Kevlin Henney, early 2000s) and <code>boost::function</code> (Douglas Gregor), which were the first widespread examples; the term "type erasure" became established in the C++ community around the same time. It entered the standard as <code>std::function</code>, <code>std::any</code> (C++17), and in part <code>std::shared_ptr</code> with its erasure of the deleter type.</p>
+<pre style="margin:1.4rem 0"><code>// Erase the type of anything that can render(): no common base class required
+class AnyDrawable {
+    struct Concept {
+      virtual ~Concept() = default;
+      virtual void render() const = 0;
+    };
+
+    template &lt;class T&gt; struct Model : Concept {
+        T obj;
+        Model(T o) : obj(std::move(o)) {}
+        void render() const override { obj.render(); }   // duck typing
+    };
+    std::unique_ptr&lt;Concept&gt; self_;
+public:
+    template &lt;class T&gt; AnyDrawable(T o) :
+         self_(std::make_unique&lt;Model&lt;T&gt;&gt;(std::move(o))) {}
+    void render() const { self_-&gt;render(); }
+};
+
+// Sprite, ParticleSystem, DebugText — not related by inheritance, but stored together:
+std::vector&lt;AnyDrawable&gt; scene;</code></pre>
+    <p>Type erasure is prized for decoupling dependencies, and <code>std::function</code> is used for callbacks, event handlers, and deferred tasks in a job system, while type-erased command handlers along the lines of <code>std::any</code> are used for properties in an editor and in data systems. But in the hot path it's avoided for obvious reasons, because of virtual calls plus a possible allocation per object. So in engines type erasure lives in the infrastructure layer (events, tasks, the editor, scripting bridges), while the simulation core prefers static polymorphism and dense arrays.</p>
+    <h2 id="type-generator-templated-typedef">Type Generator (Templated Typedef)</h2>
+    <p>This is a template whose sole job is to assemble and hand back a type. You pass it parameters, and in a nested <code>::type</code> it produces the type constructed from them, often quite complex (nested containers, instantiated templates, chains of policies). In essence it's a "type factory" working at compile time, used to hide a cumbersome type construction behind a short, meaningful name and to parameterize it.</p>
+    <p>The historical motivation was that before C++11 there were no template type aliases (<code>template &lt;...&gt; using</code>), and you couldn't write a "partially specialized typedef." If you needed, say, "a map with a string key and any value," you couldn't declare that as a parameterizable alias directly and had to wrap it in a struct with a nested <code>::type</code> and access it through <code>typename Gen&lt;V&gt;::type</code>. Type Generator was a workaround for this gap.</p>
+    <p>You pay for it with the clumsiness of access (<code>typename ...::type</code> everywhere) and with the fact that the idiom is largely obsolete. C++11 introduced alias templates (<code>template &lt;class V&gt; using StringMap = std::map&lt;std::string, V&gt;;</code>), which do exactly the same thing directly and without a nested <code>::type</code>. So today Type Generator in its old form is only needed where the result is computed by a metafunction (then <code>::type</code> is unavoidable), while the simple cases are covered by alias templates.</p>
+    <p>This is already part of the folklore of 1990s and 2000s C++, recorded in the More C++ Idioms catalog; it was actively used by Loki and Boost.MPL, where "type functions" returned types through <code>::type</code> all over the place.</p>
+<pre style="margin:1.4rem 0"><code>// Before C++11: a type generator via a struct with ::type
+template &lt;class Value&gt;
+struct ComponentStorage {
+    using type = std::unordered_map&lt;EntityId, Value&gt;;
+    // a cumbersome construction
+};
+typename ComponentStorage&lt;Transform&gt;::type transforms;
+
+// C++11 and later — the same thing:
+template &lt;class Value&gt;
+using ComponentStorageT = std::unordered_map&lt;EntityId, Value&gt;;
+ComponentStorageT&lt;Transform&gt; transforms2;</code></pre>
+    <p>The idea of "giving a complex type a short, parameterizable name" still lives on, it's just now written with alias templates rather than structs with <code>::type</code>. The same ECS engine declares <code>template &lt;class C&gt; using Storage = ...</code> for component storage, the renderer sets up an alias for typed handles, and a math library hides behind a short name a long instantiation of a vector template with alignment policies.</p>
+    <p>There's no longer any reason to write the old long form of Type Generator with <code>::type</code> in new code, except when the type is actually computed by a metafunction. But you do need to know it, in order to read pre-concepts and pre-C++11 engine and library code, where <code>typename SomeGenerator&lt;T&gt;::type</code> appears at every step, back when the language still had no proper syntax for parameterized aliases.</p>
+    <h2 id="thin-template">Thin Template</h2>
+    <p>This is already an architectural technique for fighting code bloat, for which template programming is sadly notorious. The problem is that the compiler generates a separate copy of all the template code for each combination of arguments: <code>vector&lt;int&gt;</code>, <code>vector&lt;float&gt;</code>, <code>vector&lt;Foo*&gt;</code>, which will be full copies for all the methods, even though their machine code may be identical. And if you have hundreds of such objects in a project, this approach bloats the binary and hits the instruction cache.</p>
+    <p>The idea of the thin template was to move all the logic that doesn't depend on the concrete type into a common non-template (or less parameterized) base, and to leave in the thin template layer only the type-specific wrappers that cast types and delegate to the common implementation. The classic example would be <code>vector&lt;T*&gt;</code> for all pointer types, where the machine code for working with pointers is the same regardless of what they point to, so you can implement it all once for <code>void*</code> and thinly wrap that in a typed facade.</p>
+    <p>The price will be casting types on the inside (usually via <code>void*</code> and <code>reinterpret_cast</code>), which requires care and can undermine type safety if you make a mistake. Plus the thin layer must be truly thin and inline to nothing, or else you'll pay for the delegation with a call. And not all logic can be made type-agnostic, so what really does depend on the type (calling constructors, destructors, copying values) cannot be moved into the common base.</p>
+    <p>The idiom was described by John Lakos in Large-Scale C++ Software Design back in 1996 in the context of managing large systems, and the standard library applies it in practice in implementations of <code>std::vector,</code> which really do specialize the storage of pointers through a common <code>void*</code> base, so as not to multiply identical code for each pointer type.</p>
+<pre style="margin:1.4rem 0"><code>// The fat logic
+// once, untyped
+class VectorBase {
+protected:
+    void** data_; std::size_t size_, cap_;
+    void push_back_ptr(void* p);   // all the grow/copy mechanics for pointers are here
+    void* at_ptr(std::size_t i) const { return data_[i]; }
+};
+
+// The thin typed facade — only casts, everything inlines
+template &lt;class T&gt;
+class PtrVector : private VectorBase {
+public:
+    void push_back(T* p) { push_back_ptr(p); }
+    T* operator[](std::size_t i) { return static_cast&lt;T*&gt;(at_ptr(i)); }
+};
+// PtrVector&lt;Enemy&gt;, PtrVector&lt;Item&gt;,
+// ... share the very same machine code of the base</code></pre>
+    <p>The fight against template bloat is waged not only in game projects, but it was especially noticeable on past-generation consoles with their very modest instruction cache and limits on executable size. The extra megabytes of nearly identical template code could literally slow execution down, so engines often applied the thin template to pointer containers and to generic structures whose logic doesn't depend on the type.</p>
+    <p>In modern gamedev the thin template is no longer written by hand, relying on the linker to collapse identical code (COMDAT folding, <code>/OPT:ICF</code> in MSVC) and on the compiler to inline the thin wrappers. But on old platforms, which is almost the entire history of consoles that the previous article began with, a deliberate application of the thin template to the most heavily replicated templates paid off handsomely, and you do need to understand the mechanics of template bloat as well.</p>
+    <h2 id="named-template-parameters">Named Template Parameters</h2>
+    <p>An attempt to give templates with a large number of parameters something like named arguments, so as not to depend on position and not to spell out default parameters just to reach the last one.</p>
+    <p>When a template has eight policy parameters, each with its own default value, and you want to change only the eighth, positional syntax forces you to list all seven preceding ones, making the whole construction unreadable and brittle.</p>
+    <p>The idiom solves this by making order irrelevant. The parameters are wrapped in special wrapper types (<code>threading&lt;MultiThreaded&gt;</code>, <code>checking&lt;AssertChecked&gt;</code>) that can be passed in any order, and the template then uses metaprogramming to take apart this set, finds the corresponding handler for each aspect, and assembles the final configuration. From the outside it looks almost like named arguments, where you specify only what you want to change and label exactly what it is.</p>
+    <p>You pay for this with a nontrivial and heavy implementation. For convenient call syntax you pay with a fair amount of metaprogramming on the inside (parsing the set of wrappers, searching by type, substituting defaults), and that means both maintenance complexity, compile time, and the trademark unreadable errors. So the idiom has always been the province of serious libraries willing to invest in ergonomics for their users, rather than an everyday technique.</p>
+    <p>The canonical implementation appeared in <code>boost::parameter</code> (Daniel Wallin, Dave Abrahams), as well as named template parameters in Boost.Graph, where a graph really does have many configurable aspects and positional syntax would be unbearable. In newer standards the problem has largely gone away thanks to designated initializers (C++20) for aggregate configs and the general trend of passing settings as a struct rather than a scattering of template parameters.</p>
+<pre style="margin:1.4rem 0"><code>// The "name" wrappers can be passed in any order
+template &lt;class P&gt; struct threading { using type = P; };
+template &lt;class P&gt; struct checking  { using type = P; };
+
+// The host parses the set, substituting defaults for the unspecified ones (schematically):
+template &lt;class... Options&gt;
+class Allocator {
+    using Threading = typename find_option&lt;threading, SingleThreaded, Options...&gt;::type;
+    using Checking  = typename find_option&lt;checking,  NoChecking,     Options...&gt;::type;
+};
+
+// Specify only what's needed, order doesn't matter:
+using A = Allocator&lt;checking&lt;AssertChecked&gt;&gt;; // threading by default
+using B = Allocator&lt;threading&lt;MultiThreaded&gt;, checking&lt;AssertChecked&gt;&gt;;</code></pre>
+    <p>Named template parameters in their full Boost form are rarely encountered, because it's heavy artillery for libraries with a truly large matrix of settings. Far more often engines take a more pragmatic path and collect the settings into one config type (a traits struct) and pass it as a single template parameter, reading its fields on the inside. That's simpler, compiles faster, and reads more clearly, even if it's less "magical."</p>
+    <p>Nevertheless it's useful to know the idiom, in order to find your way around richly configurable libraries (graph, geometry, computational ones) that you occasionally pull in, and to understand what problem modern alternatives like config structs and designated initializers solve. The essence is the same everywhere: when there are many settings, tying them to parameter position becomes painful, and you need to give them names one way or another.</p>
+    <h2 id="coercion-by-member-template">Coercion by Member Template</h2>
+    <p>This is an idiom that lets a template wrapper type support the same implicit conversions as the type it wraps. The problem is that <code>SmartPtr&lt;Derived&gt;</code> and <code>SmartPtr&lt;Base&gt;</code> are, from the type system's point of view, completely different instantiations of the same template, with no relationship between them, even if <code>Derived</code> publicly inherits <code>Base</code>. That is, a raw <code>Derived*</code> converts freely to <code>Base*</code>, but <code>SmartPtr&lt;Derived&gt;</code> to <code>SmartPtr&lt;Base&gt;</code> does not, and that's annoying.</p>
+    <p>This is cured by adding to the wrapper a template constructor (and/or a template assignment operator) parameterized by a different type argument: <code>template &lt;class U&gt; SmartPtr(const SmartPtr&lt;U&gt;&amp; other)</code>. Inside, it simply tries to assign the internal <code>U*</code> to its <code>T*</code>, and if that assignment is legal (that is, <code>U*</code> converts to <code>T*</code>), the constructor compiles and works, and if not, it fails by SFINAE and doesn't get in the way, letting the wrapper inherit the conversions that are permitted for the wrapped pointers.</p>
+    <p>Here you need to keep this template constructor from intercepting what should go to the ordinary copy constructor (a template constructor is never considered a copy constructor, and they're easy to confuse), and not to accidentally open up impermissible conversions. Plus you have to think through <code>const</code> conversions and conversions up the hierarchy so that they work, while downward ones don't, mirroring the semantics of raw pointers.</p>
+    <p>This approach became a standard part of the implementation of any smart pointer, and it was analyzed in detail both by Alexandrescu in Modern C++ Design and by the authors of Boost.SmartPtr, and that's how <code>std::shared_ptr&lt;Derived&gt;</code> implicitly converts to <code>std::shared_ptr&lt;Base&gt;</code>, and <code>unique_ptr&lt;Derived&gt;</code> move-assigns into <code>unique_ptr&lt;Base&gt;</code>.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+class RefPtr {
+    T* p_ = nullptr;
+public:
+    RefPtr(T* p) : p_(p) { if (p_) p_-&gt;add_ref(); }
+
+    // member template: allows RefPtr&lt;Derived&gt; -&gt; RefPtr&lt;Base&gt;,
+    // if Derived* converts to Base* (otherwise SFINAE cuts it off)
+    template &lt;class U&gt;
+    RefPtr(const RefPtr&lt;U&gt;&amp; o) : p_(o.get()) { if (p_) p_-&gt;add_ref(); }
+
+    T* get() const { return p_; }
+};
+
+RefPtr&lt;Texture&gt; tex = new Texture();
+RefPtr&lt;Resource&gt; res = tex;   // works: Texture inherits Resource</code></pre>
+    <p>In development this idiom is invisible, but it's used everywhere there are custom smart pointers and resource handles forming a hierarchy. An engine with its own <code>TRefPtr</code> or a <code>ComPtr</code>-like pointer is obliged to support the conversion "pointer to a concrete resource → pointer to a base resource," or else working with resource hierarchies would be unbearable and you wouldn't be able to pass a <code>RefPtr&lt;Texture&gt;</code> to a function taking a <code>RefPtr&lt;Resource&gt;</code>.</p>
+    <p>Since engines often write their own smart pointers (for the sake of an intrusive counter, special thread safety, or integration with the RHI), they're forced to implement coercion by member template by hand, replicating the behavior of standard smart pointers.</p>
+    <h2 id="shortening-long-template-names">Shortening Long Template Names</h2>
+    <p>This is more of a set of techniques against the irritating quirks of template C++, where the names of instantiated types grow to some truly wild sizes. <code>std::map&lt;std::string, std::vector&lt;std::shared_ptr&lt;const Entity&gt;&gt;, std::less&lt;&gt;, MyAllocator&lt;...&gt;&gt;</code> and that's still a modest example. Such names clutter the code, and when they surface in error messages, they make debugging unreadable.</p>
+    <p>The basic shortening techniques are making type aliases (<code>using</code>/<code>typedef</code>) for frequently used instantiations, alias templates for parameterized families, and moving long constructions into local <code>using</code> declarations inside functions, so that a short, meaningful name appears in the code (<code>EntityMap</code>, <code>Handle</code>) while the long construction is defined once in one place.</p>
+    <p>The more advanced techniques concern error messages specifically, where a long type is deliberately wrapped into a separate named class (not an alias, but a real derived type or wrapper), so that a short name appears in the compiler's diagnostics and in the debugger instead of the expanded template wall. A type alias is transparent to the compiler and doesn't help with errors (it gets expanded to the full type anyway), whereas a separate named type does help, but adds a real entity with its own subtleties (constructors, conversions).</p>
+    <p>The shortening problem is as old as templates themselves, and the techniques for fighting it entered programmer folklore, and all of this grew into <code>auto</code> (C++11), which freed you from having to spell out long types in variable declarations, and alias templates, which gave you parameterizable short names.</p>
+<pre style="margin:1.4rem 0"><code>// Long and complicated at every mention
+std::unordered_map&lt;EntityId, std::vector&lt;std::shared_ptr&lt;Component&gt;&gt;&gt; components;
+
+// A short alias defined once
+using ComponentList = std::vector&lt;std::shared_ptr&lt;Component&gt;&gt;;
+using ComponentMap  = std::unordered_map&lt;EntityId, ComponentList&gt;;
+ComponentMap components2;
+
+// auto removes the long name where the type is plainly visible anyway
+for (auto&amp; [id, list] : components2) { /* ... */ }</code></pre>
+    <p>Shortening is pure pragmatism of readability and debugging convenience, and almost everyone uses aliases for all composite types, or typed handles, component containers, resource maps. This improves the debugging experience, and in the debugger's watch window a short <code>EntityMap</code> is incomparably more useful than a template construction unfolded across three lines.</p>
+    <p>A separate value appears in compiler error messages, which are already unreadable in template code, and with long names turn into an outright wall of text where it's impossible to find the gist. So in code teeming with templates, the discipline of short names is also a contribution to development speed, because the clearer the error and the cleaner the debugger, the faster the team moves, and no profiler will ever show you those savings.</p>
+    <h2 id="expression-template">Expression-template</h2>
+    <p>One of the most striking idioms in C++, turning arithmetic expressions over objects into types that describe a computation but don't perform it immediately. When you write <code>a + b <em> c</em></code><em> for vectors, naive operator overloading creates a temporary vector for </em><code><em>b </em> c</code>, then another for the addition, and each of these will be an allocation and a separate pass over memory. But expression templates instead build, at compile time, a tree of types describing "add a to the product of b and c," and the real computation is deferred until the point of assignment.</p>
+    <p>This lets you eliminate temporary objects, and the expression tree, assembled from types, is unfolded by the compiler at assignment into a single pass over the elements, where for each index <code>a[i] + b[i] * c[i]</code> is computed at once, with no intermediate arrays and no extra passes over memory. For large vectors and matrices this is the difference between several passes with allocations and a single pass without a single temporary allocation, and it yields an enormous gain.</p>
+    <p>You always have to pay for everything, and here we pay in implementation complexity and maintenance fragility. The implementation of expression templates is highly nontrivial, the expression types are monstrous (<code>Add&lt;Vec, Mul&lt;Vec, Vec&gt;&gt;</code>), and the error messages are awful, as, incidentally, are any error messages in templates. Plus debugging such code is no fun at all. But with the arrival of good auto-vectorizers and compilers that themselves do a decent job of eliminating temporary objects, the benefit of expression templates in simple cases has shrunk considerably, though for linear algebra libraries it remains substantial.</p>
+    <p>The idiom was invented and described by Todd Veldhuizen in 1995 in his paper "Expression Templates"; in parallel, David Vandevoorde independently proposed something similar. Veldhuizen built the Blitz++ library on it, the goal of which was to catch up with Fortran in the speed of numerical computations in C++. Today, the flagship linear algebra libraries like Eigen, Blaze, and Armadillo are built on expression templates, and that's how they earn their reputation as "fast as hand-written code" solutions.</p>
+<pre style="margin:1.4rem 0"><code>// An expression tree node instead of immediate computation
+template &lt;class L, class R&gt;
+struct VecSum {
+    const L&amp; l; const R&amp; r;
+    float operator[](std::size_t i) const {
+      return l[i] + r[i];
+    }  // lazily, element by element
+    std::size_t size() const { return l.size(); }
+};
+
+template &lt;class L, class R&gt;
+VecSum&lt;L, R&gt; operator+(const L&amp; l, const R&amp; r) {
+  return {l, r};
+}   // build the tree, don't compute
+
+// Assignment unfolds the entire tree into ONE loop with no temporary vectors:
+Vec result = a + b + c;   // result[i] = a[i] + b[i] + c[i], a single pass</code></pre>
+    <p>In game development expression templates are applied cautiously, despite the popularity of the approach itself, mostly where linear algebra lives, in simulations, physics, and the processing of large data arrays. Or when the engine uses a library like Eigen for its math.</p>
+    <p>But in everyday game math (short vectors of three or four components, multiplying 4×4 matrices) expression templates are usually overkill. Because the expressions are tiny, the temporary objects are minuscule and live in registers, and the compiler inlines and eliminates everything anyway. So most engines, for their <code>Vec3</code>/<code>Mat4</code> math, get by with ordinary operator overloads, reserving the heavy artillery of expression templates for large numerical problems, where it really does pay off.</p>
+    <h2 id="the-result-of-technique">The result_of technique</h2>
+    <p><code>result_of</code> is a technique for computing, at compile time, the type that a call to some callable object with given argument types will return. It sounds scary, I see it myself, but it's a fundamental need of generic code: a template that takes an arbitrary functor <code>F</code> and arguments must somehow declare the type it will get by calling <code>F</code> with those arguments. Without a mechanism to "ask the function type what it returns," generic algorithms over callable objects are impossible to write.</p>
+    <p>The historical difficulty was that before C++11 there was no <code>decltype</code>, and the language didn't let you find out the type of a call's result directly, so you had to require functors to provide a nested <code>result_type</code> or a special <code>result&lt;...&gt;</code> template that described the return type by convention, and <code>result_of</code> dug out this information. This worked only for functors willing to follow the protocol, and broke on ordinary functions and lambdas, which declared nothing of the sort.</p>
+    <p>You always have to pay for everything, and here the cost becomes a dependence on the protocol and the general fragility of the old <code>std::result_of</code>, which on top of that had awkward syntax and undefined behavior for non-callable combinations. C++11 gave us <code>decltype</code>, which lets you ask any callable directly for its result type, and on it they built <code>decltype(std::declval&lt;F&gt;()(std::declval&lt;Args&gt;()...))</code>. C++17 introduced <code>std::invoke_result</code> as a clean replacement, while <code>std::result_of</code> was declared deprecated and then removed.</p>
+    <p>The idiom and <code>result_of</code> itself came from Boost (<code>boost::result_of</code>), where there was an acute need to type the result of calling arbitrary functors in functional utilities. It entered the standard as <code>std::result_of</code> (C++11), then was reborn as <code>std::invoke_result</code> (C++17), absorbing the lessons and extending to pointers to members and other tricky callable entities through a single mechanism.</p>
+<pre style="margin:1.4rem 0"><code>// A generic wrapper function: what type will a call to F with Args return?
+template &lt;class F, class... Args&gt;
+auto invoke_and_log(F&amp;&amp; f, Args&amp;&amp;... args)
+    -&gt; std::invoke_result_t&lt;F, Args...&gt;
+    // C++17: the result type of the call
+{
+    log("calling");
+    return std::forward&lt;F&gt;(f)(std::forward&lt;Args&gt;(args)...);
+}
+
+// Before C++17 this was written via std::result_of&lt;F(Args...)&gt;::type</code></pre>
+    <h2 id="exploding-return-type">Exploding Return Type</h2>
+    <p>Exploring the previous mechanism, you can discover that there are functions which return not a ready value but an intermediate "intermediary" object, whose sole purpose is to turn into the needed type depending on the context it's assigned into. That is, the return type "explodes" into one of several possible results at the point of use, choosing a concrete one by what it's being converted into.</p>
+    <p>This is achieved with an intermediary object that has a set of overloaded conversion operators (<code>operator T()</code> for different <code>T</code>). The function returns this intermediary, and then, when the result is assigned to a variable of a concrete type or passed into a typed argument, the corresponding conversion operator fires, and the intermediary "becomes" the needed type, performing exactly the work that's appropriate for that type. One function, different results depending on what's wanted from it.</p>
+    <p>For everything... well, you get it... Implicit conversions are dangerous in general, and multiple implicit conversions on a single type are doubly dangerous, because they easily fire where you don't expect, conflict during overload resolution, break type deduction, and make <code>auto</code> .... unpredictable? So the idiom is considered appropriate in narrow, well-controlled scenarios, and there's almost always a less treacherous alternative.</p>
+    <p>Again this is part of the folklore, alongside related techniques like proxy objects, which many authors handled through conversions, and in essence it's an application of a proxy object (Temporary Proxy) to the task of "returning different things depending on the receiver."</p>
+<pre style="margin:1.4rem 0"><code>// An intermediary that "becomes" the needed type at the point of assignment
+struct DefaultValue {
+    template &lt;class T&gt;
+    operator T() const { return T{}; }     // for any T, returns a default-constructed T
+};
+
+DefaultValue make_default() { return {}; }
+
+int    a = make_default();   // operator int()    -&gt; 0
+float  b = make_default();   // operator float()  -&gt; 0.0f
+Vec3   c = make_default();   // operator Vec3()   -&gt; {0,0,0}</code></pre>
+    <p>In game engines this is forbidden in pure C++ form, or else used as "null" values that adapt to the target type, or in proxy results of config parsing and scripting bridges, where a value from a dynamic source must "unfold" into the requested static type. Scripting bindings and variant-value systems sometimes use similar conversions so that a value from Lua or from a property bag arrives as the needed C++ type.</p>
+    <h2 id="return-type-resolver">Return Type Resolver</h2>
+    <p>A development of the previous approach is a technique in which a function or object decides exactly what to return based on the type into which the result is required to be assigned. Now you can shift overload selection from the arguments to the type of the receiver. In ordinary C++, an overload is chosen by the arguments, and the return type plays no part in the choice at all, and you can't have two functions differing only by their return, but the Return Type Resolver gets around this by returning a resolver object with a template conversion operator that adapts to the required type.</p>
+    <p>The mechanics are the same as in the Exploding Return Type, but the emphasis is on implementing something like "polymorphism by return type," for example a factory that creates an object of the needed type, determined by where it's assigned, or a function like a hypothetical <code>default_value()</code> that gives a suitable zero for any type. The resolver captures the context (if needed) and in the conversion operator does the type-specific work.</p>
+    <p>You pay with unpredictability around <code>auto</code> (you'll store the resolver, not the result), and with potential ambiguities in debugging. Besides, this technique combines poorly with template code, which doesn't know the target type in advance at all, and it requires the point of assignment to specify the type unambiguously, so it's applied in narrow, well-defined APIs where the gain in expressiveness outweighs the risks.</p>
+    <p>The classic real-world example of this approach in the standard library would be <code>std::nothrow</code>-like techniques and, more explicitly, the behavior where a <code>nullptr</code>-like object (historically, hand-rolled null objects before <code>nullptr</code>) converts to a pointer of any type. Indeed, the arrival of <code>nullptr</code> in C++11 is in many ways the standardization of one particular case of a return type resolver, an object that "becomes" a null pointer of the needed type.</p>
+<pre style="margin:1.4rem 0"><code>// The resolver chooses what to return by the required type of the receiver
+class Zero {
+public:
+    template &lt;class T&gt; operator T*() const { return nullptr; }     // a null pointer of any type
+    operator int()   const { return 0; }
+    operator float() const { return 0.0f; }
+};
+
+Zero zero;
+int*    p = zero;   // operator T*&lt;int&gt;  -&gt; nullptr
+Entity* e = zero;   // operator T*&lt;Entity&gt; -&gt; nullptr
+float   f = zero;   // operator float()  -&gt; 0.0f</code></pre>
+    <p>Like its twin brother before it, the return type resolver in game development is effectively forbidden or used for a universal "zero/empty value." But systems that read data from untyped sources (configs, the network, scripts) sometimes use resolvers so that a value "materializes" as the required C++ type, although more often this is still done with explicit <code>get&lt;T&gt;()</code> methods.</p>
+    <p>The practical value of the idiom for the programmer is more in understanding that <code>nullptr</code> and similar "context-typed" entities are built like a return resolver, and in being able to recognize such a resolver in someone else's code and steer clear of it. In new code the general rule "explicit is better than implicit" applies, so where a return type resolver tempts you with its "elegance," you should prefer a function like <code>make&lt;T&gt;()</code>, whose target type is given explicitly by a parameter rather than inferred from a mysterious assignment context.</p>
+    <h2 id="named-constructor">Named Constructor</h2>
+    <p>Another technique that gets around a fundamental limitation of C++, where all of a class's constructors are named the same after the class and differ only by their parameter list. If you have several ways to create an object from the same set of argument types, you can't disambiguate them with constructor overloads: <code>Color(float, float, float)</code> can't mean both RGB and HSV at the same time. Named Constructor solves this by making the constructors private and exposing static functions with meaningful names, each of which creates the object in its own way.</p>
+    <p>Among the upsides of this approach we get better readability and disambiguation. <code>Color::from_rgb(1, 0, 0)</code> and <code>Color::from_hsv(0, 1, 1)</code> leave no doubt about the author's intent, whereas <code>Color(1, 0, 0)</code> makes you dig into the documentation. At the same time a named constructor can return an object of a derived type, hide complex initialization logic, validate arguments before creation, and in general decouple "what to call the creation" from "what the type is called."</p>
+    <p>You pay with the fact that the object is usually returned by value (or by a smart pointer), and before C++17 this meant a dependence on copy/move mechanics to avoid an extra copy. Also, such private constructors get in the way of putting the type into containers that require a public constructor, and of emplace construction, which sometimes has to be worked around with crutches.</p>
+    <p>This approach was described as far back as the nineties by Marshall Cline under the name "Named Constructor," and in the standard library you can see it in functions like <code>std::make_pair</code>/<code>std::make_unique</code>, although those are more like object generators.</p>
+<pre style="margin:1.4rem 0"><code>class Color {
+    float r_, g_, b_;
+    Color(float r, float g, float b) : r_(r), g_(g), b_(b) {}   // private
+public:
+    static Color from_rgb(float r, float g, float b) { return {r, g, b}; }
+    static Color from_hsv(float h, float s, float v) {
+        /* ... HSV-&gt;RGB conversion ... */
+        return {r, g, b};
+    }
+    static Color from_hex(std::uint32_t hex) {
+        return {((hex&gt;&gt;16)&amp;0xFF)/255.f, ((hex&gt;&gt;8)&amp;0xFF)/255.f, (hex&amp;0xFF)/255.f};
+    }
+};
+
+Color red    = Color::from_rgb(1, 0, 0);
+Color teal   = Color::from_hex(0x008080);   // the intent reads instantly</code></pre>
+    <p>In games the named constructor is ubiquitous precisely because there are plenty of types with several meaningful ways to create them from the same arguments. Colors (RGB/HSV/hex/temperature), angles and rotations (from degrees/radians/quaternion/axes), vectors (Cartesian/polar), transforms (from a matrix/from position-rotation-scale), and all of this is naturally expressed as a set of named constructors, and code like <code>Quat::from_axis_angle(up, angle)</code> reads far more pleasantly than <code>Quat(v1, v2)</code>.</p>
+    <p>There's especially a lot of such code in math and geometry libraries, where different coordinate systems and representations are a constant source of confusion and bugs, so in engine math named constructors are the de facto standard, and a good API almost never makes you guess what three nameless <code>float</code>s in a constructor mean.</p>
+    <h2 id="virtual-constructor">Virtual Constructor</h2>
+    <p>C++ folklore, and strictly speaking "wooden as glass," because a constructor in C++ cannot be virtual, and to call a constructor you must already know the exact type of the object being created, while virtuality is precisely about not knowing the exact type. But this technique lets you get around this impossibility, emulating "creating an object of a type unknown at the time of writing" through ordinary virtual functions. It has two varieties: virtual cloning (<code>clone</code>) and virtual creation (<code>create</code>).</p>
+    <p><code>clone</code> solves the task of "copying an object knowing only a pointer to the base class," when you can't write <code>new Derived(*basePtr)</code> without knowing it's a <code>Derived</code>, but you can declare <code>clone()</code>, which each descendant overrides, returning a copy of itself of its exact type. The call <code>basePtr-&gt;clone()</code> will give the correct copy of the correct type, even though the caller knows only the base, while <code>create</code> similarly creates a new object of the same type without copying.</p>
+    <p>You always have to pay for everything, and cloning requires every class in the hierarchy to implement its own <code>clone</code>, but this is easy to forget to do in a new object. Plus it's a virtual call with an allocation, so definitely not for hot paths. The approach was popularized by Cline, while the "Prototype" from the Gang of Four explained it at the level of a design pattern, through creating objects by copying a prototype via a polymorphic <code>clone</code>. That is, conceptually it's old knowledge, going back to the very earliest discussions of how to get around the non-virtuality of constructors in C++.</p>
+<pre style="margin:1.4rem 0"><code>struct Enemy {
+    virtual ~Enemy() = default;
+    virtual std::unique_ptr&lt;Enemy&gt; clone() const = 0;   // virtual copying
+    virtual std::unique_ptr&lt;Enemy&gt; create() const = 0;  // virtual creation
+};
+
+struct Orc : Enemy {
+    int rage;
+    std::unique_ptr&lt;Enemy&gt; clone()  const override {
+      return std::make_unique&lt;Orc&gt;(*this);
+    }
+    std::unique_ptr&lt;Enemy&gt; create() const override {
+      return std::make_unique&lt;Orc&gt;();
+    }
+};
+
+// We know only Enemy*, but we get the correct copy of the correct type:
+std::unique_ptr&lt;Enemy&gt; spawn_copy(const Enemy&amp; prototype) {
+  return prototype.clone();
+}</code></pre>
+    <p>In game development virtual cloning is the most ordinary workhorse of systems like enemy and item spawners, which have a reference instance copied on creation. Or save/load systems and editors, that is, everywhere you need to "make another one like this" or "copy this" given only a pointer to the base, <code>clone</code> will be the natural solution.</p>
+    <p>It's worth noting that modern engines, especially data-oriented ones, often get by without polymorphic cloning, because an entity is now a set of data in components rather than an object with virtual methods. So "cloning" it can be done simply by copying the components, without any virtual <code>clone</code>.</p>
+    <p>The virtual constructor shows up most vividly in more classical object architectures and in editor/tooling code, where hierarchies of polymorphic objects are still appropriate and performance during copying isn't critical.</p>
+    <h2 id="computational-constructor">Computational Constructor</h2>
+    <p>This is a technique for avoiding extra temporary objects when a constructor must perform a computation over its arguments. The naive approach would be to compute the result in a free function and return it, which produces a temporary object that's then copied or moved to the destination, while the computational constructor instead computes the result right "in place," in the body of the object's constructor, initializing its fields with the result of the computation without an intermediate temporary.</p>
+    <p>The idea is to move the computation itself inside construction. Instead of <code>Matrix result = multiply(a, b);</code>, where <code>multiply</code> creates and returns a temporary matrix, you make a constructor <code>Matrix(const Matrix&amp; a, const Matrix&amp; b)</code> that computes the product straight into its fields. The target object is built immediately with the correct contents, and no extra temporary matrix is born, which is especially good for large objects whose copying is expensive.</p>
+    <p>The evolution of the language largely devalued this idiom, adding to the language first copy elision and RVO, which taught the compiler to eliminate temporaries when returning by value in most cases, and then C++11 move semantics, which made the "extra" copy a cheap move. C++17 removed the temporary object on <code>return</code> entirely, and as a result a modern <code>Matrix multiply(...)</code> returning by value often generates the same code as a computational constructor, but reads better.</p>
+    <p>The technique belongs to the pre-move-semantics era, and its goal was the same fight against temporary objects that drove expression templates too, and it was often discussed in connection with return value optimization in Meyers's books and in the high-performance C++ literature of the nineties and 2000s.</p>
+<pre style="margin:1.4rem 0"><code>class Matrix4 {
+    float m_[16];
+public:
+    // Computational constructor: the product is computed straight into this's fields,
+    // with no temporary result matrix
+    Matrix4(const Matrix4&amp; a, const Matrix4&amp; b) {
+        for (int r = 0; r &lt; 4; ++r)
+            for (int c = 0; c &lt; 4; ++c) {
+                float s = 0;
+                for (int k = 0; k &lt; 4; ++k) s += a.m_[r*4+k] * b.m_[k*4+c];
+                m_[r*4+c] = s;
+            }
+    }
+};
+
+Matrix4 mvp(model_view, projection);   // built immediately as the product</code></pre>
+    <p>The fight against extra temporaries in math is always relevant, but the computational constructor in its pure form is rarely applied today, because for small types (a 4×4 matrix, a vector) the temporaries already live in registers and are eliminated by the compiler, while for large ones people prefer move semantics and explicit in-place operations like <code>multiply_into(result, a, b)</code>, which show even more transparently where the write happens, so the readability of <code>Matrix mvp = model_view * projection;</code> usually wins out.</p>
+    <p>Nevertheless the principle itself, "compute straight into the destination, don't breed intermediate objects," still remains a cornerstone for performance-oriented programmers. The computational constructor is worth knowing as an early form of move-semantics and copy-elision ideas, as a reminder that in the era before RVO and move, programmers had to fight temporary objects by hand, inventing special constructors for it.</p>
+    <h2 id="construct-on-first-use">Construct On First Use</h2>
+    <p>Construct On First Use cures the C++ ailment of the "static initialization order fiasco," because the order of initialization of global and static objects from different translation units is not defined by the standard. If one global object in its constructor refers to another global object from a different .cpp file, there's no guarantee that the latter is already constructed, and it may well still be zero, and you get a reference to an unfinished object even before entering <code>main</code>.</p>
+    <p>This is solved by hiding the global object behind a function that creates it on first access. The object is declared as a local <code>static</code> variable inside an accessor function, and local statics, unlike globals, are guaranteed to be initialized on the first pass through their declaration, rather than at some undefined moment before <code>main</code>. Anyone who needs the object calls <code>instance()</code>, and on the very first call the object is constructed, after which the same one is always returned. The initialization order becomes the order of accesses you define, rather than the whim of the linker.</p>
+    <p>You always have to... well, you get it... Now we end up with two different variants of the object with different lifetime semantics, because the version with a local static by value (<code>static Foo f; return f;</code>) destroys the object in reverse order at exit, which can bring the fiasco back at the destruction stage, while the version with <code>new</code> (<code>static Foo* f = new Foo; return *f;</code>) never destroys the object and is a deliberate "leak," which is safe because the OS reclaims the memory anyway, but doesn't call the destructor, which is bad if the destructor must do something (flush a file, close a socket). Plus, since C++11, local statics are also thread-safe at initialization, which adds a mutex check on every access.</p>
+    <p>This technique is another classic from Cline's articles, where it was described as a cure for the static init order fiasco, and the guarantee of thread-safe initialization of local statics ("magic statics") appeared in C++11 and made it even more reliable, removing the need for manual locks around lazy initialization.</p>
+<pre style="margin:1.4rem 0"><code>// Instead of a global Logger logger; (with the risk of an init-order fiasco):
+Logger&amp; logger() {
+    static Logger instance;
+    // created on the first call, thread-safe (C++11)
+    return instance;
+}
+
+// Any code, including from other globals' constructors, safely calls it
+void boot() { logger().info("engine starting"); }</code></pre>
+    <p>In games this is the standard way to set up "global" subsystems and singletons that must be guaranteed to exist by the time of first use: the logger, the memory manager, the type registry for reflection, global tables. It's also used for systems that register themselves during static initialization (via global registrar objects) and need to access a central registry, and the registry must be ready by that moment, which is exactly what construct on first use provides.</p>
+    <p>But in large engines global state in general is viewed with suspicion, with a preference for explicit initialization of subsystems in a controlled order at engine startup, so Construct on first use is good as an insurance against globals, if you do end up having them.</p>
+    <h2 id="nifty-counter">Nifty Counter</h2>
+    <p>The Nifty Counter solves the same initialization-order problem, but for the case where the object must be a true global with a guaranteed destructor, rather than a lazy local static. The classic example is the <code>std::cout</code>, <code>std::cin</code>, <code>std::cerr</code> streams, which must be ready to use in the constructor of any of the user's global objects and close correctly when the program terminates. Construct on first use doesn't solve the problem here, and an ordinary global suffers from the undefined order.</p>
+    <p>So in the header that every client includes, a static counter object is declared (one per translation unit that included the header), and the constructor of this counter, on its very first call (when the counter goes from zero to one), initializes the real global object, placing it in a pre-reserved buffer via placement new.</p>
+    <p>Subsequent counters see a nonzero value and do nothing more, and on program termination the counters' destructors run in reverse order, and the one that zeroes the counter calls the destructor of the real object, so the object is guaranteed to be created before first use and destroyed after the last.</p>
+    <p>You pay for this with a cumbersome manual system of managing a raw buffer, placement new, and an explicit destructor call, plus a counter in every translation unit. Debugging such initialization/destruction-order problems will, as you can imagine, be a very unpleasant occupation, so it's almost never written by hand in application code, and it remains the province of the standard library and rare system components.</p>
+    <p>It's also called the "Schwarz Counter," after Jerry Schwarz, who came up with this technique while implementing the <code>&lt;iostream&gt;</code> I/O streams in the early days of C++ at AT&amp;T, to solve precisely the problem of initializing <code>cout</code> and company. This is perhaps the oldest of the techniques from the '80s that has survived to our day and is literally sewn into the <code>&lt;iostream&gt;</code> header, which just about every C++ program includes.</p>
+<pre style="margin:1.4rem 0"><code>// stream_setup.h — included by every client
+class StreamInitializer {
+    static int count_;
+public:
+    StreamInitializer()  { if (count_++ == 0) init_streams();  }
+    // the first one creates
+    ~StreamInitializer() { if (--count_ == 0) cleanup_streams(); }
+    // the last one destroys
+};
+static StreamInitializer stream_init_;   // its own in every translation unit
+
+// This is exactly how std::cout is initialized under the hood before first use</code></pre>
+    <p>For obvious reasons the nifty counter in its pure form is almost never seen in games; it's a very specific tool, and engines usually manage subsystem lifetimes explicitly, with a controlled sequence in code, rather than the magic of static initialization. But you use it indirectly every time you write to <code>std::cout</code> from a tool or debug code: behind the fact that the stream is ready to work stands precisely the Schwarz counter in the <code>&lt;iostream&gt;</code> header.</p>
+    <p>Conceptually it's useful to know the nifty counter as an illustration of how deep the initialization-order problem can be and at what cost it was solved for the language's basic components. In engines, though, the general conclusion is usually the opposite: instead of erecting fragile global-initialization magic, it's better not to have globals at all, but to initialize everything explicitly and in a known order, and then neither construct on first use nor the Schwarz counter will simply be needed.</p>
+    <h2 id="runtime-static-initialization-order">Runtime Static Initialization Order</h2>
+    <p>The two sections before this described how to get around the problem, but didn't solve it itself. If construct on first use breaks the dependency with lazy creation, and the nifty counter serves a single central object, then a more general mechanism would be not to rely on static initialization order at all, but to introduce an explicit runtime phase in which subsystems are initialized in an order that you control.</p>
+    <p>During static initialization the global objects merely register themselves (add themselves to a list, to a registry), doing nothing that depends on others, while the real initialization with all the dependencies happens later, in an explicitly called function, when you're already in control of the order. Registering globals is safe, because adding to a list doesn't depend on the state of other objects.</p>
+    <p>You pay for this with a separate application architecture, where you need to consistently draw the line between "registered during static initialization" and "initialized at runtime," and not give in to the temptation to do something in a global's constructor that depends on other globals. But this approach gives you full control and scales well to dozens of interdependent subsystems.</p>
+    <p>This technique became collective knowledge and a development of the ideas of Schwarz, Meyers, and Cline. In essence it's an acknowledgment that the language provides no good built-in solution for ordered initialization of global state with dependencies, and that the right answer almost always is to move initialization out of "before main" into a controlled runtime.</p>
+<pre style="margin:1.4rem 0"><code>// Globals merely REGISTER themselves during static initialization (this is safe):
+struct Subsystem {
+  virtual void init() = 0;
+  virtual int priority() const = 0;
+};
+
+std::vector&lt;Subsystem*&gt;&amp; registry() {
+  static std::vector&lt;Subsystem*&gt; r; return r;
+}
+void register_subsystem(Subsystem* s) {
+  registry().push_back(s);
+}
+
+// The real initialization happens at runtime, in the order WE define:
+void init_all() {
+    auto&amp; subs = registry();
+    std::sort(subs.begin(), subs.end(),
+              [](auto* a, auto* b){
+                  return a-&gt;priority() &lt; b-&gt;priority();
+              });
+
+    for (auto* s : subs)
+      s-&gt;init();   // dependencies resolved by priority order
+}</code></pre>
+    <p>In games this is, in essence, a description of how the startup of most engines and subsystems is arranged (memory, file system, renderer, audio, physics, scripts), which are initialized in a strictly defined order by an explicit sequence at launch, because they have real dependencies and that same renderer is needed after the window, physics after the allocators, and so on. Some of the subsystems register themselves automatically through global registrar objects, and the engine then initializes them in the right order.</p>
+    <p>This is exactly why in engines you so rarely encounter "heavy" global objects with logic in their constructors, because the industry learned from its own bitter experience that relying on static initialization order means dooming yourself to mysterious crashes that depend on link order and are therefore irreproducible.</p>
+    <h2 id="base-from-member">Base-from-Member</h2>
+    <p>Base-from-Member solves the initialization-order problem within a single object: what to do when a base class needs to be passed, in its constructor, something that is itself a member of the derived class. The trouble is that base classes are initialized strictly before the members of the derived class by the language rule, which means that by the time the base's constructor is called, the derived member doesn't yet exist, and you can't pass it to the base, because you'd be passing a reference to a not-yet-created object.</p>
+    <p>The classic scenario is when a base class wants a reference to a stream or buffer in its constructor, while that stream logically belongs to the derived class as its member. You can't express this directly: <code>Derived() : Base(member_), member_(...)</code>, and accessing <code>member_</code> before its construction would be undefined behavior.</p>
+    <p>This technique gets around it by introducing an additional intermediate base class that holds the needed member and is initialized before the main base (because it's declared earlier in the inheritance list), and then the main base can legally obtain a reference to the member living in this intermediate base class.</p>
+    <p>You pay with a non-obvious helper base class for a purely technical reason, which muddles the hierarchy and requires a comment "why is this here." Plus it's applicable only in the specific situation "the base needs a member that doesn't exist yet," and it's often simpler to reconsider the class design and not make the object both a base and the owner of the resource it needs at the same time, but when there's no such option (for example, when inheriting from someone else's class like the standard streams), base-from-member turns out to be the only clean way out.</p>
+    <p>This behavior was invented in Boost as <code>boost::base_from_member</code>, and the canonical solution was for streams, where a class derives from <code>std::ostream</code>, which needs to be passed in its constructor a pointer to a buffer that is a member of that same derived class.</p>
+<pre style="margin:1.4rem 0"><code>// An intermediate base holding a member that the main base will need
+struct BufferHolder {
+    StreamBuffer buffer;
+    BufferHolder() : buffer() {}
+};
+
+// BufferHolder comes before Stream in the list =&gt; its buffer is already alive
+// when Stream is constructed, and a reference to it can be passed legally
+class LoggingStream : private BufferHolder, public Stream {
+public:
+    LoggingStream() : BufferHolder(), Stream(&amp;buffer) {}
+    // buffer is already constructed
+};</code></pre>
+    <p>In games base-from-member is a rare guest; I haven't seen it used in all my years in development, and it's needed for custom <code>std::ostream</code>s, of which there are almost none, for logging to a file/console/network with one's own buffer. That is, it's a tool for the boundaries with someone else's code that imposes an inconvenient initialization order.</p>
+    <p>The pattern "the base needs my member" is considered a sign that responsibilities in the hierarchy are poorly distributed and it should be reconsidered, but the idiom is worth knowing, and when you run into the need to pass the base your future member, you have to understand that this is almost always a path to undefined behavior, or else a matter of hoping for the phase of the moon and that it all works out.</p>
+
+    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part3.html">Part 3 →</a></p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>

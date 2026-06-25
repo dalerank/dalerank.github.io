@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>C++101 (Ч.1) — dalerank</title>
+<meta name="description" content="Каталог из ~100 идиом, идей и приёмов C++, выросший из раздела Game++. Часть 1: управление ресурсами и компиляция — RAII, Scope Guard, copy-and-swap, smart pointer, intrusive refcounting, copy-on-write, Pimpl и Fast Pimpl, interface class, include/inline/export guard, CRTP, Barton-Nackman, EBO, non-copyable mixin и metafunction." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part1.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part1.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="cpp101-part1.html">RU</a><i>/</i><a href="../en/articles/cpp101-part1.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>C++101 (Ч.1)</h1><div class="ameta"><span>21 июня 2026</span><span>38 мин</span></div></div>
+  <article class="prose">
+    <p class="cap" style="margin-bottom:1.2rem">C++101 — каталог идиом и приёмов C++ в четырёх частях: <b>Ч.1</b> · <a href="cpp101-part2.html">Ч.2</a> · <a href="cpp101-part3.html">Ч.3</a> · <a href="cpp101-part4.html">Ч.4</a></p>
+    <img src="../assets/articles/cpp101-part1/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Про C++ часто шутят, что любую вещь можно сделать пятью разными путями, четыре из которых компилируются, три работают, а два правильные, но один зависит от фазы луны. Часто такие шутки и идиомы откладываются в коллективной памяти сообщества какой именно из этих путей правильный в каждой конкретной ситуации.</p>
+    <p>Большинство этих примеров родилось в эпоху до C++11, когда у языка ещё не было ни умных указателей в стандарте, ни move-семантики, ни <code>constexpr</code>, ни концептов, и приходилось руками собирать из шаблонов и перегрузок некоторые конструкции, которые в более поздних стандартах язык даёт почти бесплатно. Многие идиомы, примеры и идеи стоит читать в двух смыслах сразу, как исторический артефакт, объясняющий «почему старый код выглядит вот так», и как живой приём, который всё ещё применяется в движках и играх.</p>
+    <p>Разработка игр тут не случайно, потому что игровой движок это обычно место, где абстракции встречаются с профилировщиком, и проигрывают ему чаще, чем хотелось бы. А легаси паттерны цветут и пахнут из-за чьих-то забытых в углу костылей, но большинство вещей вполне правильны, применяются и спасают от ошибок. Многое из этого спрашивают если не дословно, то хотя в паре слов, хорошие лиды на собесе, перед тем как позвать вас в команду, и просто взяв рандомо 5-6 пунктов можно составить впечатление, сталкивался ли новый человек с определенными проблемами.</p>
+    <p>Когда я собирал оглавление <em>Game++</em>, раздел про идиомы, идеи, паттерны и механизмы C++ планировался шестым и завершающим, и должен был занять страниц сто, по одной на каждый пункт, но чем дальше я собирал материал, тем яснее становилось, что каждая секция тянет за собой историю, а каждая история требует контекста, а каждый контекст в игрострое никогда не бывает простым. В итоге текст разросся до размеров, при которых он просто сломал бы структуру книги, и мне пришлось выбирать между «урезать до неузнаваемости» и «отпустить жить отдельно». Пришлось выбрать второе.</p>
+    <p>Перед вами то, что могло бы стать <a href="https://www.ozon.ru/product/game-ustroystvo-i-optimizatsiya-igrovogo-dvizhka-3541648050" target="_blank" rel="noopener">половиной <em>Game++</em></a>, но стало самостоятельным материалом. Здесь собраны идиомы, идеи, паттерны и механизмы C++, которые сложились в сообществе за несколько десятилетий и продолжают жить в кодовых базах игровых движков, иногда под своими именами, иногда под другими, иногда вообще без имён, потому что их давно перестали объяснять. У большинства имена все же есть, есть и история с ответом почему именно так, а не иначе.</p>
+    <p>Вероятно вам потребуется вспомнить некоторые правила вывода шаблонов, и что такое конструктор и деструктор, чем стек отличается от кучи, что у объекта есть время жизни, но это не точно. Я также намеренно убрал обработку краевых случаев и разные проверки из кода, которые в реальном коде заняли бы половину всего текста и утопили бы саму мысль в деталях. Паттерн механизма в моем случае важнее конкретной реализации, и почти каждая из них существует в десятке вариаций под разные компиляторы и стандарты.</p>
+    <details class="code"><summary>Оглавление — все идиомы серии</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#raii-resource-acquisition-is-initialization">RAII (Resource Acquisition Is Initialization)</a></li><li><a href="#scope-guard">Scope Guard</a></li><li><a href="#resource-return">Resource Return</a></li><li><a href="#copy-and-swap">Copy-and-swap</a></li><li><a href="#non-throwing-swap">Non-throwing swap</a></li><li><a href="#smart-pointer">Smart Pointer</a></li><li><a href="#checked-delete">Checked delete</a></li><li><a href="#intrusive-reference-counting">Intrusive reference counting</a></li><li><a href="#copy-on-write">Copy-on-write</a></li><li><a href="#thread-safe-copy-on-write">Thread-safe Copy-on-write</a></li><li><a href="#free-function-allocators">Free Function Allocators</a></li><li><a href="#pimpl-handle-body-compilation-firewall-cheshire-cat">Pimpl (Handle Body, Compilation Firewall, Cheshire Cat)</a></li><li><a href="#fast-pimpl">Fast Pimpl</a></li><li><a href="#interface-class">Interface Class</a></li><li><a href="#concrete-data-type">Concrete Data Type</a></li><li><a href="#final-class">Final Class</a></li><li><a href="#include-guard-macro">Include Guard Macro</a></li><li><a href="#inline-guard-macro">Inline Guard Macro</a></li><li><a href="#export-guard-macro">Export Guard Macro</a></li><li><a href="#curiously-recurring-template-pattern-crtp">Curiously Recurring Template Pattern (CRTP)</a></li><li><a href="#barton-nackman-trick">Barton-Nackman trick</a></li><li><a href="#empty-base-optimization-ebo">Empty Base Optimization (EBO)</a></li><li><a href="#non-copyable-mixin">Non-copyable Mixin</a></li><li><a href="#parameterized-base-class">Parameterized Base Class</a></li><li><a href="#metafunction">Metafunction</a></li><li><a href="cpp101-part2.html#traits">Traits</a></li><li><a href="cpp101-part2.html#tag-dispatching">Tag Dispatching</a></li><li><a href="cpp101-part2.html#int-to-type-integer-to-type-map">Int-To-Type (Integer-to-Type Map)</a></li><li><a href="cpp101-part2.html#type-selection">Type Selection</a></li><li><a href="cpp101-part2.html#sfinae-substitution-failure-is-not-an-error">SFINAE (Substitution Failure Is Not An Error)</a></li><li><a href="cpp101-part2.html#enable-if">enable-if</a></li><li><a href="cpp101-part2.html#member-detector">Member Detector</a></li><li><a href="cpp101-part2.html#policy-based-design">Policy-based Design</a></li><li><a href="cpp101-part2.html#policy-clone-metafunction-wrapper">Policy Clone (Metafunction wrapper)</a></li><li><a href="cpp101-part2.html#type-erasure">Type Erasure</a></li><li><a href="cpp101-part2.html#type-generator-templated-typedef">Type Generator (Templated Typedef)</a></li><li><a href="cpp101-part2.html#thin-template">Thin Template</a></li><li><a href="cpp101-part2.html#named-template-parameters">Named Template Parameters</a></li><li><a href="cpp101-part2.html#coercion-by-member-template">Coercion by Member Template</a></li><li><a href="cpp101-part2.html#shortening-long-template-names">Shortening Long Template Names</a></li><li><a href="cpp101-part2.html#expression-template">Expression-template</a></li><li><a href="cpp101-part2.html#the-result-of-technique">The result_of technique</a></li><li><a href="cpp101-part2.html#exploding-return-type">Exploding Return Type</a></li><li><a href="cpp101-part2.html#return-type-resolver">Return Type Resolver</a></li><li><a href="cpp101-part2.html#named-constructor">Named Constructor</a></li><li><a href="cpp101-part2.html#virtual-constructor">Virtual Constructor</a></li><li><a href="cpp101-part2.html#computational-constructor">Computational Constructor</a></li><li><a href="cpp101-part2.html#construct-on-first-use">Construct On First Use</a></li><li><a href="cpp101-part2.html#nifty-counter">Nifty Counter</a></li><li><a href="cpp101-part2.html#runtime-static-initialization-order">Runtime Static Initialization Order</a></li><li><a href="cpp101-part2.html#base-from-member">Base-from-Member</a></li><li><a href="cpp101-part3.html#calling-virtuals-during-initialization">Calling Virtuals During Initialization</a></li><li><a href="cpp101-part3.html#construction-tracker">Construction Tracker</a></li><li><a href="cpp101-part3.html#attach-by-initialization">Attach by Initialization</a></li><li><a href="cpp101-part3.html#non-virtual-interface-nvi">Non-Virtual Interface (NVI)</a></li><li><a href="cpp101-part3.html#thread-safe-interface">Thread-Safe Interface</a></li><li><a href="cpp101-part3.html#acyclic-visitor-pattern-c">Acyclic Visitor Pattern (cложно)</a></li><li><a href="cpp101-part3.html#capability-query">Capability Query</a></li><li><a href="cpp101-part3.html#covariant-return-types">Covariant Return Types</a></li><li><a href="cpp101-part3.html#virtual-friend-function">Virtual Friend Function</a></li><li><a href="cpp101-part3.html#fake-vtable">Fake Vtable</a></li><li><a href="cpp101-part3.html#algebraic-hierarchy">Algebraic Hierarchy</a></li><li><a href="cpp101-part3.html#polymorphic-exception">Polymorphic Exception</a></li><li><a href="cpp101-part3.html#polymorphic-value-types">Polymorphic Value Types</a></li><li><a href="cpp101-part3.html#hierarchy-generation">Hierarchy Generation</a></li><li><a href="cpp101-part3.html#function-object-functor">Function Object (Functor)</a></li><li><a href="cpp101-part3.html#object-generator">Object Generator</a></li><li><a href="cpp101-part3.html#object-template">Object Template</a></li><li><a href="cpp101-part3.html#iterator-pair">Iterator Pair</a></li><li><a href="cpp101-part3.html#generic-container">Generic Container</a></li><li><a href="cpp101-part3.html#erase-remove">Erase-Remove</a></li><li><a href="cpp101-part3.html#clear-and-minimize">Clear-and-minimize</a></li><li><a href="cpp101-part3.html#shrink-to-fit">Shrink-to-fit</a></li><li><a href="cpp101-part3.html#safe-bool">Safe bool</a></li><li><a href="cpp101-part3.html#type-safe-enum">Type Safe Enum</a></li><li><a href="cpp101-part3.html#attorney-client">Attorney-Client</a></li><li><a href="cpp101-part4.html#making-new-friends">Making New Friends (сложно)</a></li><li><a href="cpp101-part4.html#non-member-non-friend-function">Non-member Non-friend Function (сложно)</a></li><li><a href="cpp101-part4.html#small-object-optimization-soo-sso">Small Object Optimization (SOO/SSO)</a></li><li><a href="cpp101-part4.html#prohibiting-heap-based-objects">Prohibiting Heap-based Objects</a></li><li><a href="cpp101-part4.html#storage-class-tracker">Storage Class Tracker</a></li><li><a href="cpp101-part4.html#execute-around-pointer">Execute-Around Pointer</a></li><li><a href="cpp101-part4.html#temporary-proxy">Temporary Proxy</a></li><li><a href="cpp101-part4.html#address-of">Address Of</a></li><li><a href="cpp101-part4.html#nullptr">nullptr</a></li><li><a href="cpp101-part4.html#move-constructor">Move Constructor</a></li><li><a href="cpp101-part4.html#implicit-conversions">Implicit conversions</a></li><li><a href="cpp101-part4.html#recursive-type-composition">Recursive Type Composition (сложно)</a></li><li><a href="cpp101-part4.html#temporary-base-class">Temporary Base Class</a></li><li><a href="cpp101-part4.html#boost-mutant">Boost mutant</a></li><li><a href="cpp101-part4.html#multi-statement-macro">Multi-statement Macro</a></li><li><a href="cpp101-part4.html#named-loop">Named Loop</a></li><li><a href="cpp101-part4.html#named-parameter">Named Parameter</a></li><li><a href="cpp101-part4.html#named-external-argument">Named External Argument</a></li><li><a href="cpp101-part4.html#deprecate-and-delete">Deprecate and Delete</a></li><li><a href="cpp101-part4.html#function-poisoning">Function Poisoning</a></li><li><a href="cpp101-part4.html#inner-class">Inner Class</a></li><li><a href="cpp101-part4.html#rule-of-zero-three-five">Rule of Zero/Three/Five</a></li><li><a href="cpp101-part4.html#most-vexing-parse">Most Vexing Parse</a></li><li><a href="cpp101-part4.html#pass-key">Pass-key</a></li><li><a href="cpp101-part4.html#defaulted-comparisons-spaceship">Defaulted Comparisons и оператор &lt;=&gt; (Spaceship)</a></li></ul></div></details>
+    <h2 id="raii-resource-acquisition-is-initialization">RAII (Resource Acquisition Is Initialization)</h2>
+    <p>RAII, пожалуй, самая фундаментальная идиома C++, и одновременно хуже всех осознаваемая новичками, потому что её не видно. Идея в том, что захват любого ресурса (памяти, файла, мьютекса, дескриптора текстуры, GPU-фенса) привязывается к конструктору объекта, а освобождение, что логично, к деструктору. Дальше язык сам гарантирует, что когда объект покидает область видимости, деструктор будет вызван, как бы вы оттуда ни вышли, через нормальным <code>return</code>, с исключением посреди функции или <code>break</code> из середины цикла.</p>
+    <p>Главная ценность тут не в том, что вы не забудете написать <code>free</code> или <code>unlock</code>, хотя и в этом тоже, а что освобождение становится корректным при исключениях. Без RAII любой <code>throw</code> между захватом и ручным освобождением будет утечкой, и в коде, который кидает исключения из десятка мест, отследить все пути выхода вручную физически сложно, так что RAII перекладывает всю эту бухгалтерию на компилятор, который раскручивает стек и зовёт деструкторы в строго обратном порядке конструирования.</p>
+    <p>Подводный камень в том, что RAII работает ровно настолько хорошо, насколько корректно написан деструктор, и кидать исключения из деструктора в C++ это все равно билет в один конец к станции<code>std::terminate</code>. Поэтому RAII-обёртки обязаны освобождать ресурс без права на ошибку, а вся логика, которая может упасть, должна жить в обычных методах.</p>
+    <p>Термин ввёл Бьёрни Страуструп ещё на заре языка, изначально думая в основном про память и время жизни, и название получилось, по его же признанию, не самым удачным, потому что «захват ресурса есть инициализация» подчёркивает половину идеи (захват в конструкторе) и совсем не подчёркивает вторую, гораздо более важную (освобождение в деструкторе).</p>
+    <p>Со временем появились более выразительные имена для частных случаев: Scoped Locking для мьютексов в работах Дугласа Шмидта или Execute-Around Object для обёрток, которые делают что-то на входе и что-то на выходе из области видимости.</p>
+<pre style="margin:1.4rem 0"><code>class ScopedTextureBind {
+public:
+    explicit ScopedTextureBind(GLuint texture) {
+        glBindTexture(GL_TEXTURE_2D, texture);
+    }
+    ~ScopedTextureBind() {
+        glBindTexture(GL_TEXTURE_2D, 0);  // освобождаем что бы ни случилось
+    }
+    ScopedTextureBind(const ScopedTextureBind&amp;) = delete;
+    ScopedTextureBind&amp; operator=(const ScopedTextureBind&amp;) = delete;
+};
+
+void draw_hud() {
+    ScopedTextureBind bind(hud_atlas);
+    submit_quads();   // даже если тут вылетит исключение,
+                      // текстура будет отвязана при выходе
+}</code></pre>
+    <p>В играх RAII живёт буквально везде, но часто под другими именами. Любой <code>ScopedTimer</code>, который меряет, сколько занял кусок кадра, и пишет результат в профайлер в деструкторе тоже будет RAII. Любой <code>RenderPassScope</code>, открывающий render pass в конструкторе и закрывающий в деструкторе, тоже будет RAII. Командные буферы, привязки состояния GPU, блокировки на время доступа к стримингу ресурсов из фонового потока: всё это обёртки, которые гарантируют симметрию «открыл/закрыл» даже когда логика внутри кадра ветвится неисповедимой программерской мыслью.</p>
+    <h2 id="scope-guard">Scope Guard</h2>
+    <p>Это RAII, доведённый до логического олимпа, когда вместо того чтобы писать отдельный класс-обёртку под каждый ресурс, вы создаёте универсальный объект, которому в конструкторе передаёте произвольное действие (лямбду, функтор, указатель на функцию), и это действие выполняется в деструкторе. Получается «отложенный код», который гарантированно сработает при выходе из области видимости.</p>
+    <p>Есть возможность «обезвредить» guard вызовом чего-то вроде <code>dismiss()</code>, если операция в итоге прошла успешно и откатывать ничего не надо, что превращает Scope Guard в идеальный инструмент для транзакционной логики. Теперь можно делать шаг, ставить guard на его откат, делать следующий шаг, и если в конце всё хорошо, то снимать все guard-ы, а если посреди что-то упало, деструкторы откатят уже сделанные шаги в обратном порядке.</p>
+    <p>Идиому популяризировали Александреску и Маргинин в статьях начала 2000-х, и оттуда пошло название ScopeGuard. Позже Александреску переосмыслил её с учётом move-семантики и в C++11 представил <code>SCOPE_EXIT</code>/<code>SCOPE_FAIL</code>/<code>SCOPE_SUCCESS</code> как варианты, срабатывающие соответственно всегда, только при исключении и только при нормальном выходе. В современном виде это живёт в библиотеке folly от Facebook и просочилось в <code>std::experimental::scope_exit</code>.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class F&gt;
+class ScopeGuard {
+    F func_;
+    bool active_ = true;
+public:
+    explicit ScopeGuard(F f) : func_(std::move(f)) {}
+    ~ScopeGuard() { if (active_) func_(); }
+    void dismiss() { active_ = false; }
+    ScopeGuard(ScopeGuard&amp;&amp; o) : func_(std::move(o.func_)), active_(o.active_) { 
+      o.dismiss(); 
+    }
+};
+
+template &lt;class F&gt;
+ScopeGuard&lt;F&gt; make_guard(F f) { return ScopeGuard&lt;F&gt;(std::move(f)); }
+
+void load_level(Level&amp; lvl) {
+    auto* mem = pool.allocate(lvl.size);
+    auto cleanup = make_guard([&amp;]{ pool.free(mem); });  // откат по умолчанию
+
+    decompress_into(mem, lvl.archive);
+    register_resources(mem);
+    cleanup.dismiss();   // дошли до конца, память остаётся за уровнем
+}</code></pre>
+    <p>Scope Guard незаменим там, где загрузка ресурса состоит из нескольких шагов, каждый из которых может провалиться, например, выделили память в пуле, начали декомпрессию, зарегистрировали хендлы в менеджере ресурсов. Если декомпрессия упала на середине, нужно вернуть память в пул и снять уже зарегистрированные хендлы, иначе пул потечёт, а менеджер ресурсов будет ссылаться на мусор.</p>
+    <p>Или тулчейны и редакторы уровней, потому что там операций с откатом ещё больше. Импорт ассета, который трогает несколько систем сразу, должен либо примениться целиком, либо не оставить следов своей работы. Scope Guard позволяет писать такую транзакционную логику линейно, сверху вниз, без вложенных «лестниц очистки», что резко снижает количество багов.</p>
+    <h2 id="resource-return">Resource Return</h2>
+    <p>Идиома про то, как функция отдаёт наружу владение ресурсом, не давая вызывающему коду случайно его потерять. В наивном варианте функция возвращает сырой указатель (<code>Texture* load_texture(...)</code>), и дальше начинается лотерея, если вызывающий забыть удалить, или удалил дважды, или вовсе потерял указатель в промежуточной переменной при исключении. Resource Return требует возвращть не сырой ресурс, а объект, который сам знает, как этот ресурс освободить.</p>
+    <p>В классическом до-C++11 виде это означало возврат по значению объекта-владельца с продуманной семантикой копирования (часто через <code>auto_ptr</code>, со всеми его странностями передачи владения при копировании). Идея была в том, чтобы сделать невозможным сценарий «получил ресурс и потерял его». С приходом C++11 идиома почти полностью растворилась в языке в виде <code>std::unique_ptr</code> или <code>std::shared_ptr</code>, а move-семантика гарантирует, что владение передаётся без копий и потерь.</p>
+    <p>То, что раньше было осознанной идиомой с тонкостями, стало настолько естественным, что современный программист даже не думает об этом как о приёме RR, а просто пишет функцию, возвращающую умный указатель. Исторически Resource Return вырос из проблем с <code>std::auto_ptr</code> девяностых годов, который пытался решить эту задачу, но из-за «копирования, которое на самом деле перемещение» создавал столько ловушек, что его в итоге признали ошибкой дизайна и удалили из стандарта. Move-семантика C++11 это, по сути, правильно сделанный <code>auto_ptr</code>, и идиома Resource Return наконец дождалась, что язык её догнал.</p>
+<pre style="margin:1.4rem 0"><code>// возвращает владение явно и безопасно
+std::unique_ptr&lt;Mesh&gt; load_mesh(const std::string&amp; path) {
+    auto mesh = std::make_unique&lt;Mesh&gt;();
+    mesh-&gt;upload(read_vertices(path));
+    return mesh;            // move, ни одной лишней копии буфера вершин
+}
+
+void build_scene(Scene&amp; scene) {
+    scene.add(load_mesh("rock.obj"));   // владение перетекает в сцену
+    // потерять меш физически негде
+    // либо он в scene, либо в temp, который мувнулся
+}</code></pre>
+    <p>В движках Resource Return де-факто жил с момента появления эти самых движков и загрузчики мешей, текстур, звуков и материалов возвращают владеющие хендлы или умные указатели, а не указатели. Это было важно на загрузке ресов, которые могли сломаться на любом шаге, и возврат владеющего объекта означает, что частично загруженный ресурс корректно освободится сам, если вы вдруг не передадите права владения.</p>
+    <p>На практике многие движки идут дальше и возвращают даже не указатель, а лёгкий хендл-значение (что-то вроде <code>TextureHandle</code> с индексом и поколением), но идея остаётся той же самой и наружу отдаётся не голый ресурс, который легко потерять, а объект с понятной семантикой владения и временем жизни.</p>
+    <h2 id="copy-and-swap">Copy-and-swap</h2>
+    <p>Это идиома для написания оператора присваивания, который корректно работает при исключениях и заодно решает проблему самоприсваивания, не требуя его явной проверки. Суть в том, чтобы сделать локальную копию правого операнда, обменять её внутренности с <code>*this</code> через <code>swap</code>, и дать деструктору локальной копии унести старое содержимое. Если копирование упадёт с исключением, то оно упадёт до того, как мы тронули <code>*this</code>, и объект останется в исходном валидном состоянии.</p>
+    <p>Идиома бесплатно даёт сильную гарантию исключений (strong exception guarantee), когда присваивание либо прошло целиком, либо объект не изменился вообще, а промежуточного «полуразрушенного» состояния не существует. И всё это без дублирования логики освобождения старых ресурсов вручную.</p>
+    <p>Цена за это лишняя копия. Copy-and-swap всегда делает полную копию, даже когда можно было бы обойтись переприсваиванием полей на месте, и в хотпасе это иногда неприемлемо, поэтому в C++11 идиому часто дополняют, передавая параметр по значению, тогда для lvalue срабатывает копия, а для rvalue будет перемещение, и один оператор <code>operator=(T value)</code> покрывает и копирующее, и перемещающее присваивание сразу.</p>
+    <p>Идиома кристаллизовалась в сообществе на рубеже двухтысячных, её активно разбирал Херб Саттер в Exceptional C++ (1999) в контексте exception safety, и она прочно вошла в канон как «правильный способ писать <code>operator=</code>». Само сочетание «copy and swap» как устойчивое название закрепилось чуть позже, во многом благодаря обсуждениям на Stack Overflow.</p>
+<pre style="margin:1.4rem 0"><code>class Buffer {
+    std::size_t size_ = 0;
+    float* data_ = nullptr;
+public:
+    friend void swap(Buffer&amp; a, Buffer&amp; b) noexcept {
+        std::swap(a.size_, b.size_);
+        std::swap(a.data_, b.data_);
+    }
+    Buffer(const Buffer&amp; o) : size_(o.size_), data_(new float[o.size_]) {
+        std::copy(o.data_, o.data_ + size_, data_);
+    }
+    // by-value параметр: ловит и copy, и move
+    Buffer&amp; operator=(Buffer other) noexcept {
+        swap(*this, other);
+        return *this;             // самоприсваивание корректно само собой
+    }
+    ~Buffer() { delete[] data_; }
+};</code></pre>
+    <p>В разработке игр copy-and-swap встречается редко, потому что лишние копии часто непозволительны и предпочитается move, но инструменты, редакторы и сериализация, где важнее корректность могут её тащить к себе. Классический сценарий это загрузка конфигурации или ассета поверх уже существующего, когда вы строите новый объект целиком, и только если он построился успешно, подменяете им старый через swap.</p>
+    <p>Это даёт редакторам свойство «горячей перезагрузки» ресурсов, и пока новый материал или шейдер грузится и парсится, рабочая копия остаётся нетронутой, а если парсинг упадёт на битом файле, то игра продолжит крутиться на старой версии, вместо того чтобы остаться с наполовину перезаписанным объектом или скрашиться.</p>
+    <h2 id="non-throwing-swap">Non-throwing swap</h2>
+    <p>Это уже и требование и идиома одновременно. <code>swap</code> для вашего типа обязан быть <code>noexcept</code>, то есть никогда не кидать исключений, что, возможно, звучит как мелкая техническая деталь, но на ней держится половина гарантий безопасности в C++, включая только что разобранный copy-and-swap, который без <code>noexcept</code>-свопа теряет свою сильную сторону.</p>
+    <p>Реализуется идиома через обмен указателей и примитивных полей, а не через копирование содержимого. Теперь полагаясь на этот контракт мы можем менять местами два указателя, не провоцируя аллокацию или исключение, потому что обмен указателей это операция, которая просто не способна упасть. Правильный <code>swap</code> для класса с динамической памятью никогда не копирует буферы, а только перекидывает владение ими между объектами.</p>
+    <p>Обычно стандарт предписывает определять свободную функцию <code>swap</code> в том же namespace, что и тип (чтобы её нашёл ADL), и вызывать её через паттерн <code>using std::swap; swap(a, b);</code>. Это позволяет стандартным контейнерам и алгоритмам подхватывать ваш <code>swap</code> вместо дефолтного, который делает три копии и потому и медленный.</p>
+    <p>Важность non-throwing swap осознали после работ Скотта Майерса, который посвятил этому отдельный пункт в Effective C++, настаивая на специализации <code>swap</code>. В C++11 это формализовали через move-конструктор и move-присваивание, помеченные <code>noexcept</code>, позволяют контейнерам вроде <code>std::vector</code> при перевыделении перемещать элементы вместо копирования.</p>
+<pre style="margin:1.4rem 0"><code>class Image {
+    int w_ = 0, h_ = 0;
+    std::uint8_t* pixels_ = nullptr;
+public:
+    // обмен указателей не может кинуть, noexcept
+    friend void swap(Image&amp; a, Image&amp; b) noexcept {
+        using std::swap;
+        swap(a.w_, b.w_);
+        swap(a.h_, b.h_);
+        swap(a.pixels_, b.pixels_);
+    }
+};
+
+// Где-то в контейнере движка
+std::vector&lt;Image&gt; textures;
+textures.reserve(1024);   // благодаря noexcept-move вектор перемещает</code></pre>
+    <p>Стандартные контейнеры: <code>std::vector</code> и игровые сущности при росте и перевыделении должны перемещать элементы, а не копировать, и сделать это безопасно он может, только если ваш move/swap помечены <code>noexcept</code>. Забыли <code>noexcept</code> и получаете копирование, превращая невинный <code>push_back</code> в источник лишних аллокаций и просадок на ровном месте.</p>
+    <p>Это один из тех случаев, когда крошечная аннотация на типе компонента меняет производительность всей системы, которая этим типом оперирует. В ECS-архитектурах, где сущности и компоненты постоянно перекладываются между пулами и пересортировываются для лучшей локальности кеша, дешёвый non-throwing swap становится фундаментом всей логики.</p>
+    <h2 id="smart-pointer">Smart Pointer</h2>
+    <p>Умный указатель ведёт себя как обычный указатель (и его можно разыменовать через <code>*</code> и <code>-&gt;</code>), но при этом управляет временем жизни того, на что указывает. Это прямое применение RAII к самому распространённому ресурсу, т.е. памяти из кучи. Теперь вместо того чтобы помнить о парном <code>delete</code> к каждому <code>new</code>, вы заворачиваете указатель в объект, чей деструктор сделает <code>delete</code> автоматически.</p>
+    <p>Семейство умных указателей делится по политике владения. <code>unique_ptr</code> как единоличный владелец, который нельзя копировать, только перемещать, и потому он бесплатен по накладным расходам (это просто указатель с правильным деструктором). <code>shared_ptr</code> уже создает разделяемое владение через счётчик ссылок, который освобождает объект, когда последний владелец умирает. <code>weak_ptr</code> всего лишь наблюдатель, который видит объект, но не продлевает ему жизнь, и нужен для разрыва циклических ссылок, в которых два <code>shared_ptr</code> могут держать друг друга и оба не умрут никогда.</p>
+    <p>Подводный камень shared_ptr, как обычно, его цена. Счётчик ссылок атомарный, потому что shared_ptr обязан быть потокобезопасным по части подсчёта, и каждое копирование становится атомарным инкрементом, а каждое уничтожение, соответственно атомарным декрементом с проверкой. В хотпасах указатели могут копировать десятками тысяч в кадр, и это все выливается в заметные потери, поэтому в движках shared_ptr стараются передавать по ссылке и не плодить копии без нужды.</p>
+    <p>Идиома прошла долгий путь от злополучного <code>std::auto_ptr</code> из конца девяностых с его «копированием-перемещением», переродившись в Boost'е в начале двухтысячных в виде<code>scoped_ptr</code>, <code>shared_ptr</code> и <code>weak_ptr</code> , и именно эти реализации, отшлифованные годами применения, в C++11 уже вошли в стандарт. Ключевой вклад в дизайн внесли Грег Колвин, Беман Доус и Питер Димов, запомните этих людей, мы к ним еще вернемся.</p>
+<pre style="margin:1.4rem 0"><code>struct AudioClip { /* ... */ };
+
+class SoundBank {
+    std::unordered_map&lt;std::string, std::shared_ptr&lt;AudioClip&gt;&gt; clips_;
+public:
+    std::shared_ptr&lt;AudioClip&gt; get(const std::string&amp; name) {
+        auto&amp; slot = clips_[name];
+        if (!slot) 
+            slot = std::make_shared&lt;AudioClip&gt;(load_from_disk(name));
+        return slot;   // вызывающий разделяет владение с банком
+    }
+};
+
+// unique_ptr и единоличное владение, ноль накладных расходов
+std::unique_ptr&lt;ParticleSystem&gt; ps = std::make_unique&lt;ParticleSystem&gt;(1024);</code></pre>
+    <p>В играх отношение к умным указателям прохладно-прагматичное и, например,<code>unique_ptr</code> любят и используют свободно, потому что он бесплатен и выражает владение, а вот <code>shared_ptr</code> многие движки сознательно ограничивают или вовсе запрещают из-за атомарных счётчиков и из-за того, что разделяемое владение размывает понимание, кто на самом деле управляет временем жизни объекта, что в больших кодовых базах превращается в источник трудноуловимых утечек.</p>
+    <p>Вместо повсеместного shared_ptr движки часто используют хендлы с поколениями, интрузивные счётчики или пулы с явным временем жизни, но для редко уничтожаемых, синглтонов, разделяемых ресурсов, загруженных текстур или сетевых сессий shared_ptr остаётся уместным, и компромисс «немного атомарных операций ради простоты владения» здесь обычно оправдан.</p>
+    <h2 id="checked-delete">Checked delete</h2>
+    <p>Крошечная идиома, решающая проблему что можно легально написать <code>delete p</code>, когда <code>p</code> указывает на тип, объявленный через forward declaration, но не определённый в этой точке. Компилятор не видит полного определения, не знает, есть ли у типа деструктор, и просто удаляет память, не вызвав деструктор, что в лучшем случае вызовет предупреждение компилятора, которое легко пропустить, и в итоге получить утечку ресурсов.</p>
+    <p>Идиома лечит это, заставляя <code>delete</code> происходить только там, где тип полностью определён. Делается это через проверку, которая не скомпилируется для неполного типа. Берётся <code>sizeof(T)</code>, который для неполного типа равен ошибке компиляции, и результат скармливается в фиктивный массив или статическое утверждение. Если тип неполный, то сборка падает с понятной ошибкой в точке удаления. Без checked delete <code>unique_ptr</code> на неполном типе мог бы тихо «удалить» объект, не вызвав деструктор, и вся идея RAII рассыпалась бы в самом неожиданном месте, поэтому стандартные deleter построены вокруг этой проверки.</p>
+    <p>Идиому ввёл Boost в начале двухтысячных через функции <code>boost::checked_delete</code> и <code>boost::checked_array_delete,</code> которые появились как защитный слой внутри их умных указателей, и оттуда же мысль перекочевала в требования стандарта к <code>unique_ptr</code> и <code>shared_ptr</code>, которые обязаны диагностировать удаление неполного типа в определённых сценариях.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+inline void checked_delete(T* p) {
+    // если T неполный, sizeof не скомпилируется
+    using complete = char[sizeof(T) ? 1 : -1];
+    (void) sizeof(complete);
+    delete p;
+}</code></pre>
+    <p>Это особенно актуально на границах модулей и в Pimpl-обёртках, где заголовки специально держат типы неполными, чтобы сократить зависимости компиляции и ускорить сборку (а время сборки большого движка это отдельная боль, измеряемая часами). Именно там легче всего случайно удалить неполный тип, и именно там checked delete отлавливает ошибку на этапе компиляции.</p>
+    <p>На практике современный код почти не пишет checked delete руками и его за вас уже делают стандартные умные указатели, но понимать, почему <code>unique_ptr</code> на Pimpl-типе требует, чтобы деструктор класса был определён в .cpp, где тип полный, без знания этой идиомы невозможно.</p>
+    <h2 id="intrusive-reference-counting">Intrusive reference counting</h2>
+    <p>Разделяемое владение, в котором счётчик ссылок живёт не в отдельном управляющем блоке рядом с объектом, как у <code>shared_ptr</code>, а прямо внутри самого объекта. Объект сам носит в себе поле-счётчик, а умный указатель лишь инкрементирует и декрементирует это встроенное поле. Когда счётчик падает до нуля, объект удаляет сам себя.</p>
+    <p>Главное преимущество перед <code>shared_ptr</code> компактность и эффективность. У <code>shared_ptr</code> есть отдельный управляющий блок, а значит две аллокации (объект и блок) при создании попадают в разные области памяти, и надо между ними прыгать, чтобы получить сам счетчик и отдельно данные.</p>
+    <p>У интрузивного счётчика всё в одном объекте, получаем одну аллокацию и фактически один указатель. Расплата за это будет вторжением в сам тип, отсюда и название «intrusive», теперь объект обязан заранее знать, что им будут владеть по счётчику, и носить счётчик в себе, а значит вы не можете обернуть в такой указатель чужой класс из сторонней библиотеки, который про счётчик ничего не знает. Это связывает дизайн типа с политикой владения, и для одних объектов это нормально, а для других будет неприемлемо.</p>
+    <p>Идиома очень старая и имя «Counted Body» дал ей Джеймс Коплин в книге Advanced C++ Programming Styles and Idioms (1992), где разбирал её вместе с родственной идиомой Handle/Body. То есть интрузивный счётчик старше самого <code>shared_ptr</code> почти на десятилетие, и долгие годы это был основной способ делать разделяемое владение в C++. Позже Boost оформил его в <code>intrusive_ptr</code>, а Microsoft построила вокруг той же идеи COM с его <code>AddRef</code>/<code>Release</code>.</p>
+<pre style="margin:1.4rem 0"><code>class RefCounted {
+    mutable std::atomic&lt;int&gt; refs_{0};
+public:
+    void add_ref() const { refs_.fetch_add(1, std::memory_order_relaxed); }
+    void release() const {
+        if (refs_.fetch_sub(1, std::memory_order_acq_rel) == 1) delete this;
+    }
+    virtual ~RefCounted() = default;
+};
+
+class Texture : public RefCounted { /* пиксели, формат, mip-уровни */ };
+
+// intrusive_ptr вызывает add_ref/release, счётчик живёт в самом Texture
+boost::intrusive_ptr&lt;Texture&gt; tex(load_texture("wall.png"));</code></pre>
+    <p>В геймдеве интрузивные счетчики основная рабочая лошадка управления ресурсами, и ресурсы вроде текстур, мешей и шейдеров и так являются «тяжёлыми» объектами, которым не жалко носить четыре байта счётчика, зато экономия на аллокациях и кеш-промахах при их шаринге между сотнями материалов и сущностей вполне ощутима. Базовый класс с <code>add_ref</code>/<code>release</code> можно увидеть как типичный паттерн в рендер-движках.</p>
+    <p>Весь DirectX и COM, на котором стоит графический стек Windows это интрузивный объект с <code>AddRef</code>/<code>Release</code>, и обёртки вроде <code>ComPtr</code> из WRL это <code>intrusive_ptr</code> под другим именем. Unreal Engine со своими <code>TRefCountPtr</code> и <code>FRefCountedObject</code> делает ровно то же самое.</p>
+    <h2 id="copy-on-write">Copy-on-write</h2>
+    <p>Это оптимизация, при которой несколько объектов разделяют одни и те же данные до тех пор, пока кто-то не попытается их изменить, и в этот момент происходит реальное копирование. Пока все только читают, копия одна на всех, и копирование объекта стоит почти ничего, а как только кто-то хочет писать, он делает себе личную копию.</p>
+    <p>Идея соблазнительна, чтобы получить дешёвое копирование «по требованию», обещает экономию памяти на одинаковых данных, прозрачность для пользователя, но внутри прячется разделяемый буфер с счётчиком ссылок, а каждый изменяющий метод начинается с проверки «а я единственный владелец? если нет, то отделюсь».</p>
+    <p>Подводных камней у COW столько, что от неё во многих фреймворках отказались. Любая мутирующая операция платит за проверку уникальности, и в однопоточном коде мы получаем оверхед на пустом месте. А еще она коварно взаимодействует с итераторами и ссылками и невинная операция чтения, которая внутри триггерит отделение копии, может инвалидировать ссылку, выданную раньше. Именно из-за COW реализация <code>std::string</code> в старом GCC доставляла столько сюрпризов, и в C++11 стандарт фактически запретил COW-строки, ужесточив требования к инвалидации.</p>
+    <p>Идиома пришла из системного программирования, когда операционная система использует copy-on-write для страниц памяти при форке процесса. В C++ она расцвела в девяностых и нулевых как способ сделать копируемые классы дешёвыми, активно применялась в Qt (его контейнеры и <code>QString</code> до сих пор COW) и в той самой реализации libstdc++.</p>
+<pre style="margin:1.4rem 0"><code>class CowBuffer {
+    std::shared_ptr&lt;std::vector&lt;std::uint8_t&gt;&gt; data_;
+    void detach() {                       // отделиться перед записью
+        if (data_.use_count() &gt; 1)
+            data_ = std::make_shared&lt;std::vector&lt;std::uint8_t&gt;&gt;(*data_);
+    }
+  
+public:
+    std::uint8_t read(std::size_t i) const { return (*data_)[i]; }
+    void write(std::size_t i, std::uint8_t v) {
+        detach();                         // личная копия только сейчас
+        (*data_)[i] = v;
+    }
+};</code></pre>
+    <p>В играх к COW относятся прохладно и в хотпасе её почти не встретишь, сказывается непредсказуемость момента копирования, которая плохо сочетается с бюджетом кадра. Зато она вполне жива в инструментах и редакторах, вроде тех же строк в Qt-based редакторах уровней, разделяемых структур данных в системах undo/redo, или снапшотов состояния, которые дёшево клонируются и расходятся в копии только при правке.</p>
+    <p>Концептуально к COW близки и более современные приёмы вроде структур данных с разделяемой неизменяемой частью (persistent data structures), которые используют в системах отмены действий и в сетевой репликации, где состояние мира дёшево «форкается». Так что сама идея «делим, пока только читаем» в разработке жива, просто реализуют её обычно не классическим COW со счётчиком на каждом классе, а более точечно и осознанно.</p>
+    <h2 id="thread-safe-copy-on-write">Thread-safe Copy-on-write</h2>
+    <p>Стоит к copy-on-write добавить многопоточность, как все её скрытые сложности выходят на свет и множатся. И, вроде бы, простой COW с обычным счётчиком ссылок в многопоточной среде приводит к гонке данных, когда два потока копируют объект, оба видят счётчик равным единице (или оба не видят чужого инкремента), оба решают, что они единоличные владельцы или наоборот делят буфер, и дальше либо двойное освобождение, либо запись поверх чужих данных.</p>
+    <p>Потокобезопасный COW требует, во-первых, атомарного счётчика ссылок, чтобы инкременты и декременты не теряли друг друга. Но одного этого мало, потому что остается проблема в окне между проверкой «я единственный владелец?» и собственно записью, а между этими двумя действиями другой поток может присоединиться к буферу или отсоединиться от него, и решение «копировать или нет», принятое без учета многопоточности успевает устареть за один такт. Закрывать это окно приходится либо блокировками, либо хитрыми атомарными протоколами с повторными попытками.</p>
+    <p>И вот тут идиома начинает проигрывать сама себе, потому что накладные расходы на синхронизацию каждой операции записи превышают то, что COW экономит на копировании, и получается оптимизация, которая делает хуже. Поэтому общий вывод индустрии примерно такой: если вам нужен потокобезопасный COW, скорее всего вам нужен не он, а другая структура данных или другая модель владения.</p>
+    <p>Болезненность темы хорошо задокументирована в серии статей Херба Саттера про <code>shared_ptr</code> и атомарность, а также в обсуждениях модели памяти. C++11 с его формальной моделью памяти и атомиками впервые дал инструменты, чтобы хотя бы рассуждать об этом строго, и одновременно подтвердил, что COW-структурам в стандарте больше не место.</p>
+<pre style="margin:1.4rem 0"><code>class TsCowBuffer {
+    std::shared_ptr&lt;const std::vector&lt;int&gt;&gt; data_;  // const: общие данные неизменяемы
+    std::mutex mtx_;
+public:
+    int read(std::size_t i) const { return (*data_)[i]; }
+    void write(std::size_t i, int v) {
+        std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+        auto copy = std::make_shared&lt;std::vector&lt;int&gt;&gt;(*data_);  // всегда личная копия
+        (*copy)[i] = v;
+        std::atomic_store(&amp;data_, std::shared_ptr&lt;const std::vector&lt;int&gt;&gt;(copy));
+    }
+};</code></pre>
+    <p>В играх потокобезопасный COW еще более редкий гость, чем обычный, по той же причине, цена непредсказуема, а синхронизация в хотпасе дорогая. Где идея реально работает - это паттерн «один писатель публикует неизменяемый снапшот, много читателей его читают», но это уже не настоящая корова. Как пример игровой поток собирает кадр, атомарно публикует неизменяемое состояние сцены, а рендер-поток читает опубликованную версию, и пока он её читает, она физически не меняется.</p>
+    <p>Эта идея выродилась в поведение, когда вместо «копировать при записи» используют «никогда не менять опубликованное, а всегда публиковать новое». Двойная и тройная буферизация состояния между игровым и рендер-потоком, которую используют едва ли не все крупные движки, это близкий родственник потокобезопасного COW, переосмысленный так, чтобы сделать подмену указателя на неизменяемый снапшот вместо синхронизации на каждую запись.</p>
+    <h2 id="free-function-allocators">Free Function Allocators</h2>
+    <p>Идея свободных функций-аллокаторов сделать перегрузку глобальных или классовых <code>operator new</code> и <code>operator delete</code> , чтобы взять управление выделением памяти в свои руки. Язык даёт встроенный механизм и вы можете определить <code>operator new</code> на уровне класса, и тогда все аллокации объектов этого класса пойдут через вашу функцию, а не через стандартный <code>malloc</code>механизм, но можно перегрузить и глобально, перехватив вообще все аллокации в программе.</p>
+    <p>Зачем это нужно? Стандартный аллокатор общего назначения универсален, а значит, ни под что конкретно не оптимизирован и он умеет выделять блоки любого размера в любом порядке, и платит за эту гибкость фрагментацией, накладными расходами и непредсказуемой латентностью. Если вы знаете, что ваш класс всегда выделяется сотнями одинаковых по размеру кусков, специализированный аллокатор или пул фиксированных блоков сделает это в разы быстрее и без фрагментации.</p>
+    <p>За все надо платить, и тут мы платим глобальностью и инвазивностью. Перегруженный глобальный <code>operator new</code> влияет вообще на всё, включая сторонние библиотеки, и отлаживать проблему в чужой памяти, которую вы незаметно перенаправили в свой аллокатор, занятие для мсье, который в кое-чем знает толк. Плюс есть тонкости с выравниванием, с парностью new/delete (нельзя освободить «не тем» аллокатором), с обработкой <code>nothrow</code>-версий и с формами <code>new[]</code>/<code>delete[]</code>.</p>
+    <p>Механизм перегрузки <code>operator new</code>/<code>delete</code> существует в C++ с самых ранних версий и описан ещё в The C++ Programming Language Страуструпа. А полностью его использование для пулов и арен оформилось в девяностых и активно разбиралось у Скотта Майерса в Effective C++ (отдельные пункты как перегружать new/delete) и стало одним из столпов того, как в C++ принято кастомизировать управление памятью без перехода на ручные malloc/free.</p>
+<pre style="margin:1.4rem 0"><code>class Projectile {
+    static PoolAllocator pool_;     // пул фиксированных блоков sizeof(Projectile)
+public:
+    static void* operator new(std::size_t) { return pool_.allocate(); }
+    static void  operator delete(void* p)  { pool_.free(p); }
+    // ... поля снаряда: позиция, скорость, урон, владелец ...
+};
+
+// new Projectile теперь берёт блок из пула, а не из общей кучи 
+// быстро и без фрагментации, даже когда снарядов на экране тысячи</code></pre>
+    <p>В разработке кастомные аллокаторы это самая что есть жиза, потому что вызов системного <code>malloc</code> посреди кадра это потенциальный stall, поэтому движки почти поголовно подменяют аллокацию на пулы, стек-аллокаторы и арены, которые работают по своим правилам.</p>
+    <p>Перегрузка <code>operator new</code> это один из стандартных способов воткнуться в механизм выделения памяти прозрачно для остального кода, хотя многие большие движки идут дальше и вообще запрещают голый <code>new</code>, заставляя всё проходить через явные интерфейсы аллокаторов. Но базовая идея «не доверяй аллокацию общего назначения тому, что выделяется в горячем пути» остаётся ровно этой идиомой.</p>
+    <h2 id="pimpl-handle-body-compilation-firewall-cheshire-cat">Pimpl (Handle Body, Compilation Firewall, Cheshire Cat)</h2>
+    <p>«pointer to implementation», приём, при котором класс прячет все свои приватные члены за указателем на скрытую структуру реализации. В заголовке остаётся публичный интерфейс и единственное поле с указателем на неполный тип <code>Impl</code>, а всё настоящее наполнение (поля, приватные методы, зависимости) переезжает в .cpp-файл, где определяется эта структура.</p>
+    <p>Такая конспирация нужна ради двух вещей. Первая и главная, чтобы приватные поля больше не были видны в заголовке, то изменение внутренностей класса не требует перекомпиляции всех, кто этот заголовок включает. В большом проекте, где базовый заголовок тянется в тысячу единиц трансляции, добавление одного приватного поля без Pimpl означает пересборку всего, а с Pimpl — пересборку одного .cpp. Вторая причина это настоящая бинарная инкапсуляция и стабильность ABI, когда размер и раскладка класса снаружи не меняются, что важно для библиотек, которые не хотят ломать совместимость при каждом обновлении.</p>
+    <p>Платить приходится за все, и тут мы платим индирекцией и аллокациями. Каждый доступ к полю теперь идёт через указатель (лишний переход по памяти, потенциальный кеш-промах), а сам объект <code>Impl</code> живёт в куче и конструирование класса тянет за собой динамическую аллокацию. Для объекта, который создаётся редко и живёт долго, это незаметно, но для мелкого объекта фактически приговор, если мы хотим его использовать в рендере, например.</p>
+    <p>Идиома уходит корнями в Handle/Body Джеймса Коплина 1992 года, а звучные имена ей подарили другие. «Cheshire Cat» или Чеширский кот, когда от класса остаётся одна улыбка-интерфейс, а тело исчезает, приписывают Джону Каролану, а «Compilation Firewall» и собственно «Pimpl» популяризировал Херб Саттер в Exceptional C++ и серии Guru of the Week.</p>
+<pre style="margin:1.4rem 0"><code>// physics_world.h заголовок ничего не знает о внутренностях
+class PhysicsWorld {
+public:
+    PhysicsWorld();
+    ~PhysicsWorld();                 // объявлен здесь, определён в .cpp
+    void step(float dt);
+private:
+    struct Impl;                     // неполный тип
+    std::unique_ptr&lt;Impl&gt; impl_;
+};
+
+// physics_world.cpp — здесь живёт вся реальность
+struct PhysicsWorld::Impl {
+    btDiscreteDynamicsWorld bullet;  // тяжёлый заголовок не утёк наружу
+    std::vector&lt;RigidBody&gt; bodies;
+};
+PhysicsWorld::PhysicsWorld() : impl_(std::make_unique&lt;Impl&gt;()) {}
+PhysicsWorld::~PhysicsWorld() = default;   // тут Impl полный checked delete доволен
+void PhysicsWorld::step(float dt) { impl_-&gt;bullet.stepSimulation(dt); }</code></pre>
+    <p>В играх Pimpl ценят в первую очередь за время сборки и изоляцию тяжёлых сторонних зависимостей. Классический сценарий применения будет обёртка над физическим движком, аудиолибой или сетевым стеком, когда мы не хотим, чтобы заголовки Bullet, FMOD или какого-нибудь монструозного SDK протекали в файлы движка. Там Pimpl запирает эти заголовки в одном .cpp, и остальной проект собирается, не зная об их существовании.</p>
+    <p>При этом в хотпасе рендера Pimpl осознанно избегают и никто не будет прятать <code>Vector3</code> или компонент трансформа за указателем, потому что индирекция и аллокация убьют производительность. Поэтому Pimpl в играх это инструмент для «крупных» подсистем, API движка и редакторных классов, а не для мелких значений.</p>
+    <h2 id="fast-pimpl">Fast Pimpl</h2>
+    <p>Это Pimpl, у которого отобрали его главный недостаток, динамическую аллокацию. Вместо того чтобы держать <code>Impl</code> в куче через указатель, мы резервируем под него кусок памяти прямо внутри объекта (массив байтов нужного размера с нужным выравниванием) и конструируем <code>Impl</code> там же, через placement new. Снаружи класс по-прежнему скрывает внутренности, а внутри никакой кучи уже нет и объект живёт целиком на стеке или там, где его разместил владелец.</p>
+    <p>Выгода очевидна и вы сохраняете саму идею Pimpl, но убираете аллокацию и лишнюю индирекцию через кучу, а значит, и кеш-промах на доступе к реализации. Объект становится «плоским» в памяти, и по сути это попытка получить и инкапсуляцию, и производительность одновременно, не выбирая между ними.</p>
+    <p>За все приходится платить, и тут мы расплачиваемся размером и выравниванием. Теперь <code>Impl</code> приходится задавать в заголовке руками, числом, хотя сам <code>Impl</code> в заголовке невидим и это достаточно хрупко. Добавили поле в <code>Impl</code>, превысили зарезервированный размер и в лучшем случае получаете ошибку компиляции от статической проверки, в худшем (если проверки нет) затирание памяти. Поэтому Fast Pimpl всегда сопровождают <code>static_assert</code>, который сверяет реальный <code>sizeof(Impl)</code> с зарезервированным в .cpp, чтобы поймать рассинхрон на сборке.</p>
+    <p>Идиому, опять же, детально разобрал Херб Саттер в Exceptional C++ под названием «The Fast Pimpl Idiom», показав и наивную версию с фиксированным буфером, и тонкости с выравниванием. В современном C++ её делают чище через <code>std::aligned_storage</code> (а с C++23 через <code>alignas</code> и явные байтовые буферы), но суть с девяностых не изменилась: реализация прячется, но не убегает в кучу.</p>
+<pre style="margin:1.4rem 0"><code>// fast_pimpl.h
+class SoundEmitter {
+public:
+    SoundEmitter();
+    ~SoundEmitter();
+    void play();
+private:
+    struct Impl;
+    static constexpr std::size_t kSize  = 64;   // подобрано под sizeof(Impl)
+    static constexpr std::size_t kAlign = 16;
+    alignas(kAlign) std::byte storage_[kSize];
+    Impl* impl() { return reinterpret_cast&lt;Impl*&gt;(storage_); }
+};
+
+// fast_pimpl.cpp
+struct SoundEmitter::Impl { /* поля микшера, голоса, фейды */ };
+static_assert(sizeof(SoundEmitter::Impl) &lt;= 64,  "увеличь kSize");
+static_assert(alignof(SoundEmitter::Impl) &lt;= 16, "увеличь kAlign");
+SoundEmitter::SoundEmitter()  { new (storage_) Impl(); }
+SoundEmitter::~SoundEmitter() { impl()-&gt;~Impl(); }</code></pre>
+    <p>В играх Fast Pimpl всплывает там, где хочется и спрятать внутренности (ради сборки и чистоты API), и при этом не платить за аллокацию, потому что объект создаётся часто или живёт в плотном массиве. Типичные кандидаты это обёртки над платформенно-зависимыми хендлами (сокет, файловый дескриптор, таймер высокого разрешения), где <code>Impl</code> крошечный и фиксированного размера, а сам объект может создаваться пачками.</p>
+    <p>Стоит признать, что в больших движках Fast Pimpl встречается даже реже чем Pimpl, потому что ручная синхронизация размера это вечный источник раздражения, а профиль использования (хотпас + желание спрятать внутренности) встречается редко.</p>
+    <h2 id="interface-class">Interface Class</h2>
+    <p>Класс, состоящий из одних чисто виртуальных методов и не несущий никакого состояния и реализации, т.е. чистый контракт «что объект умеет делать», без единой реализации. В C++ нет ключевого слова <code>interface</code>, поэтому интерфейс выражается абстрактным классом со всеми <code>= 0</code> методами и обязательным виртуальным деструктором, а конкретные классы наследуются от него и реализуют контракт.</p>
+    <p>Смысл идиомы разорвать связь между тем, кто пользуется объектом, и тем, как объект устроен. Код, работающий с <code>IRenderer*</code>, ничего не знает про DirectX или Vulkan за этим интерфейсом и не пересобирается при смене реализации, а зависит только от контракта. Это и есть инверсия зависимостей, когда верхние уровни зависят от абстракций, а не от конкретики, что даёт подменяемость реализаций, моки для тестов и чистые границы между модулями.</p>
+    <p>За все приходится платить, и тут цена в динамической диспетчеризации. Каждый вызов через интерфейс будет виртуальным вызовом и переходом по vtable, лишняя индирекция, помеха инлайнингу и предсказателю переходов. Для «крупнозернистых» вызовов (раз в кадр дёрнуть рендер-бэкенд) это копейки, а для вызова в цикле по миллиону объектов будет катастрофой, поэтому интерфейсы хороши только на швах между подсистемами.</p>
+    <p>Концепция чистого интерфейса стара как само объектно-ориентированное программирование, но в C++ её каноническую форму («Interface Class») зафиксировал опять Херб Саттер, в том числе в Exceptional C++ Style, где разбирал, почему интерфейсы стоит делать именно так и почему деструктор обязан быть виртуальным. Языки вроде Java и C# позже сделали интерфейсы синтаксической сущностью, а C++ так и остался с идиомой на чистых виртуалах.</p>
+<pre style="margin:1.4rem 0"><code>class IRenderer {
+public:
+    virtual ~IRenderer() = default;            // обязательно виртуальный
+    virtual void begin_frame() = 0;
+    virtual void draw(const Mesh&amp;, const Material&amp;) = 0;
+    virtual void end_frame() = 0;
+};
+
+class VulkanRenderer : public IRenderer { /* ... реализация на Vulkan ... */ };
+class D3D12Renderer  : public IRenderer { /* ... реализация на D3D12 ... */ };
+
+// Игра знает только контракт, не зная бэкенда:
+void render_world(IRenderer&amp; r, const World&amp; w) {
+    r.begin_frame();
+    for (auto&amp; obj : w.visible) r.draw(obj.mesh, obj.material);
+    r.end_frame();
+}</code></pre>
+    <p>Как я уже и сказал интерфейсные классы живут на крупных архитектурных швах в виде абстракций графического API, платформенном слое (файловая система, ввод, окно), аудиобэкенде, плагинах редактора. Т.е. везде, где нужно подменять реализацию под платформу или скрывать её за стабильной границей, здесь интерфейс это естественный выбор, и накладные расходы виртуального вызова пренебрежимы на фоне самой операции.</p>
+    <p>А вот в ядре симуляции отношение к интерфейсам очень осторожное. Старые объектные движки делали базовый <code>Entity</code> с виртуальным <code>update()</code> и кучей наследников, и это работало, пока сущностей было мало, но миллион виртуальных <code>update</code> упираются в кеш-промахи, идирекцию по vtable и в невозможность инлайнинга. Отсюда дрейф индустрии в сторону ECS и data-oriented design, где вместо интерфейса с виртуальными методами данные лежат плотными массивами, а логика проходит по ним без диспетчеризации.</p>
+    <h2 id="concrete-data-type">Concrete Data Type</h2>
+    <p>Это, по сути, антипод предыдущей идиомы и напоминание, что не всё на свете обязано быть полиморфным. Конкретный тип данных спроектирован как полноценное «значение» и он не наследуется, не имеет виртуальных функций, копируется и перемещается как обычная величина, живёт на стеке или внутри других объектов и ведёт себя предсказуемо, как встроенный тип. <code>Vector3</code>, <code>Color</code>, <code>Quaternion</code>, <code>Rect</code> вот это вот всё.</p>
+    <p>Мы сознательно отказались от полиморфизма и наследования там, где они не нужны, и получили за это всё, что C++ умеет давать значениям. Т.е. размещение на стеке без аллокаций, отсутствие vtable и виртуальных вызовов, полную прозрачность для инлайнинга, плотную упаковку в массивах и контейнерах. Такой тип компилятор видит насквозь и оптимизирует агрессивно, потому что нет ни одной точки, где поведение определяется в рантайме.</p>
+    <p>За все приходится платить, и тут мы расплачиваемся дисциплиной дизайна и такой конкретный тип должен быть «закрытым» в смысле семантики значения. Обычно у него нет виртуального деструктора (он не предназначен для наследования и удаления через базовый указатель), его инварианты простые, а интерфейс полный и самодостаточный. Попытка позже «донаследовать» от такого типа почти всегда будет ошибкой, и многие движки помечают такие классы <code>final</code>, чтобы зафиксировать намерение.</p>
+    <p>Термин и сама дисциплина идут от Бьёрна Страуструпа, который в The C++ Programming Language противопоставлял «конкретные типы» (concrete types) «абстрактным типам» (abstract types) как два разных способа использовать классы. Одни нужны, чтобы строить новые значения языка, а другие, чтобы строить иерархии поведения. Это противопоставление стало одной из фундаментальных развилок проектирования в C++, и понимание, на какую сторону встать в каждом конкретном случае, отличает зрелый код от каши из ненужных виртуалов.</p>
+<pre style="margin:1.4rem 0"><code>struct Vec3 {                       // чистое значение: ни vtable, ни наследования
+    float x = 0, y = 0, z = 0;
+    Vec3 operator+(Vec3 o) const { return {x + o.x, y + o.y, z + o.z}; }
+    Vec3 operator*(float s) const { return {x * s, y * s, z * s}; }
+    float dot(Vec3 o) const { return x * o.x + y * o.y + z * o.z; }
+};
+
+// Плотный массив значений: ноль индирекции, идеально для кеша и SIMD
+std::vector&lt;Vec3&gt; positions(100000);
+for (auto&amp; p : positions) p = p + velocity * dt;   // компилятор инлайнит и векторизует</code></pre>
+    <p>Такие типы данных это буквально фундамент всей математики и низкоуровневых структур: векторы, матрицы, кватернионы, цвета, ограничивающие объёмы, ключи анимации. Все они спроектированы как значения именно потому, что их создают, копируют и перемалывают миллионами, и любая виртуальность или аллокация здесь была бы немыслимой роскошью. Эти типы обязаны быть прозрачными для компилятора, чтобы он мог их инлайнить и векторизовать.</p>
+    <p>Если посмотреть шире, то это будет сердцем data-oriented design, философии, которая в современном геймдеве потеснила наивный ООП. Когда сущность игры представлена не объектом с виртуальными методами, а набором конкретных типов-значений, разложенных по плотным массивам, процессор читает их потоком, а SIMD-инструкции обрабатывают по несколько штук за такт. Concrete Data Type именно та идиома, которая делает такой подход возможным, и именно её недооценка в эпоху «всё есть объект» стоила играм немалой доли производительности.</p>
+    <h2 id="final-class">Final Class</h2>
+    <p>Это класс, от которого запрещено наследоваться. До C++11 такого запрета в языке не было, и его приходилось эмулировать хитрыми трюками, но с C++11 появилось ключевое слово <code>final</code>, и идиома превратилась в одну строчку. Помечая класс <code>final</code>, вы говорите и компилятору, и читателю, что эта точка иерархии конечная, дальше расширять нельзя.</p>
+    <p>Это нужно по двум разным причинам. Первая будет выражением намерения и защиты инвариантов, т.е. если класс спроектирован как значение и не готов быть базой (например, у него невиртуальный деструктор), <code>final</code> физически запрещает ошибку, которую иначе кто-то рано или поздно совершит. Вторая, конечно же, оптимизация и теперь компилятор знает, что виртуальный вызов через указатель на этот тип не может уйти в неизвестного наследника, а значит вызов можно девиртуализировать и превратить виртуальный в прямой и заинлайнить.</p>
+    <p>Девиртуализация в этом случае уже не теоретическая возможность, теперь виртуальный вызов в хотпасе не мешает инлайнингу и позволяет компилятору схлопнуть его в обычный вызов и раскрыть тело функции прямо в месте вызова.</p>
+    <p>За все приходится платить, и тут мы расплачиваемся намертво закрытой расширяемостью, и если позже выяснится, что наследоваться всё-таки надо (для мок-тестов например или для платформенного варианта), то придётся возвращаться и снимать ограничение.</p>
+    <p>До C++11 идиому изображали через приватный виртуальный базовый класс с дружбой и прочую тёмную магию (известный трюк описывал, в частности, Бьёрн Страуструп в обсуждениях, а вариации гуляли по C++-форумам), но всё это было настолько уродливо, что почти не применялось. Поэтому настоящая жизнь у идиомы началась только с C++11, когда <code>final</code> (вместе с <code>override</code>) стал частью языка как ключевое слово.</p>
+<pre style="margin:1.4rem 0"><code>// Лист иерархии: дальше наследоваться нельзя, и компилятор это использует
+class StaticMeshComponent final : public Component {
+public:
+    void update(float dt) override;   // override + final-класс =&gt; девиртуализация
+};
+
+// Вызов через StaticMeshComponent* компилятор может превратить в прямой и заинлайнить
+void tick(StaticMeshComponent&amp; c, float dt) { c.update(dt); }</code></pre>
+    <p><code>final</code> обычно ставят на «листовые» классы компонентов и систем не только ради чистоты, но и осознанно ради девиртуализации. Unreal Engine, например, рекомендует помечать <code>final</code> классы, которые не предполагается наследовать, именно из соображений производительности, и это даёт компилятору шанс убрать виртуальные вызовы там, где иерархия фактически закончилась.</p>
+    <p>Это один из тех редких случаев, когда добавление одного ключевого слова напрямую конвертируется во время кадра и профайлер на тяжёлой сцене вполне способен показать разницу между виртуальным и девиртуализированным <code>update</code> на десятках тысяч компонентов. Поэтому в современных движках <code>final</code> уже не стилистическая придирка ревьюера, а часть перформанс-культуры, наряду с <code>noexcept</code> и продуманной раскладкой данных.</p>
+    <h2 id="include-guard-macro">Include Guard Macro</h2>
+    <p>Самая базовая и самая повсеместная идиома препроцессора, без которой не собирается ни один сколько-нибудь крупный проект на плюсах. Проблема, которую она решает, элементарна: один и тот же заголовок почти всегда попадает в единицу трансляции несколько раз через цепочки <code>#include</code>, и если в нём есть определения (классов, структур), повторное включение даст ошибку «переопределение». Include guard гарантирует, что содержимое заголовка обработается ровно один раз.</p>
+    <p>Механика тривиальна: в начале заголовка проверяется, не определён ли уникальный макрос-страж, и если нет — он определяется, и дальше идёт тело; при повторном включении макрос уже определён, и препроцессор пропускает всё до закрывающего <code>#endif</code>. Имя стража должно быть уникальным на весь проект, обычно его строят из пути к файлу, чтобы случайно не столкнуться с чужим.</p>
+    <p>Подводных камней почти нет, кроме одного: коллизия имён стражей. Если два разных заголовка случайно используют один и тот же макрос (например, банальный <code>UTILS_H</code>), второй из них будет молча пропущен целиком, и вы получите загадочные ошибки «неизвестный тип» там, где тип явно определён. Поэтому крупные проекты либо генерируют стражи из полного пути, либо переходят на <code>#pragma once</code>.</p>
+    <p>Идиома стара как сам препроцессор C, то есть восходит к семидесятым годам и языку C Денниса Ритчи, и в C++ перешла по наследству без изменений. Альтернатива <code>#pragma once</code> появилась как нестандартное, но фактически повсеместно поддерживаемое расширение компиляторов; она короче и невосприимчива к коллизиям имён, но формально вне стандарта и в редких экзотических случаях (хитрые символические ссылки, сетевые файловые системы) может ошибиться, не распознав один и тот же файл.</p>
+<pre style="margin:1.4rem 0"><code>// transform.h
+#ifndef GAME_CORE_TRANSFORM_H   // имя из пути, чтобы не было коллизий
+#define GAME_CORE_TRANSFORM_H
+
+struct Transform { Vec3 position; Quat rotation; Vec3 scale; };
+
+#endif  // GAME_CORE_TRANSFORM_H
+
+// Многие вместо этого пишут просто:
+// #pragma once</code></pre>
+    <p>Если счёт заголовкам идёт на тысячи, то include guard'ы (и их разновидность <code>#pragma once</code>) это не столько про корректность, сколько про здравомыслие сборки. Большинство проектов по умолчанию используют <code>#pragma once</code> ради краткости, но в кодовых базах, которые должны компилироваться экзотическими или старыми компиляторами, до сих пор встречается классический <code>#ifndef</code>-страж как более переносимый.</p>
+    <p>Страж не мешает препроцессору открыть и прочитать файл повторно, он лишь не даёт его телу попасть в трансляцию, поэтому в дополнение к стражам движки применяют разные include-what-you-use, форвард-декларации и Pimpl, чтобы сократить число включений, потому что самый быстрый <code>#include</code> это тот, которого нет.</p>
+    <h2 id="inline-guard-macro">Inline Guard Macro</h2>
+    <p>Более узкая родственница include guard, нацеленная на правило одного определения (ODR) для функций. Если вы определяете обычную (не inline, не шаблонную) функцию в заголовке, и этот заголовок включается в несколько единиц трансляции, линковщик увидит несколько одинаковых символов и упадёт с ошибкой «multiple definition». Inline guard это набор приёмов, чтобы определения в заголовке не нарушали ODR.</p>
+    <p>Исторически идиома сводилась к тому, чтобы оборачивать определения функций в заголовке либо ключевым словом <code>inline</code> (которое как раз и разрешает множественные идентичные определения в разных единицах трансляции), либо в условную компиляцию через макрос, который «включает» реальное определение только в одной выбранной единице трансляции, а в остальных оставляет лишь объявление. Второй вариант и есть собственно «inline guard macro»: макрос-переключатель между «здесь определение» и «здесь только объявление».</p>
+    <p>Вопреки наивному пониманию, <code>inline</code> в современном языке означает не «обязательно встроить вызов» (это лишь намёк оптимизатору, который он волен игнорировать), а именно «этому символу разрешено иметь несколько идентичных определений в программе». Путаница между этими двумя смыслами слова является классическим источником недопонимания, и именно ODR-смысл делает <code>inline</code> инструментом для header-only кода.</p>
+    <p>Корни идиомы все в той же эпохе раздельной компиляции C и в эволюции значения <code>inline</code> от C к C++. С приходом header-only библиотек (Boost, а позже бесчисленные однохедерные либы) и особенно с C++17, который дал <code>inline</code>-переменные, потребность в ручных макросах-переключателях резко упала. Теперь почти всё, что нужно положить в заголовок, можно честно пометить <code>inline</code> и забыть про ODR-проблемы.</p>
+<pre style="margin:1.4rem 0"><code>// math_utils.h — header-only, безопасно включать откуда угодно
+inline float fast_inv_sqrt(float x) {   // inline =&gt; множественные определения OK
+    // ... реализация ...
+    return x;
+}
+
+// C++17: и глобальная константа теперь безопасна в заголовке
+inline constexpr float kPi = 3.14159265f;</code></pre>
+    <p>inline guard в его старом макро-виде почти вымер, но его дух жив в повальной любви к header-only и <code>inline</code>-функциям для математики и мелких утилит. Векторнуя математику, мелкие хелперы, <code>constexpr</code>-таблицы кладут в заголовки с <code>inline</code>, чтобы компилятор видел тело в каждой единице трансляции и мог инлайнить, не нарушая ODR. Скорость важнее, чем экономия на дублировании, и <code>inline</code> тут больше про инлайнинг через границы файлов.</p>
+    <p>Где идиома всё ещё проявляется явно, так это это «амальгамированные» (single-header) сборки библиотек, которые геймдев любит за простоту интеграции. Одна-единственная .h-библиотека, где определения активируются макросом <code>#define IMGUI_IMPLEMENTATION</code> ровно в одном .cpp будет прямым потомком inline guard macro с тем же приёмом «определение здесь, в остальных местах только объявления», просто доведённым до уровня целой библиотеки. Посмотреть как именно так устроено можно в знаменитых stb-библиотеки Шона Барретта.</p>
+    <h2 id="export-guard-macro">Export Guard Macro</h2>
+    <p>Это уже идиома про границы динамических библиотек и как один и тот же заголовок ухитряется работать и для того, кто библиотеку собирает (и должен пометить символы как экспортируемые), и для того, кто библиотеку использует (и должен пометить те же символы как импортируемые). На Windows это выражается атрибутами <code><strong>declspec(dllexport)</strong></code><strong> и </strong><code>declspec(dllimport)</code>, на других платформах — атрибутами видимости вроде <code><strong>attribute</strong>((visibility("default")))</code>.</p>
+    <p>Решается это через макрос, который раскрывается по-разному в зависимости от того, собирается ли библиотека или потребляется. Внутри сборки библиотеки определён специальный макрос-флаг, и тогда «экспортный» макрос разворачивается в <code>dllexport</code>; снаружи флага нет, и тот же макрос разворачивается в <code>dllimport</code>и пользователю не надо ничего знать про эту механику, чтобы включить заголовок.</p>
+    <p>Подводных камней тут целая россыпь, и все платформенно-зависимые. Экспорт C++-классов через границы DLL завязан на совпадение компиляторов, версий рантайма и опций сборки с обеих сторон, потому что искажение имён (name mangling), раскладка классов и модель исключений должны совпадать. Передавать STL-типы или кидать исключения через границу DLL это классический способ получить загадочные падения, поэтому стабильные плагинные границы делают на чистом C-интерфейсе или на интерфейсных классах с COM-подобными правилами.</p>
+    <p>Идиома возникла вместе с разделяемыми библиотеками: на Windows с DLL и <code>__declspec</code>, появившимся в компиляторах Microsoft, на Unix с разделяемыми объектами и контролем видимости символов в GCC (атрибут <code>visibility</code> стал заметен примерно с GCC 4.0). Кроссплатформенные проекты с тех пор обязаны заворачивать все эти различия в один макрос ради переносимости.</p>
+<pre style="margin:1.4rem 0"><code>// engine_api.h
+#if defined(_WIN32)
+  #if defined(ENGINE_BUILD_DLL)
+    #define ENGINE_API __declspec(dllexport)   // собираем библиотеку
+  #else
+    #define ENGINE_API __declspec(dllimport)   // используем библиотеку
+  #endif
+#else
+  #define ENGINE_API __attribute__((visibility("default")))
+#endif
+
+class ENGINE_API Engine {
+public:
+    void run();
+};</code></pre>
+    <p>В разработке игр export guard'ы вездесущи в любом проекте, который раскладывается на несколько модулей или поддерживает плагины: ядро движка, редактор, игровые модули, сторонние расширения часто делают отдельными библиотеками с размеченными границами экспорта. Unreal Engine, например, генерирует подобные макросы (<code>ENGINE_API</code>, <code>CORE_API</code> и сотни других, по одному на модуль) автоматически своей системой сборки, и каждый публичный класс модуля помечается соответствующим макросом.</p>
+    <p>Проект, который собирается под Windows, консоли и десктопные Unix-системы, обязан прятать все различия экспорта/импорта/видимости за такими макросами, иначе один и тот же заголовок просто не соберётся на всех платформах сразу, и такие гварды становятся платой за кроссплатформенную модульность.</p>
+    <h2 id="curiously-recurring-template-pattern-crtp">Curiously Recurring Template Pattern (CRTP)</h2>
+    <p>Многие мои знакомые разработчики считают такие шаблоны нарушением причинно-следственной связи, когда класс наследуется от шаблона, параметризованного им же самим, то есть <code>class Derived : public Base&lt;Derived&gt;</code>. Производный класс ещё не определён до конца, а уже передаёт сам себя в качестве шаблонного аргумента своему базовому классу, что уже звучит как черная магия, но компилятор это спокойно обрабатывает, потому что к моменту инстанцирования методов базового класса производный уже полностью известен.</p>
+    <p>Это даёт возможность сделать статический полиморфизм, то есть полиморфизм без виртуальных функций, когда базовый класс может вызывать методы производного, кастуясь к нему через <code>static_cast&lt;Derived*&gt;(this)</code>. А поскольку точный тип известен на этапе компиляции, то и вызов разрешается напрямую, без vtable. Это та же диспетчеризация «база зовёт реализацию наследника», что и у виртуальных функций, но цена её "ноль" в рантайме, потому что вся работа сделана компилятором.</p>
+    <p>За все приходится платить, и расплачиваемся мы тут сложностью. CRTP даёт полиморфизм только там, где тип известен статически и вы не можете сложить разные <code>Derived</code> в один контейнер указателей на общую базу и итерировать по ним полиморфно, потому что <code>Base&lt;Cat&gt;</code> и <code>Base&lt;Dog&gt;</code> теперь вообще разные и несвязанные типы. CRTP меняет рантайм-гибкость на скорость, и применим лишь когда конкретный тип известен в точке вызов плюс ошибки в нём дают чудовищные шаблонные сообщения компилятора.</p>
+    <p>Странное имя «curiously recurring» придумал Джеймс Коплин в 1995 году в колонке в C++ Report, заметив, что этот «любопытно повторяющийся» паттерн всплывает в коде снова и снова независимо у разных людей. Сама техника при этом старше еще лет на пять и её использовали для разных целей, но со временем CRTP стал одним из столпов высокопроизводительного C++ и лёг в основу множества библиотек, от Eigen до фреймворков сериализации.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class Derived&gt;
+struct Shape {
+    float area() const {                       // база зовёт метод наследника
+        return static_cast&lt;const Derived*&gt;(this)-&gt;area_impl();
+    }
+};
+
+struct Circle : Shape&lt;Circle&gt; {
+    float r;
+    float area_impl() const { return 3.14159f * r * r; }   // инлайнится, без vtable
+};
+
+template &lt;class S&gt;
+float total_area(const std::vector&lt;S&gt;&amp; shapes) {
+    float sum = 0;
+    for (auto&amp; s : shapes) sum += s.area();   // прямой вызов, компилятор всё видит
+    return sum;
+}</code></pre>
+    <p>CRTP любимый инструмент для оптимизации хотпасов и системы, которым нужна общая инфраструктура с настраиваемым поведением, но без рантайм-диспетчеризации, строят на нем. Базовый шаблон даёт общий каркас (итерацию, регистрацию, общий API), а наследник подставляет конкретную логику. Типичные применения это математические библиотеки с выражениями над векторами и матрицами (тот же Eigen целиком построен на CRTP), системы компонентов и разнообразные «mixin»-надстройки, добавляющие операторы сравнения или арифметику на основе одного-двух методов наследника.</p>
+    <p>Везде, где хочется переиспользования кода без штрафа за виртуальность, CRTP оказывается ответом, и понимание этой идиомы практически обязательное условие для чтения современного производительного C++ кода.</p>
+    <h2 id="barton-nackman-trick">Barton-Nackman trick</h2>
+    <p>Трюк Бартона-Накмана является продолженим предыдущей идиомы как способ определить свободную функцию (чаще всего оператор, например <code>operator==</code>) прямо внутри определения шаблонного класса через<code>friend</code>-функцию. Хитрость в том, что такая дружественная функция, определённая внутри шаблона, автоматически создаётся заново для каждой инстанциации шаблона и находится исключительно через ADL, не засоряя глобальное пространство имён и не участвуя в обычном разрешении перегрузок, пока её не позовут с правильными аргументами.</p>
+    <p>Изначально трюк решал конкретную историческую проблему, когда компиляторы C++ ещё не умели нормально работать с шаблонными функциями и их перегрузкой. Механизм был сырой, и определить, скажем, <code>operator==</code> как отдельный шаблон так, чтобы он корректно находился и инстанцировался, было то ли невозможно, то ли чревато ошибками инстанции отдельных шаблонов. Поэтому определение оператора как friend внутри класса обходило эти ограничения и оператор появлялся как обычная нешаблонная функция для каждой конкретной инстанциации.</p>
+    <p>Сегодня изначальная мотивация (компенсировать кривость ранних компиляторов с перегрузкой шаблонов) полностью устарела, но сам приём «friend-функция внутри шаблона» остался полезным по другой причине. Теперь это чистый способ дать тип-специфичные нечленские операторы, которые видны только через ADL и не вмешиваются в разрешение перегрузок для несвязанных типов.</p>
+    <p>За все приходится платить, и тут мы платим количеством кода, потому что для каждой инстанциации генерируется своя копия функции, и при большом числе инстанциаций это сильно раздувает код.</p>
+    <p>Имя трюку дали по статье Джона Бартона начала девяностых, где он применял его в контексте научных вычислений и систем единиц измерения. Как ни странно, именно в коде Бартона впервые явно засветился и тот самый «любопытно повторяющийся» паттерн наследования, который позже Коплин окрестит CRTP, так что две эти идиомы близкие исторические родственники.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;class T&gt;
+struct Comparable {
+    // friend внутри шаблона: своя для каждого T, находится только через ADL
+    friend bool operator==(const T&amp; a, const T&amp; b) { return a.equals(b); }
+    friend bool operator!=(const T&amp; a, const T&amp; b) { return !(a == b); }
+};
+
+struct Vec2 : Comparable&lt;Vec2&gt; {
+    float x, y;
+    bool equals(const Vec2&amp; o) const { return x == o.x &amp;&amp; y == o.y; }
+};
+// operator== для Vec2 сгенерирован автоматически, в глобальном namespace его «нет»</code></pre>
+    <p>В разработке игр трюк Бартона-Накмана сейчас практически везде ушел, потому что старых компиляторов давно нет, а вместе с ними ушли и проблемы, но его современное переосмысление в виде «hidden friends», дружественных операторов внутри шаблонных mixin-ов вполне живёт в библиотеках математики, физических единиц и утилитах, где нужно массово раздавать типам операторы сравнения и арифметики, не загрязняя глобальное пространство имён и не замедляя компиляцию лишними кандидатами при разрешении перегрузок.</p>
+    <p>Современные библиотеки физических величин (вроде тех, что считают метры, секунды и не дают сложить одно с другим) активно используют hidden friends в духе Бартона-Накмана, чтобы на уровне типов не перепутать, скажем, мировые координаты с экранными или секунды с тиками. Так что идиома, родившаяся как костыль под слабые компиляторы, переродилась в инструмент чистоты пространств имён и скорости сборки, по мне так неплохая судьба для трюка тридцатилетней давности.</p>
+    <h2 id="empty-base-optimization-ebo">Empty Base Optimization (EBO)</h2>
+    <p>Пустая база уже не столько идиома, сколько гарантия, что пустой класс (без нефункциональных членов) не будет иметь размер. Обычно даже пустой класс должен иметь хотя бы один байт, чтобы у двух разных объектов были разные адреса, но когда такой пустой класс выступает базовым классом, компилятору разрешено не выделять под него ни одного байта и он может «схлопнуть» пустую базу в нулевой размер внутри производного объекта.</p>
+    <p>Зачем это эксплуатировать? Для начала, в C++ полно пустых, но полезных типов, вроде политик поведения, тегов, функторов без состояния, аллокаторов по умолчанию или компараторы. Если такой пустой тип хранить как поле, он съест минимум байт (а с учётом выравнивания нередко больше), и в структуре это выльется в перерасход памяти. А если унаследоваться от него вместо хранения полем, то EBO позволит ему не стоить вообще ничего.</p>
+    <p>За все приходится платить, и тут мы расплачиваемся наследованием ради экономии байта, и отдельными оптимизациями в самом компиляторе только под это поведение, что противоречит интуиции «наследование = is-a отношение», и злоупотребление им делает код немного странным. Еще правило ломается при множественном наследовании от нескольких пустых баз одного типа (адреса всё-таки должны различаться) и требует осторожности, поэтому в C++20 ввели атрибут <code>[[no_unique_address]]</code>, который даёт ту же экономию для полей-членов без необходимости наследоваться, и это куда явно выражает намерение.</p>
+    <p>Возможность EBO давно зафиксирована в стандарте, а её систематическое применение для библиотечных целей популяризировал Натан Майерс, предложив технику «base-from-member» и компрессированных пар. Именно на EBO держится <code>boost::compressed_pair</code>, и именно благодаря EBO стандартные контейнеры не платят лишними байтами за свои аллокаторы и компараторы по умолчанию, которые почти всегда пусты.</p>
+<pre style="margin:1.4rem 0"><code>struct DefaultDeleter {};   // пустая политика, 0 полезных байт
+
+// Без EBO: deleter занял бы место. С EBO как база все еще ноль байт.
+template &lt;class T, class Deleter = DefaultDeleter&gt;
+class UniquePtr : private Deleter {   // наследуемся от пустой политики
+    T* ptr_;
+public:
+    // sizeof(UniquePtr) == sizeof(T*), Deleter не стоит ничего
+};
+
+// C++20 уже без наследования:
+template &lt;class T, class Deleter = DefaultDeleter&gt;
+class UniquePtr2 {
+    [[no_unique_address]] Deleter deleter_;
+    T* ptr_;
+};</code></pre>
+    <p>Игры исторически использовали EBO повсюду, а движки активно используют политики и пустые функторы. Каждый раз, когда контейнер параметризуется аллокатором или компаратором без состояния, эта параметризация будет бесплатной по памяти и в структурах, которых в игре миллионы, экономия даже одного-двух байт на элементе складывается в мегабайты и в лучшую плотность упаковки в кеше.</p>
+    <h2 id="non-copyable-mixin">Non-copyable Mixin</h2>
+    <p>Маленький базовый класс, единственная задача которого это запретить копирование того, кто от него наследуется. Вы делаете класс с удалённым (или, до C++11, приватным и не определённым) конструктором копирования и оператором присваивания, и любой, кто унаследуется от него, автоматически теряет способность копироваться, потому что компилятор не сможет сгенерировать копирующие операции производного класса, упёршись в недоступные операции базы.</p>
+    <p>Сделано это, потому что для многих объектов копирование не имеет смысла или прямо опасно и объект, владеющий уникальным ресурсом (мьютекс, сокет, GPU-хендл, файл), при копировании породил бы двух «владельцев» одного ресурса, что ведёт к двойному освобождению. А менеджеры и синглтоны копировать бессмысленно, поэтому запрет копирования на уровне типа превращает потенциальную рантайм-ошибку в ошибку компиляции, что всегда дешевле.</p>
+    <p>За все приходится платить, и исторической надо было платить невнятными сообщениями об ошибках и то, что друзья и члены класса всё-таки могли вызвать копирование, получив ошибку только на этапе линковки. C++11 это явно вылечил ключевым словом <code>= delete</code>, которое даёт читаемую ошибку компиляции, а объявление копирующих операций (даже удалённых) подавляет автогенерацию move-операций, так что non-copyable тип по умолчанию ещё и non-movable, если не объявить move явно.</p>
+    <p>Самая известная реализация этой идиомы будет <code>boost::noncopyable</code>, появившаяся в Boost очень давно и ставшая каноном до C++11. Идиому в её приватно-необъявленном виде описывал еще Скотт Майерс в Effective C++ как способ «запретить функции, которые компилятор генерирует сам», а после C++11 нужда в специальном базовом классе во многом отпала и проще написать <code>= delete</code> прямо в классе, но <code>boost::noncopyable</code> и его аналоги по-прежнему живут в коде как выразительный маркер намерения автора.</p>
+<pre style="margin:1.4rem 0"><code>struct NonCopyable {
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable&amp;) = delete;
+    NonCopyable&amp; operator=(const NonCopyable&amp;) = delete;
+};
+
+class GpuBuffer : private NonCopyable {   // копировать GPU-ресурс нельзя
+    GLuint id_;
+    // move при необходимости объявляем явно — копирование запрещено
+public:
+    GpuBuffer(GpuBuffer&amp;&amp;) noexcept;
+    GpuBuffer&amp; operator=(GpuBuffer&amp;&amp;) noexcept;
+};</code></pre>
+    <p>В разработке игр это давнишний приём для всего, что владеет ресурсами или обязано существовать в единственном экземпляре. GPU-буферы, текстуры, командные очереди, файловые потоки, сетевые сессии, менеджеры подсистем: это всё типы, чьё случайное копирование почти всегда баг, и пометка их non-copyable ловит этот баг на этапе компиляции, а не в виде загадочного двойного <code>glDeleteBuffers</code> в рантайме.</p>
+    <p>Многие движки имеют собственный базовый класс-маркер вроде <code>FNoncopyable</code> как раз для этой цели, и он же часто комбинируется с запретом перемещения для строго привязанных к месту синглтонов. Это одна из тех идиом, которые управляют здоровьем проекта и вашим психически тоже, снижая время, проведенное в отладчике. Чем больше неверных операций тип запрещает на уровне компилятора, тем меньше способов им злоупотребить остаётся у уставшего человека перед релизом.</p>
+    <h2 id="parameterized-base-class">Parameterized Base Class</h2>
+    <p>Это уже про наследование от шаблонного параметра, когда класс получает свою базу не фиксированной, а в виде шаблонного аргумента, <code>template &lt;class Base&gt; class Mixin : public Base</code>. Тем самым иерархию наследования собирают из кубиков на этапе компиляции, накладывая один слой поведения на другой в любом нужном порядке, и каждый слой добавляет свою функциональность поверх того, что пришло снизу.</p>
+    <p>Это основа того, что называют mixin-ами через наследование, где каждый mixin это шаблон, параметризованный базой, добавляющий один аспект (логирование, сериализацию, подсчёт ссылок, потокобезопасность), а конечный тип собирается их цепочкой. Порядок и состав слоёв задаются в точке использования, что даёт комбинаторную гибкость и из десятка mixin-ов можно собрать сотни вариантов поведения, не написав ни одного из них руками целиком.</p>
+    <p>За все приходится платить, и тут ценой будут глубокие цепочки шаблонного наследования с длинными, нечитаемыми именами типов и чудовищными сообщениями об ошибках, а иногда нетривиальными конструкторами (какой слой конструируется? когда? как пробросить аргументы через всю цепочку до нужного слоя?). Плюс это статическая композиция и состав слоёв фиксируется на этапе компиляции, и поменять его в рантайме нельзя, в отличие от композиции через агрегацию объектов.</p>
+    <p>Идиому как фундамент «mixin-based programming» детально проработали в академических работах девяностых Смарагдакис и Бачор, а в практическом C++ её во всю мощь развернул Андрей Александреску в Modern C++ Design в далеком 2001, где параметризованное наследование это несущая конструкция для policy-based классов, которые собираются из политик именно через наследование от шаблонных параметров.</p>
+<pre style="margin:1.4rem 0"><code>// Каждый слой параметризован своей базой и добавляет один аспект
+template &lt;class Base&gt;
+struct WithLogging : Base {
+    void update(float dt) {
+        log("update start");
+        Base::update(dt);          // делегируем вниз по цепочке
+        log("update end");
+    }
+};
+
+template &lt;class Base&gt;
+struct WithProfiling : Base {
+    void update(float dt) {
+        ScopedTimer t("update");
+        Base::update(dt);
+    }
+};
+
+struct CoreSystem { void update(float) { /* реальная работа */ } };
+
+// Собираем тип из слоёв в нужном порядке:
+using DebugSystem = WithLogging&lt;WithProfiling&lt;CoreSystem&gt;&gt;;</code></pre>
+    <p>В разработке игр практически не живет, и параметризованное наследование применяют там, где нужно собирать варианты поведения из переиспользуемых кусков, вроде отладочных/релизных обёрток над системами, которые конфигурируются на этапе компиляции для инструментирования.</p>
+    <p>Но в целом к глубоким mixin-башням относятся с осторожностью именно из-за их влияния на читаемость и время компиляции, потому что цепочка из пяти шаблонных слоёв даёт тип, чьё имя не помещается на экран, и ошибку, которую невозможно прочесть. Вся комбинаторная мощь приёма раскрывается скорее в библиотеках общего назначения и в policy-based дизайне, к которому мы ещё вернёмся.</p>
+    <h2 id="metafunction">Metafunction</h2>
+    <p>Это «функция», которая работает не со значениями в рантайме, а с типами и компайл-тайм-константами на этапе компиляции и реализуется как шаблон, чьи параметры это «аргументы», а вложенные члены (<code>::type</code> для типа-результата, <code>::value</code> для константы-результата) будут «возвращаемым значением». Компилятор, инстанцируя шаблон, фактически вычисляет эту функцию, и результат становится частью программы ещё до того, как она начала исполняться.</p>
+    <p>Это основа всего шаблонного метапрограммирования и на метафункциях можно вычислять что угодно во время компиляции: от «является ли тип указателем» до факториала и сортировки списков типов. Соглашение об именах (<code>::type</code> и <code>::value</code>) превращает разрозненные шаблоны в единый «язык» метапрограммирования, где метафункции можно композировать, передавать друг в друга и применять к спискам типов.</p>
+    <p>За все приходится платить, и тут мы платим всем: от синтаксиса и до времени компиляции. Метапрограммирование традиционно многословно (<code>typename</code>, <code>template</code>-disambiguators, вложенные <code>::type</code>), сообщения об ошибках повергают в уныние даже клода, а тяжёлое метавычисление ощутимо замедляет компиляцию, потому что компилятор материализует множество промежуточных типов. C++11 (<code>constexpr</code>), C++14 и особенно C++17/20 (<code>if constexpr</code>, концепты, <code>constexpr</code>-вычисления) сильно упростили жизнь, позволив часто писать обычный код вместо шаблонной акробатики.</p>
+    <p>Открытие, что шаблоны C++ можно использовать как язык вычислений, приписывают Эрвину Унру, который в 1994 году написал программу, заставлявшую компилятор печатать простые числа в сообщениях об ошибках и случайно доказавшему Тьюринг-полноту шаблонов. Дальше это систематизировал Тодд Велдхейзен (в контексте своих работ и научных вычислений), а в каноническую дисциплину оформили Александреску в Modern C++ Design и Абрахамс с Гуртовым в C++ Template Metaprogramming.</p>
+<pre style="margin:1.4rem 0"><code>// Метафункция-предикат: "является ли T указателем"
+template &lt;class T&gt; struct is_pointer_t      { 
+  static constexpr bool value = false;
+};
+template &lt;class T&gt; struct is_pointer_t&lt;T*&gt;  { 
+  static constexpr bool value = true;  };
+
+// Метафункция, вычисляющая тип результата
+template &lt;class T&gt; struct remove_ref      { using type = T; };
+template &lt;class T&gt; struct remove_ref&lt;T&amp;&gt;  { using type = T; };
+
+static_assert(is_pointer_t&lt;int*&gt;::value);
+using Clean = remove_ref&lt;int&amp;&gt;::type;   // == int, вычислено компилятором</code></pre>
+    <p>Метафункции это фундамент современных систем сериализации, рефлексии и обобщённых контейнеров. И если движок умеет автоматически сохранять и грузить любую структуру, под этим почти наверняка лежат метафункции, которые на этапе компиляции выясняют, тривиально ли копируется тип (тогда его можно сериализовать одним <code>memcpy</code>), есть ли у него пользовательская функция сериализации, является ли он контейнером, который надо обходить поэлементно.</p>
+    <p>Эта компайл-тайм-диспетчеризация позволяет писать одну обобщённую функцию сохранения, которая для POD-типов разворачивается в быстрый <code>memcpy</code>, а для сложных в обход полей, и всё это решается компилятором без единой проверки в рантайме.</p>
+    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part2.html">Часть 2 →</a></p>
+    <a class="backlink" href="index.html">← Все статьи</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
