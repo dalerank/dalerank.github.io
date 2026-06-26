@@ -43,8 +43,27 @@
     </div>
   </section>
 
-  <img class="banner" src="../assets/covers/projects-banner.jpg" alt="Projects I've worked on" />
-  <p class="banner-cap">Projects I've worked on</p>
+  <div class="coverflow" aria-label="Projects I've worked on">
+    <div class="cov-track">
+      <figure class="cov-item"><img src="../assets/games/metro-2039.jpg" alt="Metro 2039" loading="lazy"><figcaption>Metro 2039</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/metro.jpg" alt="Metro Exodus" loading="lazy"><figcaption>Metro Exodus</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/deathloop.jpg" alt="Deathloop" loading="lazy"><figcaption>Deathloop</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/aoe2.jpg" alt="Age of Empires II" loading="lazy"><figcaption>Age of Empires II</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/stellaris.jpg" alt="Stellaris" loading="lazy"><figcaption>Stellaris</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/blades-of-time.jpg" alt="Blades of Time" loading="lazy"><figcaption>Blades of Time</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/cuisine-royale.jpg" alt="Cuisine Royale" loading="lazy"><figcaption>Cuisine Royale</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/active-matter.jpg" alt="Active Matter" loading="lazy"><figcaption>Active Matter</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/sims-mobile.jpg" alt="The Sims Mobile" loading="lazy"><figcaption>The Sims Mobile</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/simcity-buildit.jpg" alt="SimCity BuildIt" loading="lazy"><figcaption>SimCity BuildIt</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/township.jpg" alt="Township" loading="lazy"><figcaption>Township</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/scrabble.jpg" alt="Scrabble" loading="lazy"><figcaption>Scrabble</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/0ad.jpg" alt="0 A.D." loading="lazy"><figcaption>0 A.D.</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/stone-kingdoms.jpg" alt="Stone Kingdoms" loading="lazy"><figcaption>Stone Kingdoms</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/cytopia.jpg" alt="Cytopia" loading="lazy"><figcaption>Cytopia</figcaption></figure>
+      <figure class="cov-item"><img src="../assets/games/akhenaten.jpg" alt="Akhenaten" loading="lazy"><figcaption>Akhenaten</figcaption></figure>
+    </div>
+  </div>
+  <p class="banner-cap">Projects I've worked on — hover to explore</p>
 
   <article class="prose">
     <h2>In short</h2>
@@ -63,14 +82,18 @@
 
     <h2>Projects I've worked on</h2>
     <div class="gamegrid">
-      <div class="game"><img src="../assets/games/metro.jpg" alt="Metro 2039"><div class="name">Metro 2039</div></div>
+      <div class="game"><img src="../assets/games/metro-2039.jpg" alt="Metro 2039"><div class="name">Metro 2039</div></div>
+      <div class="game"><img src="../assets/games/metro.jpg" alt="Metro Exodus"><div class="name">Metro Exodus</div></div>
       <div class="game"><img src="../assets/games/deathloop.jpg" alt="Deathloop"><div class="name">Deathloop</div></div>
       <div class="game"><img src="../assets/games/aoe2.jpg" alt="Age of Empires II"><div class="name">Age of Empires II</div></div>
       <div class="game"><img src="../assets/games/stellaris.jpg" alt="Stellaris"><div class="name">Stellaris</div></div>
       <div class="game"><img src="../assets/games/blades-of-time.jpg" alt="Blades of Time"><div class="name">Blades of Time</div></div>
       <div class="game"><img src="../assets/games/cuisine-royale.jpg" alt="Cuisine Royale"><div class="name">Cuisine Royale</div></div>
+      <div class="game"><img src="../assets/games/active-matter.jpg" alt="Active Matter"><div class="name">Active Matter</div></div>
       <div class="game"><img src="../assets/games/sims-mobile.jpg" alt="The Sims Mobile"><div class="name">The Sims Mobile</div></div>
       <div class="game"><img src="../assets/games/simcity-buildit.jpg" alt="SimCity BuildIt"><div class="name">SimCity BuildIt</div></div>
+      <div class="game"><img src="../assets/games/township.jpg" alt="Township"><div class="name">Township</div></div>
+      <div class="game"><img src="../assets/games/scrabble.jpg" alt="Scrabble"><div class="name">Scrabble</div></div>
       <div class="game"><img src="../assets/games/0ad.jpg" alt="0 A.D."><div class="name">0 A.D.</div></div>
       <div class="game"><img src="../assets/games/stone-kingdoms.jpg" alt="Stone Kingdoms"><div class="name">Stone Kingdoms</div></div>
       <div class="game"><img src="../assets/games/cytopia.jpg" alt="Cytopia"><div class="name">Cytopia</div></div>
@@ -153,6 +176,55 @@
     </span>
   </div>
 </footer>
+
+<script>
+(function(){
+  var flow=document.querySelector('.coverflow');
+  if(!flow)return;
+  var track=flow.querySelector('.cov-track');
+  var items=Array.prototype.slice.call(flow.querySelectorAll('.cov-item'));
+  if(!items.length)return;
+  var home=Math.floor(items.length/2),active=home;
+  function layout(){
+    var W=flow.clientWidth,n=items.length,iw=items[0].offsetWidth;
+    var pad=Math.min(36,iw*0.22);
+    var step=n>1?(W-2*pad-iw)/(n-1):0;
+    items.forEach(function(it,i){
+      var d=i-active,abs=Math.abs(d),sign=d<0?-1:1;
+      var base='translateX('+(pad+i*step)+'px) translateY(-50%) ';
+      if(d===0){
+        it.classList.add('is-active');
+        it.style.transform=base+'translateZ(80px) rotateY(0deg) scale(1.12)';
+        it.style.opacity='1';it.style.zIndex='200';
+      }else{
+        it.classList.remove('is-active');
+        var rot=-sign*40,tz=-24-abs*20,sc=Math.max(.82,1-abs*0.03);
+        it.style.transform=base+'translateZ('+tz+'px) rotateY('+rot+'deg) scale('+sc+')';
+        it.style.opacity=String(Math.max(.55,1-abs*0.05));
+        it.style.zIndex=String(100-abs);
+      }
+    });
+  }
+  function pick(clientX){
+    var r=flow.getBoundingClientRect();
+    var t=(clientX-r.left)/r.width;
+    var i=Math.round(t*(items.length-1));
+    return Math.max(0,Math.min(items.length-1,i));
+  }
+  flow.addEventListener('mousemove',function(e){
+    var i=pick(e.clientX);
+    if(i!==active){active=i;layout();}
+  });
+  flow.addEventListener('mouseleave',function(){active=home;layout();});
+  items.forEach(function(it,i){
+    it.tabIndex=0;
+    it.addEventListener('focus',function(){active=i;layout();});
+    it.addEventListener('click',function(){active=i;layout();});
+  });
+  window.addEventListener('resize',layout);
+  layout();
+})();
+</script>
 
 </body>
 </html>
