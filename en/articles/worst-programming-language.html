@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Worst Programming Language of All Time /s — dalerank</title>
+<meta name="description" content="Why C++ gets bashed: the zoo of initializations, keywords that lie, dozens of integer types, a non-standard standard library, unreadable template errors, and not-so-zero-cost abstractions. And why it all converges on one point — backward compatibility at the cost of everything." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/worst-programming-language.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/worst-programming-language.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/worst-programming-language.html">RU</a><i>/</i><a class="on" href="worst-programming-language.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>The Worst Programming Language of All Time /s</h1><div class="ameta"><span>Jul 14, 2026</span><span>24 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/worst-programming-language/01.jpg" alt="" class="post-image" loading="lazy" />
+<p>There's a fifty-minute video on YouTube with the proud title <a href="https://www.youtube.com/watch?v=7fGB-hjc2Gc" rel="noopener noreferrer nofollow">«the worst programming language of all time»</a>. I wouldn't be surprised if you assumed it was about C++. It really is about C++, and I watched it about half a year ago, well, "watched" is a strong word... I skimmed it at 2x with lots of skipping, whatever an offended junior might have ranted about there, but kind <a href="https://habr.com/ru/users/alyokhin/">@alyokhin</a>reminded me of it again, and now I've watched it in full. And you know what the most unpleasant part is? If you strip away the offended-junior intonation and leave only the arguments, then about seventy percent of it is true. Not «debatable», not «depends on the context», but literally true, the kind any developer who has spent a couple of years with the language will confirm without a second thought.</p><p>The paradox is that this video was made about the language that half the world around us is written in. The browser you're reading this in, the game engine, how could I write an article without games, of the game you played yesterday, the firmware of the hardware it all runs on, and the compiler that built the browser, the engine, and the firmware. </p><p>The «why C++ is awful» genre has been scorched to the ground on Habr, and about the Init zoo, overloaded <code>static</code>, <code>vector</code> named incorrectly, <code>std::move</code> that doesn't move, super-slow regex, slow <code>unordered_map</code> you've read it all a dozen times over. The list of these pains itself is old news, and I'll add on my own behalf that all the complaints and examples below are consequences of a single decision, and I'll get to it. Or open the spoilers, they hide the story of why each part of the language turned out the way it did.</p><hr/><h3>Many ways to initialize a variable</h3><p>Let's start with the most hellish part, with the beginning of any program, that is, with creating a variable. And whereas in other languages this is usually a single operation, in C++ whole books are written about it and studies are conducted, later dragged out onto conferences, as if there weren't enough other problems. Help me out. Did I forget anything?</p><pre style="margin:1.4rem 0"><code>int f;                    // automatic storage, garbage
+static int f_static;      // but in namespace/static scope it's already zero (zero-init at startup)
+std::string s;            // default-constructor call
+int* p = new int;         // heap, garbage
+int e{};                  // 0
+int e2 = {};              // 0
+int* p = new int{};       // 0
+int* q = new int();       // also 0
+auto t = T{};             // temporary, value-init
+int b(5);
+std::string s("hello");
+T obj(a1, a2);
+auto p = new T(a1, a2);
+int x = static_cast&lt;int&gt;(3.5);   // cast, this is also direct-init
+int y(int(5));                   // functional notation
+int a = 5;
+std::string s = "hello";
+T obj = other;
+f(arg);                   // pass by value, the function PARAMETER is initialized
+                          // not a visible variable
+f({1, 2, 3});             // same thing
+return x;                 // return by value
+return {1, 2, 3};         // also, if copy-elision doesn't kick in
+throw x;                  // the exception object is initialized
+int c{5};                 // direct-list
+int d = {5};              // copy-list
+std::vector&lt;int&gt; v{1, 2, 3};
+std::vector&lt;int&gt; v2 = {1, 2, 3};
+std::vector&lt;int&gt; a(10);   // 10 elements, all zeros
+std::vector&lt;int&gt; b{10};   // ONE element with value 10
+struct Point { int x, y; };
+Point p{1, 2};            // you can do this
+Point p2 = {1, 2};        // or you can do this
+int arr[3] = {1, 2, 3};   // with zeros and without them
+int arr2[3] = {};         // all zeros
+Point p3{.x = 1, .y = 2}; // designated initializers, C++20
+Point p4{1};              // x=1, y=0 (tail value-init)
+int&amp; r = x;
+const int&amp; cr = 5;        // binding to a temporary + lifetime extension
+int&amp;&amp; rr = 10;
+constexpr int n = 42;     // must be constant-init
+const int m = foo();      // may be either constant or dynamic
+constinit int g = bar();  // C++20: guarantees static-init, but does NOT make it const
+static int s = compute(); // dynamic-init, with its own Static Init Order Fiasco
+struct S {
+    int x = 5;            // default member initializer
+    int y{10};
+    S() : y{2}, x(1) {}   // member initializer list (order by declaration, not by list)
+};
+auto [a, b] = std::pair{1, 2};   // structured bindings, C++17
+for (int v : arr) { }            // range-based for also initializes v</code></pre><p>If you count the "behavioral semantics" of initialization, you get about ten of them (<code>= v</code>, <code>(v)</code>, <code>{v}</code>, <code>= {v}</code>, <code>{}</code>, <code>= {}</code>, <code>()</code> in new, etc.), and there will be nine semantic categories, and the mapping between them is not one-to-one, and a single <code>{}</code> entry lives simultaneously in value-init, list-init, and aggregate-init depending on the type on the right. On the topic of initialization <a href="https://leanpub.com/cppinitbook" rel="noopener noreferrer nofollow">a separate three-hundred-page book has been written</a>, and that's not a joke, an acquaintance once recommended it to me, it really exists and it really is three hundred pages long, as they say, enjoy. </p><p>And each method does something slightly different, I especially like the difference between <code>e</code> and <code>f</code>, where the presence or absence of a pair of curly braces determines whether your variable holds zero or whatever is left over in this chunk of the stack from the previous function call. </p><pre style="margin:1.4rem 0"><code>struct S {
+    int x = 5;     // default member initializer
+    int y{10};
+};</code></pre><p>NSDMI, Non-Static Data Member Initializer, an initializer for a non-static data member right in the class declaration. At the point <code>int x = 5;</code> the object doesn't exist yet and nothing is initialized. This is a <em>default member initializer</em>, that is, just a template that will be used during construction, IF<strong> </strong>the constructor didn't initialize the member itself in the mem-init-list, that is, it's an «initializer in reserve», not initialization. Formally it's the member's <code>brace-or-equal-initializer</code>.  </p><pre style="margin:1.4rem 0"><code>auto [a, b] = std::pair{1, 2};</code></pre><p>And here a hidden anonymous object is initialized (a <em>hidden object</em> or <em>decomposition object</em>  , let's call it <code>e</code>), and <code>a</code> and <code>b</code> won't be separate variables, they are <em>binding names</em> to parts of the anonymous object. Initialization is applied to <code>e</code>, not to <code>a</code>/<code>b</code>. A subtlety, but since we're nitpicking, I'll repeat that these aren't quite real variables but fields of a structure, and <code>e</code> itself isn't directly accessible, but physically the storage is roughly like this:  </p><pre style="margin:1.4rem 0"><code>e
++---------+
+| first   | &lt;--- a
+| second  | &lt;--- b
++---------+
+
+auto e = std::pair{1, 2};
+auto&amp; a = e.first;
+auto&amp; b = e.second;</code></pre><details class="code"><summary>Asm</summary><div class="spoiler-body" style="padding:14px 20px"><pre style="margin:1.4rem 0"><code>int k, e;
+
+int main() {
+    auto [a, b] = std::pair{k, e};
+
+    return a + b;
+}</code></pre><pre style="margin:1.4rem 0"><code>leaq    -12(%rbp), %rdi
+leaq    k(%rip), %rsi
+leaq    e(%rip), %rdx
+callq   std::pair&lt;int, int&gt;::pair&lt;int&amp;, int&amp;, true&gt;(int&amp;, int&amp;)</code></pre><p>This is where the hidden structured binding object is created.<code>rdi</code> is the constructor's first argument, that is, the address of the place where the pair is constructed</p><pre style="margin:1.4rem 0"><code>main:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        subq    $32, %rsp
+        movl    $0, -4(%rbp)
+        leaq    -12(%rbp), %rdi  &lt;&lt;&lt;&lt;&lt;
+        leaq    k(%rip), %rsi    &lt;&lt;&lt;&lt;&lt;
+        leaq    e(%rip), %rdx    &lt;&lt;&lt;&lt;&lt;
+        callq   std::pair&lt;int, int&gt;::pair&lt;int&amp;, int&amp;, true&gt;(int&amp;, int&amp;) &lt;&lt;&lt;&lt;&lt;
+        leaq    -12(%rbp), %rdi
+        callq   tuple_element&lt;0ul, std::pair&lt;int, int&gt;&gt;::type&amp;&amp; std::get&lt;0ul, int, int&gt;(std::pair&lt;int, int&gt;&amp;&amp;)
+        movq    %rax, -24(%rbp)
+        leaq    -12(%rbp), %rdi
+        callq   tuple_element&lt;1ul, std::pair&lt;int, int&gt;&gt;::type&amp;&amp; std::get&lt;1ul, int, int&gt;(std::pair&lt;int, int&gt;&amp;&amp;)
+        movq    %rax, -32(%rbp)
+        movq    -24(%rbp), %rax
+        movl    (%rax), %eax
+        movq    -32(%rbp), %rcx
+        addl    (%rcx), %eax
+        addq    $32, %rsp
+        popq    %rbp
+        retq
+
+k:
+        .long   0
+
+e:
+        .long   0</code></pre></div></details><p>And just as you decide you've figured it out, it turns out that curly braces in one context are aggregate initialization, and in another they're <code>std::initializer_list</code>, and the very same line of code can return a different type depending on the version of the standard you're building against. Not a different result, but a different <em>type</em>. Welcome.</p><pre style="margin:1.4rem 0"><code>auto i = 1;      // always int
+auto j = {1};    // always initializer_list&lt;int&gt; (copy-list-init)
+auto k{1};       // C++11: initializer_list&lt;int&gt;;  C++17+: int</code></pre><details class="code"><summary>How the zoo came to be</summary><div class="spoiler-body" style="padding:14px 20px"><p>The initialization zoo grew precisely out of the attempt to shut this zoo down, and in 2011 the committee sincerely tried to reduce everything to a single syntax, and in the end added yet another enclosure of types.  </p><p>From C we inherited ordinary assignment on declaration (<code>int a = 5;</code>) and curly braces for aggregates like arrays and structs (<code>int arr[] = {1,2,3};</code>). Braces in C could lay out values across the fields of a POD aggregate, and claimed nothing more.</p><p>Then C++ brought constructors, and once there's a constructor it has to be called somehow at the point of object creation, and the most natural syntax turned out to be parentheses, because a constructor call visually resembles a function call, hence <code>Widget w(args);</code>. Makes sense? Makes sense. </p><p>Right up until the day you write <code>Widget w();</code> and discover that you've declared a function returning a <code>Widget</code>. This is the famous most vexing parse, and it's not a bug in someone's implementation, but a direct consequence of the grammar inherited from C, where «a declaration looks like a use», but a function declaration is syntactically indistinguishable from creating an object with empty parentheses.  </p><p> Then along came C++11 and a big idea called uniform initialization. The intent was good, an attempt to introduce a single syntax, <code>{}</code>, that works everywhere: for aggregates, for classes with constructors, for scalars, and for containers. </p><p>At the same time it would fix the most vexing parse, because <code>Widget w{};</code> can't be parsed as a function, and it also forbade narrowing conversions like<code>int x{3.5};</code> which would be an error, whereas <code>int x = 3.5;</code> would chop off the fractional part. </p><p>That is, <code>{}</code> was conceived not as «yet another way», but as the one, the only correct and racially pure one, to which everyone was supposed to switch.  </p><p>Here the very thing that everything in this language comes down to kicks in, the thing I wrote about at the end. For <code>{}</code> to become the only one, you had to throw out <code>=</code> and <code>()</code>, and those hold up billions of lines of code, engines, libs, other people's APIs.</p><p>It turns out you can't throw them out, so the new universal syntax didn't replace the old ones, but settled into its own enclosure, and the number of ways grew. A tool invented to end the zoo became its most conspicuous inhabitant.  </p><p> And to make it truly fun, those same curly braces were loaded with a second meaning via<code>std::initializer_list</code>, now if a type has an initializer-list constructor, braces start to mean it, and moreover it wins overload resolution. </p><p> A separate story is the difference between<code>int e{};</code> (zero) and <code>int f;</code> (garbage). This came from grandpa C, where automatic variables weren't zeroed. Not because they forgot, but because zeroing costs cycles, and C's philosophy was «you don't pay for what you don't use», and if you want zero, write zero yourself. </p><p>So <code>int f;</code> leaves on the stack whatever was left over from the previous call, and that's by design, a feature from around 1972. And Stroustrup later wanted to give a safe zero default, but couldn't impose it, because it would break both compatibility and the very idea of «not paying for the unnecessary». And so it turned out that the safe option exists, but it isn't the default, because the default rule itself was fixed half a century ago for the sake of speed.  </p><p>Putting it all back into one syntax is no longer possible now, and every method has its own code and its own rules for working with it hanging on it. So when yet another three-hundred-page book on initialization comes out with half-screen flowcharts, it's not the authors amusing themselves, it's the price of what's been dumped into the language over forty years because of the language's single most important feature.  </p></div></details><h3>Simple things just don't get done simply</h3><p>The textbook example of complicated simplicity is a random number, and somewhere in Java or Python you just write <code>random.randint(1, 100)</code> and go on coding, but not here. That's too simple to be true.</p><pre style="margin:1.4rem 0"><code>std::random_device rd;
+std::mt19937 gen(rd());                          // and what is mt19937?
+std::uniform_int_distribution&lt;int&gt; dist(1, 100); // and why separately?
+int value = dist(gen);                           // finally</code></pre><p>The code isn't exactly unreadable, but you have to look it up on cppreference every other time you actually need it. Then I go googling what this <code>mt19937</code> is, it's the Mersenne Twister, live with that knowledge now, and yes, you now have to know the name of the pseudo-random number generator just to roll a die.</p><details class="code"><summary>Simple things</summary><div class="spoiler-body" style="padding:14px 20px"><p>Before C++11 the language had <code>rand()</code>, inherited from C, which returned a number in the range up to <code>RAND_MAX</code>, which the standard guarantees to be at least 32767, that is, on some platforms you physically can't get a uniform number in a large range.</p><p>The familiar <code>rand() % 100</code> produces a bias, because 100 doesn't evenly divide the number of possible values, so some numbers come up more often than others, and the sequence is not reproducible across compilers. That is, it was a simple function for shooting yourself in the foot.  </p><p>So in C++11 they dragged in a fundamentally new design from Boost.Random, which deliberately separated what <code>rand()</code> lumped together. Now there's the generation engine itself, or the source of raw bits (<code>mt19937</code>, the very same Mersenne Twister by Matsumoto and Nishimura from '97), separately. Separately there's the distribution, which turns raw bits into uniform-in-range without any bias, and separately there's the seed source. </p><p>This was designed by people who needed reproducible Monte Carlo runs for scientific simulations, and for their tasks it worked perfectly. The trouble is they built a beautiful cathedral, but never fitted a little door for «roll a die from 1 to 100», and the standard still has no one-liner <code>randint</code>. </p><p>But even the «correct» incantation is also incorrect, because <code>mt19937</code> holds almost twenty thousand bits of state, and we seed it with a single 32-bit number from <code>random_device</code>, that is, we under-seed it. That's one.</p><p>And the standard itself allows <code>random_device</code> to be deterministic, and on old MinGW it produced the same sequence on every run for years, that is, the long correct mantra is in reality long and correct, but doesn't work everywhere, whereas <code>rand() % 100</code> is both shorter and at least works.  </p></div></details><h2>Casting problems</h2><p>Casting is a whole separate song, and where in Java you write the value in parentheses and that's it, in C++ there's a whole set of these casts, for every taste and color. <code>static_cast</code>, <code>dynamic_cast</code>, <code>reinterpret_cast</code>, <code>const_cast</code>, <code>bit_cast</code>, and each for its own case, and each has to be typed out in full by hand, and there's also a hidden <code>rvalue_cast</code>, but more on that below.</p><pre style="margin:1.4rem 0"><code>double d = 3.9;
+int i = static_cast&lt;int&gt;(d);        // 3, fractional part discarded
+
+Base* b = new Derived;
+auto* der = static_cast&lt;Derived*&gt;(b); // downcast WITHOUT a check
+                                      // you vouch that it's a Derived
+
+Base* b = get_something();
+if (Derived* d = dynamic_cast&lt;Derived*&gt;(b)) {
+    d-&gt;derived_only();              // we get here only if it's really a Derived
+}                                   // otherwise d == nullptr
+
+int x = 42;
+std::uintptr_t addr = reinterpret_cast&lt;std::uintptr_t&gt;(&amp;x);  // address as a number
+
+void legacy_api(char* s);           // doesn't touch the string, but forgot const
+
+const std::string str = "hello";
+legacy_api(const_cast&lt;char*&gt;(str.c_str()));   // ok, since the api really doesn't modify
+
+float f = 1.0f;
+auto bits = std::bit_cast&lt;std::uint32_t&gt;(f);  // 0x3F800000, no UB
+
+// how it was done before C++20:
+std::uint32_t old;
+std::memcpy(&amp;old, &amp;f, sizeof f);              // same thing, but by hand
+
+int i = (int)d;                     // compiles, looks familiar</code></pre><p>Newcomers get so tired of this that they set up a short alias for themselves, and this is considered bad practice, because now your code is written in your own personal dialect of C++ that nobody but you knows.</p><pre style="margin:1.4rem 0"><code>// antipattern: "I'm tired of writing static_cast"
+template &lt;class T, class U&gt;
+constexpr T sc(U&amp;&amp; u) { return static_cast&lt;T&gt;(std::forward&lt;U&gt;(u)); }
+
+int i = sc&lt;int&gt;(3.9);               // short, yes, correct? no
+
+// or even worse:
+#define CAST(T, x) static_cast&lt;T&gt;(x)</code></pre><p>This is a real trap, and often correct C++ looks incorrect, because the short and beautiful solution almost always turns out to be buggy and incorrect, while the correct one looks as if you needlessly complicated your team's life. The intuition for «what good code should look like» takes years to develop, and until it's developed, you live with the feeling that you're doing something wrong. Spoiler: you really are doing something wrong, the language is just like that.</p><details class="code"><summary>Why so many?</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C there's a single cast (C-style cast), <code>(T)expr</code>, and it does everything. It changes the value, reinterprets a pointer, strips <code>const</code>, chops the type — and all of it looks absolutely identical. Which means you can't find in the codebase the places where someone strips constness, because they're indistinguishable from any other conversion. </p><p>C++ broke this Swiss Army knife into four named operations: <code>static_cast</code>, <code>dynamic_cast</code>, <code>const_cast</code>, <code>reinterpret_cast</code> because of this indistinguishability of operations. </p><p>So that the intent is explicit and <code>const_cast</code>, the one that says «I'm blowing up const here», gets caught by the eye during review. </p><p>So that it can be grepped and you can find all the <code>reinterpret_cast</code> and check each one. </p><p>Casts are evil in themselves, so they were made ugly on purpose. As Alexandrescu said, "a cast is a code smell", and Stroustrup made the syntax cumbersome so that casting would be painful to type, and when you do cast one type to another explicitly, it stands out during review. The old C cast was too light and weightless, and it was precisely this lightness that made it dangerous.  </p><p>And so it turns out that the correct looks incorrect literally by design, not by accident. The short and beautiful solution is almost always that very broken legacy that can't be removed for the sake of the language's single most important feature, while the correct one was deliberately made verbose and inconvenient so that you would stumble and think, and it forces you every time, typing out a cast by hand, to think.  </p></div></details><h3>Keywords that lie</h3><p>In a normal world a keyword describes what it does, but in C++ that became an optional add-on. Remember <code>static</code>. </p><p>And do you remember how many meanings it has? Making a variable that lives between function calls, that's one. Making a variable or method shared across all instances of a class, that's two. The third meaning, when <code>static</code> before a function in a <code>.cpp</code> file makes it invisible outside that file, that is, it's <code>private,</code> but they called it <code>static</code>. Why not <code>internal</code>, not <code>private</code>, not <code>file_local</code>? Because historically it just ended up that way, which is the answer to about half the questions in this article.</p><pre style="margin:1.4rem 0"><code>void counter() {
+    static int calls = 0;   // initialized ONCE, on the first entry
+    int local = 0;          // ordinary local, anew each call
+    ++calls;
+    ++local;
+    std::cout &lt;&lt; "static: " &lt;&lt; calls &lt;&lt; ", local: " &lt;&lt; local &lt;&lt; '\n';
+}</code></pre><p>And there's a behavior of <code>static</code> that came after C++11, now your <code>static</code>also means a <code>light mutex guarded</code>. Did you know about this? </p><pre style="margin:1.4rem 0"><code>Logger&amp; logger() {
+    static Logger instance;   // one line
+    return instance;
+}
+
+Logger&amp; logger() {
+    // FAST path: low byte of guard != 0 → already initialized
+    if ((reinterpret_cast&lt;volatile char&amp;&gt;(__guard_for_instance)) == 0) {
+
+        // SLOW path: we get here only on the first time and under synchronization
+        if (__cxa_guard_acquire(&amp;__guard_for_instance)) {
+            // acquire returned 1 → this exact thread is obligated to initialize.
+            // The other threads are now SLEEPING inside __cxa_guard_acquire.
+            try {
+                ::new (&amp;__instance_storage) Logger();          // constructor call
+                __cxa_guard_release(&amp;__guard_for_instance);    // set the flag, wake the sleepers
+                __cxa_atexit(&amp;destroy_logger, ...);            // register destruction
+            } catch (...) {
+                __cxa_guard_abort(&amp;__guard_for_instance);
+                throw;
+            }
+        }
+        // the threads that lost the race left acquire only after release
+    }
+    return reinterpret_cast&lt;Logger&amp;&gt;(__instance_storage);
+}</code></pre><details class="code"><summary>Why static does four unrelated things</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C <code>static</code> already had two meanings. The first, ordinary one is about lifetime, when a variable lives for the whole program. </p><p>The second was about internal linkage, when the name wasn't visible outside the translation unit. And even though semantically these are things from different universes, one about memory and the other about visibility, K&amp;R made them a single keyword, because a language should have few keywords, and the word <code>static</code> was close in meaning to «statically allocated». </p><p>C++ inherited these meanings wholesale, as they say, without looking, because giving up a piece of C meant giving up compatibility with C, and that was exactly what they wanted to avoid.  Then Stroustrup needed class members shared across all instances, and he could have introduced something like<code>shared</code>, <code>classwide</code>, by analogy with <code>private, protected ,</code>anything descriptive, but you understand that every new keyword in the language is a mine for developers. </p><p>Somewhere in the world someone has surely named a variable <code>shared</code> or <code>internal</code>, or <code>classwide</code>, and on the day that word becomes a keyword, their code stops compiling. So before inventing a new word, they first tried to reuse an existing one, and<code>static</code> already lived in the language and was already murky, so you could hang more murkiness on it without the risk of breaking someone's prod. That's how the third meaning appeared, not because it fits by meaning, but because the word was at hand and broke nothing.  </p><p>The fourth behavior arrived in C++11, when they wanted to make the initialization of a function-local <code>static</code> thread-safe, and the compiler started inserting a hidden guard on the first pass.  </p><p>The language tried to clean this up once, and in C++98 the file-level <code>static</code> for internal linkage was declared deprecated and people were told to use unnamed namespaces, but in C++11 this recommendation was rescinded, because weaning people off the familiar word turned out to be far more expensive than fixing the language, that is, the language couldn't throw out even the meaning it had itself deemed redundant.</p><p>Now none of the four can be removed anymore, and each has someone's code hanging on it, some local counter, or a private function, or a class member in an API used by a hundred thousand people. </p></div></details><p><code>inline</code> once it asked the compiler to inline a function, but today the compiler is smart and inlines on its own when it sees fit, and <code>inline</code> now solves linking problems and the One Definition Rule. And  <code>inline</code> on a function and <code>inline</code> on a variable do semantically <em>opposite</em> things,  and on a function it's permission to duplicate code, while on a variable it's a prohibition on duplicating data.</p><pre style="margin:1.4rem 0"><code>// math.h
+inline int square(int x) { return x * x; }
+
+// a.cpp
+#include "math.h"
+int use_a() { return square(3); }
+
+// b.cpp
+#include "math.h"
+int use_b() { return square(4); }
+
+// counter.h
+inline int g_calls = 0;   // exactly one instance for the whole program
+
+// a.cpp
+#include "counter.h"
+void hit_a() { ++g_calls; }
+
+// b.cpp
+#include "counter.h"
+void hit_b() { ++g_calls; }
+
+// config.h
+struct Config {
+    static inline int instances = 0;          // one counter for all objects, right in the .h
+};
+
+inline constexpr double kPi = 3.14159265358979;  // header-only constant, one object</code></pre><details class="code"><summary>What inline was meant to be</summary><div class="spoiler-body" style="padding:14px 20px"><p>In early C++ it was a type-safe replacement for the <code>#define</code> macro along the lines of «substitute the function body right at the call point instead of a call» and it was literally an unrolling optimization. Hence the name, and hence the folk belief that <code>inline</code> is about «making it faster», forget it, it hasn't been about that for about fifteen years now.</p><p>Today its load-bearing meaning is no longer about optimization, but about ODR and linking. An <code>inline</code> entity is allowed to be defined in several translation units (that is, to put the definition in a header and include it everywhere), and the linker is obligated to merge these definitions into one, rather than falling over with <code>multiple definition</code>. </p><p>How does <code>inline</code> relate to actual inlining? Well, almost not at all<strong>.</strong> As a hint to the optimizer it's purely advisory, and modern compilers often ignore it, having cost models through which they happily inline functions without <code>inline</code> and refuse to inline marked ones, and with LTO they inline even across TU boundaries regardless of the word. </p><p>The only connection between <code>inline</code> and real inlining now is indirect, and this keyword now lets you put the body in a header without hitting a linking error, and the optimizer can place the visible body in a separate TU, because without that LTO can't be done. </p><p>Methods defined right in the class body are already implicitly marked<code>inline</code>, and all<code>constexpr</code> functions are also implicitly made<code>inline</code>, but people still add the keyword «just in case», even though it changes nothing there.  </p><p>Inlining now has to be done via<code><strong>forceinline</strong></code><strong> </strong>(MSVC) and <code>attribute__((always_inline))</code>, <code>[[gnu::always_inline]]</code>, and even those often refuse on recursion, varargs, or taking an address. This name is a vestige of the era when it really did work that way, but now it's about the linker.  </p></div></details><p><code>const</code>, which is supposedly about immutability, can be written on either side of the type, and both spellings mean exactly the same thing, just so you don't relax. And also <code>mutable const</code> is sometimes valid code. And also constness can be stripped with a cast, and that's bad practice, but physically it can be done. </p><p>To figure out what <code>const</code> refers to in a pointer declaration, to the value or to the pointer itself, there's an official rule «read right to left». Let me remind you that most people read left to right.</p><pre style="margin:1.4rem 0"><code>const int a = 5;   // "west const"
+int const b = 5;   // "east const" exactly the same thing, both are constants
+
+const int* p = &amp;a; // pointer to const int
+int const* q = &amp;a; // and this is the same thing
+
+struct Cache {
+    mutable int hits = 0;   // can be changed even on a const object
+    int value = 0;
+};
+
+const Cache c;
+c.hits++;       // OK, mutable
+// c.value++;   // error, an ordinary member of a const object
+
+struct S {
+    mutable const int* p = nullptr;  // VALID
+};
+
+struct Bad {
+    mutable const int x = 5;  // INVALID, mutable can't be on a const member
+};
+
+// Case 1: the object is REALLY not const, ok
+int x = 5;
+const int&amp; cref = x;
+const_cast&lt;int&amp;&gt;(cref) = 10;   // legal, x really did change, x == 10
+
+// Case 2: the object is REALLY const, Undefined Behavior
+const int y = 5;
+const_cast&lt;int&amp;&gt;(y) = 10;      // compiles, but this is UB
+                               // y may stay 5, crash, or anything
+
+int x = 0, y = 0;
+
+const int* p1 = &amp;x;        // p1: pointer to const int
+int* const p2 = &amp;x;        // p2: const pointer to int
+const int* const p3 = &amp;x;  // p3: const pointer to const int
+
+*p1 = 5;   // error: the value is const
+p1 = &amp;y;   // ok: the pointer can be redirected
+
+*p2 = 5;   // ok: the value can be changed
+p2 = &amp;y;   // error: the pointer is const
+
+*p3 = 5;   // error
+p3 = &amp;y;   // error</code></pre><details class="code"><summary>Why const, if memory isn't const?</summary><div class="spoiler-body" style="padding:14px 20px"><p>This is one of the few keywords that was born in C++ and exported to C, not the other way around. Stroustrup introduced it back in «C with Classes» (initially under the working name <code>readonly</code>), and from there it went into the C89 standard and started living its own independent life. But a word invented to bring order immediately inherited the disorder of the grammar it was inserted into.  </p><p>To begin with, <code>const int</code> and <code>int const</code>  are literally the same thing, and<code>const</code> is just a type qualifier, and it sits in the part of the declaration that the grammar calls <code>decl-specifier-seq</code>, that is, a sequence of specifiers. </p><p>And this sequence was unordered long before <code>const</code> appeared, for exactly the same reason that<code>unsigned long</code> and <code>long unsigned</code> mean one type. Now <code>const</code> has stepped on the old rake, where word order didn't matter anyway, and moreover, the "correct" form" is precisely <code>int const</code>, because <code>const</code> refers to what stands to the left of it, and <code>const int</code> is a grammatical concession, because old compilers allowed it.</p><p>That's exactly why there's a whole «east const» movement (it was promoted at one time by Jon Kalb, and before him Dan Saks wrote a lot about untangling declarations). Nobody designed the two spellings, they just fell out of the grammar, because it was convenient and didn't break old code.  </p><pre style="margin:1.4rem 0"><code>const int* p;   // pointer to const int, change the pointer, not the value
+int* const p;   // const pointer to int, change the value, not the pointer</code></pre><p>Here there's a difference which side of the asterisk <code>const</code> is on, because to the left of the asterisk<em> </em>it falls into that same sequence of specifiers<em> and qualifies what is pointed to. </em></p><p><em>And to the right of the asterisk</em> it becomes part of the declarator and qualifies the pointer itself, and the declaration was deliberately made to resemble the expression that will later work with the variable. For <code>int <em>p</em></code><em> this is elegant, for </em><code><em>int </em>(*f)(int)</code> it's already mockery, and <code>const</code> here complicates a grammar that is difficult in itself.</p><p>And again you can't assemble this into a single whole, because the grammar of <code>const</code> is firmly fixed by compatibility with grandpa C, and changing how it's parsed would mean breaking both C and forty years of code in both languages. So it turns out that the word looks like a lock on the door, but is actually a sign saying «please do not enter», turned with its letters facing the door.  </p></div></details><h3>The integer type zoo</h3><p>How many integer types are there in C++? About fifty (if you count the fixed-width aliases too). And the size of not all of them is fixed, but depends on the compiler and platform.</p><pre style="margin:1.4rem 0"><code>bool                    // yes, bool — is also an integral type
+
+char                    // a SEPARATE type
+signed char             // a SEPARATE type
+unsigned char           // a SEPARATE type, these are three different types, not two
+
+char8_t                 // C++20
+char16_t                // C++11
+char32_t                // C++11
+wchar_t
+
+short
+unsigned short
+int
+unsigned int
+long
+unsigned long
+long long               // C++11
+unsigned long long      // C++11
+
+short, short int, signed short, signed short int          // 4 spellings → 1 type
+int, signed, signed int                                   // 3 spellings → 1 type
+long, long int, signed long, signed long int              // 4 → 1
+long long, long long int, signed long long, signed long long int  // 4 → 1
+unsigned, unsigned int                                    // 2 → 1
+
+int8_t   int16_t   int32_t   int64_t        // exact width (optional)
+uint8_t  uint16_t  uint32_t  uint64_t       // 8 of them
+
+int_least8_t  ... int_least64_t             // minimum width
+uint_least8_t ... uint_least64_t            // 8 of them (mandatory)
+
+int_fast8_t   ... int_fast64_t              // "fast" width
+uint_fast8_t  ... uint_fast64_t             // 8 of them
+
+intmax_t  uintmax_t                          // the widest
+intptr_t  uintptr_t                          // pointer-sized (optional)
+
+std::size_t        // &lt;cstddef&gt;
+std::ptrdiff_t     // &lt;cstddef&gt;
+std::sig_atomic_t  // &lt;csignal&gt;
+std::wint_t        // &lt;cwchar&gt;
+std::streamsize, std::streamoff   // &lt;ios&gt;</code></pre><p><code>int</code> isn't «32 bits», it's «at least 16 bits, but maybe 32», and only the chain <code>short &lt;= int &lt;= long &lt;= long long</code> is guaranteed. On 64-bit Linux <code>long</code> is 64 bits, and on 64-bit Windows <code>long</code> is still 32 bits, because of backward compatibility (remember this phrase). To get a predictable 64-bit type, there's <code>int64_t</code>, and I honestly don't understand why it has the <code>_t</code> suffix, we're not in the nineties anymore, but it can no longer be changed, more on that under the spoiler.</p><p>The character types are separately wonderful, there are seven of them,  and sooner or later you'll run into the question of why a character can even be signed and unsigned, like a number, how <code>char</code> differs from <code>signed char</code> and <code>unsigned char</code> (and these are three <em>different</em> types, not two), what <code>wchar_t</code> is, and what the difference is between <code>std::string</code> and <code>std::wstring</code>, and why because of it your encoding will break out of nowhere, but about that some other time.</p><details class="code"><summary>The chronicle of the language</summary><div class="spoiler-body" style="padding:14px 20px"><p>The type zoo is a paleontological chronicle of all the machines C ever ran on, and to understand why <code>int</code> isn't «32 bits», you have to remember what C itself grew up on.  </p><p>And it grew up in the early seventies, when the hardware was very diverse, and the same PDP-11 had 16-bit words, while the Honeywell, one of the first machines C was ported to, used 36-bit words, and in some modes 6-bit or 9-bit characters were used.  Historically a byte in C isn't necessarily equal to 8 bits at all, in the C standard<code>CHAR_BIT</code> is the number of bits in the minimum addressable unit of memory, that is, a perfectly legal machine with<code>CHAR_BIT == 9.</code></p><p>The CDC had 60-bit words, something used two's complement, something used ones' complement, and Ritchie made the sensible-at-the-time decision not to fix the sizes at all. That is, <code>int</code> is just «the natural machine word, the thing the processor works with fastest, but no less than 16 bits». </p><p>The language guaranteed only the minimum ranges and the order <code>short &lt;= int &lt;= long &lt;= long long</code>, and left the concrete sizes to the platform, and thanks to this the very same source compiled efficiently on the 16-bit PDP-11, and on the 36-bit Honeywell, and on a dozen more machines, and the non-fixed int type was the very property that let C run on any hardware.  </p><p>Then 32-bit machines came, and <code>int</code> became 32, and when 64-bit machines came, <code>int</code> got stuck there at 32, because the world was already buried in code where <code>sizeof(int) == 4</code> was baked into configs, and widening <code>int</code> would mean breaking all of it and, on top of that, inviting a break of future ABIs. </p><p>But Microsoft left <code>long</code> 32-bit. Why? A large codebase, products, and users, which is briefly called backward compatibility. </p><p>Tons of code and the Win32 API itself considered <code>long</code> to be four bytes, ran it on a par with <code>int</code> and <code>DWORD</code>, serialized it to disk and to the network as four bytes, and breaking that was deemed more expensive than putting up with the split. That is, <code>long</code> means different things on two platforms precisely because at the end of the nineties two ecosystems made different bets on compatibility.  </p><p><code>int64_t</code> and its suffix <code><em>_t</em></code><em> </em>are, in essence, an admission of a mistake, that the language couldn't make its basic types predictable, so decades later it bolted on a second set from the side, this one with fixed width and a separate header (<code>&lt;stdint.h&gt;</code> <em>in C99, and the </em><code>t</code>  isn't the nineties at all, it's the seventies, and a memory of the Unix convention for typedef names (<code>size_t</code>, <code>time_t</code>, <code>wchar_t</code>), where <code>t</code> is reserved for the implementation, so that the standard could keep adding types without colliding with your identifiers. </p></div></details><h3>The non-standard library</h3><p>If I wanted to confuse a newcomer as much as possible, I'd name things exactly the way they're named in the STL. The most-used container is called <code>vector</code> and it's our dynamic array, but a vector in the ordinary sense is a quantity with a direction, and Alexander Stepanov himself, the author of the STL, acknowledged that the name was a mistake.</p><p>If you wanted a hash table, you'll have to take <code>std::map</code>, but that's a balanced tree with logarithmic lookup. And a real hash table is <code>std::unordered_map</code>, which, spoiler, is also best not to use, because it's slow, and it's not that «the implementation is lazy», it's baked into the standard itself. The guarantees that <code>std::unordered_map</code> is obligated to provide leave the libstdc++/libc++ developer no choice but to make it slow.  </p><pre style="margin:1.4rem 0"><code>std::map&lt;std::string, int&gt; ordered;
+ordered["banana"] = 1;
+ordered["apple"]  = 2;
+ordered["cherry"] = 3;
+
+for (auto&amp; [k, v] : ordered)
+    std::cout &lt;&lt; k &lt;&lt; ' ';       // ALWAYS: apple banana cherry, in ascending key order
+
+std::unordered_map&lt;std::string, int&gt; hashed;
+hashed["banana"] = 1;
+hashed["apple"]  = 2;
+hashed["cherry"] = 3;
+
+for (auto&amp; [k, v] : hashed)
+    std::cout &lt;&lt; k &lt;&lt; ' ';       // arbitrary order, depends on the hash and buckets
+
+std::unordered_map&lt;std::string, int&gt; m;
+m.insert({"key", 1});
+m.insert({"key", 2});            // did NOT overwrite, but returned {iterator, false}
+std::cout &lt;&lt; m["key"];           // 1, not 2
+
+m.insert_or_assign("key", 2);    // after C++17 this one will overwrite
+std::cout &lt;&lt; m["key"];           // 2
+m["key"] = 2;                    // or just like this</code></pre><p>The standard effectively requires separate chaining (separate storage) with nodes<strong> and</strong> <code>unordered_map</code> is obligated to guarantee stability of references and pointers to elements after <code>insert</code>/<code>erase</code> (except the removed one), so that a pointer to an element stays valid even when the container rehashes. </p><p>And this is only possible if each element is separately allocated on the heap (<code>std::pair&lt;const Key, Value&gt;</code> plus a pointer to the next), and a bucket is made as a linked list of such elements. That is, per the standard it's not a «hash table in an array», but an «array of pointers to lists scattered across the heap». Or another gag with the same thing:</p><pre style="margin:1.4rem 0"><code>std::unordered_map&lt;std::string, int&gt; m;
+if (m["key"] == 0) { }    // if the key was NOT there, it just got inserted
+                          // with the default value 0. The "does the key exist" check created it.</code></pre><p><code>operator[]</code> on a missing key silently inserts a default value, so you have to check for presence via <code>find</code>/<code>contains</code>, not via <code>[]</code>. A trifle, of course, but newcomers step on this rake regularly.  </p><p>And also containers have <code>empty()</code>, which looks like «clear it», but it's our question «is the container empty?». In human terms it would be <code>is_empty()</code>, but no, whereas there's<code>remove()</code>, which doesn't remove anything at all, but instead shifts the elements to the end and returns an iterator, and you'll be removing separately (hello, erase-remove idiom). And there's also <code>std::stoi</code>, <code>std::stol</code>, <code>std::stoll</code>, <code>std::stof</code>, <code>std::stod</code>, <code>std::stold</code>, and you're just supposed to know what these are. You do know, right?</p><details class="code"><summary>Is it standard?</summary><div class="spoiler-body" style="padding:14px 20px"><p>To understand why the standard library seems to have been designed against the developer, you have to remember that a mathematician came up with it. Alexander Stepanov spent decades nurturing the idea of generic programming, about how algorithms should be written through abstract requirements on types, rather than tied to concrete data structures. </p><p>Before C++ he tried to do it in Scheme, in Ada together with Musser, then came to C++, and templates, invented for something entirely different, turned out to be powerful enough to express all his ideas. In '93–'94 he brought all his work to what wasn't yet the committee but the language development group, and it, a very rare case, dragged it into C++98 almost in its entirety. </p><p>Hence <code>vector</code>, because in numerical computing in Scheme a «vector» meant a one-dimensional contiguous array, so in Stepanov's context the name was logical.  Then they caught themselves and wanted to call it <code>array</code>, but the name had already become familiar in the standard and in projects, so renaming it again was impossible, again the same thing as everywhere else in the language.  </p><p><code>And map</code> is from the same opera, but the name honestly describes the abstraction «key→value mapping», it's just that people come from Java and Python, where «map/dict» is a hash by default, and subconsciously expect the same. And when a real hash table was finally added in C++11, the obvious name <code>hash_map</code> couldn't be taken, because it had been snapped up by mutually incompatible vendor extensions from SGI, Microsoft, Dinkumware, and other companies, and again, so as not to break this whole zoo of already-written <code>hash_map</code>, the committee took the free, if clumsy, name — <code>unordered_map</code>. So the ugly name is just one more scar from the chosen road to backward compatibility.  </p></div></details><h2>And don't forget about ...value</h2><p>And to make things really nice for you, recall that there's <code>lvalue</code>, <code>rvalue</code>, <code>glvalue</code>, <code>prvalue</code>, and <code>xvalue</code>. Recall them?</p><p>And there are also situations where <code>std::move</code> makes a copy, and that sometimes you need not <code>std::move</code>, but <code>std::move_if_noexcept</code>. Since we're on the subject of moving, <code>std::move</code> has historically had an incorrect name, and it doesn't move anything, but just casts a value to an rvalue reference, allowing it to bind to a move constructor. It should have been called <code>rvalue_cast</code>, ah damn... then we'd have one more cast.</p><details class="code"><summary>Not all that is xvalue is lvalue</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C there were two notions, lvalue and rvalue. In C++11 move semantics appeared, and two categories stopped being enough, since it became necessary to distinguish «a named object that can't be touched» and «a temporary from which the value can be taken», but these are two independent properties, and their combinations give five categories, and<code>xvalue</code> appears (eXpiring, «expiring»), it's an object with identity from which the value can be taken.   </p><p>To mark such <code>xvalue</code> objects, separate semantics were needed, which should have been called <code>rvalue_cast</code>, but the committee didn't want to add yet another cast, so Howard Hinnant and company chose a name by intent, and now at the call site <code>move</code> should be read as «I'm done with this, you can take it». </p></div></details><p>And also the standard library has a <em>second</em> <code>std::move</code>, which honestly does move elements, so don't confuse the one that moves with the one that doesn't move. And someone even showed me a 70-page PDF on how and when to correctly use both std::move, too bad I didn't remember the title.</p><p>And I'm not even nitpicking at the names of idioms yet. Remember RAII from the article about C++101? It stands for Resource Acquisition Is Initialization, that is, acquiring a resource is its initialization, but it describes the exact opposite moment, and in the idiom the main thing isn't the acquisition of a resource, but its automatic release in the destructor on exit from the scope. That is, it would be <strong>CADR</strong> (Constructor Acquires, Destructor Releases, «the constructor acquires, the destructor releases»), not RAII (creates a resource in the constructor).</p><pre style="margin:1.4rem 0"><code>void process() {
+    FileHandle file("data.txt");   // opened
+
+    if (nothing_to_do())
+        return;                    // early exit — the file is closed automatically
+
+    might_throw();                 // threw an exception — the file is STILL closed
+}                                  // ordinary end of scope — the destructor closed the file</code></pre><p>Or another example, CRTP - did you read into the name of the idiom? CRTP is the Curiously Recurring Template Pattern, «a curiously recurring pattern», and the name describes not what the pattern does, but the fact that the person who came up with it ran into it several times in projects and was surprised by this coincidence, and then named the pattern that way. </p><h3>Modern C++</h3><p>Heard that you should learn modern C++? But when you google what modern C++ is, you land on books from umpteen years ago. </p><p><a href="https://www.amazon.com/Effective-Modern-Specific-Ways-Improve/dp/1491903996/ref=sr_1_2?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-2" rel="noopener noreferrer nofollow"><strong>Effective Modern C++</strong> by Scott Meyers (2014), and right in the subtitle «42 Specific Ways to Improve Your Use of C++11 and C++14»</a></p><p><a href="https://www.amazon.com/Modern-Design-Generic-Programming-Patterns/dp/0201704315/ref=sr_1_6?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-6" rel="noopener noreferrer nofollow">Modern C++ Design: Generic Programming and Design Patterns Applied</a></p><p><a href="https://www.amazon.com/Modern-Challenge-programmer-real-world-problems-ebook/dp/B07BJLC1ZG/ref=sr_1_11?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-11" rel="noopener noreferrer nofollow">The Modern C++ Challenge</a></p><p><a href="https://www.amazon.com/Modern-Application-Development-difficulties-application-ebook/dp/B07KW74GWR/ref=sr_1_13?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-13" rel="noopener noreferrer nofollow">Modern C++: Efficient and Scalable Application Development</a></p><p>C++11 was the first «modern» one, it brought smart pointers, lambdas, and move semantics. Then came 14, 17, 20, 23, and each declared itself the newest and now surely, definitely «modern». And already the best-selling textbook on modern C++, «Effective Modern C++», is no longer modern, and in places not even particularly effective. Meanwhile the industry lives somewhere around C++17, because nobody wants to rewrite millions of lines of working code to be «more modern than modern», because it's scary.</p><p>The upshot is that you're forced to know <em>all</em> versions of the standard at once (and they differ, believe me), because the old code at work is written in one dialect, the new one in another, the textbook has a third, the YouTube tutorial has a fourth, and none of them are <code>modern</code>. </p><h3>Errors that don't fit on a monitor</h3><p>When you finally compile something, you're greeted by error messages. C++ can dump a thousand lines of unreadable garbage over a single misplaced squiggle, with the real cause buried somewhere in the middle, but your brain can no longer perceive it, because half the text is the guts of the standard library leaked to the outside.</p><p>A template instantiation error is unconventional Chinese made of angle brackets, taking up so much horizontal space that it no longer fits on a 4K monitor. I seriously started to understand the point of ultrawide monitors precisely while looking at these errors, and over time I also started turning off line wrapping, because with wrapping it only got worse. No wonder many C++ developers have ultrawide monitors, glasses, and a bad neck.</p><details class="code"><summary>Why the errors are so verbose</summary><div class="spoiler-body" style="padding:14px 20px"><p>A template isn't code. When you substitute concrete types into it, the compiler instantiates it, inserting your types inside and only then checking the result for errors. It instantiates the whole template, having substituted your type everywhere. </p><p>Now, when the check happens deep in the algorithm (and your type doesn't fit <code>sort</code>), the code has already unfolded ten layers down, and the only way to climb back up is to dump all of it onto your screen. In essence this is duck typing, only moved to the compilation stage. A template just works if the operations it uses inside turned out to be valid. But duck typing's error-reporting mode is also singular, it fires not where you made the mistake, but somewhere deep inside someone else's library, at the point of use, and the template has no idea whatsoever what it's calling at that spot, because the code itself doesn't exist, there's only a fits-doesn't-fit check.  </p><p>For thirty years templates had no mechanism to express requirements on a parameter. You just couldn't write «this template needs a comparable type», because with duck typing requirements are always implicit. </p><p>The compiler physically couldn't say «you violated requirement X», because no X is written down anywhere, and it could only drag you by the collar to line 4212 in the bowels of <code>&lt;algorithm&gt;</code> and show that there <code>operator&lt;</code> isn't defined for your type, and for you to believe it, it has to lay out the whole instantiation stack along the way. </p><p>Concepts, the very ability to name requirements, were an idea going back to Stepanov's informal «concepts» from the late eighties, they were being prepared for C++0x — and were cut from C++11, the design deemed too complex (I wrote about this in one of my articles). But they only arrived by C++20, that's why they're called requires (requirements)</p></div></details><h3>Zero-maybe abstractions</h3><p>For the last twenty years or so C++ has been selling itself as a language of zero-cost abstractions, but any abstractions are no longer free, and <code>std::unique_ptr</code> is slower than a raw pointer: it has a non-trivial destructor, and such a type can't be passed in a register per the Itanium ABI. Only through the stack, whereas a bare pointer would fly into a register. </p><p>And this isn't only about smart pointers, but about any type with a non-trivial destructor: <code>shared_ptr</code>, <code>string</code>, <code>vector</code> are moved by value through memory for the same reason. Move semantics aren't free, the problem is in the destructor, when non-destructive move is used, so the object you moved from still runs its destructor, and equivalent hand-written code would be faster. </p><p>The regular expressions in the standard library are considered one of the worst implementations in existence, in places tens and hundreds of times slower than the alternatives, and just including <code>&lt;regex&gt;</code> alone adds a good second of compilation to each translation unit if you're lucky. </p><p><code>unordered_map</code> is slow because it's slow and cache-unfriendly, and if you need speed, you drag in <code>flat_hash_map</code> from Google's Abseil or F14 from Facebook's Folly. Notice the pattern? A ton of things in C++ could become significantly faster, but won't. Because it would break ABI compatibility, and here we come to the main point.</p><h3>Compatibility at the cost of everything</h3><p>All the grievances above, from crooked names to slow containers, from the <code>static</code> zoo to invisible copies, converge on a single point. People think C++ is a language that puts performance first, but in reality it puts backward compatibility first. Screw performance, screw development ergonomics, screw the developer experience, screw everything in general.</p><p>It's precisely the commitment to compatibility that turned the language into a monster, when you can't rename <code>vector</code> because a billion lines of code would break, and you can't speed up <code>unordered_map</code> because the ABI would change, and you absolutely cannot make destructive move, because the moment was missed some ten years ago, and you can't break what exists. Every ugliness of the language is a stone flower of a wrong decision from the past that can't be thrown out, because something already stands on it: someone's lib, an engine, a game, or a pipeline.</p><p>But the very property C++ is scolded for is the very property thanks to which half the world is written in it. Compatibility is both the disease and the reason for survival, because the code you wrote twenty years ago will, with some dancing and a tambourine, still compile. A library abandoned in 2008 still links, and for the game industry, where the cost of rewriting is measured in person-decades, this isn't a bug, it's a load-bearing wall.</p><h3>But what about Rust?</h3><p>People here asked me in the comments to weigh in on Rust. I hope we can do without religious wars, it's just different.</p><p>Rust is an order of magnitude better by design. A standard compiler, a standard build, a standard package manager, no header files, the best error messages I've seen, sane defaults, the absence of implicit conversions, proper UTF-8, sum types, and memory safety at compile time. Many problems that in C++ aren't solved and likely won't be solved in the next ten years, in Rust were already solved yesterday.</p><p>But «better by design» doesn't equal «you should take it». Game development is fast iteration, creative chaos, and «let's try it this way», and Rust doesn't give you that, and honestly - C++ doesn't give you that anymore either, however new and modern it may be. That's why games moved to scripts, DSLs, and declarative programming. </p><p>And Rust is fundamentally about correctness and discipline, and this conflict is fundamental, which led to there being a growing pile of games that started on Rust and moved off it. Plus the ecosystem, however you twist and turn, CUDA, engines, tooling, gazillions of lines of ready-made code, all of it is C++, and will be for a very long time.</p><h2>The [W/B]orst programming language of all time?</h2><p>C++ is a terrible language. Verbose where it needn't be, and silent also where it needn't be. With a type zoo, lying keywords, invisible copies, unreadable errors, and build hell. </p><p>To write in it correctly you need an encyclopedic memory for exceptions, and once you've learned the exceptions, separately for the exceptions to the exceptions. But C++ is more alive than all the living, and will trade away another several decades, because it has monstrous inertia and it's one of the few that chose compatibility at any cost, probably at the cost of everything. And this choice made it simultaneously unbearable and irreplaceable. Half the world runs on it, and will run on it for a long time, whether I like it or not.</p><p>I write in this terrible language, romanticizing its complexity and proving to myself that I'm smart. And I'll keep writing in it, because in my field it's so far the only one that delivers the necessary performance, having become a load-bearing wall. And replacing this load-bearing wall in an "inhabited" and "living" house isn't just «rewrite a couple of rooms in a trendy language», it's tearing down the whole damn house and building a new one in its place, having lived a couple of years out on the street in a little shed. </p><p>So yes, the language is terrible, so go ahead and open your terrible IDE already, and keep writing in the worst programming language.</p>
+    <a class="backlink" href="index.html">← All articles</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
