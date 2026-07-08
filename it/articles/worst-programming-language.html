@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Il peggior linguaggio di programmazione di tutti i tempi /s — dalerank</title>
+<meta name="description" content="Perché il C++ viene criticato: lo zoo delle inizializzazioni, parole chiave che mentono, decine di tipi interi, una libreria standard non standard, errori dei template illeggibili e astrazioni non proprio a costo zero. E perché tutto converge in un unico punto — la retrocompatibilità a costo di tutto." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/worst-programming-language.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/worst-programming-language.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/worst-programming-language.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="../../en/articles/index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/worst-programming-language.html">RU</a><i>/</i><a href="../../en/articles/worst-programming-language.html">EN</a><i>/</i><a class="on" href="worst-programming-language.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Programmazione anormale</span><h1>Il peggior linguaggio di programmazione di tutti i tempi /s</h1><div class="ameta"><span>14 luglio 2026</span><span>24 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/worst-programming-language/01.jpg" alt="" class="post-image" loading="lazy" />
+<p>Su YouTube c'è un video di cinquanta minuti dal titolo orgoglioso <a href="https://www.youtube.com/watch?v=7fGB-hjc2Gc" rel="noopener noreferrer nofollow">«il peggior linguaggio di programmazione di tutti i tempi»</a>. Non mi stupirei se tu avessi dato per scontato che parlasse di C++. Parla davvero di C++, e l'ho visto circa mezzo anno fa, beh, «visto» è una parola grossa... l'ho scorso a 2x saltando parecchio, qualunque cosa un junior offeso possa aver blaterato lì dentro, ma il buon <a href="https://habr.com/ru/users/alyokhin/">@alyokhin</a>me l'ha ricordato di nuovo, e ora l'ho guardato per intero. E sai qual è la parte più spiacevole? Se togli l'intonazione da junior offeso e lasci solo gli argomenti, allora circa il settanta percento è vero. Non «discutibile», non «dipende dal contesto», ma letteralmente vero, del tipo che qualsiasi sviluppatore che abbia passato un paio d'anni con il linguaggio confermerà senza pensarci due volte.</p><p>Il paradosso è che questo video è stato fatto sul linguaggio in cui è scritta metà del mondo che ci circonda. Il browser in cui stai leggendo questo, il game engine, come potrei scrivere un articolo senza i giochi, del gioco a cui hai giocato ieri, il firmware dell'hardware su cui gira tutto, e il compilatore che ha costruito il browser, l'engine e il firmware. </p><p>Il genere «perché il C++ fa schifo» è stato bruciato fino alle fondamenta su Habr, e sullo zoo dell'Init, lo <code>static</code> sovraccarico, il <code>vector</code> chiamato in modo sbagliato, lo <code>std::move</code> che non sposta, la regex super lenta, la <code>unordered_map</code> lenta hai letto tutto una dozzina di volte. La lista stessa di questi dolori è roba vecchia, e aggiungo a titolo personale che tutte le lamentele e gli esempi qui sotto sono conseguenze di una singola decisione, e ci arriverò. Oppure apri gli spoiler, nascondono la storia del perché ogni parte del linguaggio è venuta fuori così com'è.</p><hr/><h3>Molti modi di inizializzare una variabile</h3><p>Cominciamo dalla parte più infernale, dall'inizio di qualsiasi programma, cioè dalla creazione di una variabile. E mentre negli altri linguaggi questa è di solito una singola operazione, in C++ ci si scrivono interi libri e ci si conducono studi, poi trascinati alle conferenze, come se non ci fossero già abbastanza altri problemi. Aiutami. Ho dimenticato qualcosa?</p><pre style="margin:1.4rem 0"><code>int f;                    // memoria automatica, spazzatura
+static int f_static;      // ma in scope namespace/static è già zero (zero-init all'avvio)
+std::string s;            // chiamata del costruttore di default
+int* p = new int;         // heap, spazzatura
+int e{};                  // 0
+int e2 = {};              // 0
+int* p = new int{};       // 0
+int* q = new int();       // anche 0
+auto t = T{};             // temporaneo, value-init
+int b(5);
+std::string s("hello");
+T obj(a1, a2);
+auto p = new T(a1, a2);
+int x = static_cast&lt;int&gt;(3.5);   // cast, anche questo è direct-init
+int y(int(5));                   // notazione funzionale
+int a = 5;
+std::string s = "hello";
+T obj = other;
+f(arg);                   // passaggio per valore, viene inizializzato il PARAMETRO della funzione
+                          // non una variabile visibile
+f({1, 2, 3});             // stessa cosa
+return x;                 // ritorno per valore
+return {1, 2, 3};         // anche, se la copy-elision non entra in gioco
+throw x;                  // viene inizializzato l'oggetto eccezione
+int c{5};                 // direct-list
+int d = {5};              // copy-list
+std::vector&lt;int&gt; v{1, 2, 3};
+std::vector&lt;int&gt; v2 = {1, 2, 3};
+std::vector&lt;int&gt; a(10);   // 10 elementi, tutti zeri
+std::vector&lt;int&gt; b{10};   // UN elemento con valore 10
+struct Point { int x, y; };
+Point p{1, 2};            // puoi fare così
+Point p2 = {1, 2};        // oppure puoi fare così
+int arr[3] = {1, 2, 3};   // con gli zeri e senza
+int arr2[3] = {};         // tutti zeri
+Point p3{.x = 1, .y = 2}; // designated initializers, C++20
+Point p4{1};              // x=1, y=0 (value-init della coda)
+int&amp; r = x;
+const int&amp; cr = 5;        // binding a un temporaneo + lifetime extension
+int&amp;&amp; rr = 10;
+constexpr int n = 42;     // deve essere constant-init
+const int m = foo();      // può essere sia costante che dinamica
+constinit int g = bar();  // C++20: garantisce static-init, ma NON la rende const
+static int s = compute(); // dynamic-init, con il suo Static Init Order Fiasco
+struct S {
+    int x = 5;            // default member initializer
+    int y{10};
+    S() : y{2}, x(1) {}   // member initializer list (ordine per dichiarazione, non per lista)
+};
+auto [a, b] = std::pair{1, 2};   // structured bindings, C++17
+for (int v : arr) { }            // anche il range-based for inizializza v</code></pre><p>Se conti le «semantiche comportamentali» dell'inizializzazione, ne vengono fuori circa dieci (<code>= v</code>, <code>(v)</code>, <code>{v}</code>, <code>= {v}</code>, <code>{}</code>, <code>= {}</code>, <code>()</code> nel new, ecc.), e ci saranno nove categorie semantiche, e la corrispondenza tra loro non è uno-a-uno, e una singola voce <code>{}</code> vive contemporaneamente in value-init, list-init e aggregate-init a seconda del tipo a destra. Sul tema dell'inizializzazione <a href="https://leanpub.com/cppinitbook" rel="noopener noreferrer nofollow">è stato scritto un libro a parte di trecento pagine</a>, e non è uno scherzo, una volta un conoscente me l'ha consigliato, esiste davvero ed è davvero lungo trecento pagine, come si dice, buon divertimento. </p><p>E ogni metodo fa qualcosa di leggermente diverso, mi piace particolarmente la differenza tra <code>e</code> e <code>f</code>, dove la presenza o l'assenza di una coppia di parentesi graffe determina se la tua variabile contiene zero oppure qualsiasi cosa sia rimasta in questo pezzo di stack dalla chiamata di funzione precedente. </p><pre style="margin:1.4rem 0"><code>struct S {
+    int x = 5;     // default member initializer
+    int y{10};
+};</code></pre><p>NSDMI, Non-Static Data Member Initializer, un inizializzatore per un membro dati non statico proprio nella dichiarazione della classe. Nel punto <code>int x = 5;</code> l'oggetto non esiste ancora e nulla viene inizializzato. Questo è un <em>default member initializer</em>, cioè solo un modello che verrà usato durante la costruzione, SE<strong> </strong>il costruttore non ha inizializzato lui stesso il membro nella mem-init-list, cioè è un «inizializzatore di riserva», non un'inizializzazione. Formalmente è il <code>brace-or-equal-initializer</code> del membro.  </p><pre style="margin:1.4rem 0"><code>auto [a, b] = std::pair{1, 2};</code></pre><p>E qui viene inizializzato un oggetto anonimo nascosto (un <em>hidden object</em> o <em>decomposition object</em>  , chiamiamolo <code>e</code>), e <code>a</code> e <code>b</code> non saranno variabili separate, sono <em>binding names</em> a parti dell'oggetto anonimo. L'inizializzazione è applicata a <code>e</code>, non ad <code>a</code>/<code>b</code>. Una sottigliezza, ma dato che stiamo cavillando, ripeto che queste non sono proprio vere variabili ma campi di una struttura, e <code>e</code> stesso non è accessibile direttamente, ma fisicamente lo storage è più o meno così:  </p><pre style="margin:1.4rem 0"><code>e
++---------+
+| first   | &lt;--- a
+| second  | &lt;--- b
++---------+
+
+auto e = std::pair{1, 2};
+auto&amp; a = e.first;
+auto&amp; b = e.second;</code></pre><details class="code"><summary>Asm</summary><div class="spoiler-body" style="padding:14px 20px"><pre style="margin:1.4rem 0"><code>int k, e;
+
+int main() {
+    auto [a, b] = std::pair{k, e};
+
+    return a + b;
+}</code></pre><pre style="margin:1.4rem 0"><code>leaq    -12(%rbp), %rdi
+leaq    k(%rip), %rsi
+leaq    e(%rip), %rdx
+callq   std::pair&lt;int, int&gt;::pair&lt;int&amp;, int&amp;, true&gt;(int&amp;, int&amp;)</code></pre><p>È qui che viene creato l'oggetto nascosto dello structured binding.<code>rdi</code> è il primo argomento del costruttore, cioè l'indirizzo del posto dove viene costruita la pair</p><pre style="margin:1.4rem 0"><code>main:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        subq    $32, %rsp
+        movl    $0, -4(%rbp)
+        leaq    -12(%rbp), %rdi  &lt;&lt;&lt;&lt;&lt;
+        leaq    k(%rip), %rsi    &lt;&lt;&lt;&lt;&lt;
+        leaq    e(%rip), %rdx    &lt;&lt;&lt;&lt;&lt;
+        callq   std::pair&lt;int, int&gt;::pair&lt;int&amp;, int&amp;, true&gt;(int&amp;, int&amp;) &lt;&lt;&lt;&lt;&lt;
+        leaq    -12(%rbp), %rdi
+        callq   tuple_element&lt;0ul, std::pair&lt;int, int&gt;&gt;::type&amp;&amp; std::get&lt;0ul, int, int&gt;(std::pair&lt;int, int&gt;&amp;&amp;)
+        movq    %rax, -24(%rbp)
+        leaq    -12(%rbp), %rdi
+        callq   tuple_element&lt;1ul, std::pair&lt;int, int&gt;&gt;::type&amp;&amp; std::get&lt;1ul, int, int&gt;(std::pair&lt;int, int&gt;&amp;&amp;)
+        movq    %rax, -32(%rbp)
+        movq    -24(%rbp), %rax
+        movl    (%rax), %eax
+        movq    -32(%rbp), %rcx
+        addl    (%rcx), %eax
+        addq    $32, %rsp
+        popq    %rbp
+        retq
+
+k:
+        .long   0
+
+e:
+        .long   0</code></pre></div></details><p>E proprio quando decidi di averlo capito, salta fuori che le parentesi graffe in un contesto sono inizializzazione di aggregato, e in un altro sono <code>std::initializer_list</code>, e la stessissima riga di codice può restituire un tipo diverso a seconda della versione dello standard con cui compili. Non un risultato diverso, ma un <em>tipo</em> diverso. Benvenuto.</p><pre style="margin:1.4rem 0"><code>auto i = 1;      // sempre int
+auto j = {1};    // sempre initializer_list&lt;int&gt; (copy-list-init)
+auto k{1};       // C++11: initializer_list&lt;int&gt;;  C++17+: int</code></pre><details class="code"><summary>Come è nato lo zoo</summary><div class="spoiler-body" style="padding:14px 20px"><p>Lo zoo dell'inizializzazione è cresciuto proprio dal tentativo di chiudere questo zoo, e nel 2011 il comitato ha sinceramente provato a ridurre tutto a una singola sintassi, e alla fine ha aggiunto ancora un altro recinto di tipi.  </p><p>Dal C abbiamo ereditato l'ordinaria assegnazione in dichiarazione (<code>int a = 5;</code>) e le parentesi graffe per gli aggregati come array e struct (<code>int arr[] = {1,2,3};</code>). Le graffe in C potevano disporre i valori sui campi di un aggregato POD, e non pretendevano nulla di più.</p><p>Poi il C++ ha portato i costruttori, e una volta che c'è un costruttore bisogna in qualche modo chiamarlo nel punto di creazione dell'oggetto, e la sintassi più naturale si è rivelata essere le parentesi tonde, perché una chiamata di costruttore assomiglia visivamente a una chiamata di funzione, da qui <code>Widget w(args);</code>. Ha senso? Ha senso. </p><p>Fino al giorno in cui scrivi <code>Widget w();</code> e scopri di aver dichiarato una funzione che restituisce un <code>Widget</code>. Questo è il famoso most vexing parse, e non è un bug nell'implementazione di qualcuno, ma una diretta conseguenza della grammatica ereditata dal C, dove «una dichiarazione assomiglia a un uso», ma una dichiarazione di funzione è sintatticamente indistinguibile dalla creazione di un oggetto con parentesi vuote.  </p><p> Poi è arrivato il C++11 e una grande idea chiamata uniform initialization. L'intento era buono, un tentativo di introdurre una singola sintassi, <code>{}</code>, che funzionasse ovunque: per gli aggregati, per le classi con costruttori, per gli scalari e per i container. </p><p>Allo stesso tempo avrebbe risolto il most vexing parse, perché <code>Widget w{};</code> non può essere interpretato come una funzione, e proibiva anche le conversioni con narrowing come<code>int x{3.5};</code> che sarebbe un errore, mentre <code>int x = 3.5;</code> taglierebbe via la parte frazionaria. </p><p>Cioè, <code>{}</code> era concepito non come «ancora un altro modo», ma come l'unico, il solo corretto e razzialmente puro, a cui tutti avrebbero dovuto passare.  </p><p>Qui entra in gioco proprio quella cosa a cui tutto in questo linguaggio si riduce, la cosa di cui ho scritto alla fine. Perché <code>{}</code> diventasse l'unico, bisognava buttare via <code>=</code> e <code>()</code>, e quelli reggono miliardi di righe di codice, engine, lib, API di altri.</p><p>Salta fuori che non puoi buttarli via, quindi la nuova sintassi universale non ha sostituito quelle vecchie, ma si è sistemata nel proprio recinto, e il numero di modi è cresciuto. Uno strumento inventato per porre fine allo zoo è diventato il suo abitante più vistoso.  </p><p> E per rendere le cose davvero divertenti, quelle stesse parentesi graffe sono state caricate di un secondo significato tramite<code>std::initializer_list</code>, ora se un tipo ha un costruttore initializer-list, le graffe cominciano a significare quello, e per di più vince nella risoluzione degli overload. </p><p> Una storia a parte è la differenza tra<code>int e{};</code> (zero) e <code>int f;</code> (spazzatura). Questo viene dal nonno C, dove le variabili automatiche non venivano azzerate. Non perché se ne fossero dimenticati, ma perché azzerare costa cicli, e la filosofia del C era «non paghi per ciò che non usi», e se vuoi lo zero, scrivi tu stesso lo zero. </p><p>Quindi <code>int f;</code> lascia sullo stack qualunque cosa fosse rimasta dalla chiamata precedente, e questo è by design, una feature circa del 1972. E Stroustrup più tardi ha voluto dare un default zero sicuro, ma non ha potuto imporlo, perché avrebbe rotto sia la compatibilità sia la stessa idea di «non pagare per l'inutile». E così è venuto fuori che l'opzione sicura esiste, ma non è il default, perché la regola di default stessa è stata fissata mezzo secolo fa in nome della velocità.  </p><p>Rimettere tutto in una singola sintassi ora non è più possibile, e ogni metodo si porta appeso il proprio codice e le proprie regole per lavorarci. Quindi quando esce l'ennesimo libro di trecento pagine sull'inizializzazione con diagrammi di flusso lunghi mezzo schermo, non sono gli autori che si divertono, è il prezzo di ciò che è stato scaricato nel linguaggio in quarant'anni a causa della singola feature più importante del linguaggio.  </p></div></details><h3>Le cose semplici non vengono fatte semplicemente</h3><p>L'esempio da manuale di semplicità complicata è un numero casuale, e da qualche parte in Java o Python scrivi semplicemente <code>random.randint(1, 100)</code> e continui a programmare, ma non qui. È troppo semplice per essere vero.</p><pre style="margin:1.4rem 0"><code>std::random_device rd;
+std::mt19937 gen(rd());                          // e cos'è mt19937?
+std::uniform_int_distribution&lt;int&gt; dist(1, 100); // e perché separatamente?
+int value = dist(gen);                           // finalmente</code></pre><p>Il codice non è proprio illeggibile, ma devi cercarlo su cppreference una volta su due che ti serve davvero. Poi vado a googlare cosa sia questo <code>mt19937</code>, è il Mersenne Twister, ora vivi con questa conoscenza, e sì, ora devi conoscere il nome del generatore di numeri pseudo-casuali solo per lanciare un dado.</p><details class="code"><summary>Cose semplici</summary><div class="spoiler-body" style="padding:14px 20px"><p>Prima del C++11 il linguaggio aveva <code>rand()</code>, ereditato dal C, che restituiva un numero nell'intervallo fino a <code>RAND_MAX</code>, che lo standard garantisce essere almeno 32767, cioè su alcune piattaforme fisicamente non puoi ottenere un numero uniforme in un intervallo ampio.</p><p>Il familiare <code>rand() % 100</code> produce una distorsione, perché 100 non divide in modo uniforme il numero di valori possibili, quindi alcuni numeri escono più spesso di altri, e la sequenza non è riproducibile tra compilatori. Cioè, era una funzione semplice per spararsi sui piedi.  </p><p>Così nel C++11 hanno trascinato dentro un design fondamentalmente nuovo da Boost.Random, che deliberatamente ha separato ciò che <code>rand()</code> metteva tutto insieme. Ora c'è il motore di generazione stesso, o la sorgente di bit grezzi (<code>mt19937</code>, lo stessissimo Mersenne Twister di Matsumoto e Nishimura del '97), a parte. A parte c'è la distribuzione, che trasforma i bit grezzi in uniforme-nell'intervallo senza alcuna distorsione, e a parte c'è la sorgente del seed. </p><p>Questo è stato progettato da persone a cui servivano run Monte Carlo riproducibili per simulazioni scientifiche, e per i loro compiti funzionava perfettamente. Il guaio è che hanno costruito una bella cattedrale, ma non hanno mai montato una porticina per «lancia un dado da 1 a 100», e lo standard tuttora non ha una one-liner <code>randint</code>. </p><p>Ma persino l'incantesimo «corretto» è anch'esso scorretto, perché <code>mt19937</code> contiene quasi ventimila bit di stato, e lo seediamo con un singolo numero a 32 bit da <code>random_device</code>, cioè lo sotto-seediamo. Questo è uno.</p><p>E lo standard stesso permette a <code>random_device</code> di essere deterministico, e sul vecchio MinGW produceva per anni la stessa sequenza a ogni esecuzione, cioè il lungo mantra corretto è in realtà lungo e corretto, ma non funziona ovunque, mentre <code>rand() % 100</code> è sia più corto sia perlomeno funziona.  </p></div></details><h2>Problemi di casting</h2><p>Il casting è tutta una canzone a parte, e dove in Java scrivi il valore tra parentesi e basta, in C++ c'è un intero set di questi cast, per tutti i gusti e colori. <code>static_cast</code>, <code>dynamic_cast</code>, <code>reinterpret_cast</code>, <code>const_cast</code>, <code>bit_cast</code>, e ognuno per il suo caso, e ognuno va digitato per intero a mano, e c'è anche un nascosto <code>rvalue_cast</code>, ma di questo più avanti.</p><pre style="margin:1.4rem 0"><code>double d = 3.9;
+int i = static_cast&lt;int&gt;(d);        // 3, parte frazionaria scartata
+
+Base* b = new Derived;
+auto* der = static_cast&lt;Derived*&gt;(b); // downcast SENZA controllo
+                                      // garantisci tu che sia un Derived
+
+Base* b = get_something();
+if (Derived* d = dynamic_cast&lt;Derived*&gt;(b)) {
+    d-&gt;derived_only();              // arriviamo qui solo se è davvero un Derived
+}                                   // altrimenti d == nullptr
+
+int x = 42;
+std::uintptr_t addr = reinterpret_cast&lt;std::uintptr_t&gt;(&amp;x);  // indirizzo come numero
+
+void legacy_api(char* s);           // non tocca la stringa, ma ha dimenticato const
+
+const std::string str = "hello";
+legacy_api(const_cast&lt;char*&gt;(str.c_str()));   // ok, dato che l'api davvero non modifica
+
+float f = 1.0f;
+auto bits = std::bit_cast&lt;std::uint32_t&gt;(f);  // 0x3F800000, niente UB
+
+// come si faceva prima del C++20:
+std::uint32_t old;
+std::memcpy(&amp;old, &amp;f, sizeof f);              // stessa cosa, ma a mano
+
+int i = (int)d;                     // compila, sembra familiare</code></pre><p>I nuovi arrivati si stancano così tanto di questo che si impostano un breve alias per sé, e questo è considerato bad practice, perché ora il tuo codice è scritto in un tuo dialetto personale di C++ che nessuno conosce tranne te.</p><pre style="margin:1.4rem 0"><code>// antipattern: "sono stanco di scrivere static_cast"
+template &lt;class T, class U&gt;
+constexpr T sc(U&amp;&amp; u) { return static_cast&lt;T&gt;(std::forward&lt;U&gt;(u)); }
+
+int i = sc&lt;int&gt;(3.9);               // corto, sì, corretto? no
+
+// oppure ancora peggio:
+#define CAST(T, x) static_cast&lt;T&gt;(x)</code></pre><p>Questa è una vera trappola, e spesso il C++ corretto sembra scorretto, perché la soluzione corta e bella quasi sempre si rivela buggata e scorretta, mentre quella corretta sembra che tu abbia complicato inutilmente la vita al tuo team. L'intuizione per «come dovrebbe apparire il buon codice» richiede anni per svilupparsi, e finché non si sviluppa, vivi con la sensazione di stare facendo qualcosa di sbagliato. Spoiler: stai davvero facendo qualcosa di sbagliato, è il linguaggio che è fatto così.</p><details class="code"><summary>Perché così tanti?</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C c'è un singolo cast (C-style cast), <code>(T)expr</code>, e fa tutto. Cambia il valore, reinterpreta un puntatore, toglie <code>const</code>, taglia il tipo — e tutto ciò sembra assolutamente identico. Il che significa che non puoi trovare nella codebase i posti dove qualcuno toglie la constness, perché sono indistinguibili da qualsiasi altra conversione. </p><p>Il C++ ha spezzato questo coltellino svizzero in quattro operazioni con nome: <code>static_cast</code>, <code>dynamic_cast</code>, <code>const_cast</code>, <code>reinterpret_cast</code> proprio a causa di questa indistinguibilità delle operazioni. </p><p>Affinché l'intento sia esplicito e il <code>const_cast</code>, quello che dice «qui sto facendo saltare in aria const», venga colto dall'occhio durante la review. </p><p>Affinché lo si possa greppare e tu possa trovare tutti i <code>reinterpret_cast</code> e controllarne ognuno. </p><p>I cast sono di per sé un male, quindi sono stati resi brutti apposta. Come diceva Alexandrescu, "a cast is a code smell", e Stroustrup ha reso la sintassi macchinosa affinché fare un cast fosse doloroso da digitare, e quando fai davvero un cast esplicito da un tipo a un altro, salta all'occhio durante la review. Il vecchio cast del C era troppo leggero e senza peso, ed era proprio questa leggerezza a renderlo pericoloso.  </p><p>E così viene fuori che il corretto sembra scorretto letteralmente by design, non per caso. La soluzione corta e bella è quasi sempre proprio quel legacy rotto che non si può rimuovere in nome della singola feature più importante del linguaggio, mentre quella corretta è stata resa deliberatamente prolissa e scomoda affinché tu inciampi e pensi, e ti costringe ogni volta, digitando un cast a mano, a pensare.  </p></div></details><h3>Parole chiave che mentono</h3><p>In un mondo normale una parola chiave descrive ciò che fa, ma in C++ questo è diventato un accessorio opzionale. Ricorda <code>static</code>. </p><p>E ricordi quanti significati ha? Fare una variabile che vive tra le chiamate di funzione, questo è uno. Fare una variabile o un metodo condivisi tra tutte le istanze di una classe, questo è due. Il terzo significato, quando <code>static</code> prima di una funzione in un file <code>.cpp</code> la rende invisibile fuori da quel file, cioè è <code>private,</code> ma l'hanno chiamato <code>static</code>. Perché non <code>internal</code>, non <code>private</code>, non <code>file_local</code>? Perché storicamente è semplicemente andata così, che è la risposta a circa metà delle domande di questo articolo.</p><pre style="margin:1.4rem 0"><code>void counter() {
+    static int calls = 0;   // inizializzata UNA VOLTA, al primo ingresso
+    int local = 0;          // locale ordinaria, di nuovo a ogni chiamata
+    ++calls;
+    ++local;
+    std::cout &lt;&lt; "static: " &lt;&lt; calls &lt;&lt; ", local: " &lt;&lt; local &lt;&lt; '\n';
+}</code></pre><p>E c'è un comportamento di <code>static</code> arrivato dopo il C++11, ora il tuo <code>static</code>significa anche un <code>light mutex guarded</code>. Lo sapevi di questo? </p><pre style="margin:1.4rem 0"><code>Logger&amp; logger() {
+    static Logger instance;   // una riga
+    return instance;
+}
+
+Logger&amp; logger() {
+    // percorso FAST: byte basso del guard != 0 → già inizializzato
+    if ((reinterpret_cast&lt;volatile char&amp;&gt;(__guard_for_instance)) == 0) {
+
+        // percorso SLOW: arriviamo qui solo la prima volta e sotto sincronizzazione
+        if (__cxa_guard_acquire(&amp;__guard_for_instance)) {
+            // acquire ha restituito 1 → proprio questo thread è obbligato a inizializzare.
+            // Gli altri thread ora DORMONO dentro __cxa_guard_acquire.
+            try {
+                ::new (&amp;__instance_storage) Logger();          // chiamata del costruttore
+                __cxa_guard_release(&amp;__guard_for_instance);    // imposta il flag, sveglia i dormienti
+                __cxa_atexit(&amp;destroy_logger, ...);            // registra la distruzione
+            } catch (...) {
+                __cxa_guard_abort(&amp;__guard_for_instance);
+                throw;
+            }
+        }
+        // i thread che hanno perso la gara sono usciti da acquire solo dopo release
+    }
+    return reinterpret_cast&lt;Logger&amp;&gt;(__instance_storage);
+}</code></pre><details class="code"><summary>Perché static fa quattro cose non correlate</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C <code>static</code> aveva già due significati. Il primo, quello ordinario, riguarda la durata, quando una variabile vive per tutto il programma. </p><p>Il secondo riguardava l'internal linkage, quando il nome non era visibile fuori dalla translation unit. E anche se semanticamente queste sono cose di universi diversi, una sulla memoria e l'altra sulla visibilità, K&amp;R ne hanno fatto una singola parola chiave, perché un linguaggio dovrebbe avere poche parole chiave, e la parola <code>static</code> era vicina di significato a «allocato staticamente». </p><p>Il C++ ha ereditato questi significati in blocco, come si dice, senza guardare, perché rinunciare a un pezzo di C significava rinunciare alla compatibilità con il C, ed era proprio ciò che volevano evitare.  Poi a Stroustrup servivano membri di classe condivisi tra tutte le istanze, e avrebbe potuto introdurre qualcosa tipo<code>shared</code>, <code>classwide</code>, per analogia con <code>private, protected ,</code>qualsiasi cosa descrittiva, ma capisci che ogni nuova parola chiave nel linguaggio è una mina per gli sviluppatori. </p><p>Da qualche parte nel mondo sicuramente qualcuno ha chiamato una variabile <code>shared</code> o <code>internal</code>, o <code>classwide</code>, e nel giorno in cui quella parola diventa una parola chiave, il loro codice smette di compilare. Quindi prima di inventare una parola nuova, hanno prima provato a riutilizzarne una esistente, e<code>static</code> viveva già nel linguaggio ed era già torbida, quindi ci si poteva appendere altra torbidezza senza il rischio di rompere la prod di qualcuno. Ecco come è apparso il terzo significato, non perché si adatti nel senso, ma perché la parola era a portata di mano e non rompeva nulla.  </p><p>Il quarto comportamento è arrivato nel C++11, quando hanno voluto rendere thread-safe l'inizializzazione di un <code>static</code> locale di funzione, e il compilatore ha cominciato a inserire un guard nascosto al primo passaggio.  </p><p>Il linguaggio ha provato a fare pulizia una volta, e nel C++98 lo <code>static</code> a livello di file per l'internal linkage è stato dichiarato deprecato e alla gente è stato detto di usare i namespace anonimi, ma nel C++11 questa raccomandazione è stata revocata, perché disabituare la gente dalla parola familiare si è rivelato assai più costoso che aggiustare il linguaggio, cioè il linguaggio non ha potuto buttare via nemmeno il significato che esso stesso aveva ritenuto ridondante.</p><p>Ora nessuno dei quattro può più essere rimosso, e a ognuno è appeso il codice di qualcuno, qualche contatore locale, o una funzione privata, o un membro di classe in un'API usata da centomila persone. </p></div></details><p><code>inline</code> un tempo chiedeva al compilatore di fare l'inlining di una funzione, ma oggi il compilatore è furbo e fa l'inlining da solo quando lo ritiene opportuno, e <code>inline</code> ora risolve problemi di linking e la One Definition Rule. E  <code>inline</code> su una funzione e <code>inline</code> su una variabile fanno semanticamente cose <em>opposte</em>,  e su una funzione è il permesso di duplicare codice, mentre su una variabile è un divieto di duplicare dati.</p><pre style="margin:1.4rem 0"><code>// math.h
+inline int square(int x) { return x * x; }
+
+// a.cpp
+#include "math.h"
+int use_a() { return square(3); }
+
+// b.cpp
+#include "math.h"
+int use_b() { return square(4); }
+
+// counter.h
+inline int g_calls = 0;   // esattamente un'istanza per tutto il programma
+
+// a.cpp
+#include "counter.h"
+void hit_a() { ++g_calls; }
+
+// b.cpp
+#include "counter.h"
+void hit_b() { ++g_calls; }
+
+// config.h
+struct Config {
+    static inline int instances = 0;          // un contatore per tutti gli oggetti, proprio nell'.h
+};
+
+inline constexpr double kPi = 3.14159265358979;  // costante header-only, un oggetto</code></pre><details class="code"><summary>Cosa doveva essere inline</summary><div class="spoiler-body" style="padding:14px 20px"><p>Nel primo C++ era un sostituto type-safe della macro <code>#define</code> sulla falsariga di «sostituisci il corpo della funzione proprio nel punto di chiamata invece di una chiamata» ed era letteralmente un'ottimizzazione di srotolamento. Da qui il nome, e da qui la credenza popolare che <code>inline</code> sia per «renderlo più veloce», dimenticalo, non è più su quello da circa quindici anni.</p><p>Oggi il suo significato portante non riguarda più l'ottimizzazione, ma la ODR e il linking. A un'entità <code>inline</code> è permesso essere definita in più translation unit (cioè mettere la definizione in un header e includerlo ovunque), e il linker è obbligato a fondere queste definizioni in una, invece di crollare con <code>multiple definition</code>. </p><p>Come si relaziona <code>inline</code> all'inlining vero e proprio? Beh, quasi per niente<strong>.</strong> Come suggerimento all'ottimizzatore è puramente consultivo, e i compilatori moderni spesso lo ignorano, avendo modelli di costo attraverso cui fanno felicemente l'inlining di funzioni senza <code>inline</code> e rifiutano di fare l'inlining di quelle marcate, e con la LTO fanno l'inlining anche attraverso i confini delle TU indipendentemente dalla parola. </p><p>L'unico legame tra <code>inline</code> e l'inlining reale ora è indiretto, e questa parola chiave ora ti permette di mettere il corpo in un header senza sbattere contro un errore di linking, e l'ottimizzatore può collocare il corpo visibile in una TU separata, perché senza quello la LTO non si può fare. </p><p>I metodi definiti proprio nel corpo della classe sono già implicitamente marcati<code>inline</code>, e tutte le funzioni<code>constexpr</code> sono anch'esse rese implicitamente<code>inline</code>, ma la gente continua ad aggiungere la parola chiave «giusto in caso», anche se lì non cambia nulla.  </p><p>L'inlining ora va fatto tramite<code><strong>forceinline</strong></code><strong> </strong>(MSVC) e <code>attribute__((always_inline))</code>, <code>[[gnu::always_inline]]</code>, e persino quelli spesso rifiutano in caso di ricorsione, varargs, o presa di un indirizzo. Questo nome è un vestigio dell'epoca in cui funzionava davvero così, ma ora riguarda il linker.  </p></div></details><p><code>const</code>, che dovrebbe riguardare l'immutabilità, può essere scritto su entrambi i lati del tipo, ed entrambe le grafie significano esattamente la stessa cosa, giusto perché tu non ti rilassi. E anche <code>mutable const</code> è a volte codice valido. E anche la constness può essere tolta con un cast, e questa è bad practice, ma fisicamente si può fare. </p><p>Per capire a cosa si riferisce <code>const</code> in una dichiarazione di puntatore, al valore o al puntatore stesso, c'è una regola ufficiale «leggi da destra a sinistra». Ti ricordo che la maggior parte delle persone legge da sinistra a destra.</p><pre style="margin:1.4rem 0"><code>const int a = 5;   // "west const"
+int const b = 5;   // "east const" esattamente la stessa cosa, entrambe sono costanti
+
+const int* p = &amp;a; // puntatore a const int
+int const* q = &amp;a; // e questo è la stessa cosa
+
+struct Cache {
+    mutable int hits = 0;   // può essere cambiato anche su un oggetto const
+    int value = 0;
+};
+
+const Cache c;
+c.hits++;       // OK, mutable
+// c.value++;   // errore, un membro ordinario di un oggetto const
+
+struct S {
+    mutable const int* p = nullptr;  // VALIDO
+};
+
+struct Bad {
+    mutable const int x = 5;  // NON VALIDO, mutable non può stare su un membro const
+};
+
+// Caso 1: l'oggetto è DAVVERO non const, ok
+int x = 5;
+const int&amp; cref = x;
+const_cast&lt;int&amp;&gt;(cref) = 10;   // legale, x è davvero cambiato, x == 10
+
+// Caso 2: l'oggetto è DAVVERO const, Undefined Behavior
+const int y = 5;
+const_cast&lt;int&amp;&gt;(y) = 10;      // compila, ma questo è UB
+                               // y può restare 5, crashare, o qualsiasi cosa
+
+int x = 0, y = 0;
+
+const int* p1 = &amp;x;        // p1: puntatore a const int
+int* const p2 = &amp;x;        // p2: puntatore const a int
+const int* const p3 = &amp;x;  // p3: puntatore const a const int
+
+*p1 = 5;   // errore: il valore è const
+p1 = &amp;y;   // ok: il puntatore può essere reindirizzato
+
+*p2 = 5;   // ok: il valore può essere cambiato
+p2 = &amp;y;   // errore: il puntatore è const
+
+*p3 = 5;   // errore
+p3 = &amp;y;   // errore</code></pre><details class="code"><summary>Perché const, se la memoria non è const?</summary><div class="spoiler-body" style="padding:14px 20px"><p>Questa è una delle poche parole chiave che è nata in C++ ed è stata esportata in C, non il contrario. Stroustrup l'ha introdotta già in «C with Classes» (inizialmente sotto il nome di lavoro <code>readonly</code>), e da lì è entrata nello standard C89 e ha cominciato a vivere una vita propria e indipendente. Ma una parola inventata per portare ordine ha immediatamente ereditato il disordine della grammatica in cui è stata inserita.  </p><p>Tanto per cominciare, <code>const int</code> e <code>int const</code>  sono letteralmente la stessa cosa, e<code>const</code> è solo un qualificatore di tipo, e sta nella parte della dichiarazione che la grammatica chiama <code>decl-specifier-seq</code>, cioè una sequenza di specificatori. </p><p>E questa sequenza era non ordinata molto prima che <code>const</code> apparisse, per esattamente lo stesso motivo per cui<code>unsigned long</code> e <code>long unsigned</code> significano un unico tipo. Ora <code>const</code> ha pestato il vecchio rastrello, dove l'ordine delle parole comunque non contava, e per di più, la forma "corretta" è precisamente <code>int const</code>, perché <code>const</code> si riferisce a ciò che sta alla sua sinistra, e <code>const int</code> è una concessione grammaticale, perché i vecchi compilatori lo permettevano.</p><p>Ecco proprio perché c'è tutto un movimento «east const» (a suo tempo lo promuoveva Jon Kalb, e prima di lui Dan Saks scriveva molto sul districare le dichiarazioni). Nessuno ha progettato le due grafie, sono semplicemente saltate fuori dalla grammatica, perché era comodo e non rompeva il vecchio codice.  </p><pre style="margin:1.4rem 0"><code>const int* p;   // puntatore a const int, cambia il puntatore, non il valore
+int* const p;   // puntatore const a int, cambia il valore, non il puntatore</code></pre><p>Qui c'è una differenza su quale lato dell'asterisco stia <code>const</code>, perché a sinistra dell'asterisco<em> </em>cade in quella stessa sequenza di specificatori<em> e qualifica ciò che è puntato. </em></p><p><em>E a destra dell'asterisco</em> diventa parte del declarator e qualifica il puntatore stesso, e la dichiarazione è stata deliberatamente resa somigliante all'espressione che più tardi lavorerà con la variabile. Per <code>int <em>p</em></code><em> questo è elegante, per </em><code><em>int </em>(*f)(int)</code> è già una presa in giro, e <code>const</code> qui complica una grammatica che è difficile di per sé.</p><p>E di nuovo non puoi assemblare questo in un tutt'uno, perché la grammatica di <code>const</code> è saldamente fissata dalla compatibilità con il nonno C, e cambiare come viene interpretata significherebbe rompere sia il C sia quarant'anni di codice in entrambi i linguaggi. Quindi viene fuori che la parola sembra un lucchetto sulla porta, ma in realtà è un cartello che dice «per favore non entrare», girato con le sue lettere rivolte verso la porta.  </p></div></details><h3>Lo zoo dei tipi interi</h3><p>Quanti tipi interi ci sono in C++? Circa cinquanta (se conti anche gli alias a larghezza fissa). E la dimensione non di tutti è fissa, ma dipende dal compilatore e dalla piattaforma.</p><pre style="margin:1.4rem 0"><code>bool                    // sì, bool — è anch'esso un tipo integrale
+
+char                    // un tipo SEPARATO
+signed char             // un tipo SEPARATO
+unsigned char           // un tipo SEPARATO, questi sono tre tipi diversi, non due
+
+char8_t                 // C++20
+char16_t                // C++11
+char32_t                // C++11
+wchar_t
+
+short
+unsigned short
+int
+unsigned int
+long
+unsigned long
+long long               // C++11
+unsigned long long      // C++11
+
+short, short int, signed short, signed short int          // 4 grafie → 1 tipo
+int, signed, signed int                                   // 3 grafie → 1 tipo
+long, long int, signed long, signed long int              // 4 → 1
+long long, long long int, signed long long, signed long long int  // 4 → 1
+unsigned, unsigned int                                    // 2 → 1
+
+int8_t   int16_t   int32_t   int64_t        // larghezza esatta (opzionale)
+uint8_t  uint16_t  uint32_t  uint64_t       // 8 di questi
+
+int_least8_t  ... int_least64_t             // larghezza minima
+uint_least8_t ... uint_least64_t            // 8 di questi (obbligatori)
+
+int_fast8_t   ... int_fast64_t              // larghezza "veloce"
+uint_fast8_t  ... uint_fast64_t             // 8 di questi
+
+intmax_t  uintmax_t                          // il più largo
+intptr_t  uintptr_t                          // dimensione-puntatore (opzionale)
+
+std::size_t        // &lt;cstddef&gt;
+std::ptrdiff_t     // &lt;cstddef&gt;
+std::sig_atomic_t  // &lt;csignal&gt;
+std::wint_t        // &lt;cwchar&gt;
+std::streamsize, std::streamoff   // &lt;ios&gt;</code></pre><p><code>int</code> non è «32 bit», è «almeno 16 bit, ma forse 32», ed è garantita solo la catena <code>short &lt;= int &lt;= long &lt;= long long</code>. Su Linux a 64 bit <code>long</code> è 64 bit, e su Windows a 64 bit <code>long</code> è ancora 32 bit, a causa della retrocompatibilità (ricorda questa frase). Per ottenere un tipo prevedibile a 64 bit, c'è <code>int64_t</code>, e onestamente non capisco perché abbia il suffisso <code>_t</code>, non siamo più negli anni novanta, ma non si può più cambiare, di più sotto lo spoiler.</p><p>I tipi carattere sono a parte meravigliosi, ce ne sono sette,  e prima o poi ti imbatterai nella domanda perché un carattere possa persino essere signed e unsigned, come un numero, come <code>char</code> differisca da <code>signed char</code> e <code>unsigned char</code> (e questi sono tre tipi <em>diversi</em>, non due), cosa sia <code>wchar_t</code>, e quale sia la differenza tra <code>std::string</code> e <code>std::wstring</code>, e perché a causa di essa la tua codifica si romperà dal nulla, ma di questo un'altra volta.</p><details class="code"><summary>La cronaca del linguaggio</summary><div class="spoiler-body" style="padding:14px 20px"><p>Lo zoo dei tipi è una cronaca paleontologica di tutte le macchine su cui il C abbia mai girato, e per capire perché <code>int</code> non sia «32 bit», bisogna ricordare su cosa sia cresciuto il C stesso.  </p><p>Ed è cresciuto nei primi anni settanta, quando l'hardware era molto vario, e lo stesso PDP-11 aveva parole a 16 bit, mentre l'Honeywell, una delle prime macchine su cui il C è stato portato, usava parole a 36 bit, e in alcune modalità venivano usati caratteri a 6 bit o 9 bit.  Storicamente un byte in C non è affatto necessariamente uguale a 8 bit, nello standard C<code>CHAR_BIT</code> è il numero di bit nell'unità di memoria minima indirizzabile, cioè una macchina perfettamente legale con<code>CHAR_BIT == 9.</code></p><p>Il CDC aveva parole a 60 bit, qualcosa usava il complemento a due, qualcosa usava il complemento a uno, e Ritchie prese la decisione, all'epoca sensata, di non fissare affatto le dimensioni. Cioè, <code>int</code> è semplicemente «la parola macchina naturale, la cosa con cui il processore lavora più velocemente, ma non meno di 16 bit». </p><p>Il linguaggio garantiva solo gli intervalli minimi e l'ordine <code>short &lt;= int &lt;= long &lt;= long long</code>, e lasciava le dimensioni concrete alla piattaforma, e grazie a questo lo stessissimo sorgente compilava in modo efficiente sul PDP-11 a 16 bit, e sull'Honeywell a 36 bit, e su una dozzina di altre macchine, e il tipo int non fisso era proprio la proprietà che permetteva al C di girare su qualsiasi hardware.  </p><p>Poi arrivarono le macchine a 32 bit, e <code>int</code> divenne 32, e quando arrivarono le macchine a 64 bit, <code>int</code> rimase incastrato lì a 32, perché il mondo era già sepolto sotto codice in cui <code>sizeof(int) == 4</code> era incorporato nelle config, e allargare <code>int</code> avrebbe significato rompere tutto ciò e, per di più, invitare la rottura di ABI future. </p><p>Ma Microsoft ha lasciato <code>long</code> a 32 bit. Perché? Una codebase grande, prodotti e utenti, che in breve si chiama retrocompatibilità. </p><p>Tonnellate di codice e la stessa Win32 API consideravano <code>long</code> quattro byte, lo trattavano alla pari di <code>int</code> e <code>DWORD</code>, lo serializzavano su disco e in rete come quattro byte, e rompere quello è stato ritenuto più costoso che sopportare la divisione. Cioè, <code>long</code> significa cose diverse su due piattaforme proprio perché alla fine degli anni novanta due ecosistemi fecero scommesse diverse sulla compatibilità.  </p><p><code>int64_t</code> e il suo suffisso <code><em>_t</em></code><em> </em>sono, in sostanza, un'ammissione di un errore, che il linguaggio non è riuscito a rendere prevedibili i suoi tipi base, quindi decenni dopo ha bullonato un secondo set di lato, questo a larghezza fissa e con un header separato (<code>&lt;stdint.h&gt;</code> <em>in C99, e il </em><code>t</code>  non sono affatto gli anni novanta, sono gli anni settanta, e un ricordo della convenzione Unix per i nomi di typedef (<code>size_t</code>, <code>time_t</code>, <code>wchar_t</code>), dove <code>t</code> è riservato all'implementazione, affinché lo standard potesse continuare ad aggiungere tipi senza collidere con i tuoi identificatori. </p></div></details><h3>La libreria non standard</h3><p>Se volessi confondere un nuovo arrivato il più possibile, chiamerei le cose esattamente come sono chiamate nella STL. Il container più usato si chiama <code>vector</code> ed è il nostro array dinamico, ma un vettore nel senso ordinario è una quantità con una direzione, e lo stesso Alexander Stepanov, l'autore della STL, ha riconosciuto che il nome fu un errore.</p><p>Se volessi una tabella hash, dovrai prendere <code>std::map</code>, ma quello è un albero bilanciato con lookup logaritmico. E una vera tabella hash è <code>std::unordered_map</code>, che, spoiler, è anch'essa meglio non usare, perché è lenta, e non è che «l'implementazione è pigra», è incorporato nello standard stesso. Le garanzie che <code>std::unordered_map</code> è obbligata a fornire non lasciano allo sviluppatore di libstdc++/libc++ altra scelta che renderla lenta.  </p><pre style="margin:1.4rem 0"><code>std::map&lt;std::string, int&gt; ordered;
+ordered["banana"] = 1;
+ordered["apple"]  = 2;
+ordered["cherry"] = 3;
+
+for (auto&amp; [k, v] : ordered)
+    std::cout &lt;&lt; k &lt;&lt; ' ';       // SEMPRE: apple banana cherry, in ordine crescente di chiave
+
+std::unordered_map&lt;std::string, int&gt; hashed;
+hashed["banana"] = 1;
+hashed["apple"]  = 2;
+hashed["cherry"] = 3;
+
+for (auto&amp; [k, v] : hashed)
+    std::cout &lt;&lt; k &lt;&lt; ' ';       // ordine arbitrario, dipende dall'hash e dai bucket
+
+std::unordered_map&lt;std::string, int&gt; m;
+m.insert({"key", 1});
+m.insert({"key", 2});            // NON ha sovrascritto, ma ha restituito {iterator, false}
+std::cout &lt;&lt; m["key"];           // 1, non 2
+
+m.insert_or_assign("key", 2);    // dopo il C++17 questo sovrascriverà
+std::cout &lt;&lt; m["key"];           // 2
+m["key"] = 2;                    // oppure semplicemente così</code></pre><p>Lo standard di fatto richiede il separate chaining (storage separato) con nodi<strong> e</strong> <code>unordered_map</code> è obbligata a garantire la stabilità di riferimenti e puntatori agli elementi dopo <code>insert</code>/<code>erase</code> (tranne quello rimosso), affinché un puntatore a un elemento resti valido anche quando il container fa il rehash. </p><p>E questo è possibile solo se ogni elemento è allocato separatamente sull'heap (<code>std::pair&lt;const Key, Value&gt;</code> più un puntatore al successivo), e un bucket è fatto come una lista concatenata di tali elementi. Cioè, secondo lo standard non è una «tabella hash in un array», ma un «array di puntatori a liste sparpagliate per l'heap». O un'altra gag con la stessa cosa:</p><pre style="margin:1.4rem 0"><code>std::unordered_map&lt;std::string, int&gt; m;
+if (m["key"] == 0) { }    // se la chiave NON c'era, è stata appena inserita
+                          // con il valore di default 0. Il controllo "esiste la chiave" l'ha creata.</code></pre><p><code>operator[]</code> su una chiave mancante inserisce silenziosamente un valore di default, quindi devi controllare la presenza tramite <code>find</code>/<code>contains</code>, non tramite <code>[]</code>. Una sciocchezza, certo, ma i nuovi arrivati pestano questo rastrello regolarmente.  </p><p>E anche i container hanno <code>empty()</code>, che sembra «svuotalo», ma è la nostra domanda «il container è vuoto?». In termini umani sarebbe <code>is_empty()</code>, ma no, mentre c'è<code>remove()</code>, che non rimuove affatto nulla, ma invece sposta gli elementi verso la fine e restituisce un iteratore, e tu rimuoverai separatamente (ciao, erase-remove idiom). E c'è anche <code>std::stoi</code>, <code>std::stol</code>, <code>std::stoll</code>, <code>std::stof</code>, <code>std::stod</code>, <code>std::stold</code>, e devi semplicemente sapere cosa sono. Lo sai, vero?</p><details class="code"><summary>È standard?</summary><div class="spoiler-body" style="padding:14px 20px"><p>Per capire perché la libreria standard sembri essere stata progettata contro lo sviluppatore, bisogna ricordare che l'ha ideata un matematico. Alexander Stepanov ha passato decenni a coltivare l'idea della programmazione generica, su come gli algoritmi dovrebbero essere scritti attraverso requisiti astratti sui tipi, piuttosto che legati a strutture dati concrete. </p><p>Prima del C++ provò a farlo in Scheme, in Ada insieme a Musser, poi arrivò al C++, e i template, inventati per tutt'altra cosa, si rivelarono abbastanza potenti da esprimere tutte le sue idee. Nel '93–'94 portò tutto il suo lavoro a quello che non era ancora il comitato ma il gruppo di sviluppo del linguaggio, e questo, caso molto raro, lo trascinò nel C++98 quasi per intero. </p><p>Da qui <code>vector</code>, perché nel calcolo numerico in Scheme un «vettore» significava un array contiguo unidimensionale, quindi nel contesto di Stepanov il nome era logico.  Poi si accorsero e vollero chiamarlo <code>array</code>, ma il nome era già diventato familiare nello standard e nei progetti, quindi rinominarlo di nuovo era impossibile, di nuovo la stessa cosa che ovunque altrove nel linguaggio.  </p><p><code>E map</code> è della stessa opera, ma il nome descrive onestamente l'astrazione «mapping chiave→valore», è solo che la gente arriva da Java e Python, dove «map/dict» è di default un hash, e inconsciamente si aspetta lo stesso. E quando una vera tabella hash fu finalmente aggiunta nel C++11, il nome ovvio <code>hash_map</code> non poté essere preso, perché era stato accaparrato da estensioni vendor mutuamente incompatibili di SGI, Microsoft, Dinkumware e altre aziende, e di nuovo, per non rompere tutto questo zoo di <code>hash_map</code> già scritti, il comitato prese il nome libero, per quanto goffo — <code>unordered_map</code>. Quindi il nome brutto è solo un'altra cicatrice della strada scelta verso la retrocompatibilità.  </p></div></details><h2>E non dimenticare i ...value</h2><p>E per rendere le cose davvero belle per te, ricorda che ci sono <code>lvalue</code>, <code>rvalue</code>, <code>glvalue</code>, <code>prvalue</code> e <code>xvalue</code>. Li ricordi?</p><p>E ci sono anche situazioni in cui <code>std::move</code> fa una copia, e che a volte non ti serve <code>std::move</code>, ma <code>std::move_if_noexcept</code>. Dato che siamo in tema di spostamento, <code>std::move</code> ha storicamente un nome scorretto, e non sposta nulla, ma fa solo il cast di un valore a rvalue reference, permettendogli di legarsi a un costruttore di move. Avrebbe dovuto chiamarsi <code>rvalue_cast</code>, ah dannazione... allora avremmo un cast in più.</p><details class="code"><summary>Non tutto ciò che è xvalue è lvalue</summary><div class="spoiler-body" style="padding:14px 20px"><p>In C c'erano due nozioni, lvalue e rvalue. Nel C++11 è apparsa la semantica di spostamento (move), e due categorie hanno smesso di bastare, dato che è diventato necessario distinguere «un oggetto con nome che non si può toccare» e «un temporaneo da cui il valore può essere preso», ma queste sono due proprietà indipendenti, e le loro combinazioni danno cinque categorie, e appare<code>xvalue</code> (eXpiring, «in scadenza»), è un oggetto con identità da cui il valore può essere preso.   </p><p>Per marcare tali oggetti <code>xvalue</code>, serviva una semantica separata, che avrebbe dovuto chiamarsi <code>rvalue_cast</code>, ma il comitato non voleva aggiungere ancora un altro cast, quindi Howard Hinnant e compagnia scelsero un nome per intento, e ora nel punto di chiamata <code>move</code> va letto come «ho finito con questo, puoi prenderlo». </p></div></details><p>E anche la libreria standard ha un <em>secondo</em> <code>std::move</code>, che onestamente sposta gli elementi, quindi non confondere quello che sposta con quello che non sposta. E qualcuno mi ha persino mostrato un PDF di 70 pagine su come e quando usare correttamente entrambi gli std::move, peccato non aver ricordato il titolo.</p><p>E non sto nemmeno ancora cavillando sui nomi degli idiomi. Ricordi RAII dall'articolo su C++101? Sta per Resource Acquisition Is Initialization, cioè acquisire una risorsa è la sua inizializzazione, ma descrive esattamente il momento opposto, e nell'idioma la cosa principale non è l'acquisizione di una risorsa, ma il suo rilascio automatico nel distruttore all'uscita dallo scope. Cioè, sarebbe <strong>CADR</strong> (Constructor Acquires, Destructor Releases, «il costruttore acquisisce, il distruttore rilascia»), non RAII (crea una risorsa nel costruttore).</p><pre style="margin:1.4rem 0"><code>void process() {
+    FileHandle file("data.txt");   // aperto
+
+    if (nothing_to_do())
+        return;                    // uscita anticipata — il file è chiuso automaticamente
+
+    might_throw();                 // ha lanciato un'eccezione — il file è COMUNQUE chiuso
+}                                  // fine ordinaria dello scope — il distruttore ha chiuso il file</code></pre><p>O un altro esempio, CRTP - hai letto dentro il nome dell'idioma? CRTP è il Curiously Recurring Template Pattern, «un pattern curiosamente ricorrente», e il nome descrive non ciò che il pattern fa, ma il fatto che la persona che l'ha ideato ci si è imbattuta più volte nei progetti ed è rimasta sorpresa da questa coincidenza, e poi ha chiamato così il pattern. </p><h3>Modern C++</h3><p>Hai sentito che dovresti imparare il modern C++? Ma quando googli cosa sia il modern C++, atterri su libri di non so quanti anni fa. </p><p><a href="https://www.amazon.com/Effective-Modern-Specific-Ways-Improve/dp/1491903996/ref=sr_1_2?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-2" rel="noopener noreferrer nofollow"><strong>Effective Modern C++</strong> di Scott Meyers (2014), e proprio nel sottotitolo «42 Specific Ways to Improve Your Use of C++11 and C++14»</a></p><p><a href="https://www.amazon.com/Modern-Design-Generic-Programming-Patterns/dp/0201704315/ref=sr_1_6?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-6" rel="noopener noreferrer nofollow">Modern C++ Design: Generic Programming and Design Patterns Applied</a></p><p><a href="https://www.amazon.com/Modern-Challenge-programmer-real-world-problems-ebook/dp/B07BJLC1ZG/ref=sr_1_11?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-11" rel="noopener noreferrer nofollow">The Modern C++ Challenge</a></p><p><a href="https://www.amazon.com/Modern-Application-Development-difficulties-application-ebook/dp/B07KW74GWR/ref=sr_1_13?dib=eyJ2IjoiMSJ9.O2FZ2plnpt_sZdW35qnDhs2TzyGOQTEI6l4XE0VXVf95TIDrLRKysPi0OCY4PuYOwD_KLpTCVZHqgmS9qI3oSqdZ4Zq65bTIvstbGktcJz8EOVcxrXX9uizv5lpufPJErgjgH9vUXje5o_LdEcz36lDCkCeTIYT_MmrhJe70nWVTgHCvnKRrNaMvZ3e7PaWXq3ww6vKmHJl2LcD9yBnQQ5hkRYnKYHMHBJoNmYTsZchyr-hpkUwGXlbH0mhTqRYSer84tAkbFXtO83z4qkgs9nHluvvA5-JoewqZ95Thq1I.7llfzshcAkJgZOcQDmhPAR9E7pw0u60lw_Fzxr7QygI&amp;dib_tag=se&amp;keywords=modern+c%2B%2B&amp;qid=1781472524&amp;sr=8-13" rel="noopener noreferrer nofollow">Modern C++: Efficient and Scalable Application Development</a></p><p>Il C++11 è stato il primo «moderno», ha portato smart pointer, lambda e semantica di spostamento (move). Poi sono arrivati 14, 17, 20, 23, e ognuno si è dichiarato il più nuovo e ora di sicuro, definitivamente «moderno». E già il libro di testo più venduto sul modern C++, «Effective Modern C++», non è più moderno, e in alcuni punti nemmeno particolarmente efficace. Nel frattempo l'industria vive da qualche parte intorno al C++17, perché nessuno vuole riscrivere milioni di righe di codice funzionante per essere «più moderno del moderno», perché fa paura.</p><p>Il risultato è che sei costretto a conoscere <em>tutte</em> le versioni dello standard in una volta (e differiscono, credimi), perché il vecchio codice al lavoro è scritto in un dialetto, quello nuovo in un altro, il libro di testo ne ha un terzo, il tutorial su YouTube un quarto, e nessuno di essi è <code>modern</code>. </p><h3>Errori che non stanno in un monitor</h3><p>Quando finalmente compili qualcosa, ti accolgono i messaggi di errore. Il C++ può scaricare mille righe di spazzatura illeggibile per un singolo ghirigoro fuori posto, con la vera causa sepolta da qualche parte nel mezzo, ma il tuo cervello non riesce più a percepirla, perché metà del testo sono le viscere della libreria standard trapelate all'esterno.</p><p>Un errore di istanziazione di template è cinese non convenzionale fatto di parentesi angolari, che occupa così tanto spazio orizzontale che non sta più in un monitor 4K. Ho seriamente cominciato a capire il senso dei monitor ultrawide proprio guardando questi errori, e col tempo ho anche cominciato a disattivare l'a capo automatico, perché con l'a capo era solo peggio. Non c'è da stupirsi che molti sviluppatori C++ abbiano monitor ultrawide, occhiali e un collo malandato.</p><details class="code"><summary>Perché gli errori sono così prolissi</summary><div class="spoiler-body" style="padding:14px 20px"><p>Un template non è codice. Quando ci sostituisci tipi concreti, il compilatore lo istanzia, inserendo i tuoi tipi dentro e solo dopo controllando il risultato per errori. Istanzia l'intero template, avendo sostituito il tuo tipo ovunque. </p><p>Ora, quando il controllo avviene in profondità nell'algoritmo (e il tuo tipo non va bene per <code>sort</code>), il codice si è già srotolato dieci strati più in giù, e l'unico modo per risalire è scaricarlo tutto sul tuo schermo. In sostanza questo è duck typing, solo spostato alla fase di compilazione. Un template semplicemente funziona se le operazioni che usa dentro si sono rivelate valide. Ma anche la modalità di segnalazione errori del duck typing è singolare, scatta non dove hai fatto l'errore, ma da qualche parte in profondità nella libreria di qualcun altro, nel punto d'uso, e il template non ha la minima idea di cosa stia chiamando in quel punto, perché il codice stesso non esiste, c'è solo un controllo va-non-va.  </p><p>Per trent'anni i template non hanno avuto un meccanismo per esprimere requisiti su un parametro. Semplicemente non potevi scrivere «questo template ha bisogno di un tipo comparabile», perché con il duck typing i requisiti sono sempre impliciti. </p><p>Il compilatore fisicamente non poteva dire «hai violato il requisito X», perché nessun X è scritto da nessuna parte, e poteva solo trascinarti per il colletto alla riga 4212 nelle viscere di <code>&lt;algorithm&gt;</code> e mostrare che lì <code>operator&lt;</code> non è definito per il tuo tipo, e affinché tu ci creda, deve esporre lungo la strada l'intero stack di istanziazione. </p><p>I concept, la capacità stessa di dare un nome ai requisiti, erano un'idea che risaliva ai «concept» informali di Stepanov della fine degli anni ottanta, venivano preparati per il C++0x — e furono tagliati dal C++11, il design ritenuto troppo complesso (ne ho scritto in uno dei miei articoli). Ma sono arrivati solo con il C++20, ecco perché si chiamano requires (requisiti)</p></div></details><h3>Astrazioni a costo-forse-zero</h3><p>Per gli ultimi vent'anni circa il C++ si è venduto come un linguaggio di astrazioni a costo zero, ma qualsiasi astrazione non è più gratuita, e <code>std::unique_ptr</code> è più lento di un puntatore grezzo: ha un distruttore non triviale, e un tale tipo non può essere passato in un registro secondo l'Itanium ABI. Solo attraverso lo stack, mentre un puntatore nudo volerebbe in un registro. </p><p>E questo non riguarda solo gli smart pointer, ma qualsiasi tipo con un distruttore non triviale: <code>shared_ptr</code>, <code>string</code>, <code>vector</code> vengono spostati per valore attraverso la memoria per lo stesso motivo. La semantica di spostamento (move) non è gratuita, il problema è nel distruttore, quando si usa il move non distruttivo, quindi l'oggetto da cui hai fatto il move esegue comunque il suo distruttore, e un codice scritto a mano equivalente sarebbe più veloce. </p><p>Le espressioni regolari nella libreria standard sono considerate una delle peggiori implementazioni esistenti, in alcuni punti decine e centinaia di volte più lente delle alternative, e già il solo includere <code>&lt;regex&gt;</code> aggiunge un buon secondo di compilazione a ogni translation unit se sei fortunato. </p><p><code>unordered_map</code> è lenta perché è lenta e cache-unfriendly, e se ti serve velocità, ti tiri dentro <code>flat_hash_map</code> da Abseil di Google o F14 da Folly di Facebook. Noti lo schema? Un sacco di cose in C++ potrebbero diventare significativamente più veloci, ma non lo faranno. Perché romperebbe la compatibilità ABI, e qui arriviamo al punto principale.</p><h3>Compatibilità a costo di tutto</h3><p>Tutte le lamentele qui sopra, dai nomi storti ai container lenti, dallo zoo di <code>static</code> alle copie invisibili, convergono in un unico punto. La gente pensa che il C++ sia un linguaggio che mette la performance al primo posto, ma in realtà mette la retrocompatibilità al primo posto. Fanculo la performance, fanculo l'ergonomia dello sviluppo, fanculo la developer experience, fanculo tutto in generale.</p><p>È proprio l'impegno verso la compatibilità che ha trasformato il linguaggio in un mostro, quando non puoi rinominare <code>vector</code> perché si romperebbe un miliardo di righe di codice, e non puoi velocizzare <code>unordered_map</code> perché cambierebbe l'ABI, e non puoi assolutamente fare il move distruttivo, perché il momento è stato perso una decina d'anni fa, e non puoi rompere ciò che esiste. Ogni bruttura del linguaggio è un fiore di pietra di una decisione sbagliata del passato che non si può buttare via, perché ci sta già sopra qualcosa: la lib di qualcuno, un engine, un gioco o una pipeline.</p><p>Ma proprio la proprietà per cui il C++ viene sgridato è proprio la proprietà grazie a cui metà del mondo è scritta in esso. La compatibilità è sia la malattia sia il motivo della sopravvivenza, perché il codice che hai scritto vent'anni fa, con qualche danza e un tamburello, compilerà ancora. Una libreria abbandonata nel 2008 fa ancora il link, e per l'industria dei videogiochi, dove il costo di riscrivere si misura in persona-decenni, questo non è un bug, è un muro portante.</p><h3>E Rust invece?</h3><p>Qui nei commenti mi hanno chiesto di dire la mia su Rust. Spero si possa fare a meno delle guerre di religione, è semplicemente diverso.</p><p>Rust è di un ordine di grandezza migliore per design. Un compilatore standard, una build standard, un package manager standard, niente file header, i migliori messaggi di errore che abbia visto, default sensati, l'assenza di conversioni implicite, UTF-8 come si deve, sum type, e memory safety a tempo di compilazione. Molti problemi che in C++ non sono risolti e probabilmente non lo saranno nei prossimi dieci anni, in Rust erano già risolti ieri.</p><p>Ma «migliore per design» non equivale a «dovresti prenderlo». Lo sviluppo di videogiochi è iterazione rapida, caos creativo e «proviamo così», e Rust non te lo dà, e onestamente - nemmeno il C++ te lo dà più, per quanto nuovo e moderno possa essere. Ecco perché i giochi sono passati a script, DSL e programmazione dichiarativa. </p><p>E Rust è fondamentalmente sulla correttezza e la disciplina, e questo conflitto è fondamentale, il che ha portato al fatto che c'è un mucchio crescente di giochi che sono partiti su Rust e ne sono usciti. In più l'ecosistema, per quanto lo giri e rigiri, CUDA, engine, tooling, gazillioni di righe di codice già pronto, tutto ciò è C++, e lo sarà per molto tempo ancora.</p><h2>Il [P/M]eggior linguaggio di programmazione di tutti i tempi?</h2><p>Il C++ è un linguaggio terribile. Prolisso dove non serve, e silenzioso anche dove non serve. Con uno zoo di tipi, parole chiave bugiarde, copie invisibili, errori illeggibili e inferno di build. </p><p>Per scriverci correttamente ti serve una memoria enciclopedica per le eccezioni, e una volta imparate le eccezioni, separatamente per le eccezioni alle eccezioni. Ma il C++ è più vivo di tutti i vivi, e baratterà via altri diversi decenni, perché ha un'inerzia mostruosa ed è uno dei pochi che ha scelto la compatibilità a ogni costo, probabilmente a costo di tutto. E questa scelta l'ha reso simultaneamente insopportabile e insostituibile. Metà del mondo ci gira sopra, e ci girerà per molto tempo, che mi piaccia o no.</p><p>Scrivo in questo linguaggio terribile, romanticizzando la sua complessità e dimostrando a me stesso di essere intelligente. E continuerò a scriverci, perché nel mio campo è finora l'unico che fornisce la performance necessaria, essendo diventato un muro portante. E sostituire questo muro portante in una casa "abitata" e "viva" non è semplicemente «riscrivi un paio di stanze in un linguaggio alla moda», è demolire tutta la dannata casa e costruirne una nuova al suo posto, avendo vissuto un paio d'anni fuori in strada in una baracca. </p><p>Quindi sì, il linguaggio è terribile, allora forza, apri già il tuo IDE terribile, e continua a scrivere nel peggior linguaggio di programmazione.</p>
+    <a class="backlink" href="../../en/articles/index.html">← Tutti gli articoli</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
