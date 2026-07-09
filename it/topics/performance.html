@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prestazioni — dalerank</title>
+<meta name="description" content="Articoli sulle prestazioni: cache, spinlock, allineamento dei dati e benchmark in C++." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/performance.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/performance.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/topics/performance.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Articoli</a>
+      <a href="../index.html#books">Libri</a>
+      <a href="../index.html#topics">Argomenti</a>
+      <a href="../../en/about.html">Chi sono</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../topics/performance.html">RU</a><i>/</i><a href="../../en/topics/performance.html">EN</a><i>/</i><a class="on" href="performance.html">IT</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag gold">Argomento</span>
+    <h1>Prestazioni</h1>
+    <div class="ameta"><span>Spremere il massimo dall'hardware</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Appunti su ciò che accade sotto il livello degli algoritmi — cache della CPU, coerenza dei dati, primitive di sincronizzazione e allineamento. Il tutto con benchmark ed esempi in C++.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../../en/articles/console-memory.html"><span class="tag gold">Prestazioni</span><h3>Come funziona la memoria nelle console di gioco</h3><p>Una storia dell'architettura della memoria delle console dall'Atari 2600 a PS5 e Xbox Series: il conteggio dei cicli e i blank, la condivisione del bus e il DMA, la RDRAM veloce-ma-lenta dell'N64, il tile renderer del Dreamcast, le tre isole di memoria della PS2, le SPU e la Local Store della PS3, l'unificazione della memoria sulla PS4 e l'SSD come nuovo livello della gerarchia di memoria.</p><div class="pmeta"><span>5 maggio 2026</span><span>22 min</span></div></a></li>
+    <li><a href="../../en/articles/redundant-computations.html"><span class="tag gold">Prestazioni</span><h3>Calcoli ridondanti</h3><p>Come l'esecuzione speculativa e la branch prediction interagiscono con il sottosistema di memoria: perché il codice branchless non è sempre più veloce, il costo di una misprediction rispetto alla latenza della memoria e benchmark di ricerca binaria branchful/branchless sul Jaguar (PS4).</p><div class="pmeta"><span>6 aprile 2026</span><span>12 min</span></div></a></li>
+    <li><a href="../../en/articles/why-no-l5-cache.html"><span class="tag gold">Prestazioni</span><h3>Perché non abbiamo cache L5?</h3><p>Perché una CPU ha diversi livelli di cache invece di uno solo grande: la fisica dei segnali on-die, un'analogia con le palline di Natale, la storia dall'i486 a Nehalem, la separazione di L1I/L1D, i protocolli di coerenza, eDRAM e HBM come L4 «nascosta» e perché una L5 per ora non ha senso.</p><div class="pmeta"><span>11 marzo 2026</span><span>13 min</span></div></a></li>
+    <li><a href="../../en/articles/red-fps-hunt.html"><span class="tag gold">Prestazioni</span><h3>A caccia degli fps rossi</h3><p>Il profiling dei giochi come filosofia di sviluppo: l'evoluzione delle aspettative sugli FPS, come i contenuti degli artisti danneggiano le prestazioni (geometria, texture, render, culling), i metodi di profiling — sampling, instrumentation, tracing, event-based, analisi statica e replay — e il design di un tracing profiler con architettura a zero allocazioni e handle per le stringhe.</p><div class="pmeta"><span>19 febbraio 2026</span><span>25 min</span></div></a></li>
+    <li><a href="../../en/articles/good-bad-colored-fast.html"><span class="tag gold">Prestazioni</span><h3>Il buono, il brutto, il colorato e il veloce</h3><p>Allocatori di memoria anormali dalla pratica: un allocatore che traccia i lifetime per dare la caccia ai leak, un allocatore randomizzante (chaos) per lo stress test dei sistemi a lunga esecuzione, un allocatore «colorato» per l'isolamento dei sottosistemi (Deathloop) e il veloce TLSF — con diagrammi e un benchmark in cicli di CPU.</p><div class="pmeta"><span>10 ottobre 2025</span><span>13 min</span></div></a></li>
+    <li><a href="../../en/articles/reject-heap-commits.html"><span class="tag gold">Prestazioni</span><h3>Respingo i commit che usano l'heap e chiedo ai colleghi di riscrivere quella logica</h3><p>L'esperienza di costruire grandi giochi C++ senza heap: perché le allocazioni dinamiche sono pericolose su console e mobile (frammentazione, degrado dei tempi di malloc, un rifiuto in certificazione) e con cosa sostituirle — container a dimensione fissa gtl::vector&lt;T,N&gt;, etl/FastDelegate al posto di std::function, CRTP e polimorfismo statico con std::variant, object pool e placement new.</p><div class="pmeta"><span>17 settembre 2025</span><span>11 min</span></div></a></li>
+    <li><a href="../../en/articles/fit-elephant-in-suitcase.html"><span class="tag gold">Prestazioni</span><h3>Come far entrare un elefante in una valigia</h3><p>I livelli di ottimizzazione nel porting dei giochi su hardware debole: architettura, algoritmi e codice. La storia di un costoso controllo di escaping delle stringhe — da un loop ingenuo a una versione branchless, una lookup table e SIMD con _mm_movemask_epi8.</p><div class="pmeta"><span>21 dicembre 2024</span><span>10 min</span></div></a></li>
+    <li><a href="../../en/articles/spears-and-bits.html"><span class="tag gold">Prestazioni</span><h3>Lance &amp; bit</h3><p>Impacchettare i bool nei bit: std::bitset, std::vector&lt;bool&gt;, un ingenuo array di byte e l'approccio di CryEngine, benchmark con picchi a 32/64/128, i miss del branch predictor e una vettorizzazione SSE finale con _mm_movemask_epi8.</p><div class="pmeta"><span>17 dicembre 2024</span><span>15 min</span></div></a></li>
+    <li><a href="../../en/articles/task-based-game-engines.html"><span class="tag gold">Prestazioni</span><h3>Pensare a task nei motori di gioco</h3><p>I pattern fondamentali dei sistemi di task nei motori: spostare movimento, fisica, script, path-finding, animazione, rendering e I/O su thread separati, il raggruppamento dei task, il message passing e un confronto tra un task semplice, un thread manager e un task manager.</p><div class="pmeta"><span>28 novembre 2024</span><span>16 min</span></div></a></li>
+    <li><a href="../../en/articles/486-enough-for-everyone.html"><span class="tag gold">Prestazioni</span><h3>Un 486 dovrebbe bastare a tutti</h3><p>Quali tecnologie general-purpose sono comparse nelle CPU dopo il 486 e usiamo ogni giorno: cache e prefetch, la TLB, l'esecuzione speculativa, NUMA, SIMD, l'out-of-order, il GPGPU e la branch prediction — con esempi dalle console e benchmark.</p><div class="pmeta"><span>6 novembre 2024</span><span>13 min</span></div></a></li>
+    <li><a href="../../en/articles/do-not-copy.html"><span class="tag gold">Prestazioni</span><h3>Semplicemente non copiarlo</h3><p>Passaggio per valore vs const&amp;, allocazioni nascoste su stringhe e vettori, reserve e un crollo reale a 10 FPS — il tutto con benchmark su QuickBench.</p><div class="pmeta"><span>30 settembre 2024</span><span>5 min</span></div></a></li>
+    <li><a href="../../en/articles/twenty-cores-not-enough.html"><span class="tag gold">Prestazioni</span><h3>E 20 core ancora non bastano</h3><p>Undici tecniche di ottimizzazione C++ da motori in produzione: cache warming, dispatch a compile time, loop unrolling, signed/unsigned e corrispondenza dei tipi, isolamento degli hotpath, SIMD, prefetch, constexpr e lock-free — con benchmark e storie di guerra.</p><div class="pmeta"><span>18 luglio 2024</span><span>27 min</span></div></a></li>
+    <li><a href="../../en/articles/spinlocks.html"><span class="tag gold">Prestazioni</span><h3>Non c'è fretta… (Sugli spinlock)</h3><p>Implementazioni di spinlock in C++ — dal TAS ingenuo a un ticket spinlock — con benchmark, cache miss e le sfumature della prioritizzazione dei thread.</p><div class="pmeta"><span>27 settembre 2022</span><span>13 min</span></div></a></li>
+    <li><a href="../../en/articles/cache-pollution.html"><span class="tag gold">Prestazioni</span><h3>Cache inquinata? Fai scorta di test</h3><p>Come cache, associatività, coerenza e allineamento dei dati influenzano le prestazioni — con benchmark.</p><div class="pmeta"><span>9 settembre 2022</span><span>12 min</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — creato e ospitato su GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

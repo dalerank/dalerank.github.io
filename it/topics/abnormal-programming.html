@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Programmazione anormale — dalerank</title>
+<meta name="description" content="Articoli su trucchi e magia nera del C++: template, constexpr, __PRETTY_FUNCTION__ e altra programmazione anormale." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/topics/abnormal-programming.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/topics/abnormal-programming.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/topics/abnormal-programming.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="../articles/index.html">Articoli</a>
+      <a href="../index.html#books">Libri</a>
+      <a href="../index.html#topics">Argomenti</a>
+      <a href="../../en/about.html">Chi sono</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../topics/abnormal-programming.html">RU</a><i>/</i><a href="../../en/topics/abnormal-programming.html">EN</a><i>/</i><a class="on" href="abnormal-programming.html">IT</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag">Argomento</span>
+    <h1>Programmazione anormale</h1>
+    <div class="ameta"><span>Quando il linguaggio si può hackerare un po'</span></div>
+  </div>
+
+  <p style="max-width:760px;margin:0 auto 8px;color:var(--ink-soft);font-family:var(--serif);font-size:18px">
+    Trucchi e magia nera del C++: template di template, calcoli constexpr, __PRETTY_FUNCTION__ e altri modi per far fare al linguaggio ciò per cui non era proprio pensato.
+  </p>
+
+  <ul class="artlist">
+    <li><a href="../../en/articles/gamedev-myths.html"><span class="tag">Programmazione anormale</span><h3>Miti, superstizioni e saggezza popolare nello sviluppo di giochi</h3><p>Un'analisi di 12 «verità» comuni del C++ nel gamedev — quali sono miti, quali superstizioni e quali saggezza popolare: il culto del C puro, la «cattiva build buona», il costo di eccezioni e RTTI, smart pointer e container STL, il polimorfismo, l'assembly inline, il template bloat, l'ottimizzazione prematura e la maledizione del commit del venerdì.</p><div class="pmeta"><span>24 novembre 2025</span><span>23 min</span></div></a></li>
+    <li><a href="../../en/articles/string-zoo.html"><span class="tag">Programmazione anormale</span><h3>Uno zoo di stringhe nel tuo codice C++?</h3><p>Un grande tour dei tipi di stringa del C++ come uno zoo di animali: char* e char[N], letterali stringa, std::string e SSO, string_view, pmr::string, QString, NSString, std::wstring, stringhe di frame, la FString di Unreal, StringAtom e interning, stringhe COW e StringID basati su hash — e dove ciascuno trova posto nei motori di gioco.</p><div class="pmeta"><span>20 novembre 2025</span><span>26 min</span></div></a></li>
+    <li><a href="../../en/articles/be-your-own-breakpoint.html"><span class="tag">Programmazione anormale</span><h3>Sii il tuo breakpoint</h3><p>Come funzionano i breakpoint software e hardware: sostituire un byte con int 3 (0xCC), i registri di debug x86-64 DR0–DR7 e il layout di DR7, breakpoint condizionali, su funzione e temporanei, un watchpoint in scrittura via GetThreadContext, un canary per il buffer e un pulsante per i breakpoint hardware direttamente in un editor di gioco ImGui.</p><div class="pmeta"><span>6 ottobre 2025</span><span>15 min</span></div></a></li>
+    <li><a href="../../en/articles/run-thread-run.html"><span class="tag">Programmazione anormale</span><h3>Game++. run, thread, run…</h3><p>Il multithreading nei giochi: i problemi dei lock (deadlock, thread starvation, inversione di priorità in Cyberpunk 2077 e Crysis), il memory model del C++11, lock-free e atomics, spinlock con backoff, thread pool e un sistema di task, hitching e un mutex read-write.</p><div class="pmeta"><span>17 febbraio 2025</span><span>33 min</span></div></a></li>
+    <li><a href="../../en/articles/dancing-with-allocators.html"><span class="tag">Programmazione anormale</span><h3>Game++. Danze con gli allocatori</h3><p>Un grande tour degli allocatori di memoria nei giochi: linear, step-back, frame, stack, pool, free list, arena, segregated, buddy, thread-cache, fibonacci, compacting, suddivisione hot/cold e TLSF — con codice, diagrammi e un benchmark.</p><div class="pmeta"><span>30 gennaio 2025</span><span>34 min</span></div></a></li>
+    <li><a href="../../en/articles/cooking-vectors.html"><span class="tag">Programmazione anormale</span><h3>Game++. Cucinare i vettori</h3><p>Come funzionano i vettori nei motori di gioco e quanto li paghi: crescita della capacity e frammentazione della memoria, composizione singola vs a cascata, std::array, uno static_vector sullo stack, hybrid_vector con un'ottimizzazione in stile SSO e le insidie degli allocatori pmr dei vendor.</p><div class="pmeta"><span>15 gennaio 2025</span><span>12 min</span></div></a></li>
+    <li><a href="../../en/articles/string-interning.html"><span class="tag">Programmazione anormale</span><h3>Game++. String interning</h3><p>L'interning delle stringhe (string pooling) nei motori di gioco: una sola copia di una stringa per tutti i riferimenti, l'interning dei letterali in clang/GCC e perché il trucco si rompe su Xbox, il pericolo dei confronti con ==, la lotta alla frammentazione della memoria e una semplice implementazione di xstring su hash con conteggio dei riferimenti.</p><div class="pmeta"><span>13 gennaio 2025</span><span>9 min</span></div></a></li>
+    <li><a href="../../en/articles/heavy-header.html"><span class="tag">Programmazione anormale</span><h3>Il pesante H[eader]</h3><p>Come il tempo di build completa di un grande progetto C++ è sceso da 15:32 a 5:16: l'antivirus e l'explorer, header template pesanti, forward declaration, precompiled header, PIMPL e la disattivazione di analizzatori, test e LTO — con tabelle dei tempi di build degli header.</p><div class="pmeta"><span>10 novembre 2024</span><span>14 min</span></div></a></li>
+    <li><a href="../../en/articles/unity-cow-strings.html"><span class="tag">Programmazione anormale</span><h3>Come Unity ha rinunciato alle proprie stringhe</h3><p>La storia delle stringhe COW di Unity: copy-on-write con condivisione parziale dei buffer e allocazioni quasi zero, lo scontro con il design di std::string, puntatori pendenti e perché alla fine il motore è tornato alla libreria standard.</p><div class="pmeta"><span>29 ottobre 2024</span><span>7 min</span></div></a></li>
+    <li><a href="../../en/articles/boss-its-all-gone.html"><span class="tag">Programmazione anormale</span><h3>Capo, è tutto sparito</h3><p>Il seguito di «Dove sono i tuoi bug?»: 16 bug da venerdì sera presi da motori reali — scritture out-of-bounds, handle persi su Switch, memset su un tipo non banale, =! al posto di != e alloca in un loop.</p><div class="pmeta"><span>7 ottobre 2024</span><span>12 min</span></div></a></li>
+    <li><a href="../../en/articles/strings-in-engines.html"><span class="tag">Programmazione anormale</span><h3>Le stringhe nei motori di gioco</h3><p>Perché std::string è evitata nei motori: C-string e NTBS, SSO e string_view, stringhe sized/pool/arena, stringhe condivise e identificatori, più il parsing SIMD delle config.</p><div class="pmeta"><span>5 settembre 2024</span><span>15 min</span></div></a></li>
+    <li><a href="../../en/articles/swizzle-cpp.html"><span class="tag">Programmazione anormale</span><h3>La magia dello swizzle degli shader in C++</h3><p>Implementare lo swizzle (vec.xxy, vec.zx, vec.rgb) in C++ con union e template: da una prima versione a base di copia-incolla a un'unica soluzione constexpr e benchmark contro glm e CxxSwizzle.</p><div class="pmeta"><span>10 dicembre 2023</span><span>9 min</span></div></a></li>
+    <li><a href="../../en/articles/where-are-your-bugs.html"><span class="tag">Programmazione anormale</span><h3>Dove sono i tuoi bug?</h3><p>Una collezione di bug selvaggi da motori reali: un punto e virgola mancante in Unity, un memset eliminato dal compilatore, race sui bitfield in CryEngine, il most vexing parse e un'altra dozzina — trova tu stesso il bug.</p><div class="pmeta"><span>30 settembre 2023</span><span>8 min</span></div></a></li>
+    <li><a href="../../en/articles/private-but-want-public.html"><span class="tag">Programmazione anormale</span><h3>Quando è private ma lo vorresti proprio public</h3><p>Testare i membri privati di una classe C++ senza toccare gli header: da cento friend e #define private public a un hack con i template che scambia un tipo puntatore a membro.</p><div class="pmeta"><span>21 settembre 2023</span><span>8 min</span></div></a></li>
+    <li><a href="../../en/articles/switch-sdk-three-sin.html"><span class="tag">Programmazione anormale</span><h3>Perché l'SDK dello Switch ha tre funzioni sin diverse?</h3><p>Portando giochi su Nintendo Switch ho trovato tre implementazioni di sin nell'SDK — ed ecco cosa ha mostrato il disassemblato con diverse modalità di ottimizzazione.</p><div class="pmeta"><span>11 giugno 2023</span><span>8 min</span></div></a></li>
+    <li><a href="../../en/articles/enum-name-runtime.html"><span class="tag">Programmazione anormale</span><h3>Il nome di un enum C++ a runtime</h3><p>Ottenere il nome di un tipo e i valori di un enum a runtime in C++ senza RTTI — via __PRETTY_FUNCTION__, template e magia constexpr.</p><div class="pmeta"><span>7 novembre 2022</span><span>10 min</span></div></a></li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — creato e ospitato su GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>

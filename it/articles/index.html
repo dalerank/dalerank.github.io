@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Articoli — dalerank</title>
+<meta name="description" content="Articoli su codice, reverse engineering e game design." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="../index.html">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">Articoli</a>
+      <a href="../index.html#books">Libri</a>
+      <a href="../index.html#topics">Argomenti</a>
+      <a href="../../en/about.html">Chi sono</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a href="../../articles/index.html">RU</a><i>/</i><a href="../../en/articles/index.html">EN</a><i>/</i><a class="on" href="index.html">IT</a></span>
+      <a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="article-head" style="max-width:760px;margin:0 auto">
+    <span class="tag clay">Blog</span>
+    <h1>Articoli</h1>
+    <div class="ameta"><span>su codice, reverse engineering e game design</span></div>
+  </div>
+
+  <ul class="artlist">
+    <li>
+      <a href="worst-programming-language.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Il peggior linguaggio di programmazione di tutti i tempi /s</h3>
+        <p>Perché il C++ viene criticato: lo zoo delle inizializzazioni, parole chiave che mentono, decine di tipi interi, una libreria standard non standard, errori dei template illeggibili e astrazioni non proprio a costo zero. E perché tutto converge in un unico punto — la retrocompatibilità a costo di tutto.</p>
+        <div class="pmeta"><span>14 luglio 2026</span><span>24 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/course-new-delete.html">
+        <span class="tag gold">Corso · C++</span>
+        <h3>Cosa fanno davvero new e delete</h3>
+        <p>In cosa le espressioni new/delete del C++ differiscono da malloc/free: le chiamate a costruttori e distruttori, operator new/delete e il lavoro con la memoria grezza — con un'analisi dell'assembly. Una lezione gratuita del corso «C++ senza allocazioni di memoria».</p>
+        <div class="pmeta"><span>25 giugno 2026</span><span>3 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/course-vtable.html">
+        <span class="tag gold">Corso · C++</span>
+        <h3>Come funziona una vtable</h3>
+        <p>Come un compilatore C++ implementa le funzioni virtuali: il vptr nascosto, la vtable e il dispatch dinamico — con un'implementazione artigianale del meccanismo a base di puntatori a funzione. Una lezione gratuita del corso «C++ senza allocazioni di memoria».</p>
+        <div class="pmeta"><span>25 giugno 2026</span><span>5 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/course-assoc.html">
+        <span class="tag gold">Corso · C++</span>
+        <h3>Container associativi della STL</h3>
+        <p>I container associativi della STL: set, map, multiset e multimap — in cosa differiscono, quando le chiavi sono uniche e quando si ripetono, con brevi esempi. Una lezione gratuita del corso «C++ senza allocazioni di memoria».</p>
+        <div class="pmeta"><span>25 giugno 2026</span><span>3 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/course-heap-stack.html">
+        <span class="tag gold">Corso · C++</span>
+        <h3>Compromessi tra heap e stack</h3>
+        <p>Heap contro stack: determinismo, frammentazione, dimensione del binario e footprint di memoria — perché nei giochi e sulle console conviene ridurre al minimo lo heap. Una lezione gratuita del corso «C++ senza allocazioni di memoria».</p>
+        <div class="pmeta"><span>25 giugno 2026</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="megacity-on-iphone.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Comprimere una megalopoli fino alle dimensioni di un iPhone 4</h3>
+        <p>Il ventre ingegneristico di SimCity BuildIt mobile: come un city builder desktop è stato stipato nei 100–300 MB di RAM di un iPhone — un'economia server-authoritative a timer, un client-terminale «stupido», batching aggressivo, un renderer TBDR con settori di anteprima, una simulazione svuotata con ingorghi fatti di sprite e l'elettricità come Capacità − Domanda. Più la storia dello studio di San Pietroburgo EA SPB.</p>
+        <div class="pmeta"><span>12 luglio 2026</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="foreign-stl-guide.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Guida sul campo alle STL degli altri</h3>
+        <p>Un giro tra le librerie C++ «standard» alternative di studi di gioco e grandi aziende: EASTL e le sue best practice, LLVM SmallVector/DenseMap, Folly e l'anatomia di fbstring (SSO, COW e l'accoppiata con jemalloc), boost flat_map, i container serializzabili di Zmeya e il value-oriented programming di Adobe — perché è nata ciascuna e dove ci si può far male.</p>
+        <div class="pmeta"><span>6 luglio 2026</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cpp101-part1.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>C++101 (Parte 1)</h3>
+        <p>Un catalogo di ~100 idiomi e tecniche C++ nato dalla sezione Game++. Parte 1: risorse e compilazione — RAII, scope guard, copy-and-swap, smart pointer, copy-on-write, Pimpl e Fast Pimpl, interface class, include/inline/export guard, CRTP, Barton-Nackman, EBO e metafunzioni.</p>
+        <div class="pmeta"><span>21 giugno 2026</span><span>38 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cpp101-part2.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>C++101 (Parte 2)</h3>
+        <p>Parte 2: metaprogrammazione e template — traits, tag dispatching, int-to-type, type selection, SFINAE ed enable-if, member detector, policy-based design, type erasure, thin template, named template parameters, expression templates e result_of, più i costruttori named e computazionali e base-from-member.</p>
+        <div class="pmeta"><span>21 giugno 2026</span><span>36 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cpp101-part3.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>C++101 (Parte 3)</h3>
+        <p>Parte 3: inizializzazione, polimorfismo e container — chiamare funzioni virtuali durante l'inizializzazione, construction tracker, NVI e thread-safe interface, acyclic visitor, tipi di ritorno covarianti, virtual friend function, algebraic hierarchy, tipi valore polimorfici, funtori, iterator pair, generic container, erase-remove, safe bool e attorney-client.</p>
+        <div class="pmeta"><span>21 giugno 2026</span><span>36 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cpp101-part4.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>C++101 (Parte 4)</h3>
+        <p>Parte 4: friendship, memoria degli oggetti e C++ moderno — non-member non-friend, SOO/SSO, vietare lo heap, execute-around pointer, temporary proxy, nullptr, costruttore di move, boost mutant, deprecate and delete, function poisoning, rule of zero/three/five, most vexing parse, pass-key e l'operatore spaceship.</p>
+        <div class="pmeta"><span>21 giugno 2026</span><span>38 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="game-gui-rewritten-2.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Come la GUI dei giochi viene riscritta (Parte 2)</h3>
+        <p>Il seguito: l'architettura della UI di gioco lungo sei assi indipendenti — la posizione rispetto al mondo (diegetica / HUD / meta / spaziale / narrativa, da Metroid Prime e Dead Space a Spec Ops e Hellblade), la funzione, la rappresentazione in memoria (scene graph, lista piatta, immediate mode, ECS), il flusso dei dati (MVC/MVVM, reattivo, unidirezionale, data binding), il layout (constraint, flexbox, anchor, RIMD) e il rendering (canvas, layer, SDF, GPU-driven). Parte 2.</p>
+        <div class="pmeta"><span>17 giugno 2026</span><span>43 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="game-gui-rewritten.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Perché la GUI dei giochi viene riscritta (Parte 1)</h3>
+        <p>L'architettura della UI di un gioco e perché viene riscritta da un progetto all'altro: un albero di controlli come Composite, proprietà con reflection, il disaccoppiamento dal codice di gioco tramite binding, template a prototipi molto prima dei Prefab di Unity, tre livelli di handler, l'hit testing basato sulle forme, messaggi sincroni, layout e 9-slice, coordinate intere, un Bridge sopra il renderer, stili come CSS, il dolore della localizzazione, i font SDF e la UI diegetica (Dead Space, Doom, Metro). Parte 1.</p>
+        <div class="pmeta"><span>16 giugno 2026</span><span>22 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="random-people-in-it.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Sulle persone "capitate per caso" nell'IT</h3>
+        <p>Una risposta all'affermazione che «senza una laurea attinente è inutile persino provare a entrare nell'IT»: la storia dell'industria dei videogiochi come storia di avvocati, casalinghe, piloti, maschere di cinema ed esportatori di fagioli in scatola. Da Gary Gygax e D&amp;D a Miyamoto, Iwatani, Roberta Williams, Will Wright, Kojima, Molyneux, Miyazaki, Notch, Eric Barone e Davey Wreden — persone senza alcuna esperienza pertinente che hanno costruito tutto ciò a cui avete giocato.</p>
+        <div class="pmeta"><span>14 giugno 2026</span><span>5 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/soviet-gta.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Perché i programmatori sovietici non hanno creato GTA</h3>
+        <p>Perché il paese che ha progettato il Buran, il Tu-160 e i rompighiaccio nucleari non ha mai prodotto un gioco di massa di livello occidentale: un gioco come grande impresa ingegneristica, da dove arrivano gli sviluppatori di talento, due conti spannometrici sul blocco socialista, l'«aspirapolvere di talenti» globale della Silicon Valley, un giro nel gamedev post-sovietico da Tetris e Vangers a S.T.A.L.K.E.R., Atomic Heart e War Thunder — e perché un «Unreal russo» non si evoca su ordinazione.</p>
+        <div class="pmeta"><span>10 giugno 2026</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/resource-manager.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Il resource manager</h3>
+        <p>Perché un resource manager non è un singleton ma un intero sottosistema del motore: l'identità di una risorsa come coppia (sorgente + parametri), una cache con weak reference e LRU, parametri espliciti e impliciti, reload mirato e hot-reload, il ripristino dopo il device lost dai pool di D3D9 a DX12/Vulkan, una base template condivisa per i manager e il cambio delle impostazioni grafiche senza riavvio — con esempi da Unreal, Unity, Source, id Tech, Godot, No Man's Sky e Cyberpunk.</p>
+        <div class="pmeta"><span>8 giugno 2026</span><span>28 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/architecture-tradeoffs.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Compromessi architetturali nello sviluppo di giochi</h3>
+        <p>Una grande analisi di pattern architetturali e compromessi nel gamedev: layer, metalayer, sottosistemi, pipes &amp; filters, microkernel e blackboard con esempi da Source, CryEngine, Unreal, id Tech e Naughty Dog; le strategie di design (top-down/bottom-up/refactoring costante), l'asse push contro pull, i linguaggi di scripting e il ripensamento dei GoF nel C++ moderno dei giochi.</p>
+        <div class="pmeta"><span>3 giugno 2026</span><span>106 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/three-in-a-boat.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Tre in barca, per non parlar della miseria e dei cani</h3>
+        <p>Uno sguardo onesto sullo stato dell'industria dei videogiochi nel 2026: indie che vanno avanti a entusiasmo e stock option, i casinò dei giochi-servizio, remaster di remaster, sviluppatori che migrano nelle «sussidiarie» per uno stipendio, e il gamedev come arte di negoziare con se stessi — dove siamo tutti nella stessa barca che fa acqua.</p>
+        <div class="pmeta"><span>27 maggio 2026</span><span>7 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/disobedient-using.html">
+        <span class="tag">C++</span>
+        <h3>Lo using disobbediente</h3>
+        <p>Perché using namespace e l'ADL rendono imprevedibile la risoluzione dei nomi in C++: l'argument-dependent lookup e operator&lt;&lt;, il dirottamento di std con un sostituto locale, la verifica della viability delle funzioni, i ranghi delle conversioni implicite e perché le funzioni =delete partecipano alla overload resolution come candidate a pieno titolo.</p>
+        <div class="pmeta"><span>20 maggio 2026</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/10x-programmers.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Sui programmatori 10x</h3>
+        <p>I programmatori 10x esistono o sono un mito delle startup e il sogno di un manager: cinque tipi reali di sviluppatori «veloci» — la persona fusa con il progetto, quello che scrive meno codice, DoItProperlyMan, la competenza di nicchia e il mito del focus — e perché il 10x riguarda sempre il contesto accumulato, non un coefficiente innato.</p>
+        <div class="pmeta"><span>12 maggio 2026</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/console-memory.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Come funziona la memoria nelle console di gioco</h3>
+        <p>Una storia dell'architettura della memoria delle console dall'Atari 2600 fino a PS5 e Xbox Series: il conteggio dei cicli e i blank, la condivisione del bus e il DMA, la RDRAM veloce-ma-lenta del N64, il tile renderer del Dreamcast, le tre isole di memoria della PS2, le SPU e il Local Store della PS3, l'unificazione della memoria sulla PS4 e l'SSD come nuovo livello della gerarchia di memoria.</p>
+        <div class="pmeta"><span>5 maggio 2026</span><span>22 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/dream-portfolio-second-job.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Come non confondere un sogno, un portfolio e un secondo lavoro</h3>
+        <p>Sui pet project nel gamedev: perché un progetto «da un paio di serate» si trasforma in anni di vita, in cosa imparare differisce dallo scrivere il proprio motore, perché una piccola libreria sopravvive più spesso di un ambizioso tuttofare, il costo del C++ per i progetti hobbistici e come l'open source diventa silenziosamente un secondo lavoro.</p>
+        <div class="pmeta"><span>28 aprile 2026</span><span>7 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/simple-name-lookup.html">
+        <span class="tag">C++</span>
+        <h3>Il name lookup semplice in C++</h3>
+        <p>Il lookup dei nomi semplice (unqualified) e qualificato in C++: perché un namespace e una variabile locale con lo stesso nome convivono, il nascondimento dei nomi e di interi overload set nell'ereditarietà, l'ambiguità dell'ereditarietà a diamante, la regola dello using-namespace nel qualified lookup e le differenze storiche tra GCC, Clang e MSVC.</p>
+        <div class="pmeta"><span>22 aprile 2026</span><span>11 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/compilers-confused-names.html">
+        <span class="tag">C++</span>
+        <h3>Anche i compilatori si confondono con i nomi</h3>
+        <p>Il name lookup in C++: identificatori, unqualified-id, qualified-id, template-id e il «nome terminale», la storia dell'ADL (Koenig lookup) dal conflitto dei namespace alla soluzione di Koenig, il two-phase lookup nei template e perché GCC, Clang e MSVC si sono storicamente comportati in modo diverso.</p>
+        <div class="pmeta"><span>14 aprile 2026</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/redundant-computations.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Calcoli ridondanti</h3>
+        <p>Come l'esecuzione speculativa e la branch prediction interagiscono con il sottosistema di memoria: perché il codice branchless non è sempre più veloce, il costo di una misprediction rispetto alla latenza della memoria, la storia da Tomasulo al Pentium Pro, la ricerca binaria e benchmark sul Jaguar (PS4).</p>
+        <div class="pmeta"><span>6 aprile 2026</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/pragmatic-generalizations-2.html">
+        <span class="tag">C++</span>
+        <h3>Generalizzazioni in C++ (parte 2)</h3>
+        <p>La continuazione del capitolo 1 di PragmatiC++: identità e uguaglianza degli oggetti, procedure e call stack, le convenzioni di chiamata e le categorie in/out/in-out, la base computazionale dall'ENIAC ad AMX, e la regolarità dei tipi come guida pratica per progettare astrazioni prevedibili.</p>
+        <div class="pmeta"><span>18 marzo 2026</span><span>26 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/why-no-l5-cache.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Perché non abbiamo cache L5?</h3>
+        <p>Perché una CPU ha più livelli di cache invece di uno solo grande: la fisica dei segnali sul die, l'analogia delle palline di Natale, la storia dall'i486 a Nehalem, perché L1I e L1D sono separate, i protocolli di coerenza (MSI/MESI/MOESI…), eDRAM e HBM come L4 «nascosta» e perché una L5 per ora non ha senso.</p>
+        <div class="pmeta"><span>11 marzo 2026</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/joy-of-programming.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Sulla gioia di programmare e l'imponderabilità dei traguardi</h3>
+        <p>Riflessioni di uno sviluppatore che ha vissuto l'epoca in cui il codice si scriveva a mano, senza assistenti IA: perché un traguardo raggiunto troppo facilmente sembra non pesare nulla, come l'IA elimina l'«attrito utile» e lo stato di flow, e dove può trovarsi la nuova maestria del programmatore — nell'architettura e nella profondità delle decisioni più che nella velocità di battitura.</p>
+        <div class="pmeta"><span>5 marzo 2026</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/writing-a-book-about-code.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Scrivere codice è più facile che scrivere un libro sullo scrivere codice</h3>
+        <p>Come la serie Game++ su Habr è diventata un libro sul C++ pragmatico e lo sviluppo di motori: cos'è un «buon» C++, le persone che hanno aiutato a far nascere il libro, l'editing come mestiere a sé e un grande blocco di risposte alle domande frequenti su come scriverlo e pubblicarlo.</p>
+        <div class="pmeta"><span>22 febbraio 2026</span><span>4 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/red-fps-hunt.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>A caccia degli fps rossi</h3>
+        <p>Il profiling dei giochi come filosofia di sviluppo: l'evoluzione delle aspettative sugli FPS, come i contenuti degli artisti danneggiano le prestazioni (geometria, texture, render, culling), i metodi di profiling — sampling, instrumentation, tracing, event-based, analisi statica e replay — e il design di un tracing profiler con architettura zero-allocation e handle per le stringhe.</p>
+        <div class="pmeta"><span>19 febbraio 2026</span><span>25 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/university-doesnt-train-programmers.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Perché l'università non forma programmatori</h3>
+        <p>Perché l'istruzione universitaria classica non trasforma gli studenti in programmatori: docenti senza esperienza sul campo, il circolo vizioso degli stipendi, la programmazione come abilità pratica al pari del suonare la chitarra, il mentorato negli studi e perché i programmatori si formano da autodidatti.</p>
+        <div class="pmeta"><span>30 gennaio 2026</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/dont-panic-aa-gamedev.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Niente panico, sei appena atterrato nel gamedev AA+</h3>
+        <p>Come non farsi prendere dal panico quando si finisce in un grande studio AA+ con una codebase da milioni di righe: orientarsi nel legacy altrui, i sistemi di build, perché i senior non ricordano il codice a memoria, cercare per stringhe visibili all'utente, la history di git, il code style e perché il sorgente è la verità ultima.</p>
+        <div class="pmeta"><span>3 dicembre 2025</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/gamedev-myths.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Miti, superstizioni e saggezza popolare nello sviluppo di giochi</h3>
+        <p>Uno sguardo a 12 «verità» comuni del gamedev in C++ — quali sono miti, quali superstizioni e quali saggezza popolare: il culto del C puro, la «cattiva build buona», il costo di eccezioni e RTTI, smart pointer e container STL, il polimorfismo, l'assembly inline, il template bloat, l'ottimizzazione prematura e la maledizione del commit del venerdì.</p>
+        <div class="pmeta"><span>24 novembre 2025</span><span>23 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/string-zoo.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Uno zoo di stringhe nel tuo codice C++?</h3>
+        <p>Un grande giro tra i tipi di stringa del C++ come tra gli animali di uno zoo: char* e char[N], le string literal, std::string e SSO, string_view, pmr::string, QString, NSString, std::wstring, le frame string, la FString di Unreal, StringAtom e l'interning, le stringhe COW e gli StringID basati su hash — e dove ciascuno trova posto nei motori di gioco.</p>
+        <div class="pmeta"><span>20 novembre 2025</span><span>26 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/good-bad-colored-fast.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Il buono, il brutto, il colorato e il veloce</h3>
+        <p>Allocatori di memoria anomali dalla pratica: un allocatore che traccia i lifetime per dare la caccia ai leak, un allocatore randomizzante (chaos) per lo stress test dei sistemi long-running, un allocatore «colorato» per l'isolamento dei sottosistemi (Deathloop) e il veloce TLSF — con diagrammi e un benchmark in cicli di CPU.</p>
+        <div class="pmeta"><span>10 ottobre 2025</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/be-your-own-breakpoint.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Sii il breakpoint di te stesso</h3>
+        <p>Come funzionano i breakpoint software e hardware: la sostituzione di un byte con int 3 (0xCC), i registri di debug x86-64 DR0–DR7 e il layout di DR7, breakpoint condizionali, di funzione e temporanei, un watchpoint in scrittura via GetThreadContext, un canary per i buffer e un pulsante per i breakpoint hardware direttamente in un editor di gioco ImGui.</p>
+        <div class="pmeta"><span>6 ottobre 2025</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/why-pharaoh-best.html">
+        <span class="tag clay">Game design</span>
+        <h3>Perché Pharaoh resta il miglior gioco della serie</h3>
+        <p>Perché il Pharaoh originale (1999) è più profondo di Zeus e del remake A New Era: la distribuzione dei lavoratori tramite reclutatori contro un pool globale, tassare le case povere, la struttura delle missioni, 20 livelli abitativi e la logica delle migrazioni, la «stupidità egizia» dei camminatori di servizio con le svolte casuali — con il codice ricostruito nel remake Akhenaten.</p>
+        <div class="pmeta"><span>26 settembre 2025</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/reject-heap-commits.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Respingo i commit che usano lo heap e chiedo ai colleghi di riscrivere quella logica</h3>
+        <p>L'esperienza di costruire grandi giochi C++ senza heap: perché le allocazioni dinamiche sono pericolose su console e mobile (frammentazione, degrado dei tempi di malloc, un rifiuto in certificazione) e con cosa sostituirle — container a dimensione fissa gtl::vector&lt;T,N&gt;, etl/FastDelegate al posto di std::function, CRTP e polimorfismo statico con std::variant, object pool e placement new.</p>
+        <div class="pmeta"><span>17 settembre 2025</span><span>11 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/blackbox-gameplay.html">
+        <span class="tag clay">Game design</span>
+        <h3>Gameplay a scatola nera</h3>
+        <p>Il gameplay a scatola nera negli strategici e nei city builder: perché la serie Caesar/Pharaoh/Zeus nascondeva numeri e meccaniche, sandbox contro missioni scriptate, il limite cognitivo delle 12 coppie, perché la combinatoria delle meccaniche conta più della quantità di contenuti e perché un bilanciamento «rotto» trattiene i giocatori per anni — con Age of Empires II come esempio.</p>
+        <div class="pmeta"><span>31 maggio 2025</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/performance-traps.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Trappole di prestazioni</h3>
+        <p>Il finale della serie Game++: le comuni trappole di prestazioni del C++ — allocazioni inutili, la RVO traditrice, una std::function pesante, identificatori stringa costosi, una funzione seno approssimata, la divisione lenta, il costo dei cache miss, std::pair/tuple e il prezzo della virtualità — con benchmark su quick-bench e storie dalla produzione.</p>
+        <div class="pmeta"><span>29 maggio 2025</span><span>18 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/while-game-over.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. while (!game(over))</h3>
+        <p>Vale la pena scrivere il proprio motore di gioco: perché e se serve davvero, cos'è un motore e cosa fa — il game loop, l'input, la grafica, gli asset, l'audio, la fisica, script e config, il networking, l'IA, la UI e l'architettura (approccio a librerie, GodObject, ECS), più il tooling — con codice, link a librerie ed esperienza personale.</p>
+        <div class="pmeta"><span>6 maggio 2025</span><span>35 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/patching-patterns.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Rattoppando i pattern</h3>
+        <p>I design pattern nei giochi: cosa sopravvive del «libro blu» dei GoF e quali pattern hanno attecchito proprio nel gamedev — Command, State e FSM con stack pushdown, Flyweight e instancing, Observer ed EventBus, Dirty Flag, Update Layers e GOAP — con codice, diagrammi e casi d'uso.</p>
+        <div class="pmeta"><span>29 aprile 2025</span><span>30 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/just-write-code.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Scrivi codice e basta</h3>
+        <p>Un manifesto nello spirito di «scrivi codice e basta»: mentre tutti gli altri discutono in riunione su quale board spostare il ticket, nessuna Jira scriverà mai il bugfix. Sul codice-spazzatura che funziona, i titoli svalutati, i colloqui leetcode e l'idea che se non ci sono bug — semplicemente non hai scritto codice.</p>
+        <div class="pmeta"><span>24 aprile 2025</span><span>5 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/work-hard.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Work hard</h3>
+        <p>I modelli di concorrenza nei motori di gioco: stato shared/separate/shadow, worker e thread pool, worker stateless (Assassin's Creed, Factorio), catene di worker e IO non bloccante, le fiber di Naughty Dog e la libreria marl — con diagrammi, codice e benchmark di caricamento.</p>
+        <div class="pmeta"><span>14 aprile 2025</span><span>16 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/things-game-programmer-should-know.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Un paio di cose che un programmatore di giochi dovrebbe sapere</h3>
+        <p>Una raccolta di «leggi» sarcastiche dello sviluppo di giochi: su std::move, l'undefined behavior, GameObject ed ECS, la submission per la cert e i TRC, gli Heisenbug, il debito tecnico, // TODO e //TMP, i manager, gli artisti e le patch del venerdì — l'amara verità del gamedev in una riga.</p>
+        <div class="pmeta"><span>5 aprile 2025</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/heap-less.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Heap? Less</h3>
+        <p>Come i giochi si liberano delle allocazioni sullo heap: le cinque regioni di memoria, stack contro heap, determinismo e frammentazione, RVO/NRVO, stringhe inplace locali e pmr::string, il polimorfismo ad-hoc con std::variant e ottimizzazioni reali di vector/map/string via monotonic_buffer_resource e profiler.</p>
+        <div class="pmeta"><span>3 aprile 2025</span><span>20 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/why-gamedev-stays-cpp17.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Perché gli sviluppatori di giochi restano su C++17</h3>
+        <p>Perché gli studi di gioco non hanno fretta di passare a C++20 e restano su C++17: auto e un +10-15% sui tempi di compilazione, Visual Studio come miglior debugger al mondo, l'economia di build farm e strumenti, la diffidenza verso STL e Boost nel gamedev, l'assenza di test automatizzati e perché il debugging non scala.</p>
+        <div class="pmeta"><span>26 marzo 2025</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/unpacking-containers.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Spacchettare i container</h3>
+        <p>I container specializzati nei motori di gioco: fixed array e matrici, vector linear/stable/sparse/packed/static/small/dirty/buddy, deque e bcdeque, bounded_priority_deque, liste intrusive, octree e quadtree, object_pool, ring buffer, cached_hashtable, handle_container e slot_container — come funzionano, diagrammi e dove si usano.</p>
+        <div class="pmeta"><span>19 marzo 2025</span><span>40 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/building-arcs.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Game++. Costruire archi</h3>
+        <p>Le architetture dei motori di gioco e la legge di Conway: l'approccio unitario (Big Ball of Mud) in Unity, a layer in Unreal Engine, il microkernel in CryEngine e O3DE, il data-driven in Dagor, il monolite in X-Ray e il micro-modulare in Godot — storia, pro e contro di ciascuno.</p>
+        <div class="pmeta"><span>28 febbraio 2025</span><span>24 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/ready-player-one.html">
+        <span class="tag clay">Game design</span>
+        <h3>Ready Player One</h3>
+        <p>La storia dei videogiochi: dai cabinati arcade e i giochi sui mainframe a Computer Space, Atari e Pong, Galaxian e Pac-Man, Donkey Kong, la nascita delle console, l'Atari 2600, il crash del 1983, Nintendo, Sega e l'era del PC.</p>
+        <div class="pmeta"><span>20 febbraio 2025</span><span>40 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/run-thread-run.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. corri, thread, corri…</h3>
+        <p>Il multithreading nei giochi: i problemi dei lock (deadlock, thread starvation, priority inversion in Cyberpunk 2077 e Crysis), il memory model del C++11, lock-free e atomics, spinlock con backoff, thread pool e task system, l'hitching, un mutex read-write e 8 regole per un buon threading.</p>
+        <div class="pmeta"><span>17 febbraio 2025</span><span>33 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/juggling-stl-algorithms.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Game++. Giocoleria con gli algoritmi STL</h3>
+        <p>Perché gli algoritmi STL sono il C++ «conversazionale»: mostrano Cosa fai, non Come; eliminano i bug sui limiti, sulle collezioni vuote e le «prestazioni spalmate» e ti danno codice di qualità da compilatore. La storia di EASTL, iteratori e back_inserter, il caching degli shader via set_difference e un grande cheat sheet degli algoritmi.</p>
+        <div class="pmeta"><span>9 febbraio 2025</span><span>29 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/dancing-with-allocators.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Danze con gli allocatori</h3>
+        <p>Un grande giro tra gli allocatori di memoria nei giochi: linear, step-back, frame/double/N-frame, stack e double-stack, pool, free list, arena, segregated, buddy, thread-cache, fibonacci, compacting, hot/cold splitting e TLSF — con codice, diagrammi, casi d'uso e un benchmark.</p>
+        <div class="pmeta"><span>30 gennaio 2025</span><span>34 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/pharaoh-demo-vs-retail.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Welcome to Ancient…</h3>
+        <p>Pharaoh (1999): perché il city builder non parte su Windows 10/11 (il bug del 640×480, lo scaling, gli overlay, il bussare a un servizio Microsoft ormai morto, l'audio) e in cosa la demo differisce dalla versione retail — schermate, menu, texture prese da Caesar III, le piene del Nilo, i canali di irrigazione e i contenuti tagliati. Illustrato con il remake Akhenaten.</p>
+        <div class="pmeta"><span>22 gennaio 2025</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cooking-vectors.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. Cucinare i vector</h3>
+        <p>Come funzionano i vector nei motori e cosa paghi per averli: la crescita della capacity e la frammentazione della memoria, composizione singola contro a cascata, std::array, uno static_vector sullo stack, hybrid_vector con un'ottimizzazione in stile SSO e le insidie degli allocatori pmr e delle implementazioni vendor di monotonic_buffer_resource.</p>
+        <div class="pmeta"><span>15 gennaio 2025</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/string-interning.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Game++. String interning</h3>
+        <p>Lo string interning (string pooling) nei motori di gioco: una sola copia della stringa per tutti i riferimenti, l'interning delle literal in clang/GCC e perché il trucco si rompe su Xbox, il pericolo del confronto con ==, la lotta alla frammentazione della memoria e una semplice implementazione di xstring su hash con reference counting.</p>
+        <div class="pmeta"><span>13 gennaio 2025</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/all-programmers-are-seniors.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>In Spagna tutti i programmatori sono senior</h3>
+        <p>In cosa il lavoro negli studi gamedev occidentali differisce dai team post-sovietici: la cultura della «delazione», il non toccare i task altrui, tutta la comunicazione attraverso il PM, la cortesia eccessiva, il rispetto guadagnato con i task risolti, le stranezze dei team nazionali, la comunicazione contestuale contro quella dettagliata e le frasi-àncora.</p>
+        <div class="pmeta"><span>26 dicembre 2024</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/fit-elephant-in-suitcase.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Come far entrare un elefante in una valigia</h3>
+        <p>I livelli di ottimizzazione nel porting dei giochi su hardware debole (Switch, Apple TV, mobile): architettura, algoritmi e codice. La storia di un costoso controllo di escaping delle stringhe — da un ingenuo loop con early-exit a una versione branchless, una lookup table e SIMD con _mm_movemask_epi8, con le tabelle dei tempi di caricamento su iPhone.</p>
+        <div class="pmeta"><span>21 dicembre 2024</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/spears-and-bits.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Spears &amp; bits</h3>
+        <p>Impacchettare i booleani nei bit nei giochi: std::bitset, std::vector&lt;bool&gt;, un ingenuo array di byte e l'approccio di CryEngine, benchmark con picchi a 32/64/128, i miss del branch predictor e una vettorizzazione SSE finale con _mm_movemask_epi8 — da 4 ms a 1 ms per frame.</p>
+        <div class="pmeta"><span>17 dicembre 2024</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/task-based-game-engines.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Pensare a task nei motori di gioco</h3>
+        <p>I pattern fondamentali dei task system nei motori di gioco: spostare movimento, fisica, script, path-finding, animazione, rendering e I/O su thread separati, il raggruppamento dei task, il message passing e un confronto tra un task semplice, un thread manager e un task manager.</p>
+        <div class="pmeta"><span>28 novembre 2024</span><span>16 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/ai-books-for-gamedev.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Buoni libri per un programmatore di IA nel gamedev</h3>
+        <p>Una lista di letture per un programmatore di IA di gioco, con opinioni personali: AI for Game Developers, Game AI Pro, Game Engine Gems, The Pyramid of Game Design, Behavioral Mathematics for Game AI e AI Game Programming Wisdom — cosa leggere e come.</p>
+        <div class="pmeta"><span>18 novembre 2024</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/heavy-header.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Il pesante H[eader]</h3>
+        <p>Come il tempo di build completa di un grande progetto C++ è stato ridotto da 15:32 a 5:16: l'antivirus e l'explorer, gli header template pesanti, le forward declaration, i precompiled header, PIMPL e la disattivazione di analizzatori, unit test e LTO — con le tabelle dei tempi di build degli header.</p>
+        <div class="pmeta"><span>10 novembre 2024</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/486-enough-for-everyone.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Un 486 dovrebbe bastare a tutti</h3>
+        <p>Quali tecnologie general-purpose sono apparse nelle CPU dai tempi del 486 e usiamo ogni giorno: cache e prefetch, la TLB, l'esecuzione speculativa, NUMA, SIMD, l'out-of-order, il GPGPU e la branch prediction — con esempi dalle console e benchmark.</p>
+        <div class="pmeta"><span>6 novembre 2024</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/unity-cow-strings.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Come Unity ha rinunciato alle proprie stringhe</h3>
+        <p>La storia delle stringhe COW di Unity: copy-on-write con condivisione parziale dei buffer e allocazioni quasi a zero, lo scontro con il design di <code>std::string</code>, i dangling pointer e perché alla fine il motore è tornato alla libreria standard.</p>
+        <div class="pmeta"><span>29 ottobre 2024</span><span>7 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/pharaoh-engine-tricks.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>ECS, dynvtbl, thread logici e Pharaoh</h3>
+        <p>Archeologia del codice del motore di Pharaoh e Caesar III: un ECS dell'antico Egitto su array piatti, una VMT ridotta all'osso fatta di callback, thread logici del secolo scorso e un god object per risparmiare memoria.</p>
+        <div class="pmeta"><span>8 ottobre 2024</span><span>2 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/boss-its-all-gone.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Capo, è tutto perduto</h3>
+        <p>Il seguito di «Dove sono i tuoi bug?»: 16 bug da venerdì sera da motori e giochi reali — scritture out-of-bounds, handle persi su Switch, <code>memset</code> su un tipo non triviale, <code>=!</code> al posto di <code>!=</code> e <code>alloca</code> in un loop. Indovina tu la causa.</p>
+        <div class="pmeta"><span>7 ottobre 2024</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/do-not-copy.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Quello non copiarlo e basta</h3>
+        <p>Passaggio per valore contro <code>const&amp;</code>, allocazioni nascoste su stringhe e vector, <code>reserve</code> e un crollo reale a 10 FPS — il tutto con benchmark su QuickBench.</p>
+        <div class="pmeta"><span>30 settembre 2024</span><span>5 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/strings-in-engines.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Le stringhe nei motori di gioco</h3>
+        <p>Perché <code>std::string</code> è malvista nei motori: C-string e NTBS, SSO e string_view, stringhe sized/pool/arena, stringhe condivise e identificatori, più il parsing dei config in SIMD.</p>
+        <div class="pmeta"><span>5 settembre 2024</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/catch-the-paying-player.html">
+        <span class="tag clay">Game design</span>
+        <h3>Prendi il giocatore, pagante o no…</h3>
+        <p>I dark pattern di monetizzazione nei giochi: ricompense giornaliere, valuta premium, loot box, power creep, time gate e il framework onnicomprensivo MINDSPACE — come gli studi giocano sulla psicologia dei giocatori.</p>
+        <div class="pmeta"><span>15 agosto 2024</span><span>16 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/bioshock-infinite-lessons.html">
+        <span class="tag clay">Game design</span>
+        <h3>Cosa possiamo imparare dal vecchio BioShock: Infinite?</h3>
+        <p>Lezioni di game design da BioShock: Infinite: il principio di chiarezza, narrativa fissa ed emergente, l'illusione della scelta e la narrazione a strati di Ken Levine — e come uno sparatutto lineare rompe la quinta parete.</p>
+        <div class="pmeta"><span>24 luglio 2024</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/twenty-cores-not-enough.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>E 20 core ancora non bastano</h3>
+        <p>Undici tecniche di ottimizzazione C++ da motori in produzione: cache warming, dispatch a compile time, loop unrolling, signed/unsigned e corrispondenza dei tipi, isolamento degli hotpath, SIMD, prefetch, constexpr e lock-free — con benchmark e storie di guerra.</p>
+        <div class="pmeta"><span>18 luglio 2024</span><span>27 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/fistful-of-achievements.html">
+        <span class="tag clay">Game design</span>
+        <h3>Per un pugno di achievement</h3>
+        <p>La psicologia delle meccaniche di collezione nei giochi: dominanza, socializzazione, l'effetto del set incompleto e l'invidia; i tipi di collezioni per disponibilità; achievement ed equipaggiamento come collezioni.</p>
+        <div class="pmeta"><span>28 giugno 2024</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/last-of-deus-ex.html">
+        <span class="tag clay">Game design</span>
+        <h3>L'ultimo dei Deus Ex</h3>
+        <p>Uno sguardo ai livelli di Deus Ex: Mankind Divided — il Dawn Engine, lo stile visivo nero e oro, l'attenzione ai dettagli, la variabilità contro la storia e la combinatoria delle meccaniche immersive-sim.</p>
+        <div class="pmeta"><span>23 giugno 2024</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/corridors-tell-no-tales.html">
+        <span class="tag clay">Game design</span>
+        <h3>I corridoi non raccontano storie</h3>
+        <p>Come l'architettura e il level design raccontano una storia, con BioShock come esempio: corridoi e ombre, magneti visivi, la storia congelata, la geometria tarata sulle caratteristiche dei nemici e un pizzico di feng shui.</p>
+        <div class="pmeta"><span>9 maggio 2024</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/miss-old-game-mechanics.html">
+        <span class="tag clay">Game design</span>
+        <h3>Mi mancano le meccaniche dei vecchi giochi</h3>
+        <p>Un brontolio sulle meccaniche perdute dei vecchi giochi: obiettivi chiari, design sistemico, livelli basati sul comportamento, i livelli dei nemici, l'apprendimento attraverso l'interazione, ricompensa e punizione, il karma e i muri invisibili.</p>
+        <div class="pmeta"><span>21 aprile 2024</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/red-barrel-problem.html">
+        <span class="tag clay">Game design</span>
+        <h3>Il problema del barile rosso</h3>
+        <p>Cos'è un «barile rosso» nel game design: come i barili esplosivi sono diventati un cliché degli sparatutto e perché le meccaniche ereditate accumulano domande e alla fine restano inutilizzate dai giocatori.</p>
+        <div class="pmeta"><span>27 marzo 2024</span><span>4 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cpp-in-gamedev.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Cos'è il C++ nel gamedev?</h3>
+        <p>Perché il gamedev è legato al C++ e come il linguaggio vive dentro un motore su tre livelli: il number-crunching hardcore, il C++ «ordinario» con script e hot-reload, e un metalivello con reflection e generazione di codice.</p>
+        <div class="pmeta"><span>25 febbraio 2024</span><span>11 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/what-else-to-read-game-programmer.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Cos'altro dovrebbe leggere un programmatore di giochi?</h3>
+        <p>Una lista di approfondimento: Joel on Software, Blood, Sweat, and Pixels, il codice sorgente di Doom 3, MISRA C++, EASTL, daScript, i talk della GDC e i blog che vale la pena leggere.</p>
+        <div class="pmeta"><span>15 febbraio 2024</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/what-to-read-game-programmer.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Cosa dovrebbe leggere un programmatore di giochi?</h3>
+        <p>Una lista di libri, blog e repository per un programmatore di giochi: da Code Complete ed Effective C++ a Game Engine Architecture, Game AI Pro, la GDC e le awesome-list su GitHub.</p>
+        <div class="pmeta"><span>11 febbraio 2024</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/need-own-game-engine.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Perché [non] ti serve un motore di gioco tutto tuo</h3>
+        <p>Perché studi e indie costruiscono il proprio motore invece di usare Unreal/Unity: quanto costa, quanto è difficile, l'esperienza diretta con Frostbite, Unity e Dagor — e perché la tecnologia su misura fa avanzare l'industria.</p>
+        <div class="pmeta"><span>24 dicembre 2023</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/swizzle-cpp.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>La magia dello swizzle degli shader in C++</h3>
+        <p>Implementare lo swizzle (vec.xxy, vec.zx, vec.rgb) in C++ con union e template: da una prima versione copia-incollata a un'unica soluzione constexpr, un bug con l'operator= di default e benchmark contro glm e CxxSwizzle.</p>
+        <div class="pmeta"><span>10 dicembre 2023</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/gamedev-programmer.html">
+        <span class="tag clay">Mestiere</span>
+        <h3>Sei sicuro di voler diventare un programmatore nel gamedev?</h3>
+        <p>Uno sguardo onesto dall'interno: cosa fanno davvero i programmatori nel gamedev, i colloqui, gli straordinari, i motori e le loro scuole, le tradizioni degli studi, i designer — e perché ne vale comunque la pena.</p>
+        <div class="pmeta"><span>19 novembre 2023</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/not-unity-alone.html">
+        <span class="tag">Strumenti</span>
+        <h3>Non di sola Unity…</h3>
+        <p>Un giro tra 50+ motori e framework di gioco oltre Unity: da nCine, RayLib e SDL2 a Godot, CryEngine, Unreal e DagorEngine — link, linguaggi, licenze e note di prima mano.</p>
+        <div class="pmeta"><span>4 novembre 2023</span><span>15 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cover-generation.html">
+        <span class="tag clay">Game design</span>
+        <h3>Generazione procedurale delle coperture nei giochi</h3>
+        <p>Generare automaticamente i punti di copertura per gli NPC dalla geometria del livello: l'attraversamento dei bordi della navmesh, i raypick, la scrematura dei candidati e la valutazione delle coperture a runtime. Esempi dal 4A Engine.</p>
+        <div class="pmeta"><span>24 ottobre 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/pharaoh-map-rendering.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Come viene disegnata la mappa in Pharaoh</h3>
+        <p>L'algoritmo di rendering della mappa isometrica, della città e delle animazioni in Pharaoh: diagonal-path e zig-zag, l'ordinamento per profondità, i layer e il formato originale della mappa.</p>
+        <div class="pmeta"><span>17 ottobre 2023</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/where-are-your-bugs.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Dove sono i tuoi bug?</h3>
+        <p>Una raccolta di bug selvaggi da motori reali: un punto e virgola mancante in Unity, un <code>memset</code> eliminato dal compilatore, race sui bitfield in CryEngine, il most vexing parse e un'altra dozzina — trova il bug da solo.</p>
+        <div class="pmeta"><span>30 settembre 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/private-but-want-public.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Quando è private ma vorresti tanto public</h3>
+        <p>Testare i membri privati di una classe C++ senza toccare gli header: da 100+ friend e #define private public a un hack con i template che scambia un tipo puntatore-a-membro.</p>
+        <div class="pmeta"><span>21 settembre 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/switch-sdk-three-sin.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Perché l'SDK di Switch ha tre funzioni sin diverse?</h3>
+        <p>Facendo il porting di giochi su Nintendo Switch ho trovato tre implementazioni di sin nell'SDK — ed ecco cosa ha mostrato il disassemblato per -O1, -O3 -math:precise e -O3 -math:fast.</p>
+        <div class="pmeta"><span>11 giugno 2023</span><span>8 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/enum-name-runtime.html">
+        <span class="tag">Programmazione anormale</span>
+        <h3>Il nome di un enum C++ a runtime</h3>
+        <p>Ottenere il nome di un tipo e i valori di un enum a runtime in C++ senza RTTI — via __PRETTY_FUNCTION__, template e magia constexpr.</p>
+        <div class="pmeta"><span>7 novembre 2022</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/should-players-be-hand-held.html">
+        <span class="tag clay">Game design</span>
+        <h3>Bisogna tenere i giocatori per mano?</h3>
+        <p>Tecniche di level design da Witcher 3, Zelda e Metro Exodus — guidare i giocatori senza portarli per mano.</p>
+        <div class="pmeta"><span>aprile 2025</span><span>10 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/spinlocks.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Non c'è fretta… (sugli spinlock)</h3>
+        <p>Implementazioni di spinlock in C++ — dal TAS ingenuo al ticket spinlock — con benchmark, cache miss e le sfumature della prioritizzazione dei thread.</p>
+        <div class="pmeta"><span>27 settembre 2022</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/cache-pollution.html">
+        <span class="tag gold">Prestazioni</span>
+        <h3>Cache inquinata? Fai scorta di test</h3>
+        <p>Come cache, associatività, coerenza e allineamento dei dati influenzano le prestazioni — con benchmark.</p>
+        <div class="pmeta"><span>9 settembre 2022</span><span>12 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/how-caesar-draws-city.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: estrarre le texture</h3>
+        <p>Il formato texture .sg2/.555, la palette RGB555, IDA e Hex-Rays — e come un hobby è diventato un remake. Parte 1.</p>
+        <div class="pmeta"><span>5 maggio 2014</span><span>Parte 1</span><span>14 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/caesar3-rendering.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: il rendering della città</h3>
+        <p>Il formato della mappa, la selezione dei tile e l'ordine di disegno, il rendering della città. Parte 2.</p>
+        <div class="pmeta"><span>15 maggio 2014</span><span>Parte 2</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/caesar3-game-logic.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: la logica di gioco</h3>
+        <p>La simulazione dei cittadini, gli spostamenti, le code di eventi.</p>
+        <div class="pmeta"><span>9 giugno 2014</span><span>Parte 3</span><span>18 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/caesar3-generation.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: la generazione del mondo</h3>
+        <p>La generazione procedurale del mondo e delle mappe.</p>
+        <div class="pmeta"><span>23 luglio 2014</span><span>Parte 4</span><span>6 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/caesar3-city-model.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: il modello della città</h3>
+        <p>Il modello interno della città: dati, layer, stato.</p>
+        <div class="pmeta"><span>15 settembre 2014</span><span>Parte 5</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="../../en/articles/caesar3-part6.html">
+        <span class="tag">Reverse engineering</span>
+        <h3>Reverse engineering di Caesar III: il game loop</h3>
+        <p>Il calcolo di una giornata della città: il loop di simulazione, gli dèi, l'umore dei cittadini, le tasse, la salute e le strutture dati.</p>
+        <div class="pmeta"><span>20 ottobre 2014</span><span>Parte 6</span><span>20 min</span></div>
+      </a>
+    </li>
+  </ul>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — creato e ospitato su GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://boosty.to/dalerank">Boosty</a> ·
+      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
