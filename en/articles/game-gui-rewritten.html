@@ -6,6 +6,7 @@
 <meta name="description" content="The architecture of a game UI and why it gets rewritten from project to project: a control tree as Composite, properties with reflection, decoupling from game code via bindings, prototype templates long before Unity Prefab, three levels of message handlers, shape-based hit testing, synchronous messages, layout and 9-slice, integer coordinates, a Bridge over the renderer, text and styles as CSS, the pain of localization, SDF fonts, effects, and diegetic UI (Dead Space, Doom, Metro). Part 1." />
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/game-gui-rewritten.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/game-gui-rewritten.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/game-gui-rewritten.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
@@ -14,7 +15,7 @@
 <header class="topbar"><div class="wrap nav">
   <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
   <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
-  <div class="actions"><span class="lang"><a href="../../articles/game-gui-rewritten.html">RU</a><i>/</i><a class="on" href="game-gui-rewritten.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+  <div class="actions"><span class="lang"><a href="../../articles/game-gui-rewritten.html">RU</a><i>/</i><a class="on" href="game-gui-rewritten.html">EN</a><i>/</i><a href="../../it/articles/game-gui-rewritten.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
   <div class="article-head"><span class="tag">Abnormal programming</span><h1>Why game GUIs get rewritten (Part 1)</h1><div class="ameta"><span>Jun 16, 2026</span><span>22 min</span></div></div>
