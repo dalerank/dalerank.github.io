@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guida sul campo alle STL degli altri — dalerank</title>
+<meta name="description" content="Un giro tra le librerie C++ «standard» alternative usate negli studi di gioco e nelle grandi aziende: EASTL e le sue best practice, SmallVector/DenseMap di LLVM, Folly e l'anatomia di fbstring (SSO, copia eager, COW e l'accoppiata con jemalloc), boost flat_map, i container serializzabili di Zmeya (un blob senza unpacking), Stlab di Adobe e il value-oriented programming con copy-on-write — perché è nata ciascuna e dove ci si può far male." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/foreign-stl-guide.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/foreign-stl-guide.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/foreign-stl-guide.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="../../en/articles/index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/foreign-stl-guide.html">RU</a><i>/</i><a href="../../en/articles/foreign-stl-guide.html">EN</a><i>/</i><a class="on" href="foreign-stl-guide.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Programmazione anormale</span><h1>Guida sul campo alle STL degli altri</h1><div class="ameta"><span>6 luglio 2026</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/foreign-stl-guide/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Spero che ti sia piaciuto l'articolo sul <a href="console-memory.html">lavoro con la memoria sulle console</a>, dove ognuno pedalava sulla bicicletta che si era inventato da solo; lascia che ora ti racconti dello zoo di quelle che ormai sono le librerie standard. Standard all'interno di un singolo studio o azienda, intendiamoci, perché quello della porta accanto avrà il suo standard standard. La parte divertente è che la voglia di avvitare l'ennesimo sonaglio alla propria bicicletta cresce solo più forte man mano che l'azienda diventa più grande, quindi quando entri in uno studio di gioco c'è una possibilità molto concreta che la sua STL standard sia non standard, incapsulata, o bandita del tutto dallo stile di codifica.</p>
+    <p>EA, Facebook, Google, Adobe, LLVM e una manciata di aziende più piccole spendono decenni-persona alla ricerca della risposta alla domanda fondamentale sulla vita, l'universo e tutto quanto — «perché <code>std::</code> è lento, imprevedibile e mangia-memoria». Come per l'articolo precedente, non ti servirà conoscere lo standard a memoria; basta capire cos'è un puntatore, in cosa un vector differisce da un albero, e perché un cache miss è costoso. Da lì passerò in rassegna le varie librerie standard e dirò due parole su ciascuna — cos'è, perché è nata, e dove ci si può far male — perché quest'ultimo punto è esattamente quello che i «venditori» e gli evangelisti degli studi tendono a dimenticare quando ti raccontano quanto sia tutto bello, leggero e in stile C++20.</p>
+    <h2>EASTL e le sue best practice</h2>
+    <img src="../../assets/articles/foreign-stl-guide/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Cominciamo dal pezzo forte e dalla più standard di tutte le STL standard da gioco. EASTL è un'implementazione alternativa di Electronic Arts, nata ai tempi in cui persino le STL dei compilatori erano di qualità variabile e spesso dubbia, mentre un gioco doveva essere compilato per una dozzina di piattaforme contemporaneamente. Vive per lo più dove c'è un budget rigido di memoria e di frame — console, mini-engine, e ogni sorta di codice quasi-embedded e vicino al gioco. Il suo valore principale non è la velocità in sé (anche se è davvero veloce, e alcuni dei suoi algoritmi standard sono scritti più velocemente degli equivalenti STL), ma il controllo sulle allocazioni e un comportamento ugualmente prevedibile su ogni piattaforma. (<a href="https://github.com/electronicarts/EASTL" target="_blank" rel="noopener">https://github.com/electronicarts/EASTL</a>) <br/>L'uniformità è un altro tratto distintivo di questa libreria, ma nemmeno quello ti garantisce di ottenere un comportamento identico letteralmente ovunque — nella maggior parte dei casi lo otterrai, comunque.</p>
+    <p>Per ottenere questo, EASTL ha ripensato alcune cose di base, e ora l'allocatore è un cittadino a pieno titolo anziché un ripensamento a livello di template come nello standard, e scriversi il proprio allocatore è facile e piacevole. Ha aggiunto container a capacità fissa che tengono la loro memoria proprio dentro l'oggetto e non vanno mai sullo heap. In breve, la maggior parte delle idee a cui il comitato è arrivato strisciando solo con C++17 vivono qui fin dall'anno 2000-e-qualcosa.</p>
+<pre style="margin:1.4rem 0"><code>// fixed_vector: 64 elementi vivono proprio dentro l'oggetto, zero allocazioni sullo heap
+eastl::fixed_vector&lt;Entity, 64, /*overflow=*/false&gt; entities;</code></pre>
+    <p>La libreria viene con una raccolta di <a href="https://eastl.docsforge.com/master/best-practices/#summary" target="_blank" rel="noopener">EASTL Best Practices</a>, che è buona proprio perché non è l'ennesimo insieme di slogan di marketing ma regole «fai così, non fare cosà» conquistate a fatica, e molti dei consigli sulle capacità fisse e sull'evitare allocazioni nascoste sono utili al di là di EASTL stessa. Quello che di sicuro non dovresti fare è trascinare tutto questo nel comune codice applicativo o di server, dove non c'è alcun problema di memoria e conta la compatibilità con l'ecosistema <code>std::</code>.</p>
+    <p>E portare EASTL in un progetto che già vive benissimo sullo standard, per una vaga sensazione che «sia più veloce», significa pagare con un anno di integrazione e riaddestramento del team per un guadagno che con ogni probabilità non sentirai nemmeno. Farà male, quindi pensaci tre volte.</p>
+    <p>Gli sviluppatori di compilatori come LLVM, con il suo <code>SmallVector</code>, <code>DenseMap</code>, <code>StringMap</code> e affini, soffrono dello stesso problema di allocazione sullo stack. Formalmente è codice del compilatore stesso, ma le idee sono universali per ovunque vivano milioni di piccoli container di breve durata, e LLVM ha progettato tutto esattamente per quello. <code>SmallVector<T, N></code> tiene i primi N elementi proprio dentro di sé, mentre <code>DenseMap</code> è una tabella hash a indirizzamento aperto che sta come un blocco denso e quindi va d'accordo con la cache.</p>
+<pre style="margin:1.4rem 0"><code>// i primi 8 elementi sullo stack, allocazione solo in caso di overflow
+llvm::SmallVector&lt;Instruction*, 8&gt; worklist;</code></pre>
+    <p>La fregatura con tutta questa bellezza e velocità è esattamente la stessa di EASTL: trascinarsi una dipendenza dall'intero LLVM per un paio di container è palesemente eccessivo, e dovresti trascinarti circa un terzo degli header di LLVM, quindi è meglio prendere un'implementazione standalone della stessa idea. Puoi leggere di più <a href="https://llvm.org/devmtg/2014-04/PDFs/LightningTalks/data_structure_llvm.pdf" target="_blank" rel="noopener">qui</a> e <a href="https://llvm.org/docs/ProgrammersManual.html" target="_blank" rel="noopener">qui</a>.</p>
+    <h2>Folly</h2>
+    <img src="../../assets/articles/foreign-stl-guide/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p><a href="https://github.com/facebook/folly" target="_blank" rel="noopener">Folly</a> è un grande insieme open-source di librerie dell'azienda faccia-da-libro, con i suoi container, stringhe, macchinari asincroni e utility. È tutto ottimizzato per servizi ad alto carico, dove il risparmio su allocazioni e cache miss è moltiplicato da una scala d'uso gigantesca, ed è per questo che ospita alcune delle tabelle hash più veloci <code>folly::F14</code>, oltre a stringhe general-purpose molto veloci <a href="https://youtu.be/kPR8h4-qZdk" target="_blank" rel="noopener"><code>fbstring</code></a>, container riallocabili <code>fbvector</code>, e il senza-peso <code>small_vector</code>.</p>
+    <p>La logica per tutto lo zoo è la stessa: «ne abbiamo miliardi, ottimizza le code delle distribuzioni e non andare in memoria», ma il guaio è che Folly stessa è pesante da compilare e le sue dipendenze sono tarate sulla sua infrastruttura, quindi tirare dentro circa metà di essa per un singolo container è come comprare un bilico a 18 ruote per trasportare un cartone di latte — certo, puoi, i camion sono così... sempre comodo averne uno in giro per la fattoria.</p>
+    <p>Vale anche la pena guardare il talk di Nicholas Ormrod dal CppCon 2016 su <code>folly::fbstring</code> — è probabilmente il modo migliore per capire perché la gente di Menlo Park ha seppellito le stringhe C++ e ne ha scritte 8! (otto) proprie. L'idea principale di <code>folly::fbstring</code> è che una «stringa» sono tre strutture dati diverse che fingono di essere un unico tipo, e quale di esse stia lavorando in questo momento dipende esclusivamente dalla lunghezza.</p>
+    <p>L'oggetto stesso occupa 24 byte su un sistema a 64 bit, e quei 24 byte sono una union che, a seconda della categoria, viene interpretata o come un array di caratteri proprio dentro l'oggetto, o come una struct di puntatore, dimensione e capacità. La categoria è memorizzata nei due bit alti dell'ultimo byte dell'oggetto, che coincide con il byte alto del campo <code>capacity</code>, e le capacità reali delle stringhe non crescono mai fino a valori che usano quei due bit, quindi possono essere requisiti per il tag gratuitamente.</p>
+<pre style="margin:1.4rem 0"><code>oggetto fbstring, 24 byte (little-endian, 64 bit):
+small:   [ c0 c1 c2 ... c22 | spare ]   // stringa proprio qui, 0 allocazioni
+                                  └─ (23 - size); quando pieno = 0 = '\0'
+medium/  [ char* data | size_t size | size_t capacity ]
+large:                                           └─ 2 bit alti = tag categoria</code></pre>
+    <p>La prima modalità è per le stringhe corte, la stessa SSO (small string optimization): finché una stringa entra in 23 byte, la capacità libera rimanente è memorizzata nell'ultimo byte, e quando la stringa è riempita fino all'orlo (tutti i 23 caratteri usati), quel resto è zero — e zero fa doppio gioco come terminatore null. Cioè, uno stesso byte funziona sia da contatore di spazio libero sia da carattere terminatore di una stringa C, e grazie a questo riesci a stipare onesti 23 caratteri più un terminatore in 24 byte.</p>
+    <p>La seconda modalità è per le stringhe medie, all'incirca da 24 a 255 byte. Qui non puoi farne a meno dello heap, quindi i caratteri stanno in un normale buffer allocato dall'allocatore, posseduto dalla sola stringa. Copiare una stringa del genere è un'onesta copia eager.</p>
+    <p>Un altro punto che molti dimenticano è che Folly è molto strettamente in amicizia con jemalloc e non si fa scrupolo a usarlo. Invece di richiedere ciecamente esattamente <code>size</code> byte, chiede all'allocatore quanto è effettivamente disposto a concedere per la richiesta e prende l'intera capacità reale, e quando cresce cerca di estendere il blocco sul posto tramite <code>xallocx</code> così da non copiare i dati avanti e indietro. Questo è uno dei motivi per cui <code>fbstring</code> vince notevolmente proprio in tandem con jemalloc, e perché alcuni dei vantaggi svaniscono al di fuori di quell'accoppiata.</p>
+<pre style="margin:1.4rem 0"><code>fbstring (24 byte, modalità medium: 24..255 caratteri)
+┌───────────────────┬───────────────┬───────────────────────┐
+│  char*  data      │  size_t size  │  size_t capacity      │
+└─────────┬─────────┴───────────────┴───────────────────────┘
+          │                                 ▲
+          │ proprietà esclusiva             │ afferrata TUTTA la capacità
+          │ (copia eager alla copia)        │ reale, non esattamente size
+          ▼                                 │
+   heap (buffer da jemalloc)                │
+   ┌──────────────────────────────┬─────────┴──────────┐
+   │ 'H''e''l''l''o' ... '\0'     │  coda libera       │
+   └──────────────────────────────┴────────────────────┘
+   │◄────── size richiesta ──────►│                    │
+   │◄────── usable size ottenuta (jemalloc) ──────────►│</code></pre>
+    <p>La terza modalità scatta per le stringhe super-lunghe da 256 byte in su, quando comincia la danza del copy-on-write, perché la quota di tali stringhe di solito è sotto il 5%, eppure possono occupare fino al 25% di tutta la memoria delle stringhe. Appena prima dei caratteri nello heap c'è un piccolo header di servizio con un contatore di riferimenti atomico, e copiare una stringa del genere non copia i caratteri ma incrementa il contatore di uno.</p>
+    <p>La copia vera è rimandata alla prima mutazione, e non appena qualcuno sta per modificare il buffer condiviso, la stringa si fa la propria copia e da lì in avanti cambia quella. La logica qui è che le stringhe corte sono nomi, chiavi e token — ce ne sono milioni e un'allocazione per ciascuno ammazzerebbe tutto — mentre le stringhe lunghe sono costose da copiare, quindi è più conveniente condividerle per riferimento.</p>
+<pre style="margin:1.4rem 0"><code>Far crescere una stringa senza rilocare i dati
+─────────────────────────────────────────────
+   serve più spazio:
+        fbstring ──── xallocx(estendi sul posto) ──► jemalloc
+                                                       │
+                     ┌─────────────────────────────────┤
+                     ▼                                 ▼
+           estensione riuscita                 non ha funzionato (il blocco
+           stesso buffer, i dati               vicino è occupato) → onesta
+           NON cambiano, nessuna copia         nuova allocazione + copia
+
+   * fuori da jemalloc questi trucchi (usable size, xallocx) non esistono —
+     e parte del vantaggio di fbstring semplicemente svanisce</code></pre>
+    <p>Il prezzo per la bellezza si nasconde proprio nella terza modalità: il copy-on-write è buono in un mondo a singolo thread, ma in uno multithread l'incremento e il decremento atomici del contatore di riferimenti a ogni copia e distruzione sono sincronizzazione dal nulla, e per i thread costa spesso più che se avessi semplicemente copiato il buffer e te ne fossi dimenticato.</p>
+    <p>Ecco perché la COW per le stringhe nel C++ moderno è considerata più un antipattern (lo standard l'ha di fatto bandita in <code>std::string</code> a partire da C++11), e <code>fbstring</code> stessa nel tempo si è fatta crescere una barba di avvertenze, quindi devi stare attento se un'implementazione del genere ti sparerà a un piede durante la sincronizzazione.</p>
+    <h2>Boost e flat_map</h2>
+    <p>Conoscete tutti <a href="https://www.boost.org/doc/" target="_blank" rel="noopener">Boost</a> e il suo evangelista su Habr <a href="https://habr.com/ru/users/antoshkka/" target="_blank" rel="noopener">@antoshkka</a> — un enorme, direi persino su scala universale, poligono di prova per nuove idee, dal quale le migliori alla fine passano allo standard; c'è lì un container associativo esotico, <a href="https://cpp-optimizations.netlify.app/boost_flatmap/" target="_blank" rel="noopener"><code>flat_map</code></a>. Ha l'interfaccia di <code>std::map</code>, ma dentro è un vector ordinato, quindi sta come un unico blocco denso in memoria, e la ricerca binaria non salta tra i nodi di un albero rosso-nero come in quello ordinario. Questo si è rivelato così ovviamente utile che solo in C++23 è arrivato allo standard come <code>std::flat_map</code>, e qui dovresti ringraziare gli autori di Boost, perché una frazione enorme di ciò che è utile in esso prima o poi diventa standard.</p>
+<pre style="margin:1.4rem 0"><code>boost::container::flat_map&lt;int, Value&gt; m; // un vector ordinato dentro</code></pre>
+    <p>Questo container è buono dove il dizionario viene letto spesso e cambiato di rado, cioè ogni sorta di config, tabelle di riferimento, lookup table. Ma sotto un flusso costante di inserimenti e cancellazioni nel mezzo comincia a perdere, perché un inserimento è uno shift O(N) della coda, e i riferimenti e gli iteratori agli elementi successivi sono instabili.</p>
+    <h2>Zmeya e i container serializzabili</h2>
+    <img src="../../assets/articles/foreign-stl-guide/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Zmeya è una <a href="https://github.com/SergeyMakeev/Zmeya" target="_blank" rel="noopener">libreria di container STL-like</a> progettati in modo che possano essere salvati come un unico blob e poi usati senza unpacking. Dentro, invece dei puntatori ci sono offset relativi, così il blob può essere posizionato a qualsiasi indirizzo e rimane valido.</p>
+    <p>Questa meraviglia è usata per il caricamento di asset, livelli e config. E puoi salvare una struttura su file, poi all'avvio semplicemente mapparla in memoria e lavorarci subito senza alcuna deserializzazione — è esattamente quel vecchio modello degli anni '90, «cuoci il livello in un archivio e mettilo in memoria a un indirizzo», solo che ora non è un livello ma un pezzo di esso. Anche se ho visto maghi riuscire a dare in pasto al serpente livelli decenti da 10-15 megabyte, e a quanto pare funzionava pure.</p>
+<pre style="margin:1.4rem 0"><code>struct Monster {
+    zm::String          name;
+    zm::Array&lt;int32_t&gt;  loot;       // id degli oggetti
+    zm::Pointer&lt;Monster&gt; next; // link a un vicino sul livello
+};
+
+struct Level {
+    zm::String          title;
+    zm::Array&lt;Monster&gt;  monsters;
+    zm::HashMap&lt;zm::String, int32_t&gt; spawnPoints;
+};</code></pre>
+    <p>Poi viene la fase di build: qui lavora un <code>BlobBuilder</code>, che alloca gli oggetti dentro il futuro blob, dispone i dati e riempie da solo gli offset corretti, così non devi più contare i byte a mano.</p>
+<pre style="margin:1.4rem 0"><code>// La costruzione del blob avviene una volta sola, sulla build farm
+zm::BlobBuilder builder;
+zm::BlobPtr&lt;Level&gt; level = builder.allocate&lt;Level&gt;();
+builder.copyTo(level-&gt;title, "Catacombs");
+
+// un array per 2 mostri
+zm::BlobPtr&lt;zm::Array&lt;Monster&gt;&gt; monsters = builder.allocateArray(level-&gt;monsters, 2);
+builder.copyTo(monsters[0].name, "Skeleton");
+builder.copyTo(monsters[0].loot, { 101, 102 });
+builder.copyTo(monsters[1].name, "Ghoul");
+builder.copyTo(monsters[1].loot, { 205 });
+
+// un riferimento relativo da un oggetto blob a un altro
+monsters[0].nextInWave = &amp;monsters[1];
+builder.copyTo(level-&gt;spawnPoints, { {"north", 0}, {"south", 1} });
+
+// l'output è solo un blocco piatto di memoria che puoi scrivere su file
+std::vector&lt;char&gt; bytes = builder.finalize&lt;std::vector&lt;char&gt;&gt;();
+writeFile("catacombs.level", bytes);</code></pre>
+    <p>Ed ecco per cosa era stato avviato tutto quanto. Il caricamento stesso, in cui non c'è parsing, non c'è percorrere l'albero degli oggetti, non c'è sistemare i puntatori — puoi semplicemente mappare il file in memoria a un qualsiasi indirizzo e fare il cast dell'inizio del buffer alla struttura radice. Dopodiché puoi usarlo come se l'oggetto fosse vissuto tutto il tempo in un normale heap. Non è bello?!!</p>
+<pre style="margin:1.4rem 0"><code>// Caricamento — di fatto gratis
+std::vector&lt;char&gt; bytes = readFile("catacombs.level");
+const Level* level = reinterpret_cast&lt;const Level*&gt;(bytes.data());
+
+// niente new, niente parsing — basta leggere
+printf("Level: %s\n", level-&gt;title.c_str());
+for (const Monster&amp; m : level-&gt;monsters) {
+    printf("  %s, loot count = %zu\n", m.name.c_str(), m.loot.size());
+}
+
+const Monster* second = level-&gt;monsters[0].nextInWave.get();
+int spawn = level-&gt;spawnPoints["north"];</code></pre>
+    <p>Un unico difetto... tutto questo funziona solo in un verso, per la lettura. Il blob è immutabile; i suoi container sono progettati sull'assunto che i dati siano assemblati una volta sola in fase di build, e a runtime tu solo leggi. Appena hai bisogno di aggiungere dinamicamente mostri, ridimensionare un array, o appendere chiavi alla tabella hash, tutto il beneficio del caricamento istantaneo svanisce, perché gli offset relativi non sono progettati per rimescolare dati in un blob vivo. Ecco perché Zmeya e cose simili (FlatBuffers, Cap'n Proto) sono buone specificamente per dati read-only.</p>
+    <h2>Stlab e i dati value-oriented</h2>
+    <img src="../../assets/articles/foreign-stl-guide/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p><a href="https://stlab.adobe.com/" target="_blank" rel="noopener">Stlab di Adobe</a> riguarda più un'intera direzione (VOP, value-oriented programming) caratteristica specificamente del software digeribile-da-Adobe. L'unità di base qui diventa un valore che viene liberamente copiato, confrontato e spostato, anziché un oggetto con identità e un mucchio di riferimenti ai suoi vicini. Cioè, prima di trascinare le loro idee da te, devi prima imparare a pensare «un po'» in un diverso paradigma di sviluppo.</p>
+    <p>Tutto il loro software è costruito su questa filosofia a parte. Come dicevo sopra, un valore è ora un oggetto, e meno puntatori significa che è più facile disporre i dati densamente, più facile ragionare sulla proprietà, e non generi allocazioni accidentali e <code>shared_ptr</code>. Per capire contro cosa combatta in generale il value-oriented programming, bisogna guardare come lo stesso compito viene risolto «classicamente». Supponiamo di avere un insieme di oggetti eterogenei che vanno disegnati, e uno sviluppatore OOP con più probabilità imposterebbe una classe base con un metodo virtuale e stiperebbe i discendenti in un vector di puntatori.</p>
+<pre style="margin:1.4rem 0"><code>// Classico: classe base + metodi virtuali
+struct Shape {
+    virtual ~Shape() = default;
+    virtual void draw(std::ostream&amp;) const = 0;
+};
+
+struct Circle : Shape {
+  void draw(std::ostream&amp; o) const override {
+    o &lt;&lt; "circle";
+  }
+};
+
+// e un container di puntatori allo heap
+std::vector&lt;std::shared_ptr&lt;Shape&gt;&gt; document;</code></pre>
+    <p>Da questo momento in poi, puntatori e proprietà condivisa prendono dimora nel nostro codice, ma ogni oggetto vive in un punto casuale dello heap, e copiare il vector copia i puntatori, non gli oggetti, e ora otteniamo due vector che condividono uno stesso stato mutabile. Inoltre, <code>Circle</code> è obbligato a sapere in anticipo di essere uno <code>Shape</code> — cioè, il tipo di dato è saldato a forza alla gerarchia in cui è pensato per essere usato.</p>
+    <p>Il VOP ti permette di nascondere il polimorfismo, e un oggetto non deve ereditare da nulla per essere «disegnabile» — basta che per esso esista una funzione libera <code>draw</code>. E puoi nascondere oggetti di tipo diverso dietro un'unica interfaccia tramite type erasure, avvolgendoli in un normale tipo valore.</p>
+<pre style="margin:1.4rem 0"><code>// VOP: object_t è un VALORE, copiato come un int, senza alcuna ereditarietà
+
+class object_t {
+public:
+    template &lt;typename T&gt;            // accetta QUALSIASI tipo che abbia draw(T, os)
+    object_t(T x) : self_(std::make_shared&lt;model&lt;T&gt;&gt;(std::move(x))) {}
+    friend void draw(const object_t&amp; x, std::ostream&amp; out) {
+        x.self_-&gt;draw_(out);         // il dispatch è nascosto dentro
+    }
+
+private:
+    struct concept_t {
+        virtual ~concept_t() = default;
+        virtual void draw_(std::ostream&amp;) const = 0;
+    };
+
+    template &lt;typename T&gt;
+    struct model final : concept_t {
+        model(T x) : data_(std::move(x)) {}
+        void draw_(std::ostream&amp; out) const override { draw(data_, out); }
+        T data_;
+    };
+    std::shared_ptr&lt;const concept_t&gt; self_;   // nota: const
+};</code></pre>
+    <p>Il trucco è che <code>object_t</code> si comporta come un semplice valore, mentre tutto il trambusto con le chiamate virtuali è nascosto dentro e non riguarda l'utente. Ora non è un vector di puntatori ma un vector di valori, e puoi metterlo in un altro container — e non necessariamente un vector, in qualsiasi posto — condividendo la proprietà.</p>
+<pre style="margin:1.4rem 0"><code>using objects_t = std::vector&lt;object_t&gt;;
+objects_t objects;
+objects.emplace_back(Circle{});
+objects.emplace_back(42);          // un int è disegnabile se c'è una draw() per int
+objects.emplace_back(std::string{"hi"});
+objects.emplace_back(objects);     // i figli sono solo un valore</code></pre>
+    <p>Poiché <code>object_t</code> è un valore, la cronologia delle modifiche si fa banalmente: per ricordare uno stato per l'undo, basta copiare il vector in uno stack di versioni, senza trambusto manuale su chi possiede cosa e quando cancellare.</p>
+<pre style="margin:1.4rem 0"><code>using history_t = std::vector&lt;document_t&gt;;
+
+void commit(history_t&amp; h)  { h.push_back(h.back()); } // snapshot dello stato corrente
+void undo(history_t&amp; h)    { h.pop_back(); }          // rollback
+objects_t&amp; current(history_t&amp; h) { return h.back(); }</code></pre>
+    <p>Sorge una domanda ragionevole: «non è costoso copiare tutto il vector a ogni minima cosa?» Ed è qui che sale sul palco la cosa attorno a cui Adobe ha costruito tutta la sua libreria standard. Stlab ha per questo un <code>stlab::copy_on_write<T></code> già pronto, che dall'esterno si comporta come un normale valore, mentre dentro tiene un buffer immutabile condiviso e copia effettivamente i dati solo al momento della prima scrittura.</p>
+    <p>Nota che nell'<code>object_t</code> qui sopra il puntatore è specificamente <code>shared_ptr<const concept_t></code> e le viscere sono immutabili, quindi le copie possono condividerle in sicurezza quanto vogliono, e copiare il documento è solo un incremento dei contatori di riferimenti.</p>
+    <p>Dove questo approccio non andrebbe applicato è nei giochi. Che peccato, era un'idea così bella. Perché metà del tuo mondo è una singola istanza di un oggetto — come l'effettivo «player», o una sedia, o una navmesh — referenziato dall'altra metà del mondo, ed è importante che tutti vedano esattamente quello, non una copia. La semantica di valore è brillantemente adatta ai dati (documenti, frame di undo, snapshot immutabili, pennelli, tratti e azioni).</p>
+    <h2>Saggezza popolare e la guerra per i byte</h2>
+    <p>Il materiale «<a href="http://ithare.com/c-performance-common-wisdoms-and-common-wisdoms/" target="_blank" rel="noopener">C++ Performance: Common Wisdoms and Common "Wisdoms"</a>» è già un vaccino contro il cargo cult e la setta di EASTL. Seziona i comuni consigli su prestazioni e container, <code>STL</code> vs <code>EASTL</code>, e mostra quali di essi sono veri e quali sono «saggezza» tra virgolette ironiche, valida solo per uno specifico compilatore e da tempo ammuffita. Trattarlo come una checklist «fai 1-2-3» è inutile, perché il suo messaggio principale è esattamente l'opposto, nello spirito di pensa e misura da solo.</p>
+    <p>Il talk «<a href="https://youtu.be/35y3OrsKq8c?t=303" target="_blank" rel="noopener">Classes With Many Fields» di Stanislav Dobrovolsky</a> lo affronta dall'altro lato e mostra, su progetti reali come Chromium, Firefox, LLVM, VLC, come si riduca la dimensione di una classe quando ci sono milioni di sue istanze. In gioco ci sono il riordino dei campi, il padding, la spremitura degli <code>enum</code>, i bit field, lo spostamento dei dati rari in una struct separata — quella stessa guerra per ogni byte che un tempo infuriava sulle console, solo che ora sono i browser a combatterla. E allo stesso modo, questo è inutile per una classe di cui ce ne sono tre in tutto il sistema, dove il risparmio sarebbe prossimo allo zero mentre la leggibilità ne soffrirebbe parecchio.</p>
+    <h2>Libri, ovviamente, come faremmo senza di loro</h2>
+    <p>La serie <code>Effective</code> di Scott Meyers, incluso <code>Effective STL</code>, è la base nello spirito di «fai così, non fare cosà», e <code>More C++ Idioms</code> è un catalogo di tecniche come RAII, CRTP e copy-and-swap, molte delle quali vivono proprio dentro STL e Boost. L'unico avvertimento è che <code>Effective STL</code> è datato in alcuni punti, e devi leggerlo con un aggiustamento per ciò che è cambiato in C++11/14/17, altrimenti puoi trascinarti dentro consigli che l'umanità ha già reso superflui.</p>
+    <img src="../../assets/articles/foreign-stl-guide/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>P.S. Se riassumi tutta la raccolta in un unico pensiero, è questo: l'universalità della STL standard è un compromesso che qualcuno paga. Di solito quel qualcuno si rivela essere tu, e paghi con il tempo di frame e a volte il tuo, con il numero di allocazioni e i tuoi weekend liberi, e con la prevedibilità, a volte anche le tue ferie.</p>
+    <p>Per tutti quelli che sono arrivati in fondo alla pagina, un piccolo bonus: ho fissato il prezzo del corso <a href="https://stepik.org/a/251888" target="_blank" rel="noopener">Programmare per Divertimento</a> a 100 rubli — Stepik non mi lascia impostarlo più basso. Quindi se ti va di rinfrescare le tue conoscenze, o magari persino imparare qualcosa di nuovo, fai un salto.</p>
+    <img src="../../assets/articles/foreign-stl-guide/07.jpg" alt="" class="post-image" loading="lazy" />
+    <a class="backlink" href="../../en/articles/index.html">← Tutti gli articoli</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
