@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lo using disobbediente — dalerank</title>
+<meta name="description" content="Perché using namespace e ADL rendono imprevedibile la ricerca dei nomi in C++: argument-dependent lookup e operator&lt;&lt;, dirottare std con un sostituto locale, la verifica della viabilità di una funzione, i ranghi delle conversioni implicite, e perché le funzioni =delete partecipano alla risoluzione degli overload come candidati a tutti gli effetti." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/disobedient-using.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/disobedient-using.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/disobedient-using.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/disobedient-using.html">RU</a><i>/</i><a href="../../en/articles/disobedient-using.html">EN</a><i>/</i><a class="on" href="disobedient-using.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Lo using disobbediente</h1><div class="ameta"><span>20 maggio 2026</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/disobedient-using/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Nell'<a href="../../en/articles/simple-name-lookup.html">articolo precedente</a> ho analizzato come funziona la ricerca qualificata e come <code>using namespace</code> vi partecipi soltanto come ripiego, quando nello scope indicato non ci sono dichiarazioni proprie. Il compilatore prima guarda cosa è dichiarato direttamente nel contesto corrente, e solo in caso di fallimento passa ai nomi mescolati tramite la direttiva <code>using</code>. Lo schema sembrerebbe trasparente e prevedibile: c'è uno scope di ricerca, c'è la priorità delle dichiarazioni esplicite, c'è la «regola delle N dichiarazioni» come assicurazione.</p>
+    <p>Ma non appena passiamo dalle variabili e dalle funzioni a meccanismi più generali nel codice, questa trasparenza comincia subito a incrinarsi — e nel codice più ordinario che ogni sviluppatore scrive fin dai suoi primi giorni di apprendimento. Per le regole del linguaggio possiamo collocare una direttiva <code>using namespace</code> ovunque, ma se qualcosa è dichiarato esplicitamente nello scope nominato dal qualificatore, la ricerca qualificata troverà proprio quella dichiarazione, e solo se non c'è un nome dichiarato esplicitamente il compilatore inizia a considerare i nomi resi visibili tramite <code>using namespace</code>, e così via lungo la catena.</p>
+    <p>Ma qui c'è un punto scivoloso di cui la maggior parte dei manuali e dei corsi tace, aggirando il tema degli operatori. Per esempio, l'operatore di shift a sinistra <code>&lt;&lt;</code> può essere definito in qualsiasi namespace.</p>
+<pre style="margin:1.4rem 0"><code>std::cout &lt;&lt; "hello";</code></pre>
+    <p>In sostanza questo codice corrisponde a una chiamata di funzione, e il compilatore non vi vede nient'altro che</p>
+<pre style="margin:1.4rem 0"><code>operator&lt;&lt;(std::cout, "hello");</code></pre>
+    <p>Ma perché funzioni nel modo in cui lo vediamo ora, la funzione <code>operator&lt;&lt;</code> deve essere trovata nel namespace <code>std</code>, cioè quello di cui in realtà abbiamo bisogno è una chiamata di una forma che in forma pura non esiste:</p>
+<pre style="margin:1.4rem 0"><code>std::operator&lt;&lt;(std::cout, "hello");</code></pre>
+    <p>Ma se guardi la sintassi originale <code>std::cout &lt;&lt; "hello"</code>, il qualificatore <code>std::</code> lì in forma pura non c'è — o meglio c'è, ma solo per l'operando sinistro <code>cout</code>, e formalmente <code>std::</code> non è affatto collegato al nome dell'operatore. Quindi come fa il compilatore a capire dove esattamente cercare l'operatore giusto?</p>
+    <p>La risposta a questa domanda fu proposta da Andrew Koenig all'inizio degli anni '90, e oggi la conosciamo come argument-dependent lookup, o ADL, che fa cercare al compilatore la funzione nei namespace associati ai tipi degli argomenti della chiamata. Ma effettuerà tale ricerca non qualificata solo se non ha trovato nulla di adatto nello scope di ricerca corrente, il che aggiunge grattacapi sia agli sviluppatori dei compilatori sia agli sviluppatori che usano quei compilatori.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    struct A {};
+    void f(A);
+}
+
+int main() {
+    N::A a;
+    f(a);
+}</code></pre>
+    <p>Sulla chiamata <code>f(a)</code>, la ricerca non qualificata del nome <code>f</code> nello scope corrente non trova nulla, abilitando così l'ADL. Il compilatore vede allora che l'argomento <code>a</code> ha tipo <code>N::A</code>, e quindi vede anche il namespace <code>N</code> associato a quella variabile, poi cerca <code>f</code> dentro <code>N</code>, trovando finalmente <code>N::f</code>. Così la chiamata <code>f</code> diventa valida.</p>
+    <p>È anche per questo che funziona la ricerca per l'output su stream: tramite l'argument-dependent lookup (ADL) il compilatore vede che l'argomento sinistro <code>std::cout</code> ha un tipo definito nel namespace <code>std</code>, e vi cerca un <code>operator&lt;&lt;</code> adatto. Ma se la ricerca non qualificata ha trovato una qualsiasi entità — che sia un tipo, una variabile, un template, qualunque cosa — allora l'ADL viene disattivata completamente.</p>
+<pre style="margin:1.4rem 0"><code>typedef int f;
+
+namespace N {
+    struct A {};
+    void f(A);
+}
+
+int main() {
+    N::A a;
+    f(a);
+}</code></pre>
+    <p>Qui la ricerca non qualificata del nome <code>f</code> trova subito <code>typedef int f</code> ed è considerata riuscita, cioè non cerchiamo oltre. Di conseguenza il compilatore interpreta <code>f(a)</code> come un cast funzionale, cioè un tentativo di convertire <code>a</code> in <code>int</code>. E questo è perfettamente corretto dal punto di vista sintattico, ma chiaramente non è ciò che il programmatore si aspettava. È proprio per questo che l'interazione tra la normale ricerca non qualificata e l'ADL porta talvolta a risultati estremamente inattesi, quando una funzione «ovvia» risulta del tutto invisibile al compilatore.</p>
+    <p>Ecco un altro esempio scivoloso (sembra sicuro, vero?):</p>
+<pre style="margin:1.4rem 0"><code>namespace std {
+    struct ostream {
+        ostream&amp; operator&lt;&lt;(const char*) {
+            printf("world");
+            return *this;
+        }
+    };
+
+    ostream cout;
+}
+
+using namespace std;
+int main() {
+    cout &lt;&lt; "hello";
+}</code></pre>
+    <p>Qui il nome <code>std</code> viene trovato dalla ricerca non qualificata e non si riferisce affatto alla libreria standard, bensì al nostro sostituto locale, mentre la scrittura <code>::std::cout</code> punta inequivocabilmente al namespace globale e al vero <code>std</code>.</p>
+    <p>È proprio per questo che la libreria standard usa sempre nomi completamente qualificati con <code>::std::</code> e non si affida alla ricerca non qualificata — come vedi, è troppo facile «dirottarla» con trucchetti locali.</p>
+    <p>Questo esempio mostra vividamente perché occorre sapere quale entità stai usando nel codice. Ma anche se abbiamo indicato inequivocabilmente il namespace, il compilatore deve comunque risolvere il problema di quale specifico candidato di funzione scegliere tra molti overload. Soprattutto se le funzioni possono prendere un numero diverso di argomenti, avere parametri di default o richiedere conversioni implicite.</p>
+    <p>Ed è qui che entra in gioco il concetto di viabilità di una funzione, di cui parleremo più avanti — cos'è e perché è importante nella risoluzione degli overload.</p>
+    <h3>La verifica della viabilità di una funzione</h3>
+    <p>Prima di tutto, la verifica di viabilità valuta se un particolare candidato è adatto alla chiamata con l'insieme dato di argomenti, secondo vari criteri. Per esempio, se abbiamo una funzione che prende due parametri e proviamo a chiamarla con un solo argomento, tale candidato viene automaticamente ritenuto non viabile, e in questo caso il compilatore semplicemente non riuscirà ad abbinare la chiamata alla definizione della funzione, escludendo la variante dalla lista degli overload.</p>
+<pre style="margin:1.4rem 0"><code>// Una funzione con due parametri
+void greet(const std::string&amp; firstName, const std::string&amp; lastName) {
+   cout &lt;&lt; "Hello, " &lt;&lt; firstName &lt;&lt; " " &lt;&lt; lastName &lt;&lt; "!";
+}
+
+int main() {
+    std::string name = "Alice";
+
+    // Un tentativo di chiamare la funzione con un solo argomento
+    // greet(name); // Errore: nessun overload corrispondente
+
+    // La chiamata corretta con due argomenti
+    greet(name, "Smith"); // Funziona: Hello, Alice Smith!
+
+    return 0;
+}</code></pre>
+    <p>Analogamente, i metodi privati di una classe non possono essere scelti come candidati dall'esterno della classe, e anche i costruttori con il modificatore <code>explicit</code> sono presi in considerazione nella verifica, dal momento che richiedono una chiamata esplicita.</p>
+<pre style="margin:1.4rem 0"><code>class Person {
+private:
+    void secretGreet() {
+        std::cout &lt;&lt; "This is a secret greeting!" &lt;&lt; std::endl;
+    }
+
+public:
+    void publicGreet() {
+        std::cout &lt;&lt; "Hello!" &lt;&lt; std::endl;
+    }
+};
+
+int main() {
+    Person p;
+
+    // p.secretGreet(); // Errore: il metodo è inaccessibile
+    p.publicGreet();     // Funziona: il metodo è pubblico
+
+    return 0;
+}</code></pre>
+    <p>Il punto è questo: un costruttore <code>explicit</code> resta un candidato viabile per l'inizializzazione diretta (una chiamata esplicita), ma viene escluso dai candidati nell'inizializzazione per copia e nelle conversioni implicite. Cioè non «richiede sempre una chiamata esplicita» nel senso in cui un metodo privato è «sempre inaccessibile dall'esterno» — viene specificamente filtrato via in quei contesti in cui sarebbe richiesta una conversione implicita.</p>
+<pre style="margin:1.4rem 0"><code>class MyString {
+public:
+    explicit MyString(const char* s) { /* ... */ }
+};
+
+void print(MyString s) { /* ... */ }
+
+int main() {
+    MyString a("hello");        // OK: inizializzazione diretta, il candidato è viabile
+    MyString b = "hello";       // Errore: inizializzazione per copia,
+                                // il costruttore explicit è escluso
+                                // dai candidati
+    print("hello");             // Errore: la conversione implicita
+                                // è vietata
+    print(MyString("hello"));   // OK: conversione esplicita
+}</code></pre>
+    <p>Questo comportamento fu adottato dal comitato come modo per scartare in anticipo una funzione, nella fase di formazione della lista dei candidati, in determinati contesti di chiamata, ancor prima che il compilatore inizi a confrontare tra loro i candidati viabili per qualità di corrispondenza degli argomenti.</p>
+    <p>Dopo che il compilatore ha scartato tutte le varianti non adatte, inizia la fase di scelta del candidato migliore. Qui vengono in soccorso le sequenze di conversione implicita, che il compilatore applica a ciascun parametro di funzione con le seguenti priorità: conversioni standard, conversioni definite dall'utente e, dopo tutto, i parametri variadici indicati con <code>…</code></p>
+    <img src="../../assets/articles/disobedient-using/02.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>struct S {
+    S(int x) { std::cout &lt;&lt; "S(int) constructor called\n"; }
+    // conversione definita dall'utente
+};
+
+void foo(double d) {
+    std::cout &lt;&lt; "foo(double) called\n";
+}
+
+void foo(S s) {
+    std::cout &lt;&lt; "foo(S) called\n";
+}
+
+void foo(...) {
+    std::cout &lt;&lt; "foo(...) called\n";
+    // versione variadica
+}
+
+int main() {
+    int x = 42;
+
+    // Quale foo verrà chiamata?
+    foo(x);
+
+    return 0;
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/9djzdheMK" target="_blank" rel="noopener">godbolt</a></p>
+    <p>Guardiamo l'esempio sopra più in dettaglio. Abbiamo tre overload della funzione <code>foo</code>:</p>
+    <ul><li>il primo prende un <code>double</code>, e per una chiamata con un argomento <code>int</code> qui verrà applicata la conversione standard <code>int → double</code>;</li><li>il secondo overload prende un oggetto di tipo <code>S</code>, dove esiste un costruttore <code>S(int)</code>, e in questo caso è richiesta una conversione definita dall'utente da <code>int</code> a <code>S</code>;</li><li>la terza versione della funzione è un overload variadico con <code>...</code>, che può prendere qualsiasi argomento ma ha la priorità più bassa.</li></ul>
+    <p>Ora chiamiamo <code>foo(x)</code>, dove <code>x</code> ha tipo <code>int</code>. Il compilatore raccoglierà tutti gli overload possibili, e tutti e tre vanno bene: ciascuno di essi può essere chiamato con un argomento <code>int</code>, sia pure attraverso conversioni diverse.</p>
+    <p>Ora ripercorriamo le sequenze di conversione per ciascun candidato, come fa il compilatore, che alla fine sceglie il percorso di esecuzione con la complessità minore.</p>
+    <ul><li>per <code>foo(double)</code> va applicata la conversione standard <code>int → double</code>, cioè servono conversioni minime — diciamo che ha complessità 1;</li><li>per <code>foo(S)</code> va usata una conversione definita dall'utente tramite il costruttore <code>S(int)</code>, che è un po' più difficile e ha complessità 2;</li><li>per la versione variadica <code>foo(...)</code> verrà applicata una conversione variadica, che comporta la logica più complessa, con complessità 3.</li></ul>
+    <p>«Complessità 1, 2, 3» è una mia semplificazione per l'esempio. Nello standard questo si chiama rango della conversione, e i ranghi non «si sommano come la complessità». Dopo un simile resoconto potresti avere l'impressione che il compilatore in qualche modo sommi dei punti, ma in realtà, nei compilatori reali, le sequenze di conversione vengono confrontate con la regola del «migliore sul parametro peggiore». E ogni compilatore ha le sue stranezze con queste regole.</p>
+    <p>Perché è stato scelto proprio questo ordine? Storicamente è legato all'evoluzione dello stesso linguaggio C++ e all'esperienza del suo uso nei primi progetti in C, dove regole di tipo rigorose si erano già assestate. Si ritiene che l'idea appartenga a Bjarne e al primo team di sviluppo del C++ ai Bell Labs, per ridurre la complessità computazionale sulle macchine dell'epoca quando progettavano il C++. Penso che tu ti sia convinto ancora una volta che molte decisioni moderne sono cresciute dagli anni '80–'90, quando il linguaggio assorbiva attivamente nuove idee ma era vincolato dalle prestazioni dell'hardware. È così che si è ottenuto che il compilatore scelga il modo più «naturale» di chiamare una funzione senza ricorrere, quando possibile, a conversioni complesse.</p>
+    <h2>E un altro piccolo excursus storico...</h2>
+    <p><strong>Il primo C++ (Cfront, anni '80):</strong> il primo compilatore C++ usava l'eliminazione dei candidati passo dopo passo — prima si verificavano le corrispondenze esatte di tipo, poi si applicavano le conversioni standard, poi quelle definite dall'utente, e questo processo era completamente esplicito nel codice del compilatore e basato sul ranking delle conversioni nel compilatore stesso.</p>
+    <p><strong>GCC e Clang:</strong> i compilatori moderni mantengono questa gerarchia, ma invece dell'eliminazione passo dopo passo costruiscono una tabella di candidati, marcando per ciascun parametro il «tipo di conversione» e il suo rango. Così, nella scelta del candidato migliore, al compilatore basta prendere quello adatto dalla cima della tabella per selezionare inequivocabilmente la funzione con le conversioni minime e meno complesse.</p>
+    <p><strong>MSVC:</strong> costruisce analogamente le sequenze di conversione e ne tiene conto delle priorità, ma usa liste di candidati (l'implementazione è ottimizzata per la velocità di compilazione e la gestione di grandi insiemi di overload), usando «tag» interni per il ranking.</p>
+    <p>Ma devi capire che anche le conversioni standard hanno dei subranghi, e convertire <code>char</code> in <code>int</code> è considerato più preferibile che convertire <code>int</code> in <code>double</code>, e il compilatore usa i subranghi per scegliere la variante migliore tra molti candidati possibili.</p>
+<pre style="margin:1.4rem 0"><code>void foo(int x) {
+    std::cout &lt;&lt; "foo(int) called\n";
+}
+
+void foo(double x) {
+    std::cout &lt;&lt; "foo(double) called\n";
+}
+
+int main() {
+    char c = 'A';
+
+    foo(c); // Quale variante verrà chiamata?
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/x5xznr9G1" target="_blank" rel="noopener">godbolt</a></p>
+    <p>In questo esempio abbiamo due candidati: <code>foo(int)</code> e <code>foo(double)</code>. L'argomento ha tipo <code>char</code>, e il compilatore può convertire <code>char</code> in <code>int</code> (una piccola conversione standard), che è preferibile. Ma il compilatore può anche convertire <code>char</code> in <code>double</code> (anch'essa una conversione standard), ma con priorità più bassa, perché richiede prima l'allargamento a <code>int</code> e poi a <code>double</code>. Di conseguenza verrà chiamata <code>foo(int)</code>, perché la conversione <code>char → int</code> è più «naturale» e semplice di <code>char → double</code>.</p>
+    <p>Di nuovo, per l'articolo ho semplificato i subranghi delle conversioni standard. Nello standard <code>char → int</code> è una promozione integrale (rango tipo-corrispondenza-esatta), mentre <code>char → double</code> è già una conversione floating-integral (una conversione a tutti gli effetti, di rango inferiore). Promozione e conversione sono categorie diverse, e la promozione batte sempre la conversione.</p>
+    <p>Un altro esempio con overload e valori di default (<a href="https://godbolt.org/z/1dbvsEezE" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>void bar(int x, int y = 10) {
+    std::cout &lt;&lt; "bar(int, int) called\n";
+}
+
+void bar(double x) {
+    std::cout &lt;&lt; "bar(double) called\n";
+}
+
+int main() {
+    int a = 5;
+
+    bar(a); // Quale variante chiamerà il compilatore?
+}</code></pre>
+    <p>Qui abbiamo di nuovo due candidati: <code>bar(int, int)</code>, ma il secondo parametro ha un valore di default, quindi la chiamata <code>bar(a)</code> va bene, e c'è <code>bar(double)</code>, dove si può convertire <code>int → double</code>.</p>
+    <p>Il compilatore pesa le priorità: <code>bar(int, int)</code> non richiede alcuna conversione (<code>int → int</code>) e usa il valore di default per il secondo argomento, mentre <code>bar(double)</code> richiede una conversione standard implicita (<code>int → double</code>), quindi verrà chiamata <code>bar(int, int)</code>.</p>
+    <h2>=delete</h2>
+    <p><code>=delete</code> chiede a gran voce di stare nell'articolo: le funzioni cancellate partecipano alla risoluzione degli overload come candidati viabili e possono essere scelte come le migliori, dopodiché la chiamata viene rifiutata. È il caso più eclatante in cui «viabilità» e «disponibilità» divergono, e illustra bene perché serva affatto la nozione di viabilità.</p>
+    <p>Quando marchiamo una funzione con <code>= delete</code>, molti la percepiscono intuitivamente come «la funzione è sparita» e pensano a qualcosa come la sua rimozione dal codice. In realtà è esattamente il contrario: una funzione cancellata partecipa pienamente alla verifica di viabilità e al ranking, si comporta come un candidato ordinario, e il compilatore può persino sceglierla come miglior overload.</p>
+    <p>E solo dopo che la scelta è stata fatta il compilatore guarda la marcatura <code>= delete</code> e rifiuta la chiamata con un errore. Questo illustra perché serva affatto la nozione di viabilità come fase separata: «viabile per la partecipazione alla risoluzione» e «effettivamente chiamabile» sono due cose diverse.</p>
+<pre style="margin:1.4rem 0"><code>void process(int x)    { std::cout &lt;&lt; "int\n"; }
+void process(double x) = delete;
+
+int main() {
+    process(42);    // OK: viene chiamata process(int)
+    process(3.14);  // errore: viene scelta process(double),
+                    //         ma è cancellata
+    process(1.0f);  // errore: float → double è più preciso di float → int,
+                    //         quindi viene scelta la cancellata process(double)
+}</code></pre>
+    <p class="cap"><a href="https://godbolt.org/z/137nKavoz" target="_blank" rel="noopener">godbolt</a></p>
+    <p>A prima vista sembra che, dato che <code>process(double)</code> è «cancellata», allora sulla chiamata <code>process(3.14)</code> il compilatore dovrebbe semplicemente ignorarla e cercare un altro overload — per esempio, convertire <code>double</code> in <code>int</code>. Ma non lo farà: l'overload cancellato resta un candidato viabile, vince la risoluzione secondo le consuete regole di ranking (per <code>double</code> una corrispondenza esatta è migliore di una conversione a <code>int</code>), e solo allora si imbatte in <code>= delete</code>.</p>
+    <p>L'overload <code>process(int)</code>, che potrebbe accettare un <code>double</code> tramite una conversione standard, non viene nemmeno considerato — verrebbe scelto solo se <code>process(double)</code> fosse del tutto assente dalla lista dei candidati. Questo offre una tecnica idiomatica: vietare la chiamata di una funzione con determinati tipi non rimuovendola dall'insieme degli overload, ma al contrario lasciandovela deliberatamente perché «intercetti» gli argomenti indesiderati.</p>
+<pre style="margin:1.4rem 0"><code>struct Handle {
+    void set(int id);
+    void set(void*) = delete;   // vieta il passaggio di puntatori grezzi,
+                                // inclusi nullptr e NULL
+};
+
+Handle h;
+h.set(42);       // OK
+h.set(nullptr);  // errore di compilazione, non una conversione implicita a int</code></pre>
+    <p>Se <code>= delete</code> significasse «rimuovere la funzione dalla considerazione», allora <code>h.set(nullptr)</code> chiamerebbe <code>set(int)</code> tramite la conversione <code>nullptr → 0</code>, e otterremmo un bug a runtime difficile da individuare.</p>
+    <p>Ma poiché <code>set(void*)</code> resta un candidato viabile e vince la risoluzione (per <code>nullptr</code> un puntatore è una corrispondenza esatta, mentre una conversione a <code>int</code> non lo è), il compilatore intercetta l'errore in fase di compilazione. È proprio per questo che distinguere formalmente il «viabile» dal «disponibile» è uno strumento a sé all'interno del linguaggio, su cui poggia un'intera classe di tecniche difensive del C++ moderno.</p>
+    <h2>Cosa significa tutto ciò per lo sviluppatore</h2>
+    <p>Nelle grandi basi di codice il processo di verifica della viabilità e di scelta del candidato migliore può essere molto complesso, perché occorre tenere conto del numero di parametri, della disponibilità della funzione, dei valori di default, delle conversioni implicite e delle priorità dei vari tipi di conversione. È proprio per questo che una stessa funzione può essere chiamata in modo diverso a seconda di quali overload siano disponibili nel contesto corrente e di quali argomenti vengano passati. Queste sono le regole di base per la scelta del candidato migliore nell'overloading delle funzioni, e spero di aver dato una comprensione di come il compilatore valuti la viabilità di una funzione.</p>
+    <p>Come materiale per i prossimi articoli vedo la trattazione dei processi che governano i tipi stessi degli argomenti e dei valori di ritorno nei template. È qui che incontreremo per la prima volta la deduzione dei tipi — il meccanismo con cui il compilatore deduce i tipi dei parametri del template dagli argomenti passati, e l'istanziazione del template, che sostituisce questi tipi nel corpo del template per creare una funzione o una classe concreta.</p>
+    <p>La comprensione di questi meccanismi determina quali overload di template verranno scelti e come verranno risolte le chiamate di funzione — ed è proprio di questo che parlerà il prossimo articolo…</p>
+    <p>P.S. Ho pubblicato i primi 7 capitoli di «Playful Programming» su GitHub in ru/en (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>), anche se <a href="https://habr.com/ru/users/olegsivchenko/" target="_blank" rel="noopener">@OlegSivchenko</a> suggerisce di chiamare la serie «Pragmatic C++» — le questioni sollevate sono semplicemente troppo pratiche e noiose. Se ti va di correggere il testo o gli esempi di codice, scrivimi.</p>
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
