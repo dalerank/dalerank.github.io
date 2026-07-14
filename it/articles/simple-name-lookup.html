@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Il name lookup semplice in C++ — dalerank</title>
+<meta name="description" content="Il lookup dei nomi semplice (unqualified) e qualificato in C++: perché un namespace e una variabile locale con lo stesso nome convivono, il nascondimento dei nomi e di interi overload set nell'ereditarietà, l'ambiguità dell'ereditarietà a diamante, la regola dello using-namespace nel qualified lookup e le differenze storiche tra GCC, Clang e MSVC." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/simple-name-lookup.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/simple-name-lookup.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/simple-name-lookup.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/simple-name-lookup.html">RU</a><i>/</i><a href="../../en/articles/simple-name-lookup.html">EN</a><i>/</i><a class="on" href="simple-name-lookup.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Il name lookup semplice in C++</h1><div class="ameta"><span>22 aprile 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/simple-name-lookup/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Questa è la continuazione del tema iniziato in <a href="../../en/articles/pragmatic-names.html">I nomi contano per il compilatore</a>, proseguito in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">Di notte tutti i gatti sono grigi, e tutti gli using si somigliano</a> (in russo) e ancora oltre in <a href="../../en/articles/compilers-confused-names.html">Anche i compilatori si confondono con i nomi</a>. Se non li hai letti, è meglio dargli una scorsa. Ora siamo arrivati a un tema così interessante come il lookup qualificato e non qualificato.</p>
+    <p>Che cos'è il lookup semplice di un nome <code>n</code> in uno scope <code>S</code>? È il meccanismo del compilatore che trova tutte le dichiarazioni di <code>n</code> collocate direttamente in quello scope. Semplice? A prima vista sì, ma anche questo semplice meccanismo spesso non funziona nel modo in cui uno sviluppatore si aspetta.</p>
+    <p>Per esempio, abbiamo un namespace <code>N</code> e una variabile locale <code>N</code>. Possono convivere? Possono, perché vivono in scope diversi. E possono un namespace e una variabile globale con lo stesso nome? Come siamo arrivati a questo punto — cerchiamo di capirlo.</p>
+    <p>Il termine corretto dallo standard è <em>unqualified name lookup</em>, ma spesso si usa anche l'espressione «lookup semplice». Prima di proseguire con la lettura, prova a dire cosa stampa questo semplice pezzo di codice (<a href="https://godbolt.org/z/3sjjY5zbd" target="_blank" rel="noopener">godbolt</a>).</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5;
+    std::cout &lt;&lt; N &lt;&lt; "\n";
+    std::cout &lt;&lt; N::value &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+<details class="code"><summary>Risposta e spiegazione</summary><div class="spoiler-body" style="padding:18px 20px"><pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5; // variabile locale N
+
+    // Accesso alla variabile locale
+    std::cout &lt;&lt; "Variabile locale N: " &lt;&lt; N &lt;&lt; "\n";
+
+    // Accesso alla variabile nel namespace N
+    std::cout &lt;&lt; "Variabile N::value: " &lt;&lt; N::value &lt;&lt; "\n";
+
+    return 0;
+}</code></pre></div></details>
+    <p>Qui abbiamo un namespace <code>N</code> e una variabile locale <code>N</code>. Possono convivere perché vivono in scope diversi, ma un namespace e una variabile globale con lo stesso nome non lo possono. La variabile locale <code>N</code> e il namespace <code>N</code> convivono senza conflitto perché si trovano in scope diversi: la variabile <code>N</code> è nello scope della funzione <code>main</code>, mentre il namespace <code>N</code> è nello scope globale.</p>
+    <p>Se provassimo a creare una variabile globale <code>int N</code>, il compilatore segnalerebbe immediatamente un errore, perché una variabile globale e un namespace vivono nello stesso scope e non possono avere lo stesso nome.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {}  // namespace N
+int N = 42;     // Errore! Il nome è già occupato</code></pre>
+    <p>Ma ciò che è ancora più interessante è come convivano una variabile locale e un namespace con lo stesso nome, e come esattamente il compilatore capisca cosa si intende. Il lookup semplice e il lookup qualificato funzionano secondo regole del tutto diverse, e il nome <code>N</code> nell'espressione <code>N += 1</code> viene risolto in modo abbastanza diverso dallo stesso nome <code>N</code> nell'espressione <code>N::x</code>.</p>
+    <p>Ora guardiamo un altro esempio, l'espressione <code>N += 1</code>. Qui il nome <code>N</code> viene cercato tramite lookup semplice nello scope locale, il compilatore trova la variabile locale, e il lookup finisce lì. Ma nell'espressione <code>N::x</code> la situazione è diversa, perché si tratta di un nome qualificato, e la parte prima di <code>::</code> viene cercata separatamente.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+int main() {
+    int x = 5; // variabile locale x
+
+    // Nome non qualificato: lookup semplice
+    x += 1;
+    std::cout &lt;&lt; "Variabile locale x: " &lt;&lt; x &lt;&lt; "\n";
+    // Stampa 6
+
+    // Nome qualificato: il qualificatore viene cercato separatamente
+    N::x += 1;
+    std::cout &lt;&lt; "Variabile N::x: " &lt;&lt; N::x &lt;&lt; "\n";
+    // Stampa 43
+
+    return 0;
+}</code></pre>
+    <p>Il punto chiave è che, quando cerca un nome usato come qualificatore, il compilatore ignora le entità che non sono namespace o classi, e poiché la variabile locale <code>N</code> non è un namespace, viene ignorata durante tale lookup, e l'espressione <code>N::x</code> funziona correttamente anche se nello scope corrente c'è una variabile <code>N</code>.</p>
+    <p>Questa situazione si chiama nascondimento dei nomi (name hiding), quando la dichiarazione di un nome in uno scope interno rende inaccessibile una dichiarazione omonima da uno scope esterno, e durante il lookup semplice il compilatore semplicemente smette di cercare oltre non appena trova la prima corrispondenza.</p>
+<pre style="margin:1.4rem 0"><code>int x = 42; // variabile globale
+
+int main() {
+    int x = 5; // nasconde la x globale
+
+    std::cout &lt;&lt; x &lt;&lt; "\n";   // 5 locale, quella globale è nascosta
+    std::cout &lt;&lt; ::x &lt;&lt; "\n"; // 42 la qualificazione esplicita rimuove il nascondimento
+}</code></pre>
+    <p>La stessa cosa accade nelle classi con l'ereditarietà, e lì le conseguenze sono più sorprendenti, perché non è una singola variabile a essere nascosta, ma l'intero overload set (<a href="https://godbolt.org/z/KeM61oqe3" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>struct Base {
+    void foo(int x) { std::cout &lt;&lt; "int base\n"; }
+    void foo(double x) { std::cout &lt;&lt; "double\n"; }
+    // entrambi gli overload sono disponibili
+};
+
+struct Derived : Base {
+    void foo(int x) { std::cout &lt;&lt; "int derived\n"; }
+    // nasconde ENTRAMBI gli overload di Base, non solo foo(int)
+};
+
+int main() {
+    Derived d;
+    d.foo(1);      // OK: Derived::foo(int)
+    d.foo(1.0);    // ??? Base::foo(double) è nascosta
+    d.Base::foo(1.0); // OK: la qualificazione esplicita rimuove il nascondimento
+}
+
+&gt;&gt; int derived
+&gt;&gt; int derived
+&gt;&gt; double
+
+// per evitare il nascondimento, serve using:
+struct Derived2 : Base {
+    using Base::foo; // porta nello scope tutti gli overload di Base::foo
+    void foo(int x) {} // ora fa overloading invece di nascondere
+};</code></pre>
+    <p>Questo ci porta alla conclusione che il nascondimento dei nomi dipende da quale tipo di lookup viene eseguito: il nascondimento funziona solo per il tipo di lookup che considera entità di quella categoria. È una caratteristica fondamentale del C++ che aiuta a evitare conflitti tra variabili, namespace e tipi quando i qualificatori vengono usati correttamente — cosa che, tuttavia, non ha sempre funzionato allo stesso modo nei vari compilatori.</p>
+    <p><strong>GCC:</strong> nelle vecchie versioni il lookup qualificato talvolta teneva conto «erroneamente» delle variabili locali nella risoluzione dei qualificatori, il che portava a errori o ambiguità nel codice con variabili e namespace omonimi. In GCC prima della versione 3.4 il lookup qualificato in alcuni casi considerava erroneamente le variabili locali nella risoluzione di un qualificatore di namespace, il che poteva portare all'errore «N is not a namespace» anche quando la variabile locale e il namespace avrebbero dovuto convivere correttamente. A partire da GCC 3.4 il comportamento è stato allineato allo standard.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int value = 10;
+}
+
+int main() {
+    int N = 5;
+    // Una variabile locale con lo stesso nome
+    // del namespace
+
+    // L'accesso non qualificato funziona
+    // con la variabile locale
+    N += 1;
+    std::cout &lt;&lt; "Variabile locale N: " &lt;&lt; N &lt;&lt; "\n";
+    // Stampa 6
+
+    // Nome qualificato
+    // Nelle vecchie versioni di GCC questo poteva causare un errore
+
+    std::cout &lt;&lt; "Namespace N::value: " &lt;&lt; N::value &lt;&lt; "\n";
+
+    // Il compilatore poteva interpretare N come variabile locale
+    // e segnalare "N is not a namespace" o "ambiguous"
+
+    return 0;
+}</code></pre>
+    <p><strong>Clang:</strong> fin dalle sue prime versioni Clang ha implementato rigorosamente la regola secondo cui i nomi delle classi base dipendenti non partecipano alla prima fase del two-phase lookup non qualificato. Il codice con ereditarietà da template che compilava su GCC senza <code>this-&gt;</code> non compilava su Clang, cosa che emergeva al cambio di toolchain.</p>
+<pre style="margin:1.4rem 0"><code>// Le classi base dipendenti
+// non partecipavano al lookup non qualificato di fase-1
+
+template&lt;typename T&gt;
+struct Base {
+    void foo() {}
+};
+
+template&lt;typename T&gt;
+struct Derived : Base&lt;T&gt; {
+    void bar() {
+        foo();
+        // Clang (rigorosamente secondo lo standard): ERRORE
+        // vecchio GCC: OK, lo cercava nella base all'istanziazione
+
+        this-&gt;foo();  // il modo che funziona ovunque
+    }
+};</code></pre>
+    <p>Il compilatore poteva «non accorgersi» del qualificatore e usare il nome nascosto <code>Derived::foo</code> invece di <code>Base::foo</code>, il che portava a errori o comportamenti inattesi quando si usava <code>using</code> per portare i nomi della classe base nello scope corrente.</p>
+    <p><strong>MSVC:</strong> prima di VS2015 MSVC in diversi casi non separava correttamente namespace e variabili locali nella risoluzione di un qualificatore, a causa di ciò la variabile locale <code>N</code> poteva interferire con il lookup del namespace <code>N</code> nell'espressione qualificata <code>N::f()</code>, e il compilatore segnalava l'errore «N is not a namespace» dove, secondo lo standard, avrebbe dovuto trovare il namespace.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    void f() { std::cout &lt;&lt; "Namespace N::f\n"; }
+}
+
+void f() { std::cout &lt;&lt; "Global f\n"; }
+
+int main() {
+    int N = 42;
+    // Una variabile locale con un nome
+    // che coincide con il namespace
+
+    // Chiamata non qualificata
+    f(); // chiama la f() globale
+
+    // Chiamata qualificata attraverso il namespace
+    // Nelle vecchie versioni di MSVC la variabile locale N poteva interferire
+    // e il compilatore tentava erroneamente di usare N come qualificatore
+
+    N::f();
+    // ci si aspettava che venisse chiamata N::f() dal namespace
+    // ma il vecchio MSVC poteva segnalare "N is not a namespace"
+
+    return 0;
+}</code></pre>
+    <h3>E il lookup, dopo tutto, non è così semplice</h3>
+    <p>La situazione si complica ancora di più quando dobbiamo raccogliere un insieme di nomi dallo scope della classe corrente e da tutte le sue classi base, e poi eseguire il lookup all'interno di quell'insieme. Quando usiamo un nome non qualificato dentro una classe o un template di classe, il compilatore non percorre semplicemente le classi base una a una — costruisce un insieme di subobject.</p>
+    <p>Consideriamo l'ormai classico esempio in cui una classe <code>C</code> eredita da <code>A</code> e <code>B</code>. Se cerchiamo il nome <code>x</code>, il compilatore troverà <code>x</code> in <code>A</code> e <code>x</code> in <code>B</code>, ma entrambi sono ritrovamenti validi, e il risultato è un'ambiguità che rende il programma ill-formed.</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 1;
+};
+
+struct B {
+    int x = 2;
+};
+
+struct C : A, B {
+    void printX() {
+        // Il nome non qualificato x compare in
+        // entrambe le classi base
+        // Il compilatore non può scegliere in modo univoco
+        // a quale x riferirsi
+        // Questo porta a un errore di ambiguità
+        std::cout &lt;&lt; x &lt;&lt; "\n"; // Errore: ambiguità
+    }
+};
+
+int main() {
+    C c;
+    c.printX();
+    return 0;
+}</code></pre>
+    <p>Il lookup qualificato dei nomi in C++ è organizzato diversamente, e questo lo rende più prevedibile e resistente agli effetti inattesi. Quando il compilatore vede un nome qualificato (<code>C::x</code>), esegue un insieme di regole rigorosamente definite con un ordine di passi precisamente fissato.</p>
+    <p>Prima di tutto, il compilatore cerca i nomi esplicitamente dichiarati direttamente nello scope indicato, e se scriviamo <code>C::x</code>, allora considera per prime tutte le dichiarazioni di <code>x</code> che appartengono effettivamente a <code>C</code>. Possono essere membri statici della classe, tipi annidati, enumerazioni o funzioni dichiarate direttamente dentro <code>C</code>. Se tale dichiarazione viene trovata, il lookup è considerato completo, e nessun meccanismo esterno di estensione della visibilità gioca alcun ruolo in questa fase.</p>
+<pre style="margin:1.4rem 0"><code>// Una funzione globale con lo stesso nome non deve interferire
+void x() { printf("global x()\n"); }
+
+namespace N {
+    void x() { printf("N::x()\n"); }
+}
+
+struct C {
+    static int x;
+};
+
+int C::x = 42;
+
+int main() {
+    // Lookup qualificato: guardiamo solo dentro C
+    printf("%d\n", C::x);         // guarda solo in C, senza tirare x() e N::x() nell'analisi
+}</code></pre>
+    <p>Per <code>C::x</code> il compilatore guarda solo in <code>C</code> e trova <code>static int x = 42</code>. La funzione globale <code>x()</code> e <code>N::x()</code> non vengono affatto considerate, anche se con il lookup non qualificato sarebbero anch'esse candidate. Guardiamo un altro esempio:</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 42;
+};
+
+struct B : A {};  // B eredita x da A
+struct C : A {};  // C eredita x da A
+
+struct E : B, C { // E eredita sia da B sia da C
+    void foo() {
+        // x = 1; // errore di compilazione!
+        // error: member 'x' found in multiple base classes of different types
+    }
+};</code></pre>
+    <p>A prima vista sembra che non ci debba essere alcun problema. In fondo il membro <code>x</code> è dichiarato solo in <code>A</code>, e non c'è una seconda <code>x</code> in <code>B</code> o <code>C</code>. Tuttavia, quando il compilatore cerca il nome non qualificato <code>x</code> dentro <code>E</code>, non si limita a «cercare una dichiarazione» — costruisce un insieme di subobject delle classi base. Quell'insieme contiene:</p>
+    <ul><li><code>A</code>, come classe base diretta di <code>C</code></li><li><code>A</code>, come classe base di <code>B</code>, che è a sua volta una classe base contenente <code>A</code></li></ul>
+    <p>Sì, è una sola e medesima dichiarazione <code>A::x</code>, ma i percorsi lungo i quali la si può raggiungere sono diversi. Per il compilatore questo significa che il lookup è riuscito lungo due vie indipendenti, e nessuna di esse è preferita. Il risultato è un'ambiguità, e il programma è considerato ill-formed, il che ci porta a comprendere che il lookup nelle classi base ha due livelli: conta non solo quale dichiarazione viene trovata, ma anche per quale percorso il compilatore vi è arrivato (<a href="https://godbolt.org/z/qEsrET84v" target="_blank" rel="noopener">godbolt</a>).</p>
+<pre style="margin:1.4rem 0"><code>// Il compilatore costruisce un grafo di oggetti:
+//
+//    A::x     A::x
+//      |       |
+//      B       C
+//       \     /
+//          E
+//
+// Due percorsi verso la stessa dichiarazione A::x:
+// percorso 1: E -&gt; B -&gt; A::x
+// percorso 2: E -&gt; C -&gt; A::x
+//
+// Il compilatore vede due vie e non può sceglierne una preferita
+
+int main() {
+    E e;
+
+    // la qualificazione esplicita rimuove l'ambiguità:
+    e.B::x = 1;  // OK: specifica esplicitamente il percorso attraverso B
+    e.C::x = 2;  // OK: specifica esplicitamente il percorso attraverso C
+
+    // questi sono due subobject A DIVERSI in memoria:
+    std::cout &lt;&lt; e.B::x &lt;&lt; "\n"; // 1
+    std::cout &lt;&lt; e.C::x &lt;&lt; "\n"; // 2
+}</code></pre>
+    <p>Poi, se nessun nome adatto viene trovato nello scope <code>C</code> stesso, il compilatore passa al passo successivo e comincia a tenere conto dei nomi resi visibili in quello scope tramite le direttive <code>using namespace</code>. Qui vale la pena ricordare che stiamo parlando specificamente di direttive, non di using-declaration, quindi i nomi possono essere trovati dal lookup qualificato, ma esclusivamente come ripiego, quando in quello scope non ci sono dichiarazioni proprie. Per questa regola non esiste un termine consolidato nello standard, e spesso viene descritta attraverso il meccanismo piuttosto che con un nome a sé. Nello standard C++ il paragrafo corrispondente è <code>[namespace.qual]</code>, e la regola stessa è formulata così:</p>
+    <blockquote>Se il lookup qualificato in uno scope <code>X</code> non trova dichiarazioni proprie, allora vengono considerati i nomi provenienti dai namespace introdotti tramite le direttive <code>using namespace</code> in <code>X</code>, ottenendo il «set of associated namespaces».</blockquote>
+    <p>Questa, di fatto, è la principale differenza tra lookup qualificato e non qualificato: con il lookup non qualificato, <code>using namespace</code> partecipa attivamente alla formazione dell'insieme di candidati fin dall'inizio, il che porta spesso a conflitti e ambiguità inattesi. Il lookup qualificato, al contrario, dà rigorosamente priorità alle dichiarazioni esplicite ed estende lo scope del lookup tramite <code>using namespace</code> solo in loro assenza, il che lo rende notevolmente più stabile e protetto contro i cambiamenti accidentali di contesto.</p>
+    <p>Una piccola digressione per rendere completo l'esempio. Ricordiamo l'ereditarietà virtuale, che elimina questo comportamento (ma ne porta con sé molti altri problemi), perché ora c'è un unico subobject <code>A</code> (<a href="https://godbolt.org/z/P9qbqaGPs" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>struct A {
+    int x = 42;
+};
+
+struct B : virtual A {};  // ereditarietà virtuale
+struct C : virtual A {};  // ereditarietà virtuale
+
+struct E : B, C {
+    void foo() {
+        x = 1;  // OK: c'è una sola A nella gerarchia
+    }
+};
+
+// il grafo dei subobject ora ha un aspetto diverso:
+//
+//      B     C
+//       \   /
+//         A      &lt;-- una singola istanza, un singolo percorso
+//
+// nessuna ambiguità
+
+int main() {
+    E e;
+    e.x = 1;       // OK
+    e.B::x = 1;    // OK, la stessa x
+    e.C::x = 1;    // OK, la stessa x
+    // tutti e tre si riferiscono allo stesso subobject
+}</code></pre>
+    <p>Senza ereditarietà virtuale, <code>E</code> contiene due subobject <code>A</code> fisicamente diversi in memoria, e il compilatore non può indovinare a quale dei due accedere durante il lookup non qualificato di <code>x</code>, anche se entrambi contengono la stessa dichiarazione.</p>
+    <p>Ora immagina di avere due namespace. In uno di essi è dichiarato un nome che «mescoleremo» tramite <code>using namespace</code>, e anche l'altro ha una propria dichiarazione con lo stesso nome.</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+    int x = 10;
+}</code></pre>
+    <p>Potrebbe sembrare che dentro <code>C</code> ora ci siano due possibili <code>x</code>: una propria (<code>C::x</code>), e una seconda arrivata da <code>N</code> tramite <code>using namespace</code> — ma il lookup qualificato mette subito tutto in ordine. Ora, se scriviamo:</p>
+<pre style="margin:1.4rem 0"><code>int a = C::x;</code></pre>
+    <p>allora il compilatore esegue il lookup qualificato per il nome <code>x</code> solo nello scope <code>C</code> e cerca per primi i nomi esplicitamente dichiarati in <code>C</code>, vi trova <code>int x = 10;</code>, e il lookup si ferma lì. Il secondo nome <code>N::x</code>, nonostante la direttiva <code>using namespace N</code>, non viene nemmeno considerato. Di conseguenza, <code>a</code> assume il valore 10. Ora guardiamo un controesempio in cui il lookup non qualificato viene eseguito dentro lo scope <code>C</code> stesso (<a href="https://godbolt.org/z/q1bK5cEG1" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+    int x = 10;
+}
+
+int f() {
+    using namespace C;
+    return x;
+}
+
+int main() {
+    std::cout &lt;&lt; f();
+}
+
+&lt;source&gt;:15:12: error: reference to 'x' is ambiguous
+   15 |     return x;
+      |            ^
+&lt;source&gt;:10:9: note: candidate found by name lookup is 'C::x'
+   10 |     int x = 10;
+      |         ^
+&lt;source&gt;:5:9: note: candidate found by name lookup is 'N::x'
+    5 |     int x = 42;
+      |         ^</code></pre>
+    <p>Qui il nome <code>x</code> è usato senza qualificatore, quindi si applica il lookup non qualificato, che raccoglie i candidati dallo scope corrente e dai namespace introdotti tramite <code>using namespace</code>. In questo caso sia <code>C::x</code> sia <code>N::x</code> finiscono nell'insieme dei candidati, e poiché entrambe le dichiarazioni hanno «peso» uguale, il programma diventa ambiguo e il compilatore segnala un errore.</p>
+    <p>Ora torniamo al lookup qualificato e modifichiamo leggermente l'esempio (<a href="https://godbolt.org/z/P9qbqaGPs" target="_blank" rel="noopener">godbolt</a>):</p>
+<pre style="margin:1.4rem 0"><code>namespace N {
+    int x = 42;
+}
+
+namespace C {
+    using namespace N;
+}
+
+int main() {
+    int a = C::x; // Ma C non ha una propria x!
+     std::cout &lt;&lt; "Variabile N::x: " &lt;&lt; C::x &lt;&lt; "\n";
+    // stampa 42
+}</code></pre>
+    <p>Qui la situazione è diversa: ora non c'è alcuna <code>x</code> esplicitamente dichiarata nel namespace <code>C</code>, quindi il lookup qualificato cerca prima <code>x</code> direttamente in <code>C</code>, fallisce, e dopo di ciò considera i nomi arrivati tramite <code>using namespace N</code>, e vi trova <code>N::x</code>.</p>
+    <h2>Cosa viene dopo…</h2>
+    <p>Uno degli esempi qui sopra ha mostrato che il nascondimento dei nomi nelle classi non funziona nel modo in cui te lo aspetteresti intuitivamente. Una dichiarazione in <code>Derived</code> nasconde tutti gli overload di <code>Base</code>, non solo quello corrispondente, e questo comportamento è una conseguenza diretta di come funziona il lookup dei nomi lungo la gerarchia delle classi base.</p>
+    <p>È proprio per casi del genere che esiste la using-declaration, che permette di portare esplicitamente i nomi da una classe base nello scope derivato senza infrangere le regole del lookup e senza creare conflitti. Ma <code>using</code> non riguarda solo l'ereditarietà: con C++14 è diventato uno strumento a tutti gli effetti per la gestione della visibilità, che funziona secondo regole proprie e interagisce con il lookup dei nomi in modo prevedibile e rigorosamente definito — e ne parlerò nel prossimo articolo...</p>
+    <p>Ho già accumulato materiale per altri due capitoli (la storia dei concepts e il lookup dei nomi); li pubblicherò presto su GitHub — <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>.</p>
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
