@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calcoli ridondanti — dalerank</title>
+<meta name="description" content="Come l'esecuzione speculativa e la predizione dei salti interagiscono con il sottosistema di memoria: perché il codice branchless non è sempre più veloce, il costo di una misprediction rispetto alla latenza della memoria, la ricerca binaria e i benchmark su Jaguar (PS4)." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/redundant-computations.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/redundant-computations.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/redundant-computations.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/redundant-computations.html">RU</a><i>/</i><a href="../../en/articles/redundant-computations.html">EN</a><i>/</i><a class="on" href="redundant-computations.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag gold">Prestazioni</span><h1>Calcoli ridondanti</h1><div class="ameta"><span>6 aprile 2026</span><span>12 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/redundant-computations/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Se parliamo di prestazioni a prescindere dalle soluzioni hardware esistenti, l'intuizione suggerisce un modello di esecuzione piuttosto semplice in cui il processore elabora le istruzioni e la memoria fornisce i dati, e più entrambi sono veloci, più velocemente gira il programma.</p>
+    <p>Ma i processori hanno imparato a eseguire miliardi di operazioni al secondo, mentre la memoria aumenta la propria velocità di accesso molto più lentamente, e il divario tra la velocità di calcolo e la velocità di accesso ai dati è diventato così grande che l'attesa sulla memoria si è trasformata nella principale fonte di prestazioni perse.</p>
+    <p>La risposta a questo non è stata accelerare la memoria, ma rendere più complessi i processori stessi: hanno smesso di essere semplici esecutori passivi di codice e hanno iniziato a risolvere problemi di gestione del flusso di dati — eseguendo le istruzioni fuori ordine, riordinando le dipendenze e, a un certo punto, arrivando all'idea di eseguire speculativamente codice che potrebbe non servire affatto.</p>
+    <p>La predizione dei salti è diventata uno dei meccanismi chiave in questo sistema, pensato per eliminare parte del tempo morto nel flusso di calcolo; ma mentre una predizione corretta è diventata un'opportunità per avviare in anticipo caricamenti costosi e nascondere la loro latenza, una misprediction spreca non solo i cicli persi, ma anche le risorse di memoria usate invano: il bus, i buffer di caricamento, la banda del controller e le stesse cache line che avrebbero potuto contenere dati utili.</p>
+    <p>È proprio qui che sorge un trade-off interessante e non ovvio che consente, da un lato, di scrivere codice branchless ed eliminare completamente le mispredictions, e dall'altro priva il processore della capacità di lavorare in anticipo e avviare presto gli accessi alla memoria. Ma a seconda di dove si trovano i dati in memoria, vincerà un approccio o l'altro.</p>
+    <p>Se hai intenzione di scrivere codice branchless, devi ricordare esattamente come l'esecuzione speculativa e la predizione dei salti interagiscono con il sottosistema di memoria, perché il «lavoro extra» a volte accelera un programma, e in alcuni casi il tentativo di rendere il codice più «prevedibile» porta all'effetto opposto.</p>
+    <hr />
+    <p>Se si guarda ai primi computer, lì non c'era alcuna speculazione, e i primi sistemi eseguivano il codice in sequenza, trascinando un'istruzione dopo l'altra, senza cercare di indovinare nulla né di accelerare le cose tramite ipotesi. Era un modello onesto ma lento in cui il processore faceva esattamente ciò che gli veniva detto.</p>
+    <p>Poi si è scoperto che le prestazioni sono limitate non dai calcoli in sé, ma dall'attesa sui dati. All'inizio erano stalli dovuti a operazioni lunghe, poi dovuti alla memoria, e il processore spesso poteva eseguire le istruzioni più velocemente e restava inattivo la maggior parte del tempo.</p>
+    <p>Uno dei primi passi seri verso la «rottura della sequenza» è stato il progetto IBM System/360 Model 91 a metà degli anni '60, quando un gruppo di ingegneri, tra cui Robert Tomasulo, propose un algoritmo dinamico di scheduling delle istruzioni che in seguito avrebbe portato il suo nome. Questo rese possibile eseguire le istruzioni fuori ordine non appena i loro operandi diventavano disponibili, anziché rigorosamente nell'ordine in cui sono scritte nel programma.</p>
+    <p>Questa non era ancora una speculazione vera e propria nel senso moderno — c'era già un meccanismo per l'esecuzione fuori ordine, ma non la predizione dei salti nel senso moderno, e il processore poteva riordinare istruzioni indipendenti, ma la scelta del salto richiedeva ancora che la condizione fosse risolta.</p>
+    <p>Il passo successivo fu implementare l'idea che se il processore sa già eseguire le istruzioni fuori ordine e ha una storia dei salti, allora può andare ancora oltre e iniziare a eseguire i blocchi dei salti prima ancora di sapere se servano affatto. È così che compare l'esecuzione speculativa.</p>
+    <p>In una forma più o meno moderna ha preso forma più tardi nei processori superscalari degli anni '80 e successivi. Uno dei primi rappresentanti qui fu l'Intel Pentium Pro (1995), dove speculazione, riordino e predizione dei salti lavoravano già insieme come un unico sistema, permettendo di eseguire le istruzioni fuori ordine e di iniziare a lavorare «in anticipo». E una pipeline da 40 micro-op consentiva di tenere in volo decine di istruzioni contemporaneamente.</p>
+<pre style="margin:1.4rem 0"><code>for (size_t i = 0; i &lt; n; i++) {
+    if (arr[i] &gt;= 0) {
+          ... code_true ...;
+    } else {
+        ... code_false ...;
+    }
+}</code></pre>
+    <p>Un normale <code>if</code> è un salto a livello di linguaggio, ma a livello del flusso di dati nel processore è un punto di incertezza, e per sapere quale ramo eseguire bisogna prima caricare <code>arr[i]</code>. E qui otteniamo un calo di prestazioni, perché al punto in cui si ottiene <code>arr[i]</code> potrebbe non essere nelle cache, e nel caso peggiore lo stallo qui può richiedere decine o addirittura centinaia di cicli se i dati sono nella RAM. E credimi, non è affatto un caso raro che i dati non siano finiti in tempo nella cache.</p>
+    <p>Qui ci possono essere diverse opzioni: se aspetti e basta, tutte le istruzioni che dipendono da questi dati si fermano, anche se il processore OoO continuerà a eseguire istruzioni indipendenti da altre catene; se indovini, puoi continuare a lavorare (ma ci sono delle sfumature con il flush quando indovini male); se inizi a eseguire entrambi i rami, di fatto non c'è flush, ma parte delle risorse va data al blocco di esecuzione speculativa. Anche l'esecuzione speculativa ha le sue sfumature, sia positive sia meno, ma ne parleremo più avanti.</p>
+    <p>Tutti i processori moderni predicono. Per esempio, sulla base della storia dei salti, che un salto sarà, diciamo, true, e iniziano a eseguire <code>code_true</code> mentre in parallelo aspettano i dati dalla memoria. Se la predizione era corretta, parte del lavoro è già fatta e continuiamo l'esecuzione; in caso contrario, i risultati vengono annullati e viene eseguito l'altro ramo.</p>
+    <p>Qui il costo di un errore è dell'ordine di 10–20 cicli, ma il costo dell'attesa sulla memoria è molte volte maggiore, quindi in media conviene. Considerando che la maggior parte dei salti è costruita attorno agli stessi dati, con alta probabilità i dati per entrambi i rami saranno già nella cache, qualunque ramo tu inizi a eseguire.</p>
+    <p>Come ho già detto, la speculazione influisce non solo sul calcolo ma anche sul lavoro con la memoria, e quando il processore esegue codice speculativamente deve anche avviare caricamenti dalla memoria, occupare cache line e usare risorse della cache per eseguire il ramo di codice «non necessario».</p>
+    <p>E se la predizione si è rivelata sbagliata, queste risorse sono «apparentemente» sprecate. Dal punto di vista del programmatore sembra che il passo logico sarebbe eliminare del tutto i salti, quindi insieme alla comparsa del meccanismo di branching cresce anche il numero dei sostenitori dell'approccio branchless (anch'io sono stato a lungo un devoto di quella scuola, finché la ps4/5 non ha spezzato la mia «fede»). Diciamo che hai trovato punti nel codice del progetto che sembrano buoni posti dove applicare le «piccole cellule grigie»:</p>
+<pre style="margin:1.4rem 0"><code>if (arr[i] &gt; 0) {
+    result++;
+}
+-&gt;
+result += (arr[i] &gt; 0);</code></pre>
+    <p>Cosa succede al codice in cui il salto è stato rimosso? Primo — abbiamo rimosso i salti (sorpresa) e ora il codice non ha misprediction (non può essere differito), quindi tale codice «convenzionalmente» non ha una versione speculativa. Ma i processori moderni sono progettati per i salti e l'esecuzione differita, quindi otteniamo un altro problema e il processore è ora costretto ad aspettare i dati prima di continuare.</p>
+    <p>E qui sorge un problema a causa del quale le nostre «buone intenzioni» non solo non sono riuscite a migliorare le prestazioni ma le hanno effettivamente rallentate. Ma di nuovo, tutto si riduce alle sfumature.</p>
+    <p>Se al momento dell'esecuzione i dati <code>arr</code> sono nella veloce cache L1, allora la latenza è minima e otteniamo un'accelerazione, perché abbiamo rimosso il ramo «speculativo» e liberato risorse del processore per lavoro reale. In questo caso il codice branchless spesso vince.</p>
+    <p>Se i dati <code>arr</code> sono in L2, anche il tempo di fetch è abbastanza piccolo, e il costo di una misprediction diventa meno evidente, ma non vediamo alcuna accelerazione complessiva nel calcolo. In questo caso il codice branchless non ha effetto, se non forse sulla leggibilità dei sorgenti.</p>
+    <p>Ma se i dati provengono da L3 o dalla memoria, la latenza dei dati diventa già il fattore dominante, e allora è più importante non tanto sbagliare meno le predizioni quanto iniziare il lavoro prima, così che al momento dei calcoli reali questi dati siano già nelle cache L1/L2. E così si scopre che il processore, progettato per l'esecuzione «speculativa», stava nascondendo le carenze dell'algoritmo e gli permetteva di girare a una velocità accettabile.</p>
+    <p>Ma eliminando l'esecuzione differita e spostando quella latenza direttamente al punto del calcolo, spostiamo quel tempo nel percorso critico dell'esecuzione, dove non è rimasto nulla a nasconderlo, e iniziamo a pagare il costo pieno di un accesso alla memoria a ogni passo del ciclo, perdendo proprio quella sovrapposizione di calcolo e caricamenti che la speculazione forniva prima.</p>
+    <p>Un altro esempio:</p>
+<pre style="margin:1.4rem 0"><code>Value result = default_value;
+for (size_t i = 0; i &lt; n; ++i) {
+    if (keys[i] == target) {
+        result = values[i];
+    }
+}
+return result.</code></pre>
+    <p>Questo è un salto «dall'aspetto problematico», perché <code>keys[i] == target</code> è una condizione quasi casuale, e la CPU non sa in anticipo a quale <code>i</code> ci sarà la corrispondenza, quindi il predittore sbaglia spesso, e a ogni misprediction c'è una penalità per il flush della pipeline, mentre <code>values[i]</code> non è mai stato letto in anticipo. Decidiamo di riscriverlo un po' e fare una versione branchless.</p>
+<pre style="margin:1.4rem 0"><code>Value result = default_value;
+for (size_t i = 0; i &lt; n; ++i) {
+    result = (keys[i] == target) ? values[i] : result;
+}
+return result;</code></pre>
+    <p>Ora non abbiamo salti, né mispredictions. Ora <code>values[i]</code> viene letto incondizionatamente a ogni iterazione, costringendo la CPU a caricare gli elementi successivi tramite prefetch. Ma il costo del lavoro con la memoria è cambiato, perché il ciclo originale fa una lettura in caso di corrispondenza, e se la chiave viene trovata al terzo elemento su diecimila, legge solo tre elementi, mentre il branchless percorre sempre l'intero array, leggendo sia le chiavi sia i valori.</p>
+    <p>Le conseguenze del fatto che i processori moderni siano adattati agli algoritmi «speculativi» si vedono chiaramente nell'esempio della ricerca binaria. Nella versione branchful il processore predice la direzione della ricerca, calcola <code>low</code> e <code>high</code> in anticipo, e può avviare prima il caricamento dell'elemento successivo. Sì, circa metà delle predizioni saranno sbagliate, ma il guadagno dall'accesso anticipato alla memoria spesso supera queste perdite.</p>
+<pre style="margin:1.4rem 0"><code>while (low &lt; high) {
+    size_t mid = low + (high - low) / 2;
+    if (keys[mid] &lt; target)
+        low = mid + 1;  // la CPU predice questa direzione
+    else
+        high = mid;     // e inizia a leggere keys[mid] dell'iterazione successiva
+}</code></pre>
+    <p>Nella versione branchless ci saranno più istruzioni, i caricamenti inizieranno più tardi, la memoria viene usata senza caricamenti speculativi extra, ma ogni iterazione è costretta ad aspettare il risultato di quella precedente, e le latenze della memoria si aggiungono esplicitamente al lavoro dell'algoritmo.</p>
+<pre style="margin:1.4rem 0"><code>while (low &lt; high) {
+    size_t mid = low + (high - low) / 2;
+    size_t step = (high - low) / 2;
+    low  = (keys[mid] &lt; target) ? mid + 1 : low;
+    high = (keys[mid] &lt; target) ? high    : mid;
+    // nessun salto, ma il mid successivo è calcolato solo dopo aver scritto low e high
+}</code></pre>
+    <p>Nella versione branchful il processore vede l'<code>if</code> e inizia a calcolare speculativamente il <code>mid</code> successivo e a leggere <code>keys[mid]</code> lungo il ramo predetto, senza aspettare il risultato del confronto. Nel branchless il <code>mid</code> successivo dipende dai nuovi <code>low</code> e <code>high</code>, che dipendono dal risultato del confronto, e la catena di dipendenze non lascia il processore correre in anticipo.</p>
+    <p>Queste sfumature saltano fuori molto spesso quando si adattano i giochi PC per le console, dove i processori sono storicamente più deboli con le loro insidie, ma il quadro complessivo risulta questo: se i dati sono casuali e l'array è più piccolo della cache L1, allora il branchless è quasi sempre più veloce. Se l'array è grande o i dati hanno un chiaro pattern di accesso, allora il branchful può vincere grazie ai caricamenti speculativi, ma l'unico modo per saperlo con certezza è profilare su dati reali, perché lo specifico processore e la natura dei dati cambiano la risposta radicalmente. <a href="../../en/articles/cache-pollution.html">Proprio qui</a> ho parlato più concretamente degli effetti della cache; se qualcuno è interessato a un esempio pratico di come si inciampa su questi rastrelli, ecco un semplice esempio di ricerca binaria come quelli sopra su Jaguar (PS 4)</p>
+<pre style="margin:1.4rem 0"><code>+----------------------+--------------+--------------+--------------+
+| Benchmark            | Branchful     | Branchless   | For Loop    |
++----------------------+--------------+--------------+--------------+
+| BinarySearch/63      |     1914 ns  |      904 ns  |      704 ns  |
+| BinarySearch/64      |     1984 ns  |      995 ns  |      795 ns  |
+| BinarySearch/65      |     2006 ns  |     1040 ns  |      805 ns  |
+| BinarySearch/66      |     2062 ns  |     1086 ns  |      886 ns  |
+| BinarySearch/67      |     2113 ns  |     1100 ns  |      900 ns  |
+| BinarySearch/68      |     2175 ns  |     1148 ns  |      948 ns  |
+| BinarySearch/125     |     8404 ns  |     3371 ns  |     4371 ns  |
+| BinarySearch/126     |     8216 ns  |     3196 ns  |     4196 ns  |
+| BinarySearch/127     |     8952 ns  |     3894 ns  |     4894 ns  |
+| BinarySearch/254     |    32792 ns  |    32959 ns  |    42959 ns  |
+| BinarySearch/255     |    32950 ns  |    32959 ns  |    42959 ns  |
+| BinarySearch/256     |    60374 ns  |    59989 ns  |    45989 ns  |
+| BinarySearch/257     |    34202 ns  |    33424 ns  |    43424 ns  |
+| BinarySearch/510     |   169570 ns  |   192631 ns  |   352631 ns  |
+| BinarySearch/511     |   175509 ns  |   196467 ns  |   356467 ns  |
+| BinarySearch/513     |   206741 ns  |   225078 ns  |   365078 ns  |
+| BinarySearch/514     |   223825 ns  |   243467 ns  |   373467 ns  |
+| BinarySearch/1022    |  1904859 ns  |  1999431 ns  |  3999431 ns  |
+| BinarySearch/1023    |  1889650 ns  |  1985054 ns  |  3985054 ns  |
+| BinarySearch/1024    |  1898959 ns  |  1992857 ns  |  3992857 ns  |
+| BinarySearch/1026    |  1918389 ns  |  2003320 ns  |  4003320 ns  |
++----------------------+--------------+--------------+--------------+</code></pre>
+    <p>Cosa c'è di interessante nei risultati del benchmark: alle dimensioni piccole da 63 a 68 elementi la scansione lineare risulta più veloce di entrambe le varianti di ricerca binaria, il che è una diretta conseguenza dell'architettura Jaguar con la sua cache L1 (32 KB), in cui i piccoli array di solito rientrano interamente. Qui non ci sono affatto latenze di memoria, e la scansione lineare in sé non ha né la logica complessa del calcolo di mid né dipendenze tra iterazioni, quindi il processore semplicemente la macina senza fermarsi.</p>
+    <details class="code"><summary>Esecuzione eager</summary><div class="spoiler-body" style="padding:18px 20px">
+      <p>Alcuni pezzi di codice possono persino essere riscritti in modo che entrambi i rami vengano davvero eseguiti. Invece di scegliere un ramo tramite <code>if</code>, il codice può essere riscritto per calcolare entrambe le varianti in una volta e poi scegliere il risultato giusto con una maschera. A livello di dati questo assomiglia all'esecuzione di due rami in parallelo senza coinvolgere il predittore dei salti.</p>
+<pre style="margin:1.4rem 0"><code>if (cond)
+    x = a;
+else
+    x = b;
+-&gt;
+mask = cond ? 0xFFFFFFFF : 0;
+x = (a &amp; mask) | (b &amp; ~mask);</code></pre>
+      <p>Il trucco è giustificato in situazioni in cui i dati sono già nelle cache veloci e il costo di una misprediction diventa significativo, oppure quando c'è l'opportunità di parallelizzare efficacemente il calcolo con SIMD. Ma poiché entrambi i rami vengono sempre calcolati per intero a ogni passata, questo aumenta notevolmente il carico sul sottosistema di memoria.</p>
+    </div></details>
+    <p>Su questo stesso intervallo Branchless supera Branchful, il che si spiega con la BPU piuttosto debole di Jaguar, e dove Intel/AMD se la caverebbero con una penalità di 10–15 cicli, Jaguar paga notevolmente di più a causa della sua BPU più semplice e della speculazione meno profonda, quindi il guadagno dall'eliminazione dei salti su dati piccoli è qui più alto di quanto ci si potrebbe aspettare sul desktop.</p>
+    <p>Ma a partire da 200+ elementi il quadro cambia, e Branchful comincia a recuperare e superare Branchless, e a 1022–1024 sono già praticamente pari con un leggero vantaggio per Branchful, perché i dati finiscono sempre meno spesso interamente in L1 insieme al resto del contesto di lavoro, e le latenze della memoria iniziano a influenzare direttamente la velocità di calcolo.</p>
+    <p>Si scopre che i caricamenti speculativi della versione Branchful cominciano a sovrapporsi alle perdite dovute alle mispredictions, mentre Branchless è costretto ogni volta ad aspettare il risultato dell'iterazione precedente. For Loop sulle dimensioni grandi degrada in modo prevedibile più velocemente di tutti con il suo O(n), e la scansione diretta smette di convenire già su un array di più di 100 elementi.</p>
+    <p>Alla fine arriviamo a una conclusione piuttosto non banale, ovvero che la speculazione interagisce direttamente con il sottosistema di memoria, aumentandone al contempo il carico e nascondendone le stesse latenze. L'esecuzione speculativa costa risorse, ma è proprio ciò che ti permette di non stare fermo ad aspettare che la memoria risponda, e si scopre che le prestazioni non sono determinate da un singolo parametro ma da un equilibrio tra mispredictions, latenze della memoria e banda disponibile. E questo equilibrio è diverso ogni volta a seconda dei dati, del processore e dei pattern di accesso.</p>
+    <p>L'architettura dell'hardware moderno in un certo senso ripete il principio di qualsiasi sistema complesso: bisogna imparare a convivere efficacemente con il sistema, trasformando le perdite in un prezzo accettabile per la velocità.</p>
+    <p>P.S. Se sei arrivato a leggere fin qui, allora probabilmente sei un po' interessato al tema delle prestazioni nelle applicazioni e nei giochi. L'anno scorso ho pubblicato l'articolo «<a href="../../en/articles/dancing-with-allocators.html">Game++. Danzare con gli allocatori</a>», da cui è poi cresciuta un'intera serie Game++, e in seguito un <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">libro che BHV ha pubblicato non molto tempo fa</a>.</p>
+    <p>Questo e un paio di altri articoli sono diventati la base per uno dei capitoli del libro, interamente dedicato alla programmazione senza allocazioni, ai pool, allo stack e agli allocatori personalizzati, ad altri approcci e a come tutto ciò si comporta in un vero motore di gioco sotto carico. Il materiale nel libro è risultato piuttosto denso, ma alcuni momenti sono comunque rimasti fuori campo, e volevo dare la possibilità di lavorarci a mano invece che limitarsi a leggere. Perciò ho ricavato dal capitolo un corso a sé su Stepik, «<a href="https://stepik.org/a/251888" target="_blank" rel="noopener">Programmazione giocosa. C++ senza allocazioni di memoria</a>».</p>
+    <p>Il corso è impostato in modo che la teoria di un paio di capitoli del libro sia suddivisa in brevi blocchi, ciascuno accompagnato da domande e compiti che devi risolvere tu stesso invece di limitarti a eseguire codice già pronto. Gli esercizi sono costruiti su pattern reali dello sviluppo di giochi, ma senza troppo hardcore — il mio obiettivo principale era mostrare come si possano aggirare le limitazioni del linguaggio e migliorare le prestazioni, a volte con un paio di righe di codice.</p>
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
