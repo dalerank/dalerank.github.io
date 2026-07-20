@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Game++ — reviews — dalerank</title>
+<title>Game++ reviews — dalerank</title>
 <meta name="description" content="Reader reviews of the book “Game++. Building & Optimizing a Game Engine”." />
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/game-plus-reviews.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/game-plus-reviews.html" />
@@ -17,11 +17,67 @@
   <div class="actions"><span class="lang"><a href="../game-plus-reviews.html">RU</a><i>/</i><a class="on" href="game-plus-reviews.html">EN</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag clay">Book</span><h1>Game++ — reviews</h1><div class="ameta"><span>What readers say</span></div></div>
+  <div class="article-head"><span class="tag clay">Book</span><h1>Game++ reviews</h1><div class="ameta"><span>What readers say</span></div></div>
   <article class="prose">
-    <p>Reader reviews of the book <strong>“Game++. Building &amp; Optimizing a Game Engine”</strong> will be collected here.</p>
-    <p style="color:var(--ink-soft);font-style:italic">Reviews are coming soon — check back a little later.</p>
-    <!-- REVIEWS GO HERE -->
+    <p>Reader reviews of the book <strong>“Game++. Building &amp; Optimizing a Game Engine”</strong>.</p>
+
+    <div class="reviews">
+
+      <figure class="review">
+        <div class="body">
+          <p>I first came to appreciate Sergey's talent as a writer through his articles on Habr, where they regularly draw a lot of readers and earn high ratings. They caught my attention too, with their breakdowns of intriguing bugs from the world of C++ game development. The topic of undefined behaviour (UB) and bugs in general is close and interesting to me. First, from a practical standpoint: as a source of ideas for new diagnostic rules in PVS-Studio. Second, Sergey really does write in an intriguing way, and it's fun to try to guess where his next story about something not working as intended will lead.</p>
+          <p>I liked the stories so much that we even put together a fun quiz where you have to guess what's wrong with a piece of C++ code. The answers are, in fact, conjectural, since no exact answer is possible when it comes to UB. But we weren't trying to test anyone's knowledge — we wanted to lift programmers' spirits, and it turned out well.</p>
+          <p>Now you hold in your hands Sergey's new, large-scale work on game development and its optimization. I'm far from the subject of games and won't presume to judge, say, its review of game engines and specific approaches to boosting performance. But as a fan of “extreme C++ usage,” I consider the book unquestionably worth your attention. You'll find descriptions of many techniques worth applying in practice when needed — and of some that are better left alone :) Sergey truly reveals the abyss of the “splendor and horror” of C++.</p>
+          <p>I wish everyone a pleasant read! And high-quality, fast code — though I understand that combining the two is not easy. Good luck :)</p>
+        </div>
+        <figcaption>
+          <span class="who">Andrey Karpov</span>
+          <span class="role">Co-founder of PVS-Studio, a static code analysis tool</span>
+        </figcaption>
+      </figure>
+
+      <figure class="review">
+        <div class="body">
+          <p>I read Sergey Kushnirenko's book “Game++. In Time for 16 ms.” You may have read his articles on Habr, where he writes under the handle dalerank. An excellent book — you can tell a lot of time and effort went into it. Recommended.</p>
+          <p>The book gathers Sergey's unique experience developing games at large commercial companies, so it's full of examples from real games. You'll learn how GTA V organizes the loading of static objects, which allocators The Sims used, and how the planet is generated in No Man's Sky — as well as which developer mistakes hurt performance and how to fix them.</p>
+          <p>Everything described in the book applies not only to games, but to any system where speed matters and milliseconds count. I've worked both in game development and with high-load distributed systems, and I always had to dig this information out of articles, blogs, and conversations with colleagues. The Game Programming Gems series also had separate chapters on performance. Here, though, a single book collects the most modern approaches to optimizing C++ code, proven in practice. Every topic is well developed. More than a dozen different allocators are described. There are chapters on parallelism, working with threads, and lock-free synchronization. Bonus — a small reference on STL algorithms. There are links to code on GitHub, so all the benchmarks can be run, checked, and played with.</p>
+          <p>If you've never optimized C++ code, Game++ has all the information you need to get started. If you're already an experienced developer, you'll find new approaches and ideas worth trying. So read it with pleasure — and don't forget that premature optimization is the root of all evil.</p>
+        </div>
+        <figcaption>
+          <span class="who">Elena Sagalaeva</span>
+          <span class="role">AKA alenacpp</span>
+        </figcaption>
+      </figure>
+
+      <figure class="review">
+        <div class="body">
+          <p>Let me add a little insight about the work on the Game++ draft, from my own vantage point.</p>
+          <p>I met Sergey on Habr, and last summer, when I went off-topic in the comments with a naive question — “where can I read something structured about optimization, so I don't have to scramble all over the internet and spend years piecing it all together in my head?” — he offered, in a private message, to let me look at the draft of the future book and ask questions about anything I didn't understand. I asked plenty, and I practically spammed the whole draft with my comments.</p>
+          <p>At first there was only half of it (about 250 pages) and the ASCII diagrams from the article series of the same name. I couldn't make sense of some of the diagrams and volunteered to turn them into vector graphics (I had to dust off my university CorelDraw skills) so they'd be both prettier and clearer (even to me). The result: two or three months of work in the evenings and at night, and around 250 illustrations. They look simple, but some took longer — reading extra literature and articles, gathering references — to convey the essence as concisely, accurately, and clearly as possible.</p>
+          <p>Now, my impressions of the book itself — it's inspiring. Reading about some of the allocators (which weren't in the Habr articles, mind you), my brain occasionally exploded: “wait, you could do that? who even came up with this?” A game looks simple at first glance — it's not Crysis, how hard can it be? — and under the hood there's a triple stack allocator, written in assembly no less, so it would not just fly but even run on the hardware of the day. Can you imagine that level of mastery and love for the craft?</p>
+          <p>About the audience. Game++ is not a textbook or a guide for complete beginners — you won't write an engine from this book alone; it assumes you can and want to write C++. Broader knowledge can be drawn from Gregory's GEA together with Nystrom's Game Programming Patterns. Game++ complements those books well — you can (or even better, should) read them in parallel.</p>
+          <p>And there's a lot more I took away from Game++: architecture and reviews of engines (Unity, Unreal, Dagor, CryEngine, and so on), allocators and containers — what kinds there are, where to use them, how to speed them up, and what pitfalls to watch for. Plus a whole trainload about multithreading and development patterns. Thanks again to Sergey and everyone involved, and congratulations on the book's release. I'm glad I got to contribute to its creation.</p>
+        </div>
+        <figcaption>
+          <span class="who">Serpentine</span>
+          <span class="role"><a href="https://habr.com/ru/articles/1002546/#comment_29569994" target="_blank" rel="noopener">comment on Habr</a></span>
+        </figcaption>
+      </figure>
+
+      <figure class="review">
+        <div class="body">
+          <p>Great book! Thank you for your work! I got it as a gift from my wife for February 23rd. We ordered it as soon as the post came out, and it was delivered the next day.</p>
+          <p>It reads easily (given the technical complexity of the subject) — you can feel it was written with heart. I love the abundance of details, personal examples, and tests; the author's personal experience is especially valuable. There are some parallels with “Game Programming Patterns” by Robert Nystrom, where the author likewise shares his own findings.</p>
+          <p>I write in C# (Unity) myself, but I'm always interested in the under-the-hood details and how things work. If you're worried that you don't know C++ — don't be; the examples are good and clearly written. Still, a basic grasp of the syntax will be a plus.</p>
+        </div>
+        <figcaption>
+          <span class="who">leni8ec</span>
+          <span class="role"><a href="https://habr.com/ru/articles/1002546/#comment_29591180" target="_blank" rel="noopener">comment on Habr</a></span>
+        </figcaption>
+      </figure>
+
+    </div>
+
     <a class="backlink" href="index.html#books">← All books</a>
   </article>
 </main>

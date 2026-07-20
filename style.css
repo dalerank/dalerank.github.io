@@ -366,6 +366,19 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding:40px 0 60px}
 .prose td p,.prose th p{margin:0}
 .quote{border-left:3px solid var(--gold);padding:4px 0 4px 24px;margin:30px 0;
   font-family:var(--display);font-style:italic;font-size:22px;line-height:1.4;color:var(--cocoa)}
+.reviews{display:flex;flex-direction:column;gap:22px;margin:26px 0 8px}
+.review{position:relative;background:var(--card);border:1.5px solid var(--line-strong);
+  border-radius:var(--r);padding:26px 28px 22px;box-shadow:var(--shadow)}
+.review::before{content:"\201C";position:absolute;top:-6px;left:16px;
+  font-family:var(--display);font-size:74px;line-height:1;color:var(--gold-soft);opacity:.55}
+.review .body{position:relative}
+.review .body p{margin:0 0 14px;font-size:17px;line-height:1.62}
+.review .body p:last-child{margin-bottom:0}
+.review figcaption{display:flex;flex-direction:column;gap:2px;margin-top:18px;
+  padding-top:16px;border-top:1px solid var(--line)}
+.review .who{font-family:var(--display);font-weight:600;font-size:18px;color:var(--ink)}
+.review .role{font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:var(--ink-soft)}
+.review .role a{color:var(--rust);text-decoration:underline;text-underline-offset:2px}
 .credits{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 0}
 .gamegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px;margin:16px 0 4px}
 .game{border:1.5px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--paper-2);
