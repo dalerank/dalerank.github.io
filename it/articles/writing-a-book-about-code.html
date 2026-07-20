@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scrivere codice è più facile che scrivere un libro sullo scrivere codice — dalerank</title>
+<meta name="description" content="Come la serie Game++ su Habr è diventata un libro sul C++ pragmatico e lo sviluppo di motori: cos'è il «buon» C++, le persone che hanno aiutato a far nascere il libro, l'editing come mestiere a sé e un grande blocco di risposte alle domande frequenti su come scriverlo e pubblicarlo." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/writing-a-book-about-code.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/writing-a-book-about-code.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/writing-a-book-about-code.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/writing-a-book-about-code.html">RU</a><i>/</i><a href="../../en/articles/writing-a-book-about-code.html">EN</a><i>/</i><a class="on" href="writing-a-book-about-code.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Mestiere</span><h1>Scrivere codice è più facile che scrivere un libro sullo scrivere codice</h1><div class="ameta"><span>22 febbraio 2026</span><span>4 min</span></div></div>
+  <article class="prose">
+
+<img src="../../assets/articles/writing-a-book-about-code/01.jpg" alt="Scrivere codice è più facile che scrivere un libro sullo scrivere codice" class="post-image" loading="lazy" />
+<p>A volte un libro comincia da un singolo articolo pubblicato al momento giusto sul Habr giusto, e nel mio caso tutto è davvero cominciato dal post sugli allocatori che, nonostante l'abbondanza di materiale tecnico, codice e diagrammi, ha ricevuto il maggior numero di voti positivi tra i miei articoli sullo sviluppo C++-affine e gamedev. E poi la serie Game++ stessa è cresciuta gradualmente da riflessioni tecniche separate su C++, architettura dei motori e prestazioni fino a diventare una narrazione coerente. Dietro Game++ c'è materiale ancora più strettamente tecnico nel blog e nella wiki della mia azienda, e sarei felice di condividerlo — e periodicamente lo condivido — ma capisci, non tutto si può pubblicare, e persino di ciò che è pubblicato su Habr, una buona parte è stata spesso tagliata, perché NDA e tecnologie segrete bla-bla-bla. Quell'articolo è stato il momento in cui ho visto che i testi sparsi formano in realtà lo scheletro di un futuro libro; basta smettere di trattarli come «post» e iniziare a vederli come capitoli. L'idea di scrivere un libro non è venuta dal nulla — diverse persone e aziende non collegate tra loro si sono fatte vive proponendo di riscrivere la serie di articoli come libro.</p>
+<p>Acquista: <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">BHV</a> · <a href="https://www.ozon.ru/product/game-ustroystvo-i-optimizatsiya-igrovogo-dvizhka-3541648050/" target="_blank" rel="noopener">Ozon</a> · <a href="https://www.wildberries.ru/catalog/835326568/detail.aspx" target="_blank" rel="noopener">WB</a></p>
+
+<h3>Indice</h3>
+<img src="../../assets/articles/writing-a-book-about-code/02.jpg" alt="Indice di Game++" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/03.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/04.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/05.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/06.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/07.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/08.jpg" alt="" class="post-image" loading="lazy" />
+<img src="../../assets/articles/writing-a-book-about-code/09.jpg" alt="" class="post-image" loading="lazy" />
+
+<p>E nel processo di scrittura degli articoli notavo sempre più che tornavo continuamente sulle stesse domande — cos'è il «buon» C++ in un motore, dove passa il confine tra filosofia e codice di produzione — e a un certo punto è diventato chiaro che il formato articolo non sempre calza e che troppo contesto resta fuori dalle parentesi, troppo spesso devi interrompere una linea di ragionamento perché il testo è già venuto «troppo lungo per Habr»; guardo gli scroll-through e di solito la gente non legge gli articoli oltre i 15 minuti. Il libro è diventato un modo per ampliare sia il volume sia gli esempi e per dare più filosofia.</p>
+<p>Per me è particolarmente importante che questo non sia un libro «su un motore di gioco» in senso stretto — puoi prendere il classico di Gregory e lì troverai la teoria necessaria e importante dello sviluppo dei motori. Sì, ho molti esempi tratti dallo sviluppo di motori, dal lavoro con la memoria, i thread, gli allocatori, le stringhe, dalle pratiche di ottimizzazione e dai compromessi architetturali, ma in sostanza è un libro sul C++ come linguaggio delle decisioni ingegneristiche e su come pensare in termini di dati, lifetime e comportamento del codice sull'hardware reale — e il motore qui è solo un ambiente di complessità accentuata, una specie di stress test per il linguaggio, in cui si vede chiaramente dove i concetti funzionano e dove crollano.</p>
+<p>Una parte a sé di questa storia sono le persone che sono diventate anch'esse parte del libro — Anatoly Mamaev @Serpentine, che al libro ha regalato la maggior parte dei disegni, Oleg Sivchenko @OlegSivchenko, che ha seguito il lavoro con l'editore BHV, e Leonid Kochin, che ha coraggiosamente curato l'editing ed è entrato in tutto questo mucchio di termini. Con Oleg e Anatoly la comunicazione è andata gradualmente oltre Habr e il libro, verso questioni più generali di cultura ingegneristica e qualità della letteratura tecnica; spero di poterli chiamare miei amici e che la nostra comunicazione non finisca con l'uscita del libro. Non meno preziosa è stata la comunicazione con Andrey Karpov @Andrey2008 — con il suo aiuto e quello dell'azienda PVS sono riuscito a tenere diversi webinar, che si sono rivelati una specie di stress test, perché spiegare le proprie idee a voce, in un formato live in cui il pubblico fa domande e ti coglie sulle imprecisioni, non è testo con immagini. Senza dubbio molti frammenti del libro sono migliorati proprio perché erano stati verbalizzati in questi incontri. E i ragazzi ora aiutano anche con la traduzione del libro in inglese, per cui un grazie a parte — spero vada tutto in porto.</p>
+<p>E naturalmente un ringraziamento speciale a Habr e ai lettori, senza di voi nemmeno questo sarebbe accaduto. Di tutto il processo di lavoro, ciò che ricordo di più non è la scrittura in sé — anche se, guardando indietro, raccogliere il materiale ha richiesto una decina d'anni, probabilmente dal momento in cui ho effettivamente iniziato a scrivere documentazione e articoli — ma l'editing, che è un tipo di lavorazione del materiale completamente diverso: raccogliere note sparse, fogli, tovaglioli, file e semplici disegni scritti in anni e stati d'animo diversi, e trovare la logica interna, quella «spina dorsale» su cui il testo si regge e che attraversa tutto il libro. E sì, un libro non è una raccolta di articoli ma una sequenza di idee, in cui ogni capitolo successivo risponde alla domanda posta da quello precedente, e ho dovuto riscrivere molto, buttare via alcune cose, ripensarne altre. Ho anche dovuto uniformare lo stile, perché persino gli articoli scritti da una stessa persona si sono rivelati molto diversi per umore, stile e approccio. Non è stato facile, e ciò che c'è nel libro è in realtà già la quarta iterazione del testo, in alcuni punti riscritto quasi completamente.</p>
+<p>Un libro non parte necessariamente da una pagina bianca; a volte parte dalla rielaborazione di lavoro già fatto e dalla domanda «e se questo non fosse solo nulla?» — e magari scoprirai all'improvviso di avere già non solo testi ma una posizione, non solo articoli ma una visione della professione. Sorprendentemente, un tema piuttosto specialistico ha ottenuto una buona risposta su Habr/LinkedIn/social, e sono arrivate molte domande; lascio qui quelle frequenti, forse qualcuno le troverà interessanti:</p>
+
+<p><strong>D: Ci hai lavorato a lungo sul libro?</strong><br />R: Quasi 10 anni, se conti dal momento della raccolta dei primi materiali per l'articolo sugli allocatori — un anno per preparare gli articoli, mezzo anno per Game++ su Habr, un altro anno per la bozza e il lavoro con BHV.</p>
+<p><strong>D: Quando esce e dove si compra?</strong><br />R: È uscito, nei negozi online. Forse @OlegSivchenko può dirti dove è disponibile fisicamente per sfogliarlo e dargli un'occhiata.</p>
+<p><strong>D: Dove comprarlo in Europa?</strong><br />R: Sinceramente non lo so; mi hanno consigliato Boxberry, ma non ho ordinato libri tramite loro.</p>
+<p><strong>D: Ci sarà una versione elettronica o solo cartacea?</strong><br />R: Ci sarà, più avanti.</p>
+<p><strong>D: Perché hai scelto BHV?</strong><br />R: È così che si sono allineate le stelle.</p>
+<p><strong>D: Qual è la tiratura?</strong><br />R: 1000.</p>
+<p><strong>D: Perché è venuto con così tante pagine?</strong><br />R: IMHO sono troppo poche, in realtà — un terzo del materiale è rimasto fuori.</p>
+<p><strong>D: Serve esperienza con i motori di gioco per leggere il libro, o basta conoscere il C++?</strong><br />R: Auspicabile ma non obbligatoria. La maggior parte degli esempi è davvero sviluppata su un esempio di gioco, ma valgono ovunque.</p>
+<p><strong>D: Da quale capitolo è meglio partire se ho già letto la serie su Habr?</strong><br />R: Il materiale è pesantemente rielaborato e ampliato, metà non è su Habr, penso sia meglio partire dall'inizio.</p>
+<p><strong>D: Quando esce all'incirca la versione inglese?</strong><br />R: Sinceramente non lo so. C'è molto materiale e non è facile da tradurre.</p>
+<p><strong>D: Continuerai a scrivere su Habr dopo l'uscita del libro?</strong><br />R: Puoi scommetterci (Engaging Programming).</p>
+<p><strong>D: Possiamo invitarti a una lezione, un seminario, un webinar?</strong><br />R: Nessun problema e anzi è necessario, ma ci sono delle sfumature.</p>
+<p><strong>D: Ci sarà una seconda parte?</strong><br />R: Fammi prima gestire la prima — non ci ho ancora pensato.</p>
+<p><strong>D: Quante persone hanno lavorato al libro?</strong><br />R: I testi sono miei, i disegni da schemi e descrizioni li ha fatti Anatoly, un'altra ventina di persone ha avuto accesso alla bozza e ha lasciato commenti e suggerimenti, dal lato dell'editore ne conosco cinque — Oleg può dirti di più.</p>
+<p><strong>D: Come hai usato l'AI come aiuto (a quanto pare questo preoccupa molto tutti, perché ho ricevuto una quarantina di messaggi con questa domanda)?</strong><br />R: Originality.ai per il fact-checking e la verifica del materiale, Claude Sonnet per elaborare e consolidare i diagrammi, analizzare foto di testo scritto a mano e tovaglioli, PaperRater/Advego/Corrector per sintassi e punteggiatura.</p>
+<p><strong>D: Come mettersi in contatto con te?</strong><br />R: Habr, LinkedIn, Game++ su tg, Boosty, Stepik.</p>
+
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+</body></html>
