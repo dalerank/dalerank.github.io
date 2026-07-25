@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A field guide to EASTL — dalerank</title>
+<meta name="description" content="The second part of the field guide to other people's "standard" libraries, now on EA's EASTL: why the C++ STL fits console gamedev so poorly, stateful object-allocators with flags instead of type binding, fixed and intrusive containers, sorted vectors and reset() for scratch memory — and how many of these ideas eventually made it into the standard: pmr, string_view, flat_map, inplace_vector and trivial relocation." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/eastl-guide.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/eastl-guide.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/eastl-guide.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/eastl-guide.html">RU</a><i>/</i><a class="on" href="eastl-guide.html">EN</a><i>/</i><a href="../../it/articles/eastl-guide.html">IT</a></span><a class="btn" href="https://boosty.to/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">Abnormal programming</span><h1>A field guide to EASTL</h1><div class="ameta"><span>Jul 24, 2026</span><span>15 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/eastl-guide/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>This is the second part of <a href="foreign-stl-guide.html">A field guide to other people's STLs</a>; there may even be a third one about various container tricks and hacks, once enough material piles up. </p>
+    <p>The C++ standard library turned out to be almost unusable for game development, and people realized this pretty much the moment they tried to use it. Electronic Arts, the biggest publisher at the time, became the most famous example of a standard-library reimplementation built for game developers (there were others, of course, less well known), and it was brought to life by teams from several studios under Paul Pedriana.</p>
+    <p>The roots of EASTL reach back to Maxis in 1998, when Paul, working on SimCity 3000, gave a GDC talk titled "High Performance Game Programming in C++" about custom containers, the cost of calls, and performance measurements. There was no unified EASTL yet, but the approach it later grew out of is already visible there.</p>
+    <p>Before consolidation, even within a single studio there could be several parallel STL implementations, built for different games, platforms, and tools. I'd venture that the most complete one came from Maxis, being one of the leading studios, while other teams had smaller ones, each with its own assumptions.</p>
+    <p>He also mentioned in articles and talks that EASTL was a synthesis of practices from those internal variants, not the from-scratch work of one person, and that at the heart of the big EASTL lies the collective experience of several engineering teams — even if the formal author of the final public version and the paper remained him alone. The specific names of the co-authors of individual modules (allocators, fixed containers, etc.) are listed in the repo, but the glory went to Paul.</p>
+    <h2>Your own C++ standard</h2>
+    <p>The C++ standard library was designed to be universal, stable, and correct. That is its strength and simultaneously its problem, because a universal solution is almost never optimal for a specific case. And game development always has been and always will be that specific case, with fundamentally different constraints. Add to that the fact that EA made most of its games first for consoles and only then for PC, and you get decisions oriented primarily around memory and the quirks of consoles.</p>
+    <p>A game console differs a lot from an ordinary PC (less so now, but the quirks are still there), which is exactly why all the further decisions in EASTL grow from here:</p>
+    <p><em>Memory is fixed and there's little of it... well, "little"... there's never enough memory</em><strong>, </strong>on a console there's no virtual memory and no swap, and if you run out of RAM the game simply crashes. Mid-2000s EA games ran in a physical budget of 32 MB with a few free kilobytes to spare, and some with literally zero, installing an out-of-memory callback that, at the moment of the request, went off to free memory somewhere else. Sometimes successfully, sometimes not.</p>
+    <p><em>Fragmentation kills</em><strong>. </strong>It kills even today: on my recent project on Xbox, after an hour of play the amount of fragmented memory creeps up toward 200 MB — so we're not talking about some measly kilobytes. Since there's no virtual memory, the holes in the heap aren't "smeared over" by the hardware, and an allocator that leaves garbage between blocks will sooner or later fail to find a contiguous chunk of the required size, and that's it — after that, see the point about fixed memory.</p>
+    <p><em>Caches are smaller and prefetch algorithms are weaker than on PC</em><strong>.</strong> Cache misses cost more (smaller prefetch blocks), branches cost more (a smaller BPU), virtual calls cost more (smaller jump tables). Non-desktop platforms (handhelds and mobile) sag outright on small memory fetches over long sessions (read: indirect jumps / frequent accesses to scattered addresses), and this is one of the reasons EASTL avoided and still avoids extra layers of abstraction — because even a cache miss on a console or a phone costs more than on a PC with its aggressive data prefetch and bottomless cache.</p>
+    <p><em>Anything that drags extra data into a cache line is expensive. </em>EASTL avoids extra calls (even inlined ones), because they create extra memory accesses and bloat the function code, which hits the instruction cache hard — that is, more instructions in an algorithm is physically slower.</p>
+    <p><em>The debug build also has to be fast</em><strong>.</strong> A game is tested by people, by hand, iteratively, and if the debug build barely moves, testing it becomes physically hard or impossible.</p>
+    <p>Out of this list comes the main idea of EASTL itself — the problem isn't in the algorithms (they're excellent) or even in the container interfaces (they're convenient); the problem lies in the very memory model the standard uses. And since the root is in the memory model, that's what needs fixing first, along with everything tied to it: data locality, temporal and spatial, data connectivity, and the allocators that give birth to that data.</p>
+    <img src="../../assets/articles/eastl-guide/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Some dancers are held back...</h2>
+    <p>...by their own feet, as the saying goes. Here's what the standard's requirement for an allocator looks like (simplified — I threw out the <code>typedef</code>s):</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+class allocator
+{
+public:
+    template &lt;class U&gt; struct rebind { typedef allocator&lt;U&gt; other; };
+
+    T*   allocate(size_type n, const void* hint = 0);
+    void deallocate(T* p, size_type n);
+    void construct(T* p, const T&amp; val);   // the allocator also constructs objects
+    void destroy(T* p);
+    size_type max_size() const;
+};</code></pre>
+    <p>It looks fine, but in practice this design became a source of pain. Different kinds of pain, each hurting in its own way and each dragging real consequences behind it.</p>
+    <p><em>The allocator is bound to the type, not the instance</em><strong>.</strong> The standard allocator is a class, not an object, and all the information about where to take memory from lives in the type, not in a specific container instance. So when you need precisely an instance-based allocator (for example, "this vector takes memory from this specific pool, and that one from another"), you're forced to make two different classes just to do it.</p>
+    <pre style="margin:1.4rem 0"><code>// Standard allocator, where all information about the pool is "baked" into the type.
+// Want to take memory from two different pools? You'll have to make two different classes.
+
+template &lt;typename T&gt;
+class PoolAAllocator {
+public:
+    T* allocate(std::size_t n) {
+        return static_cast&lt;T*&gt;(g_poolA.alloc(n * sizeof(T)));
+    }
+    void deallocate(T* p, std::size_t n) {
+        g_poolA.free(p);
+    }
+    // ... construct, destroy, rebind, and the rest of the mandatory set
+};
+
+template &lt;typename T&gt;
+class PoolBAllocator {
+public:
+    T* allocate(std::size_t n) {
+        return static_cast&lt;T*&gt;(g_poolB.alloc(n * sizeof(T)));
+    }
+    void deallocate(T* p, std::size_t n) {
+        g_poolB.free(p);
+    }
+    // ... the exact same code, just a different pool
+};
+
+// We get two vectors of DIFFERENT types,
+// even though logically these are two identical Foo vectors with a different memory source
+std::vector&lt;Foo, PoolAAllocator&lt;Foo&gt;&gt; vecFromPoolA;
+std::vector&lt;Foo, PoolBAllocator&lt;Foo&gt;&gt; vecFromPoolB;
+
+// They're not interchangeable at the type level. You can't write a function
+// that works the same with both — the container types are different.
+// For vecFromPoolB you need a SEPARATE overload or template
+void ProcessVector(std::vector&lt;Foo, PoolAAllocator&lt;Foo&gt;&gt;&amp; v);</code></pre>
+    <p>Technically the problem runs deeper than just "the design is inconvenient": under C++98/03 it was assumed (though not always literally required) that all instances of <code>allocator&lt;T&gt;</code> for a given <code>T</code> are equivalent and interchangeable (they can free each other's memory). That's a consequence of the allocator being essentially a stateless type rather than an object with state.</p>
+    <p>If you need <code>vector&lt;Foo&gt;</code> to take memory from pool A and another <code>vector&lt;Foo&gt;</code> from pool B, the standard design forces you to create two different allocator <em>types</em> (<code>PoolAAllocator&lt;Foo&gt;</code> and <code>PoolBAllocator&lt;Foo&gt;</code>) rather than just pass two different <em>objects</em> of the same type with different pool pointers.</p>
+    <p>In EASTL this is solved the other way around: its allocator is an ordinary object with state (it stores a pointer/name), which is simply passed to the container by value at construction, and it can be changed via <code>set_allocator</code> — that is, the allocator became instance-oriented by design, not merely "emulating that in places" through hacks.</p>
+    <pre style="margin:1.4rem 0"><code>// Same allocator type, different instances with different state
+eastl::allocator poolAAlloc("PoolA", &amp;g_poolA);
+eastl::allocator poolBAlloc("PoolB", &amp;g_poolB);
+
+// Same vector type, but different allocator objects passed to the constructor
+eastl::vector&lt;Foo&gt; vecFromPoolA(poolAAlloc);
+eastl::vector&lt;Foo&gt; vecFromPoolB(poolBAlloc);
+
+// You can write functions not tied to a specific pool:
+void ProcessVector(eastl::vector&lt;Foo&gt;&amp; v); // works with both
+
+// You can even swap the pool on the fly:
+vecFromPoolA.set_allocator(poolBAlloc);</code></pre>
+    <p>C++11 partially solved this problem by introducing <code>allocator_traits</code> and by allowing stateful allocators, which removed the rigid assumption that "all allocators of the same type must be interchangeable." But the fundamental problem remained: if <code>PoolAAllocator&lt;T&gt;</code> and <code>PoolBAllocator&lt;T&gt;</code> are still two different <em>types</em>, then <code>vector&lt;Foo, PoolAAllocator&lt;Foo&gt;&gt;</code> and <code>vector&lt;Foo, PoolBAllocator&lt;Foo&gt;&gt;</code> are different container types too — so really very little changed.</p>
+    <p>In C++17<strong> </strong>came <code>std::pmr::polymorphic_allocator</code> and <code>std::pmr::memory_resource</code>, which allowed different allocation behavior depending on the memory_resource an allocator is constructed from, and since memory_resource uses runtime polymorphism, it became possible to switch the allocation algorithm on the fly.</p>
+    <p>This is practically the same solution as in EASTL: the allocator becomes a genuine object with state inside the container (a wrapper over a pointer to <code>memory_resource</code>) rather than different types — and the proposal's author (Pablo Halpern, N3916) explicitly framed the problem in the same terms EASTL did back in 2007.</p>
+    <p>The <code>poolAAlloc</code>/<code>poolBAlloc</code> example can be rewritten almost word for word in <code>std::pmr</code>, except now we have a separate namespace inside std, and the code everywhere has to be rewritten too.</p>
+    <pre style="margin:1.4rem 0"><code>std::pmr::monotonic_buffer_resource poolA(&amp;bufferA, sizeA);
+std::pmr::monotonic_buffer_resource poolB(&amp;bufferB, sizeB);
+
+std::pmr::vector&lt;Foo&gt; vecFromPoolA(&amp;poolA);
+std::pmr::vector&lt;Foo&gt; vecFromPoolB(&amp;poolB);
+
+void ProcessVector(std::pmr::vector&lt;Foo&gt;&amp; v); // one type, works with both</code></pre>
+    <p>As you'll recall... you always have to pay for everything, and here the price is virtual calls inside <code>memory_resource</code> (<code>do_allocate</code>/<code>do_deallocate</code> are virtual) — so the "instance vs type" problem is solved, but paid for with virtual dispatch, which is still bad for the small caches and memory of consoles. </p>
+    <p>That's why in gamedev, especially on consoles, <code>pmr</code> was adopted rather sluggishly, and the EASTL-style approach (an object-allocator with no virtual) remains preferable for many studios, because it doesn't drag along the overhead of a virtual call on every allocation.</p>
+    <img src="../../assets/articles/eastl-guide/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Allocator rebind</h2>
+    <p><code>rebind</code> is a mechanism in the standard C++ allocator model that lets a container take an allocator parameterized by one type and obtain from it an allocator for a <em>different</em> type. If you wrote something like:</p>
+    <pre style="margin:1.4rem 0"><code>std::list&lt;int, MyAllocator&lt;int&gt;&gt; myList;</code></pre>
+    <p>Then you made an allocator for <code>int</code>, but <code>std::list</code> internally doesn't store bare <code>int</code>s at all — it stores linked-list nodes, each of which contains an <code>int</code> plus two pointers (<code>next</code>/<code>prev</code>), and the real type that needs to be allocated is something like <code>ListNode&lt;int&gt;</code>, not <code>int</code>. And the container needs a way to turn the <code>MyAllocator&lt;int&gt;</code> it was handed into a <code>MyAllocator&lt;ListNode&lt;int&gt;&gt;</code> — that's exactly what <code>rebind</code> does. </p>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+class MyAllocator {
+public:
+    template &lt;typename U&gt;
+    struct rebind {
+        typedef MyAllocator&lt;U&gt; other;
+    };
+    // ...
+};
+
+// Give me my own allocator, but retargeted to the node type
+typedef typename MyAllocator&lt;int&gt;::rebind&lt;ListNode&lt;int&gt;&gt;::other NodeAllocator;
+NodeAllocator nodeAlloc;  // now allocates ListNode&lt;int&gt;, not int</code></pre>
+    <p>In essence <code>rebind</code> is a "type factory": given an allocator for <code>T</code>, <code>rebind&lt;U&gt;::other</code> yields the same allocator but for <code>U</code>. In C++11 this was formally simplified — <code>rebind </code>became optional for an allocator, and now <code>std::allocator_traits</code> can deduce it automatically — but the mechanism itself didn't go anywhere; it just moved under the hood of the traits and the library. That is, they removed the manual boilerplate for the <em>author</em> of an allocator or container, but it didn't affect the <em>code generation</em> itself: the compiler still instantiates the rebound types, so the growth in the number of templates didn't go anywhere and<em> </em>still produces a template explosion<strong>, </strong>turning into extra code and extra calls.</p>
+    <img src="../../assets/articles/eastl-guide/04.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Allocator immutability</h2>
+    <p>The allocator in a container can't be changed after construction, and you can't reach it<strong>, </strong>because the container only gives you a copy of its allocator via <code>get_allocator()</code>, and you can only set your own one in the constructor. For games, where you often need to create a container and only after creation can tell it where to take memory from, this is very inconvenient. And there are also deferred and parallel tasks that take the allocator of the thread that will run them — here the time between creating the container and actually installing the allocator into it can be several milliseconds.</p>
+    <p>EASTL changes the very notion of what we mean by an allocator: now it looks more like a <code>malloc</code>/<code>free</code> pair than <code>new</code>/<code>delete</code>, and it simply hands out raw bytes.</p>
+    <pre style="margin:1.4rem 0"><code>class allocator
+{
+public:
+    explicit allocator(const char* name = "EASTL");   // the allocator has a name
+
+    // Ordinary allocation, and allocation with alignment and offset:
+    void* allocate(size_t n, int flags = 0);
+    void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0);
+    void  deallocate(void* p, size_t n);
+
+    const char* get_name() const;
+    void        set_name(const char* name);
+};</code></pre>
+    <p>Look at what changed here compared to the standard, and why exactly these changes were made:</p>
+    <ul><li><p>The allocator no longer has to be a template<strong>,</strong> no <code>rebind</code>, no instantiation explosion, no member templates. </p></li><li><p>A <code><strong>flags</strong></code><strong> </strong>parameter was added, for example as a hint to the allocator that this is temporary memory, or permanent, or for the GPU, or for file reads. A small thing, but a whole anti-fragmentation technique rests on it (more on that below). </p></li><li><p>The allocator now has a name<strong>, </strong>so every allocation can be tagged, and the memory report will show where those 4 megabytes went — or 400, or 4 gigabytes.</p></li></ul>
+    <p>The <code>flags</code> deserve a separate mention, because it's a very elegant idea that lets you build hierarchies of memory regions (again, you can read about what that is in the article on allocators or in the book). EA's game heaps split memory into <code>permanent and temporary:</code> very roughly (hierarchies come in different forms), the permanent memory (allocated at level start and living until its end) grows from one end of the heap, and the temporary memory (allocated and freed chaotically), as you've already guessed, from the other. </p>
+    <p>As a result, the permanent allocations are tightly packed at the top and leave no "dead zones" among the temporary ones at the bottom. A flag in <code>allocate</code> is the simplest way to tell the heap which end of the memory block to bite off from. A standard allocator can't do this in principle, and for some EA games there simply wasn't enough memory to launch without this optimization. This kind of memory organization lets you save up to 10% of the actually used volume, purely by cleverly separating data by type.</p>
+    <pre style="margin:1.4rem 0"><code>[temporary --&gt;            (free space)             &lt;-- permanent]
+(low addresses)                                    (high addresses)</code></pre>
+    <img src="../../assets/articles/eastl-guide/05.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Container conventions</h2>
+    <p>EASTL doesn't rewrite interfaces for the sake of rewriting. On the contrary, it guarantees that existing code written against <code>std::vector</code> will behave the same if it's turned into <code>eastl::vector</code>, and the changes only arrive through new methods, additional template parameters, or entirely new containers.</p>
+    <p>Among EASTL's main features, people often single out its careful treatment of empty objects: an empty container almost never allocates memory. Some implementations of <code>std::list</code> and <code>std::map</code> create a sentinel node right at construction, but we want an empty container to cost zero bytes of heap.</p>
+    <p>For example, an empty std::deque in most implementations does two allocations.</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T&gt;
+struct SpyAllocator {
+    using value_type = T;
+
+    SpyAllocator() = default;
+
+    template &lt;typename U&gt;
+    SpyAllocator(const SpyAllocator&lt;U&gt;&amp;) {}
+
+    T* allocate(std::size_t n) {
+        std::cout &lt;&lt; "  allocate: " &lt;&lt; n &lt;&lt; " x " &lt;&lt; sizeof(T)
+                  &lt;&lt; " bytes (" &lt;&lt; n * sizeof(T) &lt;&lt; " total)\n";
+        return static_cast&lt;T*&gt;(::operator new(n * sizeof(T)));
+    }
+
+    void deallocate(T* p, std::size_t) noexcept {
+        ::operator delete(p);
+    }
+};
+
+template &lt;typename T, typename U&gt;
+bool operator==(const SpyAllocator&lt;T&gt;&amp;, const SpyAllocator&lt;U&gt;&amp;) { return true; }
+template &lt;typename T, typename U&gt;
+bool operator!=(const SpyAllocator&lt;T&gt;&amp;, const SpyAllocator&lt;U&gt;&amp;) { return false; }
+
+int main() {
+    std::cout &lt;&lt; "vector (empty):\n";
+    std::vector&lt;int, SpyAllocator&lt;int&gt;&gt; v;   // expect silence
+
+    std::cout &lt;&lt; "list (empty):\n";
+    std::list&lt;int, SpyAllocator&lt;int&gt;&gt; l;     // a sentinel node is possible here
+
+    std::cout &lt;&lt; "map (empty):\n";
+    std::map&lt;int, int, std::less&lt;int&gt;,
+             SpyAllocator&lt;std::pair&lt;const int, int&gt;&gt;&gt; m; // also possible
+
+    std::cout &lt;&lt; "deque (empty):\n";
+    std::deque&lt;int, SpyAllocator&lt;int&gt;&gt; d;   // and here there will most likely be an allocate
+
+    std::cout &lt;&lt; "\n--- add one element each ---\n";
+    std::cout &lt;&lt; "vector.push_back:\n"; v.push_back(1);
+    std::cout &lt;&lt; "list.push_back:\n";   l.push_back(1);
+    std::cout &lt;&lt; "map.insert:\n";       m.insert({1, 1});
+}</code></pre>
+    <pre style="margin:1.4rem 0"><code>GCC/CLANG
+vector (empty):
+list (empty):
+map (empty):
+deque (empty):
+  allocate: 8 x 8 bytes (64 total)
+  allocate: 128 x 4 bytes (512 total)
+
+--- add one element each ---
+vector.push_back:
+  allocate: 1 x 4 bytes (4 total)
+list.push_back:
+  allocate: 1 x 24 bytes (24 total)
+map.insert:
+  allocate: 1 x 40 bytes (40 total)
+==========================================================
+MSVC
+vector (empty):
+list (empty):
+  allocate: 1 x 24 bytes (24 total)
+map (empty):
+  allocate: 1 x 40 bytes (40 total)
+deque (empty):
+  allocate: 1 x 16 bytes (16 total)
+
+--- add one element each ---
+vector.push_back:
+  allocate: 1 x 4 bytes (4 total)
+list.push_back:
+  allocate: 1 x 24 bytes (24 total)
+map.insert:
+  allocate: 1 x 40 bytes (40 total)</code></pre>
+    <p>There's also <code><strong>reset()</strong></code><strong>, </strong>and it's probably the best "gamey" extension, which later migrated into a great many engines and games, because <code>reset()</code> resets the container to an empty state in a single operation, <em>without freeing the objects' memory</em>. </p>
+    <p>The typical scenario: you built a container in a piece of scratch memory (for example, in a temporary frame buffer), worked with it, and at the end you simply "zeroed" it out without walking and destroying all the nodes and calling dealloc/free. If you're interested, you can read about the different kinds of allocators in one of <a href="dancing-with-allocators.html">my earlier articles</a>, and about even more techniques and <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">allocator theory in the book Game++</a>.</p>
+    <pre style="margin:1.4rem 0"><code>// Classic pattern: a temporary table in the frame buffer
+eastl::hash_map&lt;int, Enemy*&gt; visible(frame_allocator);   // memory from the frame allocator
+build_visibility(visible);
+render(visible);
+visible.reset();   // not clear()! Just forgot about everything at once, O(1)</code></pre>
+    <p>The subtlety of <code>reset()</code> is that it's only safe for types with a trivial destructor, otherwise you'll get leaks or something worse, because after <code>reset </code>runs the container has no allocated memory at all. That is, <code>reset</code> does not "leave the objects' memory in place, just marking the container empty" — it makes the container forget about all the memory it owned. </p>
+    <p>The point is that this memory is owned not by the container but by an external scratch allocator (the frame buffer), and it will be freed wholesale when the entire buffer is reset. <code>reset</code> is safe in this pattern precisely because the container lets go of the pointers without calling anything, while the actual freeing is done by the allocator somewhere else. </p>
+    <p>In the standard model you "can't" do this, because on destruction (or <code>clear</code>) the container is obligated to call the destructor of every element and return the memory via <code>deallocate</code>. That's part of the contract: the container owns its elements and is responsible for destroying them correctly. There's simply no "forget about all the memory without calling anything" function in the standard interface, and there never will be, because for a universal container that's a safety hole — for any type with a non-trivial destructor it would be a guaranteed resource leak.</p>
+    <p>But console memory is often fixed and carved into regions under a hard budget (these megabytes for the frame, those for the level, and those permanent ones), and such an arena allocator becomes the sole owner for dozens of different containers. And since there's only one owner, it's enough for a container to simply "let go" of the memory without returning it. std was designed without any assumptions about such a map, and for it the heap is just a heap, a faceless global resource you take from and give back to. </p>
+    <pre style="margin:1.4rem 0"><code>Arena frameArena(64 * 1024);  // 64 KB of scratch memory "per frame"
+
+for (int frame = 0; frame &lt; 3; ++frame) {
+    // The temporary container is built in the arena's memory
+    eastl::vector&lt;EnemyVis&gt; visible{ frameArena };
+
+    for (int i = 0; i &lt; 100; ++i)
+        visible.push_back(EnemyVis{ i, float(i), float(i) });
+
+    std::cout &lt;&lt; "    enemies built: " &lt;&lt; visible.size() &lt;&lt; "\n";
+    // ... render(visible) would go here ...
+
+    visible.reset();
+    // End of frame: we do NOT walk 100 elements, we do NOT call deallocate.
+    // We just reset the whole arena with a single call.
+    frameArena.reset();
+}</code></pre>
+    <img src="../../assets/articles/eastl-guide/06.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Fixed containers</h2>
+    <p>Now we've reached <code>fixed_string</code> and its whole family, for whose sake EASTL often gets dragged into a project. This, in my opinion, is the most valuable part of EASTL, and many people at EA used these containers more often than the ordinary ones, while some of the company's games used them exclusively.</p>
+    <p>The idea is simple: a fixed container stores its data right inside itself, in a fixed-size buffer embedded in the object. Voilà... there are no heap accesses at all, none whatsoever. This approach even has its own name — "zero frame allocations." Of course, achieving a truly allocation-free frame is hard, but reducing their number to a few hundred or a few dozen large ones, instead of thousands and tens of thousands of small ones, is quite doable, and that's usually the job of a performance engineer.</p>
+    <pre style="margin:1.4rem 0"><code>template &lt;typename T, size_t nodeCount, bool enableOverflow = true,
+          typename OverflowAllocator = EASTLAllocator&gt;
+class fixed_vector { /* ... a buffer for nodeCount elements lives right here ... */ };</code></pre>
+    <p>You declare <code>fixed_vector&lt;Entity, 64&gt;</code> and inside the object there's room for 64 entities, and until you exceed the limit the allocator isn't touched. <code>enableOverflow</code> is just insurance: if you do overflow the buffer, the container goes off to the fallback allocator for more instead of crashing. All fixed containers can log high-water marks of their maximum usage, so you can later pick the right sizes. And you do need to know the right sizes, if you recall what we said about cache and fragmentation:</p>
+    <pre style="margin:1.4rem 0"><code>// std::vector: the data is SOMEWHERE in the heap, the vector object stores a pointer to it
+std::vector&lt;Vec3&gt; path;         // sizeof ~ 24 bytes (3 pointers)
+path.push_back({1, 2, 3});      // -&gt; a trip to the heap, a possible cache miss
+
+// eastl::fixed_vector: the data is right underfoot, on the stack
+eastl::fixed_vector&lt;Vec3, 32&gt; path;   // sizeof ~ 32*12 + bookkeeping, all in the object
+path.push_back({1, 2, 3});            // -&gt; a write to already-hot memory, zero allocations</code></pre>
+    <p>When such a <code>fixed_vector</code> sits on the stack or inside another object, its data is physically next to the other bookkeeping fields and, most likely, already in the cache. For small collections (a list of visible objects, an effect's particle buffer, a temporary A* path) this is a very substantial difference — from 2× to 100× in runtime.</p>
+    <p><code>fixed_string</code> is the same idea for strings: a short file name or a tag simply lives right in the object, with no trip to the allocator; <code>fixed_substring</code> is just a view onto a piece of someone else's string without copying — long before <code>std::string_view</code> and <code>span</code> from C++17.</p>
+    <p><strong> </strong><code><strong>std::inplace_vector</strong></code><strong> </strong>was adopted into C++26<strong>.</strong> P0843R14 was adopted into the working draft at the June 2024 meeting in St. Louis — it's exactly the fixed_vector from EASTL 2007, just under a different name. A dynamically resizable array with a compile-time fixed capacity and inline storage; in the proposal itself EASTL is named outright as prior art to orient the mechanism against. </p>
+    <p>Why so late? Simply<strong> </strong>because the bar to "enter the standard" is incomparably higher than to "make it for your own games<strong>" </strong>and your own STL, however cool it may be. EASTL still remains an internal library, even if of the biggest publisher, and it was enough for it that the thing worked on consoles and in the company's projects. </p>
+    <p>The committee has to specify the behavior for <em>every</em> possible case of every possible hardware, with exception semantics, iterator invalidation, constexpr behavior, and a whole lot more. </p>
+    <img src="../../assets/articles/eastl-guide/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Intrusive containers</h2>
+    <p>The second pillar of the entire EASTL library was intrusive containers: instead of the container allocating nodes for your objects, you embed the "link fields" into your own object, and the container simply stitches them into a list.</p>
+    <pre style="margin:1.4rem 0"><code>// An ordinary std::list&lt;Widget&gt; stores a pointer to Widget inside its node:
+//   node { prev, next, Widget* }  -&gt; Widget somewhere else in the heap
+// An intrusive list requires Widget itself to be a node:
+
+struct Widget : public eastl::intrusive_list_node   // prev/next live in Widget itself
+{
+    int hp;
+};
+
+eastl::intrusive_list&lt;Widget&gt; active;
+Widget w;
+active.push_back(w);   // zero allocations: the node is w itself</code></pre>
+    <p>What does this give you, besides the obvious zero allocations? An object can be pulled out of the list without holding a reference to the list itself<strong>,</strong> because the <code>prev</code>/<code>next</code> fields live in the object — important when you hand out pointers to elements to clients and they hand them back.</p>
+    <pre style="margin:1.4rem 0"><code>eastl::intrusive_list&lt;Widget&gt; active;
+
+void spawn(Widget&amp; w) {
+    active.push_back(w);   // handed the client a pointer to w
+}
+
+void kill(Widget&amp; w) {
+    // We only have the object itself on hand, no reference to 'active'.
+    // An ordinary list would need an iterator OR the container itself.
+    // The intrusive one only needs the object: prev/next live inside it.
+    eastl::intrusive_list&lt;Widget&gt;::remove(w);   // O(1), a static method
+}</code></pre>
+    <p>Now the element no longer has to be copyable<strong>.</strong> Ordinary containers copy on insertion, whereas the intrusive one just re-links the pointers. A single object can sit in several unrelated lists at once, if you embed several sets of link fields.</p>
+    <pre style="margin:1.4rem 0"><code>// Two independent sets of prev/next via different base tag types
+struct ByHealthTag  : public eastl::intrusive_list_node {};
+struct ByDistanceTag: public eastl::intrusive_list_node {};
+
+struct Enemy : public ByHealthTag, public ByDistanceTag {
+    int   hp;
+    float distance;
+};
+
+eastl::intrusive_list&lt;ByHealthTag&gt;   byHealth;
+eastl::intrusive_list&lt;ByDistanceTag&gt; byDistance;
+
+Enemy e{ /* ... */ };
+byHealth.push_back(e);      // linked via the ByHealthTag fields
+byDistance.push_back(e);    // linked via the ByDistanceTag fields
+// the same object e is in two unrelated lists at once,
+// and removing it from one doesn't touch the other</code></pre>
+    <p>You have to pay for everything, and now the object "knows" it's an element of a container — that is, the abstraction leaks into the implementation, but in gamedev this is often an acceptable price for having no allocations on the hot path.</p>
+    <pre style="margin:1.4rem 0"><code>struct Widget : public eastl::intrusive_list_node {   // &lt;- already a leak
+    int hp;                                           //    the type knows about the list
+};</code></pre>
+    <p>Why will such containers never be brought into std? Here I'll refrain from saying "never," because fixed containers were also considered "impossible for std," and yet C++26 adopted them. Maybe some July evening it'll be the same with intrusive ones, since attempts have already been made and one even reached the committee<strong>, </strong>but stalled<strong>. </strong></p>
+    <p>There's<strong> </strong>Proposal P0406 "Intrusive Containers" by Hal Finkel (<a href="https://github.com/hfinkel/intrusive-containers-proposal" target="_blank" rel="noopener">https://github.com/hfinkel/intrusive-containers-proposal</a>, <a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0406r1.html" target="_blank" rel="noopener">https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0406r1.html</a>), which proposes bringing in a subset of the well-known Boost.Intrusive. It reached the LEWG stage (Library Evolution Working Group), i.e. submission for the committee's consideration, but past R1/R2 (2016) it effectively didn't move, and as of today the standard library offers no implementations of intrusive containers whatsoever. </p>
+    <p>Why can't they get it in? An intrusive container also breaks the ownership model on which the whole STL stands, and while <code>inplace_vector</code>, for all its unusualness, still owns its elements — just storing them inside itself — an intrusive container owns nothing, and that knocks the foundation out from under the standard guarantees. Who calls the destructors? When? What happens on container destruction if the objects outlive it? The standard is built on "the container owns and is responsible for lifetime"; the intrusive one breaks this, and specifying such a thing as a <em>universal</em> component is practically impossible right now — in C++17 they might have tried, but now it's too late. </p>
+    <h2>Sorted vectors</h2>
+    <p><code>std::map</code> and <code>std::set</code> are almost always red-black trees, where each element sits in a separate heap node, the nodes are linked by pointers and scattered across memory, and walking the nodes gives us a parade of cache misses. EASTL adds <code>vector_map</code> and <code>vector_set</code>, which are an implementation of those very "sorted vectors" from Meyers' "Effective STL."</p>
+    <pre style="margin:1.4rem 0"><code>std::map&lt;int, Enemy&gt;
+// a tree, each node separately in the heap, traversal jumps around memory
+eastl::vector_map&lt;int, Enemy&gt;
+// one contiguous array, sorted by key</code></pre>
+    <p>A red-black tree pays for its <code>O(log n)</code> search with a scattering of nodes across the heap, where each element is a separate allocation, and the node itself isn't just your key/value but also two or three pointers and a color flag. Accordingly, during a search you jump around these pointers, loading the cache, because keys that are neighbors by value are (99% of the time) sitting all over the place in memory. </p>
+    <p>A sorted vector is arranged so that all its elements lie in one contiguous block of memory, and the search proceeds over a solid block, which is exactly what the cache loves — there are no pointers, and the data is tightly packed. For short keys up to 8 bytes, <code>vector_map</code> outruns <code>std::map</code> even where intuition says it should lose.</p>
+    <p>As you know... you have to pay for everything, and here the price is insertion and deletion, which become <code>O(n)</code>, because you can only keep the vector sorted by shifting the tail on insertion, and any reallocation invalidates iterators and pointers. So <code>vector_map</code> isn't "a map, only faster" — it's a container for a specific pattern: filled once, read a lot.</p>
+    <p>What does this have to do with gamedev? A huge share of game "dictionaries" are exactly such tables, built at level load and after that only queried (id→asset, name→handle, all sorts of registries and configs). Writes into them happen rarely and in batches, and a batch is also cheaper to make into an array and sort before inserting than to insert one at a time. And for small <code>N</code> (up to 50-100 objects, depending on cache size — and most of them in a game are that small) a binary search over a vector outruns a tree several times over, and often even a linear scan turns out faster, simply because everything is already in the cache.</p>
+    <p>Why wasn't this in std for so long? It was considered that a sorted vector is an idiom rather than a real type with broad practical use, and in Meyers it's just one of the tips (Item 23, prefer sorted <code>vector</code>s to associative containers). </p>
+    <p>In C++23 they adopted <code>std::flat_map</code>/<code>std::flat_set</code> (P0429 and kin), i.e. folk practice → EA's internal library → the standard a decade and a half later. There's a small subtlety here in which <code>std::flat_map </code> loses slightly to <code>eastl::vector_map</code> in some usage scenarios. </p>
+    <p><code>eastl::vector_map</code> stores <code>pair&lt;Key,Value&gt;</code> in a single vector (array of structures), whereas <code>std::flat_map</code> is made as an adapter over two parallel arrays: keys separately, values separately (structure of arrays). And for a pure search, of the "is this element in the container" kind, you walk only the keys vector, without dragging the unneeded values into cache lines, so on lookup-heavy loads the flat standard map turns out even more cache-friendly than the original. </p>
+    <p>But if you need to find and retrieve the values, then <code>eastl::vector_map</code> wins, because the value is already in the cache and can be processed, whereas in the standard <code>flat_map</code> you'll have to go to memory once more. And these nuances, as it turns out, have their own consequences too.</p>
+    <img src="../../assets/articles/eastl-guide/08.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>What of this made it into the standard</h2>
+    <p>The most interesting thing is that over the years the C++ standard came around to many of these ideas, sometimes almost verbatim:</p>
+    <p>- <code><strong>emplace_back</strong></code><strong> / </strong><code><strong>emplace</strong></code> (C++11) — that very <code>push_back(void)</code> / <code>insert(key)</code> with in-place construction and no copy.</p>
+    <p>- <code><strong>std::string_view</strong></code> (C++17) — the ideological heir of <code>fixed_substring</code></p>
+    <p>- <code><strong>std::pmr</strong></code> (C++17) — polymorphic allocators with <code>memory_resource</code>, a step toward the instance-based allocators game developers keep asking for.</p>
+    <p>- Move semantics (C++11) closed off the greater part of the copying problems, but move semantics ≠ EASTL's relocation. A move constructor + destructor is exactly what memcpy relocation avoids, and most EASTL containers can relocate trivial types byte-by-byte through their <code>has_trivial_relocate</code> rather than through move. Trivial relocatability did finally reach the standard — P2786 was voted into C++26. So that's yet another EASTL idea arriving in the standard about 18 years later.</p>
+    <p>Allocators, though, remained inconvenient in the standard; <code>std::pmr</code> helped in part, but the type binding and the virtual dispatch didn't go anywhere, which is why EASTL (now open source) still lives and is used in real engines. The fundamental task hasn't changed since the Atari era I wrote about last time: the data has to end up in the right place, at the right moment, and in the right form, otherwise you can forget about performance. The standard library solves this task "on average across the hospital." And where the hospital is one and very specific, an average solution isn't enough, and you have to write your own standard library.</p>
+    <p>In recent years the focus has shifted from introducing new container types to "polishing" the existing code for the requirements of modern compilers and C++ standards. A big emphasis was placed on ensuring seamless work with C++20/23, including full support for the new types and <code>constexpr</code> semantics for many algorithms and containers, and static-analyzer fixes. For the last several years the library has been considered an industry standard for use inside game engines of the most varied sizes, where <code>std</code> is too slow or inconvenient, and it does this while accounting for all the modern requirements of code safety and cross-platform support. </p>
+    <p>P.S. EASTL now lives on GitHub under a BSD license (<a href="https://github.com/electronicarts/EASTL" target="_blank" rel="noopener">https://github.com/electronicarts/EASTL</a>)</p>
+
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://boosty.to/dalerank">Boosty</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
