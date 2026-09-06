@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anatomy of the rakes we step on — dalerank</title>
+<meta name="description" content="A taxonomy of game engine bugs: the typo your brain autocorrects, off-by-one, writing past the end of a pool, resource and reference leaks, memory corruption, race conditions, the Friday fix, heisenbugs, feature-bugs, the butterfly effect on floats, spaghetti dependencies, priority inversion and variable delta time." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/anatomy-of-rakes.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/anatomy-of-rakes.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/anatomy-of-rakes.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/anatomy-of-rakes.html">RU</a><i>/</i><a class="on" href="anatomy-of-rakes.html">EN</a><i>/</i><a href="../../it/articles/anatomy-of-rakes.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Anatomy of the rakes we step on</h1><div class="ameta"><span>Sep 6, 2026</span><span>8 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/anatomy-of-rakes/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>We were all taught to write beautiful code; at university, or in clever books, they painted an ideal world of pure functions, elegant patterns and perfect mathematics. But then you join a studio and it turns out that a real engine codebase is a thing cobbled together on somebody's knee, where memory leaks, threads fight each other, the OS takes cores away mid-execution, and the physics engine sends the player into orbit simply because someone mixed up the axis indices.</p>
+    <p>Debugging is probably the most underrated engineering skill there is. Nobody really teaches it, it is very rarely brought up in an interview, and I have never in my life met a senior debugger. All the training boils down to sitting for three hours staring at a crash dump, trying to work out why the game fell over. There are a thousand and one recipes for catching and fixing our chitinous friends, and everyone is bound to have their own, so I see no point in listing them — but I will try to talk about what kinds of friends there actually are.</p>
+    <hr />
+    <h2>The plain typo</h2>
+    <p>The most infuriating class of errors, the one where your engineering thought was absolutely correct and the algorithm was flawless, but your fingers ran ahead of your brain and you simply missed a key. In engine code this is business as usual when working with just about anything, and it is usually down to copy-paste or a variable forgotten in a hurry:</p>
+<pre style="margin:1.4rem 0"><code>if (update_x) pos.x = new_pos.x;
+if (update_y) pos.x = new_pos.y; // the hand slipped
+if (update_z) pos.z = new_pos.z;</code></pre>
+    <p>The nastiest thing about typos is our own brain, which works as a built-in autocorrect. You look at this piece of code ten times and your eye simply «scrolls past» the mistake, because you <em>know</em> what is supposed to be written there — but it is not written there. At some point I got tired of hunting things like this down, and we enabled clang-tidy in the project with <code>bugprone-*</code> plus <code>-Wshadow</code> on the clang build, which save you from most of the bugs involving shadowed variable names and a slipped hand.</p>
+<pre style="margin:1.4rem 0"><code>class Foo {
+    int value;
+public:
+    Foo(int value) { // the parameter shadows the class field
+        value = value; // does nothing, assigns the parameter to itself
+    }
+};</code></pre>
+    <img src="../../assets/articles/anatomy-of-rakes/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>The logic bug</h2>
+    <p>And then there is code that does what you wrote... literally does it, but you can write something silly — for instance be off by one when you update a ring buffer of events or try to remove an element from an array:</p>
+<pre style="margin:1.4rem 0"><code>memmove(events + i, events + i + 1, (num_events - i) * sizeof(*events));
+--num_events;</code></pre>
+    <p>But bugs like this are at least pleasant to work with, and if there is a stable repro scenario they will be 100% deterministic. You just sit down and step through with the debugger. Developers, though, have a pernicious habit of breeding logic bugs with their own hands by optimising code prematurely. It all starts, as usual, with good intentions: «oh, let me write separate code for the fast path, or for the rare case where we remove the very last element». What you end up with is an <code>if/else</code> branch that executes once a week under a special alignment of the moon, and which naturally never gets properly tested. And of course it is exactly that branch that blows up on the player. The more linear the code and the fewer rare isolated branches it has, the fewer places where the logic can quietly harbour a chitinous friend.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Writing past the end of an array</h2>
+    <p>C++ has been around for how many years now, and there is still no end in sight to these bugs. The logic seems flawless, the algorithm is good, and the system crashes anyway, because the incoming data turned out not to be what you counted on. You declared a fixed array of 1024 elements, because dynamic memory in a game is a sin, and wrote a simple spawn function:</p>
+<pre style="margin:1.4rem 0"><code>#define MAX_PARTICLES 1024
+Particle particles[MAX_PARTICLES];
+uint32_t num_particles;
+
+void spawn_particle(Particle p) {
+    particles[num_particles++] = p;
+}</code></pre>
+    <p>Somebody is bound to spawn the 1025th particle, and code like this will go and scribble over the neighbouring memory, and the hell of strange crashes begins. You might say we urgently need to rewrite everything onto dynamic arrays? But fixed pools mean predictability and protection from fragmentation, gamedev needs them, so no dice — no dynamics for you.</p>
+    <h2>Resource leaks</h2>
+    <p>A close friend of the previous fellow; it has also been around for years and the cart has not moved an inch, or rather the bugs are all the same. In a game engine anything can leak: textures, meshes, file descriptors, acquired mutexes — on the Nintendo Switch, in the first revisions, a recursive mutex would not be destroyed if it re-entered itself more than five times, and you could only create 1024 of them per process.</p>
+    <p>And if you write code on bare <code>malloc</code> and <code>free</code>, hunting leaks becomes one more daily occupation. But finding out <em>which exactly</em> of the five hundred allocation calls never got its <code>free</code> is a task with an asterisk. If you think a clever GC or smart pointers solve this problem, then no... they do not. They simply change the nature of the leaks, and instead of a memory leak you get a reference leak, and some forgotten scene manager keeps holding a reference to an invisible object, which in turn holds textures and sounds down the chain.</p>
+    <p>In engines this is fought by having no direct calls to the system allocator at all: every allocation goes through a custom wrapper with instrumentation, and afterwards you can look at the memory map — what, where, who and whom. And at level unload time it is customary to compare the list of allocations and frees, and if something is left over, then something is leaking.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/04.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Memory corruption</h2>
+    <p>If debugging had a podium, memory corruption would definitely have to go on the top step: use-after-free, running off the end of an array, writing through a «wild» pointer, corrupting an allocation block header, double delete and re-creation inside a marked region — what else have I forgotten?</p>
+    <p>The horror of these bugs is that cause and symptom are torn apart in time and space. Function <code>A</code> somewhere in the physics module slightly scribbled over the edge of a neighbouring array, and physics keeps working, but somewhere a UI widget renders wrong while trying to show the player's name — and that is if you are lucky enough to get garbled characters, because it may just as well crash with an Access Violation. And there you sit over a UI crash dump, unable to understand what the interface has to do with anything.</p>
+    <p>The only thing that saves your life in such situations is AddressSanitizer (ASan) and special memory block boundaries (canaries). ASan surrounds every allocation with protective «red zones» and crashes at the moment of the invalid write, not letting you corrupt the neighbouring structures. And writing patterns like <code>0xDEADBEEF</code> into freed blocks makes it immediately obvious in the debugger that you are trying to read the «corpse» of an object.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/05.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>The race condition</h2>
+    <p>A modern engine parallelises everything it can. Physics on one core, frame preparation on another, resource streaming and AI on a third — but when two threads simultaneously try to work with the same data without synchronisation, along it comes: the Race Condition.</p>
+    <p>The main nastiness of race conditions is that they do not live under a debugger; in fact they do not live anywhere. The moment you set a breakpoint, or simply add a log line, the thread timings change and the bug vanishes without a trace — and then you remove the breakpoint and the game crashes again. Props made of mutexes usually act as a temporary solution and are essentially the same kind of hack, moving the race somewhere else.</p>
+    <h2>The Friday fix</h2>
+    <p>Friday bugs rarely arise from fundamental architectural mistakes; their main source is haste, a blurred eye and one coffee too many. But bugs of the «come on, I only touched a conditional, nothing is going to fall off» variety have long deserved a category of their own — a shame that humanity never did invent a FridaySanitizer.</p>
+<pre style="margin:1.4rem 0"><code>// Friday, 17:55. Fixing a rare flicker of the health icon
+void UIHealthBar::Update(float DeltaTime)
+{
+    // "Let's clean up the cast while we're here, the validator was complaining..."
+    PlayerCharacter* Player = Cast&lt;PlayerCharacter&gt;(GetOwningPawn());
+
+    // There used to be an if (Player) check here, but the developer is certain
+    // that the UI HealthBar exists ONLY while the player is alive and valid.
+    HealthPercent = Player-&gt;GetHealth() / Player-&gt;GetMaxHealth();
+}</code></pre>
+    <p>The code goes into the repository, gets built and goes off to the testers. But on Saturday morning it turns out that when the player dies, respawns or loads a level from the menu, the UI is drawn one frame earlier than the character object is created, and the <code>Player</code> pointer turns out to be null. The Friday bug has been flourishing for a good few decades, sneaks through review and tests and waits for its hour.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/06.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Heisenbugs</h2>
+    <p>The term was born out of quantum physics and Heisenberg's uncertainty principle, where the very fact of observing a system changes its state. In the C++ world these are bugs that only live while nobody is looking at them. QA files a ticket about a crash when entering a cave, you launch the project under the debugger, walk to the cave... and nothing happens. Everything works... you do it ten, twenty times... you turn off the debugger, launch the release build and catch the crash. It usually comes down to uninitialised memory and compiler optimisations:</p>
+<pre style="margin:1.4rem 0"><code>struct AttackParams
+{
+    float Damage;
+    bool IsCritical; // forgot to initialise it in the constructor
+};
+
+void ApplyDamage()
+{
+    AttackParams Params;
+    Params.Damage = 100.0f;
+    // Params.IsCritical holds random garbage from the stack
+
+    if (Params.IsCritical) {
+        // In a Debug build this is always false because the stack is zeroed.
+        // In a Release build it may come out true, and the crit fires unexpectedly.
+    }
+}</code></pre>
+    <p>Or to multithreading timings and logs. If you try to catch a race between threads by adding logging, you get an artificial slowdown of the threads, and that shifts the race point so it nominally «disappears»; you remove the log and the bug is back. That is exactly why some log lines live on with a comment saying do not delete this blank line.</p>
+<pre style="margin:1.4rem 0"><code>void MeshLoader::OnAsyncLoadComplete(Mesh* LoadedMesh)
+{
+    log("Mesh loaded: %s\n", LoadedMesh-&gt;GetName()); // Do not delete this log!!!
+    RenderQueue::Enqueue(LoadedMesh);
+}</code></pre>
+    <p>Attaching a debugger or turning on special debug flags changes the size of header files and data structures (for example, debug iterators get added to <code>std::vector</code>, or extra validation fields to the allocator), as a result addresses in memory shift, and the memory corruption that used to scribble over important data starts scribbling over a harmless «safety cushion» (guard bytes), masking the problem.</p>
+    <h2>The feature-bug («It's not a bug, it's a feature»)</h2>
+    <p>And then there are situations where a glitch in the maths or the logic creates such a brilliant gameplay experience that the developers decide to fix nothing and simply rename the bug into a «mechanic».</p>
+    <p>Combos in Street Fighter II originally allowed the animation of one hit to be cancelled by another, but that was an animation timing bug. Producer Noritaka Funamizu, having noticed it, decided that catching the timing was too hard and left it in — and the entire genre of modern fighting games was born.</p>
+    <p>Aggressive Gandhi in Civilization. Because of an 8-bit unsigned integer overflow, Gandhi's aggression, dropping below zero when democracy was adopted, wrapped around to <code>255</code>. The peace-loving leader turned into a nuclear psychopath. This is actually a tall tale and nothing of the sort ever happened, but the myth became so well known that the developers of the fifth instalment put its logic into the game, making the myth real.</p>
+    <p>Bunny hopping in Quake. A mistake in adding up velocity vectors while jumping and turning the camera let you accelerate to fighter-jet speeds, which allowed some very entertaining tricks around the levels. Broadly speaking, if a bug makes the game more fun, it does not get fixed, it gets polished and handed to marketing — a whole series of games, Saints Row, was built on this, where QA got bonuses for exploiting various bugs that were later turned into elements of the game's own mechanics.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>The butterfly effect (floating-point math)</h2>
+    <p>Bugs that arise from the limited precision of floating-point numbers when the player wanders far from the origin. The further the player is from the centre, the less precision is left for the fractional part, and at a distance on the order of 100 km the step precision comes out to a few millimetres; as a result the model starts to «vibrate» continuously and twitch epileptically while walking, until it gets spat out beyond the edge of the world.</p>
+    <p>Or it leads to generation artefacts, as in Minecraft (the Far Lands), where at a distance of 12.5 million blocks from spawn the <code>float</code> error in Perlin noise generation became so enormous that the landscape turned into gigantic walls of holey cheese.</p>
+    <h2>Spaghetti dependencies</h2>
+    <p>Amusing bugs where the game crashes only on condition that you opened a door while holding a particular item, and necessarily at an angle of 45 degrees. <em>TF2</em> has a famous urban myth about a coconut texture inside the game files, without which the Valve Source engine simply refuses to start. The game files really do contain a <code>coconut.vtf</code> texture, a VTF file with a realistic image of a coconut, and its origin goes back to the Love&amp;War update of 2014, where it apparently remained as an unused asset from those days. The legend that deleting the file breaks the game's launch grew mostly out of a joking comment under the original post along the lines of «no idea who put this here, but when I deleted the file the game stopped launching», which many took for a genuine developer comment from the sources.</p>
+    <p>Or the case from Lineage 2, where players could not enter a location because their inventory held a quest item from 2009 whose identifier collided with a new animation type for a dragon.</p>
+    <h2>Priority inversion</h2>
+    <p>A bug of multithreaded engines that makes the game start lagging while low-priority threads are working. A low-priority thread (say, background audio streaming) acquires a mutex, then a high-priority thread tries to take that same mutex and goes to sleep, yielding its time — but at that very moment a medium-priority thread (say, AI computation) prevents the low-priority thread from finishing its work and releasing the mutex. As a result the main thread waits for audio, audio waits for AI, and the player watches the whole thing barely crawl along, if it moves at all.</p>
+    <h2>Variable delta time bugs</h2>
+    <p>The price you pay for chasing an unlocked framerate. You tie physics or movement to whatever <code>dt</code> elapsed between frames.</p>
+<pre style="margin:1.4rem 0"><code>// If the frame dropped from 60 FPS (16ms) to 2 FPS (500ms) because of loading
+position += velocity * dt; // dt became gigantic</code></pre>
+    <p>And in a single long frame (for example, when the game «lagged») the character flies straight through a three-metre wall, because the physics collider simply jumped over it in one step.</p>
+    <h2>What did I forget?</h2>
+    <p>In the end, good game system code differs from bad code not by the absence of bugs, because everyone makes mistakes. It differs in how easy it is to debug, in the coupling of its systems, in fixed module boundaries, in how it handles memory. Everybody lies, and code too... code especially... never take code at its word.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

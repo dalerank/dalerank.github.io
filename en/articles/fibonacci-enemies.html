@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fibonacci your enemies — dalerank</title>
+<meta name="description" content="The Young-Fibonacci graph built from strings of ones and twos — and how two studios independently arrived at it while placing enemies across a level: string rank as a segment budget, gradedness instead of random difficulty jumps, and Young's lattice inside a tech tree." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/fibonacci-enemies.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/fibonacci-enemies.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/fibonacci-enemies.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/fibonacci-enemies.html">RU</a><i>/</i><a class="on" href="fibonacci-enemies.html">EN</a><i>/</i><a href="../../it/articles/fibonacci-enemies.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Game design</span><h1>Fibonacci your enemies</h1><div class="ameta"><span>Sep 6, 2026</span><span>6 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/fibonacci-enemies/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The structure I am going to talk about was known in ancient India a thousand years before Fibonacci himself, and was rediscovered in 1988 by two mathematicians; and the whole graph is built entirely out of strings consisting only of the digits 1 and 2 — or, if we subtract one, we get 0/1 and a binary form.</p>
+    <p>Take any finite string of the digits 1 and 2, say «11212», add the digits up, 1 + 1 + 2 + 1 + 2 = 7, and you get the rank of that string. Now a simple question: how many strings of a given rank exist? A string of the same rank can be obtained in two ways — either by appending the digit 2 to a string of rank r-2, or by appending the digit 1 to a string of rank r-1, and there are no other options, because there are no other digits in our alphabet of ones and twos.</p>
+    <p>rank 0: «» → 1 <br />rank 1: 1 → 1 <br />rank 2: 11, 2 → 2 <br />rank 3: 111, 12, 21 → 3 <br />rank 4: 1111, 112, 121, 211, 22 → 5 <br />rank 5: … → 8</p>
+    <p>Noticed the suspicious 1, 1, 2, 3, 5, 8 on the right? Yes... that is the Fibonacci sequence f(r) = f(r-1) + f(r-2), with the small condition that f(0) = 1 (the empty string) and f(1) = 1 (the single string «1»), which shifts the whole sequence by one position relative to the canonical Fibonacci numbers, so f(r) = F(r+1).</p>
+    <p>Indian prosodists did exactly the same thing in their verse, where a short syllable takes one unit of duration and a long one takes two, which let them beat out the rhythm nicely and get euphonious constructions in the text — so in this context the Fibonacci numbers are older than Fibonacci himself. Curious what connects verse, Fibonacci and the tech tree in games? Come on in...</p>
+    <hr />
+    <h2>The pretty theory</h2>
+    <p>Now let us take the resulting combinations and try to turn them into a graph; what we get is this rather elegant structure.</p>
+<pre style="margin:1.4rem 0"><code>rank 4:   1111    112     121     211     22
+            │      │       │      │ │     ││
+            │      │       │      │ └──┐  ││
+rank 3:    111 ────┼───────┼──────┘    21─┘│
+            │      12 ─────┼────────────┼──┘
+            │       │      │            │
+rank 2:    11 ──────┼──────┼────────────┘
+            │       └────  2
+            │              │
+rank 1:     \──────  1  ───/
+                     │
+rank 0:             ""</code></pre>
+    <p>It is called the Young-Fibonacci graph and it has a vertex for every string, the empty one included, while the neighbours of a string s are declared to be the results of four operations:</p>
+    <ul>
+      <li>insert the digit 1 somewhere to the left of the leftmost one, and if there are no ones in the string at all, then anywhere.</li>
+      <li>replace the leftmost one with a two.</li>
+      <li>delete the leftmost one.</li>
+      <li>replace with a one any two that has no ones to the left of it.</li>
+    </ul>
+    <p>These operations split into two mutually inverse pairs: the first is undone by the third, the second is undone by the fourth, so the graph can be treated as undirected — though it is usually drawn directed, with every edge pointing from the lower rank to the higher one. The same rules give the strings some interesting properties: the string 211 has two immediate predecessors, 111 and 21, the string 22 also has two, 12 and 21, while the string 121 has just one.</p>
+    <p>The mathematicians (Fomin and Stanley) noticed these properties and described them in their papers:</p>
+    <ol>
+      <li>The graph is connected: any non-empty string always has an operation that lowers its rank, which means from any vertex you can descend to the empty string, and by reversing the path you get a road from the empty string to anywhere.</li>
+      <li>The graph is graded: the length of any directed path is exactly the difference of the ranks of its endpoints (no «shortcuts around» exist).</li>
+      <li>For any two distinct vertices u and v, the number of their common immediate predecessors equals the number of their common immediate successors, and that number is always either zero or one.</li>
+      <li>The out-degree of any vertex is one greater than its in-degree, for each vertex individually.</li>
+    </ol>
+<pre style="margin:1.4rem 0"><code>""     out=1  in=0
+1      out=2  in=1     (up: 11, 2 | down: "")
+11     out=2  in=1     (up: 111, 21 | down: 1)
+2      out=2  in=1     (up: 12, 21 | down: 1)
+21     out=3  in=2     (up: 121, 211, 22 | down: 2, 11)
+22     out=3  in=2     (up: 122, 212, 221 | down: 12, 21)</code></pre>
+    <p>Where does that extra one come from? Inserting a one gives as many options as there are positions to the left of the leftmost one, that is, the number of leading twos plus one, while operation four, which leads downwards, gives one option fewer. Replacing the leftmost one with a two and deleting the leftmost one give one option each and cancel each other out. Fomin called a graph with this set of properties a Y-graph, well, because it really does look like Y-branching. Stanley showed in his papers, proved, that at any rank you can find a lattice reducible to the diagram below: 21, 22, 121, 211 and 221.</p>
+<pre style="margin:1.4rem 0"><code>              221        (rank 5)
+            /  |  \
+          22  121  211   (rank 4)
+            \  |  /
+              21         (rank 3)</code></pre>
+    <p>Not tired yet? Now, how this relates to games...</p>
+    <img src="../../assets/articles/fibonacci-enemies/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Young, Fibonacci and placing the monsters</h2>
+    <p>Everything written above sounds like mathematics for the sake of mathematics... I have no idea why they taught us this at university (I even wrote a couple of lab assignments on the subject and would probably have forgotten it entirely) — apparently so that I could show off my knowledge in front of level designers. And this is where we get to games.</p>
+    <p>Designers on two shooters at two different studios place the enemies across a level according to this graph. The designers themselves did not know they were applying a Hasse diagram (and its special case, the Young-Fibonacci graph); I doubt they even knew such words. It is simply that while tuning and testing the levels it turned out that dumping enemies on the player in a heap is uninteresting and gets old fast, and that it is better to break the level into segments and place the enemies there according to some secret formula.</p>
+    <p>Switching enemies straight to «many» also reduces interest, so the layout in that secret formula described adding one simple enemy to the count already at the current spawn point if the player went one way, and collapsing two weak enemies into one stronger one if they went the other. Does that remind you of anything?</p>
+    <blockquote><p>At one studio the secret formula was invented long ago; that designer left long ago too, but passed the knowledge on, and nobody ever tried to fix it, because it works, so why break it. At the other studio this graph, upside down, lay in the design lead's desk and was taken out a couple of times a year to teach the newcomers; where the lead himself got it from, history is silent about.</p></blockquote>
+    <p>The rank of a string, that is, the sum of its digits, turns out to be the segment's budget, and the whole tension curve across the level becomes a sequence of ranks, which the designer sets through the placement of enemies at spawn points.</p>
+    <p>No attempt was made to reduce a bandit and a monster that charges head-on to a common cost scale, because such a scale starts to lie, and extending the alphabet {1,2} with new letters broke the scheme and lowered interest in focus groups — meaning everything has to work within a single enemy type. Want a different enemy type? Make it its own Fibo-Young thingy and lay it out across the level. Formally this is the natural behaviour of such an algorithm, and that single one, for an enemy of any type, simply moves the difficulty, but...</p>
+    <p>But it gives the designer the ability to place enemies anywhere in the level, leaning on the data from the previous skirmishes and spawn points, without rearranging everything further down the corridor. It also gives a correct difficulty progression: such a graph is graded, the length of any path equals the difference of ranks, and no bypass paths exist, which the mathematicians proved. So the transition between two neighbouring segments of the curve always decomposes into a known number of «added-removed an enemy» steps, and a designer who follows the rules cannot accidentally skip a difficulty step.</p>
+    <p>And finally it becomes possible to compute the difficulty level properly without calling in the men in white coats. The designer describes the top layout and the convergence point, and everything in between is computed by a simple Python script. And a level's complex combat system turns into the numbers of a budget layout with enemies, letting you make three different runs through the same skirmish identical in difficulty and different in feel.</p>
+    <img src="../../assets/articles/fibonacci-enemies/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>Fibonacci, Young and skill trees</h3>
+    <p>Working at yet another studio, on another project in a completely different genre, I discovered that the tech tree designer was using a suspiciously similar scheme to tune the price of progression. Let me note that this is not the on-screen presentation of the tech tree or of character progression that you see in the game. It is a sheet with the tech tree drawn as a staircase, so that you as a player end up with a balanced character progression map and more or less stable builds, or loadouts, or races of equal strength. And if you do not draw that staircase in advance, you may end up with interesting peculiarities in every race or build, but balancing them becomes hard and you will have to introduce extra elements or mechanics.</p>
+<pre style="margin:1.4rem 0"><code>Branch A  ■ ■ ■ ■ □ □
+Branch B  ■ ■ ■ □ □
+Branch C  ■ ■ □ □
+Branch D  ■ □
+
+State = (4, 3, 2, 1), rank 10.
+The filled part always forms a staircase, non-increasing top to bottom.</code></pre>
+    <p>Young's lattice lets you lay the technologies out in a grid, where a row is a progression branch and a column is the depth within it. Then we introduce the rule that a cell (a powerful technology) can be taken only if the cell to the left and the cell above have already been taken. The set of admissible research states under this rule coincides exactly with the set of Young diagrams that fit into this grid. Which means the questions «how do we balance two races» and «how much more needs to be added to get balanced builds» are now solved by arithmetic over an array, without walking a dependency graph — and why do I bring this up... If your game has two enemy races, you can compute such tables on paper, but AoE2 currently has about fifty races, each with its own tech tree, all of which have to be balanced against the others. Balance that by hand? Probably possible...</p>
+    <p>For game balance this is good, because there will be no hidden peculiarities; for replayability it is rather bad, because all paths turn out to be the same length and ultimately interchangeable, and then the sense of choice has to be created by other means. Let me note that in the form of code these tables (the tech tree) are not generated this way in any project I know of. In both Age of Empires 2 and Stellaris the technology graph is made by hand, and Stellaris on top of it also throws in random technologies, which is about as far from lattice determinism as you can get. The point here is specifically about the tools and about how the space for creating such tech trees is arranged, not about the runtime.</p>
+    <h2>What is all this for</h2>
+    <p>A natural question, and probably not one the player needs answered. From the outside it looks like a goat with an accordion: developers took, you see, strings of two digits, hung four seemingly arbitrary rules on them and are now delighted that something coherent came out.</p>
+    <p>But the whole construction is interesting for how the Fibonacci numbers crawled out of it — though they crawl out just about everywhere anything is counted. It is also interesting that four simple rules can give rise to level and combat design interesting enough not to let the player relax while still not breaking the difficulty progression.</p>
+    <p>The level designers and the tech tree designers arrived at this by trial and error, when all they had to do was dive into the theory of partially ordered sets and transitive reductions with Hasse diagrams. But they definitely do not know about Hasse, I asked...</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

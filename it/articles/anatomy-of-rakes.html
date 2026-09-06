@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anatomia dei rastrelli che pestiamo — dalerank</title>
+<meta name="description" content="Una tassonomia dei bug di un motore di gioco: il refuso che il cervello autocorregge, l'off-by-one, la scrittura oltre il bordo di un pool, le perdite di risorse e di riferimenti, la corruzione della memoria, le race condition, il fix del venerdì, gli heisenbug, i feature-bug, l'effetto farfalla sui float, le dipendenze spaghetti, l'inversione di priorità e il delta time variabile." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/anatomy-of-rakes.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/anatomy-of-rakes.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/anatomy-of-rakes.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/anatomy-of-rakes.html">RU</a><i>/</i><a href="../../en/articles/anatomy-of-rakes.html">EN</a><i>/</i><a class="on" href="anatomy-of-rakes.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Anatomia dei rastrelli che pestiamo</h1><div class="ameta"><span>6 settembre 2026</span><span>8 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/anatomy-of-rakes/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>A tutti noi hanno insegnato a scrivere codice bello: all'università, o nei libri intelligenti, ci dipingevano un mondo ideale fatto di funzioni pure, pattern eleganti e matematica perfetta. Poi però entri in uno studio e scopri che la vera codebase di un motore è un aggeggio messo insieme alla bell'e meglio, dove la memoria perde, i thread se le danno, il sistema operativo ti porta via i core durante l'esecuzione e il motore fisico spedisce il giocatore in orbita solo perché qualcuno ha confuso gli indici degli assi.</p>
+    <p>Il debug dei bug è forse la competenza ingegneristica più sottovalutata che ci sia. Non la si insegna davvero, quasi mai la si chiede di «illustrare» a un colloquio, e in vita mia non ho ancora incontrato un senior debugger. Tutto l'apprendimento si riduce a startene seduto tre ore a fissare un crash dump, cercando di capire perché il gioco è caduto. Di ricette per catturare e sistemare i nostri amici chitinosi ce ne sono mille e una, e ognuno avrà immancabilmente la propria, quindi non vedo il senso di elencarle — ma proverò a raccontare quali tipi di amici esistano.</p>
+    <hr />
+    <h2>Il banale refuso</h2>
+    <p>La classe di errori più irritante: quella in cui il tuo pensiero ingegneristico era assolutamente corretto e l'algoritmo impeccabile, ma le dita hanno corso più veloci del cervello e hai semplicemente mancato un tasto. Nel codice dei motori è ordinaria amministrazione lavorando su qualunque cosa, e di solito ha a che fare con il copia-incolla o con una variabile dimenticata nella fretta:</p>
+<pre style="margin:1.4rem 0"><code>if (update_x) pos.x = new_pos.x;
+if (update_y) pos.x = new_pos.y; // la mano è scivolata
+if (update_z) pos.z = new_pos.z;</code></pre>
+    <p>La cosa più odiosa dei refusi è il nostro cervello, che funziona come un correttore automatico incorporato. Guardi questo pezzo di codice dieci volte e l'occhio semplicemente «scorre oltre» l'errore, perché tu <em>sai</em> cosa dovrebbe esserci scritto — solo che lì non c'è scritto. A un certo punto mi sono stancato di scovare cose del genere e nel progetto abbiamo attivato clang-tidy con <code>bugprone-*</code> e <code>-Wshadow</code> sulla build clang, che salvano dalla maggior parte dei bug con nomi di variabili che si oscurano a vicenda e dalla mano scivolata.</p>
+<pre style="margin:1.4rem 0"><code>class Foo {
+    int value;
+public:
+    Foo(int value) { // il parametro oscura il campo della classe
+        value = value; // non fa nulla, assegna il parametro a se stesso
+    }
+};</code></pre>
+    <img src="../../assets/articles/anatomy-of-rakes/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Il bug logico</h2>
+    <p>E poi c'è il codice che fa quello che hai scritto... letteralmente lo fa, ma si può scrivere una sciocchezza, per esempio sbagliare di uno (off-by-one) quando aggiorni un buffer circolare di eventi o provi a rimuovere un elemento da un array:</p>
+<pre style="margin:1.4rem 0"><code>memmove(events + i, events + i + 1, (num_events - i) * sizeof(*events));
+--num_events;</code></pre>
+    <p>Ma con bug del genere è perlomeno piacevole lavorare, e se esiste uno scenario di riproduzione stabile saranno deterministici al 100%. Ti siedi e cammini con il debugger. Gli sviluppatori però hanno la pessima abitudine di generarsi bug logici con le proprie mani, ottimizzando il codice prima del tempo. Comincia tutto, come sempre, con le migliori intenzioni: «oh, fammi scrivere del codice a parte per il fast path, o per il caso raro in cui rimuoviamo proprio l'ultimo elemento». Il risultato è un ramo <code>if/else</code> che viene eseguito una volta a settimana con una particolare posizione della luna, e che naturalmente non viene testato per bene. E ovviamente è proprio quello che esplode a casa del giocatore. Più il codice è lineare e meno rami rari e isolati contiene, meno sono i posti in cui la logica può tenersi in silenzio un amico chitinoso.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Scrittura oltre il bordo dell'array</h2>
+    <p>Quanti anni ha ormai il C++, e di questi bug non si vede né capo né coda. La logica sembra impeccabile, l'algoritmo è buono, e il sistema va comunque in crash, perché i dati in ingresso non erano quelli su cui si contava. Hai dichiarato un array fisso da 1024 elementi, perché la memoria dinamica in un gioco è peccato, e hai scritto una semplice funzione di spawn:</p>
+<pre style="margin:1.4rem 0"><code>#define MAX_PARTICLES 1024
+Particle particles[MAX_PARTICLES];
+uint32_t num_particles;
+
+void spawn_particle(Particle p) {
+    particles[num_particles++] = p;
+}</code></pre>
+    <p>Qualcuno immancabilmente farà spawnare la 1025-esima particella e un codice così andrà a sovrascrivere la memoria vicina, e comincerà l'inferno dei crash strani. Direte che bisogna riscrivere tutto d'urgenza con array dinamici? Ma i pool fissi sono prevedibilità e protezione dalla frammentazione, nel gamedev servono, quindi niente da fare: la dinamica ve la scordate.</p>
+    <h2>Perdite di risorse</h2>
+    <p>Un caro amico del tipo precedente: anche lui va avanti da anni e il carro è ancora lì, o meglio, i bug sono sempre gli stessi. In un motore di gioco può perdere di tutto: texture, mesh, descrittori di file, mutex acquisiti — su Nintendo Switch, nelle prime revisioni, un mutex ricorsivo non veniva distrutto se rientrava in se stesso più di cinque volte, e in tutto se ne potevano creare 1024 per processo.</p>
+    <p>E se scrivi codice su <code>malloc</code> e <code>free</code> nudi e crudi, dare la caccia alle perdite diventa un'altra occupazione quotidiana. Trovare però <em>quale esattamente</em> delle cinquecento chiamate di allocazione non ha ricevuto la sua <code>free</code> è un compito con l'asterisco. Se pensate che un GC intelligente o gli smart pointer risolvano il problema, no... non lo risolvono. Cambiano semplicemente la natura delle perdite: al posto di una perdita di memoria otteniamo una perdita di riferimenti, e un qualche dimenticato gestore della scena continua a tenere un riferimento a un oggetto invisibile, che a sua volta, a catena, tiene texture e suoni.</p>
+    <p>Nei motori la si combatte così: nessuna chiamata diretta all'allocatore di sistema, tutte le allocazioni passano per un wrapper personalizzato con strumentazione, e dopo si può guardare la mappa della memoria — cosa, dove, chi e chi. E al momento di scaricare un livello è consuetudine confrontare l'elenco delle allocazioni con quello delle liberazioni: se è rimasto qualcosa, allora da qualche parte si perde.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/04.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Corruzione della memoria</h2>
+    <p>Se il debugging avesse un podio, la corruzione della memoria andrebbe messa senza dubbio sul gradino più alto: use-after-free, uscita dai limiti dell'array, scrittura tramite un puntatore «selvaggio», corruzione dell'header di un blocco di allocazione, doppia cancellazione e ricreazione dentro un'area già marcata — cos'altro ho dimenticato?</p>
+    <p>L'orrore di questi bug è che causa e sintomo sono separati nel tempo e nello spazio. La funzione <code>A</code> da qualche parte nel modulo di fisica ha leggermente sovrascritto il bordo di un array vicino, e la fisica continua a funzionare, ma da qualche altra parte un widget della UI si disegna male mentre prova a mostrare il nome del giocatore — e vada bene se mostra caratteri strampalati, perché può anche uscire con un Access Violation. Ed eccoti lì, seduto su un crash dump della UI, senza capire cosa c'entri l'interfaccia.</p>
+    <p>L'unica cosa che ti salva la vita in situazioni del genere è AddressSanitizer (ASan) e i confini speciali dei blocchi di memoria (le canarie). ASan circonda tutte le allocazioni con «zone rosse» protettive e cade nel momento della scrittura non valida, senza lasciarti rovinare le strutture vicine. E scrivere pattern come <code>0xDEADBEEF</code> nei blocchi liberati fa capire subito nel debugger che stai provando a leggere il «cadavere» di un oggetto.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/05.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>La race condition</h2>
+    <p>Un motore moderno parallelizza tutto ciò che può. La fisica su un core, la preparazione del frame su un altro, lo streaming delle risorse e l'AI su un terzo — ma quando due thread provano contemporaneamente a lavorare sugli stessi dati senza sincronizzazione, ecco che arriva lui: la Race Condition.</p>
+    <p>La cattiveria principale delle race condition è che non vivono sotto un debugger; in realtà non vivono da nessuna parte, e basta mettere un breakpoint, o semplicemente aggiungere un log, perché i tempi dei thread cambino e il bug sparisca senza lasciare traccia — poi togli il breakpoint e il gioco torna a cadere. I puntelli fatti di mutex sono di solito una soluzione temporanea e in sostanza sono lo stesso tipo di espediente: spostano la gara da un'altra parte.</p>
+    <h2>Il fix del venerdì</h2>
+    <p>I bug del venerdì nascono di rado da errori fondamentali di architettura; la loro fonte principale è la fretta, l'occhio annebbiato e una tazza di caffè di troppo. Ma i bug del tipo «ma dai, ho solo sistemato un operatore condizionale, non si romperà niente» meritano da tempo una categoria a parte; peccato che l'umanità non abbia mai inventato un FridaySanitizer.</p>
+<pre style="margin:1.4rem 0"><code>// Venerdì, 17:55. Sistemiamo un raro sfarfallio dell'icona della salute
+void UIHealthBar::Update(float DeltaTime)
+{
+    // "Già che ci siamo puliamo il cast, il validatore si lamentava..."
+    PlayerCharacter* Player = Cast&lt;PlayerCharacter&gt;(GetOwningPawn());
+
+    // Qui prima c'era un controllo if (Player), ma lo sviluppatore è certo
+    // che la UI HealthBar esista SOLO quando il giocatore è vivo e valido.
+    HealthPercent = Player-&gt;GetHealth() / Player-&gt;GetMaxHealth();
+}</code></pre>
+    <p>Il codice finisce nel repository, viene compilato e va ai tester. Ma il sabato mattina si scopre che quando il giocatore muore, rinasce o carica un livello dal menu, la UI viene disegnata un frame prima che venga creato l'oggetto del personaggio, e il puntatore <code>Player</code> risulta nullo. Il bug del venerdì prospera da qualche decennio, si intrufola attraverso review e test e aspetta la sua ora.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/06.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Gli heisenbug</h2>
+    <p>Il termine è nato dalla fisica quantistica e dal principio di indeterminazione di Heisenberg, per cui il fatto stesso di osservare un sistema ne cambia lo stato. Nel mondo del C++ sono i bug che vivono solo quando nessuno li guarda. Dal QA arriva un ticket per un crash entrando in una grotta, avvii il progetto sotto il debugger, arrivi alla grotta... e non succede nulla. Funziona tutto... lo fai dieci, venti volte... spegni il debugger, avvii la build di release e ti becchi il crash. Di solito si riduce a memoria non inizializzata e alle ottimizzazioni del compilatore:</p>
+<pre style="margin:1.4rem 0"><code>struct AttackParams
+{
+    float Damage;
+    bool IsCritical; // dimenticato di inizializzarlo nel costruttore
+};
+
+void ApplyDamage()
+{
+    AttackParams Params;
+    Params.Damage = 100.0f;
+    // Params.IsCritical contiene spazzatura casuale dallo stack
+
+    if (Params.IsCritical) {
+        // In una build Debug qui è sempre false perché lo stack viene azzerato.
+        // In una build Release può risultare true, e il critico parte a sorpresa.
+    }
+}</code></pre>
+    <p>Oppure ai tempi del multithreading e ai log. Se provi a catturare una race tra thread aggiungendo logging, ottieni un rallentamento artificiale dei thread, e questo sposta il punto della gara, che così «sparisce»; togli il log e il bug torna. È proprio per questo che certi log sopravvivono con il commento non cancellare questo spazio.</p>
+<pre style="margin:1.4rem 0"><code>void MeshLoader::OnAsyncLoadComplete(Mesh* LoadedMesh)
+{
+    log("Mesh loaded: %s\n", LoadedMesh-&gt;GetName()); // Non cancellare questo log!!!
+    RenderQueue::Enqueue(LoadedMesh);
+}</code></pre>
+    <p>Collegare un debugger o attivare speciali flag di debug cambia la dimensione dei file header e delle strutture dati (per esempio vengono aggiunti gli iteratori di debug in <code>std::vector</code>, o campi di validazione aggiuntivi nell'allocatore); di conseguenza gli indirizzi in memoria si spostano, e la corruzione della memoria che prima sovrascriveva dati importanti comincia a sovrascrivere un innocuo «cuscinetto di sicurezza» (guard bytes), mascherando il problema.</p>
+    <h2>Il feature-bug («It's not a bug, it's a feature»)</h2>
+    <p>E poi ci sono le situazioni in cui un difetto nella matematica o nella logica crea un'esperienza di gioco così geniale che gli sviluppatori decidono di non aggiustare nulla e si limitano a rinominare il bug in «meccanica».</p>
+    <p>Le combo in Street Fighter II inizialmente permettevano di annullare l'animazione di un colpo con un altro, ma era un bug dei tempi di animazione. Il producer Noritaka Funamizu, notandolo, decise che azzeccare il tempismo fosse troppo difficile e lo lasciò — e nacque l'intero genere dei picchiaduro moderni.</p>
+    <p>Il Gandhi aggressivo in Civilization. A causa dell'overflow di un intero senza segno a 8 bit, l'aggressività di Gandhi, scendendo sotto lo zero con l'adozione della democrazia, si azzerava a <code>255</code>. Il leader pacifista si trasformava in uno psicopatico nucleare. In realtà è una leggenda e non è mai successo nulla del genere, ma il mito è diventato così famoso che gli sviluppatori del quinto capitolo ne hanno inserito la logica nel gioco, rendendo il mito reale.</p>
+    <p>Il bunny hopping in Quake. Un errore nella somma dei vettori di velocità durante il salto e la rotazione della telecamera permetteva di accelerare fino a velocità da caccia, il che consentiva acrobazie molto divertenti nei livelli. In linea di principio, se un bug rende il gioco più divertente non lo si sistema: lo si rifinisce e lo si consegna al marketing. Su questo è costruita un'intera serie di giochi, Saints Row, dove il QA prendeva premi per lo sfruttamento di vari bug che poi diventavano elementi delle meccaniche del gioco stesso.</p>
+    <img src="../../assets/articles/anatomy-of-rakes/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>L'effetto farfalla (floating-point math)</h2>
+    <p>Bug che nascono dalla precisione limitata dei numeri in virgola mobile, quando il giocatore si allontana molto dall'origine delle coordinate. Più il giocatore è lontano dal centro, meno precisione resta per la parte frazionaria, e a una distanza dell'ordine dei 100 km la precisione del passo è di qualche millimetro; il risultato è che il modello comincia a «vibrare» di continuo e a scattare in modo epilettico mentre cammina, finché non viene sputato fuori dai confini del mondo.</p>
+    <p>Oppure porta ad artefatti di generazione, come in Minecraft (le Far Lands), dove a 12,5 milioni di blocchi di distanza dallo spawn l'errore del <code>float</code> nella generazione del rumore di Perlin diventava così enorme che il paesaggio si trasformava in giganteschi muri di formaggio bucherellato.</p>
+    <h2>Dipendenze spaghetti</h2>
+    <p>Bug divertenti, in cui il gioco cade solo a condizione che tu abbia aperto una porta tenendo in mano un determinato oggetto, e obbligatoriamente con un'angolazione di 45 gradi. In <em>TF2</em> c'è il famoso mito metropolitano della texture di cocco dentro i file di gioco, senza la quale il motore Valve Source si rifiuterebbe semplicemente di avviarsi. Nei file di gioco c'è davvero una texture <code>coconut.vtf</code>, un file VTF con un'immagine realistica di una noce di cocco, e la sua origine risale all'update Love&amp;War del 2014, da cui a quanto pare è rimasta come asset inutilizzato. La leggenda secondo cui cancellare il file rompe l'avvio del gioco è cresciuta soprattutto grazie a un commento scherzoso sotto il post originale del tipo «non ho idea di chi l'abbia messo qui, ma quando ho cancellato il file il gioco ha smesso di avviarsi», che in molti hanno preso per un vero commento di uno sviluppatore preso dai sorgenti.</p>
+    <p>Oppure il caso di Lineage 2, in cui i giocatori non riuscivano a entrare in una località perché nel loro inventario c'era un oggetto di quest del 2009 il cui identificatore coincideva con un nuovo tipo di animazione per un drago.</p>
+    <h2>Inversione di priorità</h2>
+    <p>Un bug dei motori multithread per cui il gioco comincia a laggare mentre lavorano thread a bassa priorità. Un thread a bassa priorità (per esempio lo streaming audio in background) acquisisce un mutex, poi un thread ad alta priorità prova a prendere quello stesso mutex e si addormenta, cedendo il tempo, ma proprio in quel momento un thread a priorità media (per esempio il calcolo dell'AI) impedisce al thread a bassa priorità di finire il lavoro e rilasciare il mutex. Il risultato è che il thread principale aspetta l'audio, l'audio aspetta l'AI e il giocatore guarda tutto quanto arrancare a stento, ammesso che si muova.</p>
+    <h2>Bug del passo temporale variabile (Variable Delta Time)</h2>
+    <p>Il prezzo da pagare per la rincorsa a un framerate sbloccato. Leghi la fisica o il movimento a quel <code>dt</code> che è trascorso tra un frame e l'altro.</p>
+<pre style="margin:1.4rem 0"><code>// Se il frame è crollato da 60 FPS (16ms) a 2 FPS (500ms) per via del caricamento
+position += velocity * dt; // dt è diventato gigantesco</code></pre>
+    <p>E in un unico frame lungo (per esempio quando il gioco ha «laggato») il personaggio attraversa da parte a parte un muro di tre metri, perché il collider fisico l'ha semplicemente scavalcato in un solo passo.</p>
+    <h2>Cosa ho dimenticato?</h2>
+    <p>Alla fine, il buon codice di un sistema di gioco si distingue da quello cattivo non per l'assenza di bug, perché errori li fanno tutti. Si distingue per quanto è facile fargli il debug, per l'accoppiamento dei suoi sistemi, per i confini fissi dei moduli, per come lavora con la memoria. Mentono tutti, e anche il codice... il codice soprattutto... non credete mai al codice sulla parola.</p>
+
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
