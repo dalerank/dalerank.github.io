@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>These Bees Make the Wrong C++ — dalerank</title>
+<meta name="description" content="«Arkaned C++» from Austin: banning exceptions, RTTI and global new/delete, a Result with [[nodiscard]] and a single panic(), zero frame allocations and domain memory, isolating third-party libraries in worker processes — and the price the team pays for predictability." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/wrong-cpp-bees.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/wrong-cpp-bees.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/wrong-cpp-bees.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/wrong-cpp-bees.html">RU</a><i>/</i><a class="on" href="wrong-cpp-bees.html">EN</a><i>/</i><a href="../../it/articles/wrong-cpp-bees.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>These Bees Make the Wrong C++</h1><div class="ameta"><span>Oct 1, 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/wrong-cpp-bees/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In 2016 <a href="megacity-on-iphone.html">EA shut down its last development stronghold</a> in St. Petersburg, and people started drifting off to various studios and teams. Back then the global games industry still looked kindly on holders of red passports, and a few of my former colleagues «with connections» set up a mini-galley and managed to land a contract to support the engine for a prototype of a new Arkane game. The arrangement was pretty murky, because the Austin folks didn't want to work directly with post-USSR shops, so their main contract went through some Koreans for three bucks, who delegated part of the work to a French outfit for one buck, who in turn hired some guys from Eastern Europe for ten cents — well, you know which guys :)</p>
+    <p>For almost a month they tormented us with documentation for their own engine that was a couple of years out of date, sample code with bugs in it, failing tests, and oral exams with homework to hand in, but eventually that training hell came to an end and the team was granted access to the officer's body... I mean, to the engine and the game itself.</p>
+    <p>That was the start of my acquaintance with the ideas we called «Arkaned C++» inside the team, and with how they were actually applied in game development. I had run into strict C++ requirements before, at my pre-gamedev job, but over six years I had gone a bit soft and stopped being so hardcore about optimisation, so meeting the Austin team gave me a stubborn déjà vu of early-2000s development.</p>
+    <p>I'm not going to bash or advertise any particular approach; I just want to show how different people, teams and engines can be within the same industry, and what price you sometimes have to pay for predictability and perf.</p>
+    <hr />
+    <p>C++ is a multi-level language: it can do exceptions, it juggles RTTI, it seduces you with the ease of virtual functions and the transparency of templates, it has mastered five styles of smart-pointer kung fu, and apparently it has a container for every occasion in life. In a hot path, however, this versatility quickly turns into problems you'll have to solve sooner or later, and it all comes down to a few simple things (does this function allocate memory? Can an error fly out of here? Who owns this object? Where did that <code>malloc</code> come from when a ready-made buffer was passed in?), forcing you to write the fastest possible code — and note that I didn't say modern...</p>
+    <p>The Austin team took C++14, «hot off the press» at the time, and banned a significant chunk of it, and the result was less a new language than an architectural discipline with an allergy to allocations during the frame (zero frame allocations) and a predictable call cost. The compile-time part of the language was left almost unrestricted, while the runtime, on the contrary, was squeezed down to the most predictable subset possible.</p>
+    <p>Below is what exactly was banned, what replaced the banned stuff, how much it cost, and why you should apply it carefully, but... as usual, there's always a but... the people who used this architecture made amazing games — smart, beautiful and very unusual.</p>
+    <p>In a large project there's almost never a single C++, because there's C++ in the tools, where development speed matters more, and there's loader C++, where you can allocate a gigabyte of temporary memory once and forget about it. There's also gameplay-logic C++, where a convenient <code>shared_ptr</code> can be a perfectly fine choice, and there's the render hot path, where that same <code>shared_ptr</code> adds atomics, a separate control block and a fuzzy moment of deallocation that depends on the last unknown owner — and, strictly speaking, arkanec++ is meant only for that last area.</p>
+    <p>If you force an asset conversion function to take an allocator through every constructor, the project won't get faster... well, maybe just a tiny bit, but programmers will definitely start going for coffee more often, or maybe for something stronger, to take a break from this architecture and soothe their frayed nerves. In the project, though, with a flick of the wrist, all of this was rolled out to everyone.</p>
+    <p>The engine architecture kept almost everything from C++ that worked at compile time, like <code>if constexpr</code>, <code>std::span</code>, <code>std::string_view</code>, and <code>source_location</code>, which were welcome because they helped the compiler and the team check more before launch (I'll be using the well-known equivalents so as not to wander into the jungle of home-grown bicycles; luckily all these ideas made it into the standard one way or another).</p>
+    <p>Exceptions and RTTI are banned because they add behaviour that's harder to see at the call site, and template wizardry isn't welcome either, but for a different reason: the code runs fast but takes forever to compile. Forever, in our case, meant almost four hours to build the engine and the game from scratch (the engine itself + game levels + shaders) if the repo was empty, and about fifteen minutes to recompile if you touched something in the so-called «system files». But nobody usually built the engine at home; you'd just grab ready-made bundles from the build farm.</p>
+    <p>On modern ABIs an uncaught exception costs almost nothing in normal life, and the unwind tables lie around somewhere waiting for their moment, but the problem with exceptions shows up as harder control-flow analysis and at code boundaries. And instead of a rare and expensive stack unwind you get a constant explicit check of the result, adding a small overhead that can be tuned if necessary.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>An error is either a working one or your last one</h2>
+    <p>All runtime problems were split into two levels. The first described the expected nuisances of the outside world: the file isn't there, the connection dropped, the data is corrupted, or a local allocator ran out. Yes, sometimes it did run out, but the program isn't broken by that — the circumstances of the call just turned out to be unlucky, so the calling code gets its error in the form of <code>Result&lt;T, E&gt;</code> and decides what to do next, something like this:</p>
+<pre style="margin:1.4rem 0"><code>file not found            -&gt; Result
+socket closed             -&gt; Result
+bad user input            -&gt; Result
+bounded pool exhausted    -&gt; Result
+
+index out of bounds       -&gt; panic
+broken FSM                -&gt; panic
+dereferencing empty value -&gt; panic
+truly out of memory       -&gt; panic</code></pre>
+    <p>The second level is a contract violation, for example going past the end of an array, an impossible state machine state, dereferencing an empty value, or a global OOM, and since it's dangerous to keep running after such an event, a single <code>panic()</code> is called, diagnostics get written and the game is killed, sending QA into indescribable delight and a burning desire to file a bugfest in Jira.</p>
+    <p>But the problem wasn't the <code>Result</code> itself, of which programmers had already written several hundred kinds for every occasion, but the ban on ignoring the result: for that the type was marked <code>[[nodiscard]]</code>, errors were propagated by early return, and the happy path stayed pressed against the left edge without a pyramid of <code>if</code>s.</p>
+<pre style="margin:1.4rem 0"><code>if pyramid                           early return
+
+do_a()                               r = do_a()
+  if ok:                               if fail: return Err
+    do_b()                             r = do_b()
+      if ok:                           if fail: return Err
+        do_c()                         r = do_c()
+          if ok:                       if fail: return Err
+            success                    success
+          else: Err
+        else: Err
+      else: Err
+
+happy path drifts right              happy path stays left</code></pre>
+    <p>The standard <code>std::expected</code> has almost the same model today, but back then the team wanted to control everything themselves, so an attempt to take a missing value went through their own <code>panic()</code> with a <code>source_location</code> equivalent, and the requirement to handle the result hung on the whole type regardless of the standard library implementation.</p>
+    <p>The word «requirement» here should be understood in context, since for <code>[[nodiscard]]</code> a regular compiler only issues a warning and doesn't physically block the build, so they hacked it up with asserts and, while they were at it, marked all warnings as errors — just to make sure you were guaranteed not to be able to build the project with them.</p>
+<pre style="margin:1.4rem 0"><code>std::expected                         Result
+
+.value()                              .value()
+    |                                     |
+    v                                     v
+std::terminate / abort                panic(source_location)
+(depends on STL and flags)            file + line are known
+
+[[nodiscard]]                         [[nodiscard]]
+on individual methods                 on the whole type
+not everywhere                        always, regardless of STL</code></pre>
+    <p>Naturally, you pay for everything, and every such return carries an extra check, every level checks it, and the early exit bloats the code. So this isn't free error handling: we traded an almost free average case and an expensive tail for a constant perf tax even in release, but in return got a predictable worst-case time.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Every gamedev nut wishes to know where the byte is sitting, probably...</h2>
+    <p>The concept of zero frame allocations is familiar to game developers, but they apply the principle rather lazily, and far from everyone does, because of its organisational cost. You can want anything you like, of course, but deadlines, management and new people on the team who have to be retrained bring the architecture back down to earth pretty quickly.</p>
+    <p>But the Austin team's tech director must have been badly bitten as a child by static analysers trained on Acton's and Carmack's code, because the dislike for anything dynamic seeped through even the documentation, where the memory map took up almost a third of the entire wiki.</p>
+    <p>Actually, for the folks on the team who handled reviews, this was also one of the main pet points during analysis, because it's as contagious as covid. But... here I can only applaud: in the engine they managed to bring the number of allocations per frame down to around twenty, i.e. a couple dozen allocations per frame... not thousands — dozens. They were very proud of it and rubbed the ex-Sims folks' noses in it whenever those managed to sneak a couple of new ones through review, all of them big ones and happening at the start of the frame.</p>
+    <p>The price for that was a huge stack of about twenty megabytes for the main thread (+ 2MB on workers * the number of cores on the machine) and aggressively shoving everything possible into static caches, buffers and pools. So any attempt at runtime memory allocation simply failed the merge tests and wouldn't let you send the change to review.</p>
+    <p>The rule was phrased like this: global <code>new</code> and <code>delete</code> are banned, and any type that needs to allocate memory takes an allocator explicitly. System allocators are pretty good these days, and implementations like mimalloc, rpmalloc and jemalloc can grind through a huge number of allocations fairly quickly, but even there problems still exist, they just shift to somewhat different areas. The global heap certainly won't tell you which subsystem the memory belongs to, what its budget is, or when everything allocated can be freed, partially or entirely. And splitting into domains is a serious problem there too.</p>
+    <p>Domain memory was another local cargo cult. I won't say I'm a big fan of exactly this approach to memory, but it greatly increases the chances of running on consoles for a long time. If the particle system gets a frame scratch allocator, all its temporary data disappears with a single pointer reset; or in a network handler a pool turns a leak not into the death of the whole process but into local exhaustion of the domain (pool, cache, allocator), after which it can be reset, the missing data rebuilt and work continued. And a separate memory domain for the level loader lets the profiler show its real peak rather than a general mountain of allocations of unknown origin.</p>
+<pre style="margin:1.4rem 0"><code>                    shared system heap
+                             |
+      who allocated? what's the limit? when to clean up?
+                             |
+                             ?
+
+FrameArena               StagePool               LevelHeap
+    |                        |                       |
+particles               packets and queues       level data
+frame commands          limits                   its own peak
+temporary data          local OOM                wiped wholesale
+    |                        |                       |
+reset every frame       reset and rebuild        level unload</code></pre>
+    <p>Naturally, standard containers turn into a pumpkin at this point... But they aren't necessarily thrown out, and that same <code>std::vector</code> can be wrapped in a hand-written adapter that sends memory to the right domain, but such an adapter needs explicitly defined behaviour for copy, move and swap, loading its usage with extra work that requires both time and people to maintain.</p>
+    <p>There's also <code>std::pmr</code> (there is now; in 2016 there was only a proposal and inplace implementations swiped from boost), but the standard <code>memory_resource</code> implementation has a virtual call on every allocation (invisible against the cost of the allocation in ordinary code), whereas an allocator as a template parameter can be inlined at compile time.</p>
+    <p>In practice, though, the significance depends on the workload: if a system makes one big allocation and then walks the array a million times, the cost of the virtual call just vanishes in the noise, but if it creates thousands of small objects, the problem is no longer just the vtable, it's the thousands of small objects themselves. So ordinary logic was converted into passes over arrays, to push even cheap allocations and containers out of the loop, which of course didn't help readability.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/04.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>A third-party library will call malloc anyway</h2>
+    <p>Try as you might, full control over memory will remain yet another beautiful idea and will only work until you plug in the first third-party library, which is why the repository contained rewritten or adapted versions of OpenSSL, ICU, zlib and even individual parts of platform libs from the SDK. I won't judge how pretty or maintainable that is, but as the saying goes, you don't bring your own samovar to someone else's game tools, so I'll leave that decision to the conscience of the studio's tech people.</p>
+    <p>It's nice if a library has official hooks, like <code>zalloc</code> and <code>zfree</code> in zlib or the allocator setup functions in OpenSSL, then you can tune them to your own allocator right away; and if there are no hooks, the dependency can be moved out into a separate worker or process with a limited memory budget, switching communication to messages.</p>
+    <p>Usually this kind of shamanic dancing is expensive, and instead of a plain call you get asynchronous exchange, data serialisation, a queue, timeout handling and a separate lifecycle, but in return the library can no longer quietly mess things up for you... in theory.</p>
+<pre style="margin:1.4rem 0"><code>game
+  |
+  | request
+  v
+message queue --&gt; isolated worker --&gt; third-party library
+  ^                         |
+  | result                  +-- heap limit
+  |                         +-- watchdog
+  `-------------------------+-- restart</code></pre>
+    <p>And a couple of times this really did save the day. For example, the standard platform store module for Xbox gradually nibbled away at memory while running, so it was put into an isolated worker process with a heap of about a megabyte + a buffer (the buffer was needed in case the nasty module still managed to write something past the end of its data), and when the budget ran out the worker crashed as usual, after which the watchdog recreated the worker and everything started all over again.</p>
+    <p>Don't do this... honestly, it's some kind of black magic, and a scheme like this only works with controlled worker termination or with real isolation in a separate process, otherwise instead of architecture you get a use-after-free lottery. And a lottery is exactly what happened, so before release the buffer was enlarged a bit, because a couple of times the writes overshot even that.</p>
+    <h2>You can use any container, as long as it's a vector</h2>
+    <p>Using the standard library was allowed, but mostly for the algorithms, and most containers were rewritten or adapted to vectors. The classic <code>std::list</code> looks like a sequence of elements only in the source code; to the processor it's a set of random addresses to jump between, each time waiting for the next cache line. <code>std::unordered_map</code> uses buckets and nodes, which also require several indirections on lookup.</p>
+    <p>Among the standard containers, the various flavours of arrays felt the safest, and the main requirement for engine structures was vector-likeness, which naturally led to using SoA instead of AoS and, in some places, to heavily chopping objects up into their component parts.</p>
+<pre style="margin:1.4rem 0"><code>AoS
+
+[pos vel hp type name][pos vel hp type name][pos vel hp type name]
+ \____________ cache line ____________/
+       only pos and vel are needed,
+       the rest came along for nothing
+
+SoA
+
+[pos][pos][pos][pos][pos][pos][pos][pos]
+[vel][vel][vel][vel][vel][vel][vel][vel]
+[hp ][hp ][hp ][hp ][hp ][hp ][hp ][hp ]
+
+cache line holds only the data for the current pass</code></pre>
+    <p>That didn't mean, however, that SoA is always better: if the code reads all of an object's fields on every iteration, separate arrays will on the contrary complicate addressing and add trips to memory. You had to group data together by logical usage, not just any data that would look pretty together in a struct declaration.</p>
+    <p>And some of the STL algorithms were rewritten too, and there really were about ten flavours of <code>sort</code>, each with its own comment on when it's best used and with which container.</p>
+    <p><code>iostream</code>, of course, was thrown out entirely, with no replacement. It was thrown out because of its size, static initialisation and heavy interface, and in general working with output streams was very, very limited; instead, equivalents of <code>format</code> and <code>print</code> on static buffers were used.</p>
+    <p>That, however, spawned another problem, because some of the remaining parts of the STL can only report errors via exceptions: that same <code>vector::push_back</code> can get a <code>bad_alloc</code>, or the <code>thread</code> constructor and <code>mutex::lock</code> can get a <code>system_error</code>.</p>
+    <p>With exceptions disabled, these paths usually end in <code>terminate</code> or <code>abort</code>, and the exact behaviour depends on the implementation: a local allocator exhaustion that a custom container could have returned as a <code>Result</code> suddenly becomes a <code>panic</code> inside <code>std::vector</code> and crashes the game. You could, of course, write your own <code>vector</code>, your own <code>mutex </code>and your own formatting, but then architecturally the game quietly turns into its own standard library, which somebody also has to maintain.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/05.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Is it better than ordinary C++?</h2>
+    <p>Not better, just different, and I know a few people from automotive software who never stopped living in this kind of C++, and there I think it's justified, since the price of a bug may well be somebody's head. You just have to remember that use-after-free won't magically cure itself, a custom allocator won't stop the team from steadily churning out buffer-overrun bugs, a dense hash map won't make a data race any less painful, and in general writing ordinary bugs is just so human.</p>
+    <p>An architecture like this doesn't make the language safe and doesn't guarantee the program will get faster. Sometimes it really was faster, but the code around it was already fast too; for the most part, though, <code>Result</code> just bloated the code, and the custom hash map lost to the standard one on specific data sets. And an allocator dragged through half the API for the sake of two allocations that were successfully removed from the frame... as they say, monsieur is a connoisseur of fine pleasures.</p>
+    <p>I'd call the main win not even the speed, but its explainability, since the profiler genuinely becomes a working tool here and stops being a snapshot of some incomprehensible junk that somehow ended up in the frame. A memory peak can be traced to its owner, and for an error you can decide in advance whether you can live on after it or it's time to kill the process, and the whole frame stops being just a pile of handlers called at random moments and starts working by perfectly understandable laws. But at what cost...</p>
+    <p>For rendering, physics, the mixer and the job system it's justified, but dragging it into the editor, the FBX importer, the launcher and all the gameplay logic is already beyond good and evil, and looks more like a religious cult from which the project lost more than it gained. In Austin they built their own small and angry ++C inside the big and fluffy C++, and this inner language banned the worst-case-time paths of the program but demanded noisy APIs, custom containers and constant training of new developers, so frame time was bought with programmers' lifetime.</p>
+    <p>For nine projects out of ten, such an abuse of the language will turn out unnecessary, expensive and frankly harmful, but for the remaining one it'll help ship a game that lags without you noticing — as Dr. Carmack would say, «everybody lags».</p>
+    <p>Why bees? There's an old joke that if you look at a bee from the point of view of aerodynamics, it shouldn't really be able to fly at all: the body is heavy, the wings are small, the landing gear is short and the tail outweighs the rest, but the bee knows nothing about aerodynamics and so it flies... flies the way it knows how.</p>
+    <p>Would I join a project with Arkaned C++ again? Probably not, because UE in skilled hands isn't much slower, but saves a hundred or two hours by being ordinary... but on the other hand, where else would you see how far a studio can go in the pursuit of perf.</p>
+    <p><a href="https://pvs-studio.ru/ru/webinar/53" target="_blank" rel="noopener">And how to make the right C++, we'll discuss at the PVS webinar</a></p>
+    <img src="../../assets/articles/wrong-cpp-bees/06.jpg" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

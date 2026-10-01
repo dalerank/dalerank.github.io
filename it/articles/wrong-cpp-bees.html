@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Queste api fanno il C++ sbagliato — dalerank</title>
+<meta name="description" content="Il «C++ arkanizzato» di Austin: divieto di eccezioni, RTTI e new/delete globali, Result con [[nodiscard]] e un unico panic(), zero frame allocations e memoria per domini, isolamento delle librerie di terze parti in processi worker — e il prezzo che il team paga per la prevedibilità." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/wrong-cpp-bees.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/wrong-cpp-bees.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/wrong-cpp-bees.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/wrong-cpp-bees.html">RU</a><i>/</i><a href="../../en/articles/wrong-cpp-bees.html">EN</a><i>/</i><a class="on" href="wrong-cpp-bees.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>Queste api fanno il C++ sbagliato</h1><div class="ameta"><span>1 ottobre 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/wrong-cpp-bees/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Nel 2016 <a href="megacity-on-iphone.html">EA chiude il suo ultimo avamposto di sviluppo</a> a San Pietroburgo, e la gente comincia a disperdersi tra studi e team diversi. All'epoca il gamedev mondiale guardava ancora con benevolenza ai titolari di passaporto rosso, e alcuni miei ex colleghi «con le conoscenze giuste» misero su una mini-galera e riuscirono a strappare un contratto per il supporto del motore per il prototipo di un nuovo gioco Arkane. Lo schema di collaborazione era parecchio torbido, perché quelli di Austin non volevano lavorare direttamente con aziende post-sovietiche: il contratto principale ce l'avevano con dei coreani per tre soldi, che delegavano parte del lavoro a un'azienda francese per un soldo, che a loro volta assumevano dei ragazzi dell'Europa dell'Est per dieci centesimi, avete capito quali :)</p>
+    <p>Per quasi un mese ci torturarono con la documentazione del loro motore vecchia di un paio d'anni, esempi con errori nel codice, test che crashavano ed esami orali con consegna dei compiti a casa, ma alla fine questo inferno didattico finì e il team fu ammesso al corpo ufficiale... volevo dire, al motore e al gioco stesso.</p>
+    <p>Da quel momento iniziò la mia conoscenza con le idee che dentro il team chiamavamo «C++ arkanizzato», e con la loro applicazione reale nello sviluppo di giochi. Già prima mi era capitato di avere a che fare con requisiti rigidi per lo sviluppo in C++ nel mio lavoro pre-gamedev, ma in sei anni mi ero un po' rammollito e avevo smesso di essere così spietato con l'ottimizzazione, quindi l'incontro con il team di Austin mi provocò un deciso déjà vu dello sviluppo dei primi anni Duemila.</p>
+    <p>Non ho intenzione di criticare o pubblicizzare un approccio specifico: voglio solo mostrare quanto possano essere diversi persone, team e motori all'interno della stessa industria, e quale prezzo a volte tocca pagare per la prevedibilità e il perf.</p>
+    <hr />
+    <p>Il C++ è un linguaggio a più livelli: sa fare le eccezioni, si destreggia con l'RTTI, seduce con la leggerezza delle funzioni virtuali e la trasparenza dei template, padroneggia cinque stili di kung fu degli smart pointer e, a quanto pare, ha un container per ogni occasione della vita. Però nell'hot path questa universalità si trasforma in fretta in problemi che prima o poi vanno risolti, e tutto si riduce a poche cose semplici (questa funzione alloca memoria? Qui può saltare fuori un errore? A chi appartiene l'oggetto? Da dove spunta questa <code>malloc</code>, se dentro gli è stato passato un buffer già pronto?), costringendovi a scrivere il codice più veloce possibile, e notate che non ho detto moderno...</p>
+    <p>Il team di Austin prese il C++14, all'epoca «caldo caldo, appena sfornato», e ne vietò una parte consistente: il risultato non fu tanto un nuovo linguaggio quanto una disciplina architetturale con l'allergia alle allocazioni durante il frame (zero frame allocations) e con un costo di chiamata prevedibile; per di più, la parte compile-time del linguaggio rimase quasi senza restrizioni, mentre il runtime, al contrario, fu stretto fino al sottoinsieme più prevedibile possibile.</p>
+    <p>Qui sotto si parlerà di cosa esattamente fosse vietato, con cosa venisse sostituito il proibito, quanto costasse tutto questo e perché vada applicato con cautela, ma... come al solito c'è sempre un ma... le persone che hanno usato un'architettura del genere hanno creato giochi straordinari: intelligenti, belli e molto insoliti.</p>
+    <p>In un grande progetto quasi non esiste mai un C++ unico, perché c'è il C++ dei tool, dove conta di più la velocità di sviluppo, e c'è il C++ del loader, dove puoi allocare una volta un gigabyte di memoria temporanea e dimenticartene. C'è poi il C++ della logica di gioco, dove il comodo <code>shared_ptr</code> può essere una scelta del tutto normale, e c'è l'hot path del render, dove lo stesso <code>shared_ptr</code> aggiunge atomici, un control block separato e un momento di rilascio della memoria imprevedibile, che dipende dall'ultimo proprietario sconosciuto; e, a dire il vero, l'arkanec++ è pensato solo per quest'ultima area.</p>
+    <p>Se costringi la funzione di conversione degli asset ad accettare un allocatore in ogni costruttore, il progetto non diventerà più veloce... be', forse un pochino, ma i programmatori di sicuro cominceranno ad andare a prendere il caffè più spesso, o magari qualcosa di più forte, per riposarsi da questa architettura e curarsi i nervi a pezzi. Nel progetto invece, con un gesto leggero della mano, tutto questo fu esteso a tutti.</p>
+    <p>L'architettura del motore lasciava del C++ quasi tutto ciò che lavorava in fase di compilazione, come <code>if constexpr</code>, <code>std::span</code>, <code>std::string_view</code> e <code>source_location</code>, che erano benvenuti perché aiutavano compilatore e team a verificare di più prima dell'avvio (scriverò gli equivalenti noti a tutti, per non perdermi nei meandri delle nostre biciclette reinventate; per fortuna tutte queste idee, in un modo o nell'altro, sono arrivate allo standard).</p>
+    <p>Eccezioni e RTTI vengono vietati perché aggiungono un comportamento più difficile da vedere nel punto di chiamata; anche la stregoneria con i template non è ben vista, ma per il motivo che il codice gira veloce e però compila un'eternità. Un'eternità, nel nostro caso, significava quasi quattro ore di compilazione di motore e gioco da zero (il motore + i livelli del gioco + gli shader) se il repo era vuoto, e una quindicina di minuti di ricompilazione se toccavi qualcosa nei cosiddetti «file di sistema». Ma in condizioni normali il motore di solito non lo si compilava in locale: si prendevano i bundle già pronti dalla build farm.</p>
+    <p>Sulle ABI moderne un'eccezione non lanciata non costa quasi nulla nella vita normale, e le tabelle di unwinding stanno lì da qualche parte ad aspettare la loro ora; il problema delle eccezioni si manifesta invece nella maggiore complessità dell'analisi del flusso di controllo e ai confini del codice, e al posto di un unwinding dello stack raro e costoso compare un controllo esplicito e costante del risultato, che introduce un piccolo overhead regolabile all'occorrenza.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Un errore o è di lavoro, o è l'ultimo</h2>
+    <p>Tutti i problemi a runtime erano divisi in due livelli: il primo descriveva i guai attesi del mondo circostante, quando il file non c'è, la connessione è caduta, i dati sono corrotti o l'allocatore locale è finito. Sì, capitava che finisse, ma il programma non è rotto per questo, semplicemente le circostanze della chiamata sono state sfortunate, quindi il codice chiamante riceve il suo errore nella forma <code>Result&lt;T, E&gt;</code> e decide cosa fare dopo, più o meno così:</p>
+<pre style="margin:1.4rem 0"><code>file non trovato              -&gt; Result
+socket chiuso                 -&gt; Result
+input utente sbagliato        -&gt; Result
+bounded pool esaurito         -&gt; Result
+
+indice fuori dall'array       -&gt; panic
+FSM rotta                     -&gt; panic
+dereferenziazione del vuoto   -&gt; panic
+memoria proprio finita        -&gt; panic</code></pre>
+    <p>Il secondo livello è già una violazione del contratto, per esempio l'uscita dai limiti di un array, uno stato impossibile della macchina a stati, la dereferenziazione di un valore vuoto o un OOM globale, e siccome continuare a lavorare dopo un evento del genere è pericoloso, viene chiamato un unico <code>panic()</code>, si scrive la diagnostica e il gioco viene ucciso, mandando il QA in un'estasi indescrivibile e nella voglia di aprire un bel ticket su Jira.</p>
+    <p>Ma il problema non era il <code>Result</code> in sé, di cui i programmatori avevano già scritto qualche centinaio di varianti per ogni evenienza, bensì il divieto di ignorare il risultato: per questo il tipo veniva marcato <code>[[nodiscard]]</code>, l'errore si propagava con un ritorno anticipato e il percorso di successo restava schiacciato al margine sinistro, senza una piramide di <code>if</code>.</p>
+<pre style="margin:1.4rem 0"><code>piramide di if                       ritorno anticipato
+
+do_a()                               r = do_a()
+  if ok:                               if fail: return Err
+    do_b()                             r = do_b()
+      if ok:                           if fail: return Err
+        do_c()                         r = do_c()
+          if ok:                       if fail: return Err
+            success                    success
+          else: Err
+        else: Err
+      else: Err
+
+l'happy path scivola a destra        l'happy path resta a sinistra</code></pre>
+    <p>Lo standard <code>std::expected</code> oggi ha quasi lo stesso modello, ma allora il team voleva controllare tutto da sé, per cui il tentativo di prendere un valore assente passava per un <code>panic()</code> fatto in casa con un equivalente di <code>source_location</code>, e l'obbligo di gestire il risultato pendeva sull'intero tipo, indipendentemente dall'implementazione della libreria standard.</p>
+    <p>La parola «obbligo» qui va intesa nel contesto d'uso, perché su <code>[[nodiscard]]</code> un normale compilatore dà solo un warning e non impedisce fisicamente la build; quindi lì la cosa era stata un po' aggiustata con degli assert e, già che c'erano, tutti i warning erano stati marcati come errori, così da garantire che con quelli il progetto non riusciste proprio a compilarlo.</p>
+<pre style="margin:1.4rem 0"><code>std::expected                         Result
+
+.value()                              .value()
+    |                                     |
+    v                                     v
+std::terminate / abort                panic(source_location)
+(dipende da STL e flag)               file + riga noti
+
+[[nodiscard]]                         [[nodiscard]]
+su singoli metodi                     sull'intero tipo
+non ovunque                           sempre, a prescindere dalla STL</code></pre>
+    <p>Naturalmente tutto si paga, e ogni ritorno del genere porta con sé un controllo in più, ogni livello lo verifica e l'uscita anticipata gonfia il codice; insomma, non è una gestione degli errori gratuita: abbiamo scambiato un caso medio quasi gratis e una coda costosa con una tassa costante sul perf anche in release, ottenendo però un caso peggiore prevedibile.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Ogni gamedevver desidera sapere dove si trova il byte, credo...</h2>
+    <p>Il concetto di zero frame allocations è familiare agli sviluppatori di giochi, ma questo principio lo si usa piuttosto pigramente, e non tutti, a causa del suo costo organizzativo. Volere, ovviamente, si può volere qualunque cosa, ma scadenze, management e nuove persone nel team da rieducare riportano l'architettura con i piedi per terra piuttosto in fretta.</p>
+    <p>Ma il direttore tecnico del team di Austin, da piccolo, dev'essere stato morso parecchio da analizzatori statici addestrati sul codice di Acton e Carmack, perché l'avversione per tutto ciò che è dinamico trapelava perfino dalla documentazione, dove alla mappa della memoria era dedicato quasi un terzo dell'intera wiki.</p>
+    <p>Del resto, per i ragazzi del team che facevano le review, anche questo era uno dei pallini principali durante l'analisi, perché contagioso come il covid. Ma... qui posso solo applaudire: nel motore erano riusciti a portare il numero di allocazioni per frame a una ventina circa, cioè due decine di allocazioni per frame... non migliaia, decine. Ne andavano molto fieri e ci strofinavano il naso agli ex sviluppatori di The Sims quando questi riuscivano comunque a far passare in review un paio di allocazioni nuove, per di più tutte grosse e all'inizio del frame.</p>
+    <p>Il prezzo da pagare fu uno stack enorme, sui venti megabyte per il thread principale (+ 2 MB sui worker * numero di core della macchina), e lo smistamento spietato di tutto il possibile in cache statiche, buffer e pool. Così ogni attentato all'allocazione di memoria a runtime semplicemente non passava i merge test e non permetteva di mandare la modifica in review.</p>
+    <p>La regola era formulata così: <code>new</code> e <code>delete</code> globali sono vietati, e qualsiasi tipo che deve allocare memoria accetta un allocatore in modo esplicito. Gli allocatori di sistema oggi sono parecchio buoni, e implementazioni come mimalloc, rpmalloc e jemalloc sono addirittura in grado di macinare un'enorme quantità di allocazioni piuttosto in fretta, ma anche lì i problemi ci sono comunque, si spostano semplicemente in aree un po' diverse. L'heap globale di sicuro non vi dirà a quale sottosistema appartiene la memoria, qual è il suo budget e quando tutto ciò che è stato allocato può essere liberato, in parte o del tutto. E anche con la separazione in domini lì ci sono seri problemi.</p>
+    <p>La memoria per domini era un altro culto cargo locale; non dirò che questo approccio alla memoria mi piaccia granché, ma aumenta di molto la probabilità di girare a lungo sulle console. Se il sistema di particelle riceve lo scratch allocator del frame, tutti i suoi dati temporanei spariscono con un singolo reset del puntatore; oppure, in un handler di rete, un pool trasforma una perdita non nella morte dell'intero processo ma in un esaurimento locale del dominio (pool, cache, allocatore), dopo il quale lo si può resettare, ricostruire i dati mancanti e continuare a lavorare. E ancora, un dominio di memoria separato per il loader del livello permette al profiler di mostrarne il vero picco, invece di una montagna generica di allocazioni di origine ignota.</p>
+<pre style="margin:1.4rem 0"><code>                      heap di sistema comune
+                             |
+        chi ha allocato? quanto si può? quando pulire?
+                             |
+                             ?
+
+FrameArena               StagePool               LevelHeap
+    |                        |                       |
+particelle              pacchetti e code         dati del livello
+comandi del frame       limiti                   picco separato
+dati temporanei         OOM locale               pulizia completa
+    |                        |                       |
+reset a ogni frame      reset e ricostruzione    unload del livello</code></pre>
+    <p>Naturalmente i container standard a quel punto si trasformano in zucca... Ma non necessariamente vengono buttati, e lo stesso <code>std::vector</code> può essere avvolto in un adattatore fatto in casa che manda la memoria nel dominio giusto; però per un adattatore del genere bisogna definire esplicitamente il comportamento in copia, spostamento e swap, caricando l'uso di lavoro aggiuntivo, il che richiede sia tempo sia persone per la manutenzione.</p>
+    <p>C'è anche <code>std::pmr</code> (adesso c'è, nel 2016 c'era solo la proposal e implementazioni inplace scopiazzate da boost), ma l'implementazione standard di <code>memory_resource</code> avrà una chiamata virtuale per ogni allocazione (non si nota rispetto al costo dell'allocazione in un codice normale), mentre un allocatore come parametro di template può essere inlinato in fase di compilazione.</p>
+    <p>In pratica, però, il peso dipende dal carico: se il sistema fa una grande allocazione e poi attraversa l'array un milione di volte, il costo della chiamata virtuale sparisce semplicemente nel rumore, ma se crea migliaia di piccoli oggetti, il problema non è più solo nella vtable, ma nelle migliaia di piccoli oggetti stessi. Per questo la logica normale veniva convertita in passate sugli array, per spingere fuori dal ciclo perfino le allocazioni e i container economici, cosa che ovviamente non aggiungeva leggibilità.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/04.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Una libreria di terze parti chiamerà comunque malloc</h2>
+    <p>Per quanto vi sforziate, il controllo completo della memoria resterà l'ennesima bella idea e funzionerà solo fino all'inclusione della prima libreria di terze parti; per questo nel repository si trovavano versioni riscritte o adattate di OpenSSL, ICU, zlib e perfino di parti delle librerie di piattaforma degli SDK. Non mi azzardo a giudicare quanto sia bello e comodo da mantenere, ma nei tool di gioco non si va col proprio samovar, come si suol dire, quindi lascio la decisione alla coscienza dei tecnici dello studio.</p>
+    <p>Va bene se la libreria ha degli hook ufficiali, come <code>zalloc</code> e <code>zfree</code> di zlib o le funzioni di configurazione dell'allocatore di OpenSSL: allora li si può subito agganciare al proprio allocatore; in assenza di hook, invece, la dipendenza può essere spostata in un worker o in un processo separato con un budget di memoria limitato, passando a una comunicazione a messaggi.</p>
+    <p>Di solito questi balli con il tamburello costano cari e al posto di una normale chiamata compaiono uno scambio asincrono, la serializzazione dei dati, una coda, la gestione dei timeout e un ciclo di vita separato, ma in compenso la libreria non è più in grado di farvi uno scherzetto di nascosto... in teoria.</p>
+<pre style="margin:1.4rem 0"><code>gioco
+  |
+  | request
+  v
+coda dei messaggi --&gt; worker isolato --&gt; libreria di terze parti
+  ^                         |
+  | result                  +-- heap limit
+  |                         +-- watchdog
+  `-------------------------+-- restart</code></pre>
+    <p>E un paio di volte questo ha davvero salvato la situazione: per esempio il modulo standard dello store di piattaforma per Xbox si mangiava piano piano la memoria durante l'esecuzione, quindi lo misero in un processo worker isolato con un heap di circa un megabyte + un buffer (il buffer serviva se quel modulo schifoso riusciva comunque a scrivere qualcosa oltre il confine dei dati), e quando il budget finiva il worker crashava come da copione, dopodiché il watchdog ricreava il worker e tutto ricominciava da capo.</p>
+    <p>Non fatelo... è una specie di magia nera, a dirla tutta, e uno schema simile funziona solo con una terminazione controllata del worker o con un vero isolamento in un processo separato, altrimenti al posto di un'architettura ottenete una lotteria di use-after-free. E infatti la lotteria lì c'è stata davvero, per questo prima del rilascio il buffer fu un po' ingrandito, perché un paio di volte la scrittura era andata oltre perfino quello.</p>
+    <h2>Potete usare qualsiasi container, purché sia un vector</h2>
+    <p>La libreria standard si poteva usare, ma soprattutto per gli algoritmi, mentre la maggior parte dei container era stata riscritta o adattata ai vettori. Il classico <code>std::list</code> sembra una sequenza di elementi solo nei sorgenti, mentre per il processore sarà un insieme di indirizzi casuali tra cui saltare, aspettando ogni volta la cache line successiva. <code>std::unordered_map</code> usa bucket e nodi, il che richiede anch'esso diversi accessi indiretti durante la ricerca.</p>
+    <p>Tra i container standard quelli che se la passavano meglio erano le varianti di array, e il requisito principale per le strutture del motore era essere simili a un vettore, il che portava naturalmente a usare SoA al posto di AoS e, in alcuni punti, a frammentare pesantemente un oggetto nelle sue parti componenti.</p>
+<pre style="margin:1.4rem 0"><code>AoS
+
+[pos vel hp type name][pos vel hp type name][pos vel hp type name]
+ \____________ cache line ____________/
+       servono solo pos e vel,
+       il resto è arrivato per niente
+
+SoA
+
+[pos][pos][pos][pos][pos][pos][pos][pos]
+[vel][vel][vel][vel][vel][vel][vel][vel]
+[hp ][hp ][hp ][hp ][hp ][hp ][hp ][hp ]
+
+la cache line contiene solo i dati della passata corrente</code></pre>
+    <p>Questo però non significava che SoA fosse sempre meglio: se il codice a ogni iterazione legge tutti i campi dell'oggetto, array separati al contrario complicano l'indirizzamento e aggiungono viaggi in memoria; bisognava invece combinare i dati insieme in base all'uso logico, e non dati a caso che stessero bene insieme nella dichiarazione della struct.</p>
+    <p>E anche parte degli algoritmi della STL era stata riscritta, e di <code>sort</code> ce n'erano davvero una decina, ognuno con un commento a parte su quando conviene usarlo e con quale container.</p>
+    <p><code>iostream</code>, ovviamente, era stato buttato via per intero e non aveva nessun sostituto. Buttato per le dimensioni, l'inizializzazione statica e l'interfaccia pesante, e in generale il lavoro con gli stream di output era molto, molto limitato; al suo posto si usavano equivalenti di <code>format</code> e <code>print</code> su buffer statici.</p>
+    <p>Il che però generò un altro problema, perché alcune parti superstiti della STL sanno segnalare gli errori solo tramite eccezioni, e lo stesso <code>vector::push_back</code> può ricevere un <code>bad_alloc</code>, oppure il costruttore di <code>thread</code> e <code>mutex::lock</code> possono ricevere un <code>system_error</code>.</p>
+    <p>Con le eccezioni disattivate questi percorsi di solito finiscono in <code>terminate</code> o <code>abort</code>, e il comportamento esatto dipende dall'implementazione: l'esaurimento locale dell'allocatore, che un container fatto in casa potrebbe restituire come <code>Result</code>, dentro <code>std::vector</code> diventa all'improvviso un <code>panic</code> e manda in crash il gioco. Certo, si può scrivere un proprio <code>vector</code>, un proprio <code>mutex </code>e una propria formattazione, ma allora a livello architetturale il gioco si trasforma senza accorgersene in una libreria standard tutta sua, che qualcuno dovrà pure mantenere.</p>
+    <img src="../../assets/articles/wrong-cpp-bees/05.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>È meglio del C++ normale?</h2>
+    <p>Non è meglio, è solo diverso, e conosco alcune persone del software automotive che in un C++ del genere non hanno mai smesso di vivere, e lì, credo, è giustificato, perché il prezzo di un errore può benissimo essere la testolina di qualcuno. Bisogna solo ricordare che lo use-after-free non guarisce per magia, e un allocatore fatto in casa non impedirà al team di sfornare con regolarità bug di scrittura oltre la fine del buffer; nemmeno una hashmap compatta renderà una data race meno dolorosa, e in generale scrivere errori normali è così umano.</p>
+    <p>Un'architettura del genere non rende il linguaggio sicuro e non garantisce che il programma diventi più veloce. A volte era davvero più veloce, ma anche il codice intorno era già veloce; per la maggior parte, invece, <code>Result</code> gonfiava semplicemente il codice, e la hashmap custom perdeva contro quella standard su set di dati specifici. E poi l'allocatore trascinato attraverso mezza API per due allocazioni che si era riusciti a togliere dal frame... come si suol dire, monsieur se ne intende di piaceri.</p>
+    <p>Il guadagno principale non lo chiamerei nemmeno velocità, ma la sua spiegabilità, perché qui il profiler diventa davvero uno strumento di lavoro e smette di essere l'istantanea di una qualche robaccia incomprensibile che si è prodotta chissà come sul frame. Il picco di memoria ha un proprietario rintracciabile, e per un errore si può stabilire in anticipo se dopo si può continuare a vivere o se è ora di uccidere il processo, e l'intero frame smette di essere un ammasso di handler chiamati in momenti casuali e comincia a funzionare secondo leggi del tutto comprensibili. Ma a quale prezzo...</p>
+    <p>Per il render, la fisica, il mixer e il job system è giustificato, ma trascinarla nell'editor, nell'importer FBX, nel launcher e in tutta la logica di gioco va già oltre il bene e il male, e somiglia di più a un culto religioso, da cui il progetto perdeva più di quanto guadagnasse. Ad Austin avevano costruito il loro piccolo e cattivo ++C dentro il grande e soffice C++, e questo linguaggio interno vietava i percorsi del programma peggiori in termini di tempo, ma richiedeva API rumorose, container fatti in casa e una formazione continua dei nuovi sviluppatori, sicché il tempo del frame veniva comprato con il tempo di vita del programmatore.</p>
+    <p>Per nove progetti su dieci uno scempio del genere ai danni del linguaggio risulterà inutile, costoso e francamente dannoso, ma al decimo aiuterà a pubblicare un gioco che lagga senza che ve ne accorgiate; come direbbe il dottor Carmack, «laggano tutti».</p>
+    <p>Perché le api? C'è una vecchia battuta secondo cui, se si guarda un'ape dal punto di vista dell'aerodinamica, non dovrebbe nemmeno essere in grado di volare: il corpo è pesante, le ali sono piccole, le zampe d'atterraggio corte e la coda sbilancia tutto; ma l'ape di aerodinamica non capisce niente, e quindi vola... vola come sa.</p>
+    <p>Rifarei un progetto con il C++ arkanizzato? Probabilmente no, perché UE in mani esperte non è molto più lento, ma fa risparmiare un centinaio d'ore o due grazie alla sua normalità... d'altra parte, però, dove altro vedi fin dove può spingersi uno studio nella rincorsa al perf?</p>
+    <p><a href="https://pvs-studio.ru/ru/webinar/53" target="_blank" rel="noopener">E di come si fa il C++ giusto parleremo al webinar di PVS</a></p>
+    <img src="../../assets/articles/wrong-cpp-bees/06.jpg" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

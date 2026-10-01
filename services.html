@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Услуги — dalerank</title>
+<meta name="description" content="Чем я могу помочь игровой студии: аудит производительности, портирование, работа с движком и памятью, игровой ИИ, code review и консалтинг по C++. Открыт для сотрудничества." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/services.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/services.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/services.html" />
+<link rel="alternate" hreflang="x-default" href="https://dalerank.github.io/services.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <a class="brand" href="./">
+      <span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span>
+    </a>
+    <nav class="links">
+      <a href="index.html#writing">Статьи</a>
+      <a href="index.html#books">Книги</a>
+      <a href="index.html#topics">Темы</a>
+      <a href="services.html">Услуги</a>
+      <a href="about.html">Обо мне</a>
+    </nav>
+    <div class="actions">
+      <span class="lang"><a class="on" href="services.html">RU</a><i>/</i><a href="en/services.html">EN</a><i>/</i><a href="it/services.html">IT</a></span>
+      <a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="svc-hero">
+    <div class="eyebrow">услуги</div>
+    <h1>Как мы можем <em>работать вместе</em></h1>
+    <p>От аудита одного кадра до полноценного участия в команде. Двадцать с лишним лет в движках — Metro, Deathloop, Age of Empires II, The Sims Mobile — результаты можете увидеть в <a href="about.html" style="color:var(--rust)">этих проектах</a>.</p>
+  </section>
+
+  <section class="svc-grid">
+      <div class="svc">
+        <span class="ico">▲</span>
+        <h3>Аудит производительности и оптимизация</h3>
+        <p>Игра тормозит на целевом железе? Ищу причину профайлером, а не догадками: замеры, приоритизированный список находок и внедрённые исправления.</p>
+        <ul><li>Узкие места CPU/GPU, время кадра, хитчи</li><li>Память: аллокации на кадре, фрагментация, пулы</li><li>Отчёт с замерами до и после</li><li>Чек-лист, который остаётся у вашей команды</li></ul>
+        <dl><dt>Срок</dt><dd>Оценка под проект</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+      <div class="svc">
+        <span class="ico">⇄</span>
+        <h3>Портирование на платформы</h3>
+        <p>Полный цикл — от первого запуска на новой платформе до вывода в стор. Консоли, мобильные устройства, ПК: делал это для Blades of Time, Cuisine Royale и мобильных проектов EA.</p>
+        <ul><li>Сборка и запуск движка на новой платформе</li><li>Адаптация рендера, ввода и файловой системы</li><li>Бюджеты памяти и производительности под железо</li><li>Подготовка к сертификации</li></ul>
+        <dl><dt>Срок</dt><dd>Оценка под проект</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+      <div class="svc">
+        <span class="ico">◆</span>
+        <h3>Движок и архитектура</h3>
+        <p>Ядро движка, системы памяти, job system, загрузка ресурсов. Строю системы, которые не аллоцируют в хотпасе и предсказуемо ведут себя на худшем кадре.</p>
+        <ul><li>Аллокаторы, доменная память, zero frame allocations</li><li>Многопоточность и job system</li><li>Стриминг и менеджер ресурсов</li><li>Рефакторинг легаси без остановки разработки</li></ul>
+        <dl><dt>Срок</dt><dd>Оценка под проект</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+      <div class="svc">
+        <span class="ico">◉</span>
+        <h3>Игровой ИИ</h3>
+        <p>Архитектура и разработка ИИ NPC — от боевого поведения в Metro до доработки ИИ в Deathloop. Умный, читаемый игроком и дешёвый по кадру.</p>
+        <ul><li>Боевой ИИ и поведение NPC</li><li>Behavior trees, FSM, utility AI</li><li>Навигация и восприятие</li><li>Оптимизация ИИ под бюджет кадра</li></ul>
+        <dl><dt>Срок</dt><dd>Оценка под проект</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+      <div class="svc">
+        <span class="ico">◈</span>
+        <h3>Технический консалтинг и code review</h3>
+        <p>Не уверены в архитектурном решении? Второй взгляд до продакшена обходится дешевле. Смотрю кодовую базу и даю конкретные применимые рекомендации.</p>
+        <ul><li>Оценка архитектуры и C++ кодовой базы</li><li>Приоритизированный список техдолга</li><li>Живая сессия с вашей командой</li><li>Ответы на вопросы после</li></ul>
+        <dl><dt>Срок</dt><dd>Оценка под проект</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+      <div class="svc open">
+        <span class="ico">⚔</span>
+        <h3>Полная занятость или контракт</h3>
+        <p>Открыт для сотрудничества и рассмотрю предложения.</p>
+        <ul><li>Engine / Gameplay / Performance / Tech Lead</li><li>C++, движки, оптимизация, портирование</li><li>Менторство и code review</li><li>Резюме и рекомендации по запросу</li></ul>
+        <dl><dt>Срок</dt><dd>Долгосрочно</dd><dt>Стоимость</dt><dd>По договорённости</dd></dl>
+        <a class="go" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">Обсудим →</a>
+      </div>
+  </section>
+
+  <section class="sec" id="testimonials">
+    <div class="sec-head"><h2>Что говорят те, с кем я работал</h2><a class="more" href="https://www.linkedin.com/in/dalerank/" target="_blank" rel="noopener">Все рекомендации в LinkedIn →</a></div>
+    <div class="svc-revs">
+      <figure class="svc-rev">
+        <blockquote>«В работе над The Sims Mobile он показал глубокое понимание архитектуры игрового движка, нашёл и устранил ряд узких мест, а также спроектировал новую систему сигналов/действий, минимизировавшую выделения памяти. В Scrabble Mobile он участвовал в разработке Android-версии игры и переработал API профиля игрока. Его вклад заметно повлиял на игры, над которыми мы работали вместе.»</blockquote>
+        <figcaption><a href="https://lt.linkedin.com/in/boris-shirvinsky-7b5622ab" target="_blank" rel="noopener">Boris Shirvinsky</a><span>Бывший технический лид · EA St. Petersburg</span></figcaption>
+      </figure>
+      <figure class="svc-rev">
+        <blockquote>«Сергей хорошо умеет интегрировать внешние модули, уверенно владеет стандартом C++14 и эффективно использует юнит- и интеграционные тесты. Отдельно стоит отметить его умение работать с крэш-дампами и отладчиками. Он надёжен на критических майлстоунах, активно участвует в обсуждении фич и приносит новые идеи.»</blockquote>
+        <figcaption><a href="https://ua.linkedin.com/in/opavlovets" target="_blank" rel="noopener">Oleksandr Pavlovets</a><span>Коллега по проекту</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="svc-cta" id="contact">
+    <div>
+      <h2>Что подходит вам?</h2>
+      <p>Если не уверены — напишите пару строк о проекте, разберёмся вместе, и я дам оценку сроков.</p>
+    </div>
+    <div class="links2">
+      <a class="btn" href="mailto:dalerankn8@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE">dalerankn8@gmail.com</a>
+      <a class="btn ghost" href="https://t.me/dalerank" target="_blank" rel="noopener">Telegram @dalerank</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
+    <span>
+      <a href="https://github.com/dalerank">GitHub</a> ·
+      <a href="https://www.linkedin.com/in/dalerank/" target="_blank" rel="noopener">LinkedIn</a> ·
+      <a href="https://www.patreon.com/cw/dalerank">Patreon</a> ·
+      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
