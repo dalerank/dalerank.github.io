@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What You Can Do with an Array of Arrays — dalerank</title>
+<meta name="description" content="A reverse “location → regiments” index for game-state snapshots: why vector&lt;vector&lt;uint&gt;&gt; over a million locations is expensive, and how count-then-allocate, a single prefix-summed buffer and CSR make the build 17× and the snapshot 23× faster." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/array-of-arrays.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/array-of-arrays.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/array-of-arrays.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/array-of-arrays.html">RU</a><i>/</i><a class="on" href="array-of-arrays.html">EN</a><i>/</i><a href="../../it/articles/array-of-arrays.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag">C++</span><h1>What You Can Do with an Array of Arrays</h1><div class="ameta"><span>Oct 11, 2026</span><span>13 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/array-of-arrays/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>On one of our projects (a 4X historical strategy game) we got the task of moving part of the logic onto worker threads by handing them a snapshot of the game state. The idea was that while the main thread crunches its tick, the others (AI, pathfinding, UI and so on) could spin their own logic, things like "who is standing in this location", and do it without locks or the risk of seeing half of someone else's write. To build such a system you have to figure out how to get a reverse index of regiments by location, and make lookups cheap for the threads. In other words, each thread needs its own snapshot of some part of the game world as of the moment the update starts (a frame, a logic tick, a day, a month, etc.).</p>
+    <p>The common practice is to make the data immutable for the duration of a frame, build the required index once at the start, and then let the readers work with it. And so, from the guys who were doing this task, the following code landed in review (I'll show only the essential part here):</p>
+<pre style="margin:1.4rem 0"><code>struct Regiment {
+    unsigned int location;
+    float        health;
+    float        mood;
+    float        speed;
+};
+
+std::vector&lt;Regiment&gt; regiments; // all regiments in the world
+std::vector&lt;std::vector&lt;unsigned int&gt;&gt; by_location(location_count);
+
+for (unsigned int r = 0; r &lt; regiment_count; ++r) {
+    by_location[regiment_location[r]].push_back(r);
+}
+
+... here we do something with the resulting array</code></pre>
+    <p>This structure (regiments) is called a jagged array, an array of arrays (<a href="https://www.ozon.ru/product/game-ustroystvo-i-optimizatsiya-igrovogo-dvizhka-3541648050" target="_blank" rel="noopener">I showed why you'd want one and how to work with it in the Game++ book</a>), or, if academic terminology is closer to your heart, CSR (compressed sparse row), which is a slightly different way of storing such arrays, or sparse matrices. Structures like this are pretty common in games when you have lots of locations and need to:</p>
+    <hr />
+    <ul>
+      <li>find out what loot is laid out in each location, which armies belong to each area;</li>
+      <li>or which monsters live in a location, which locations make up an area, which areas make up a region;</li>
+      <li>or check a location's neighbors on the map, the region adjacency that pathfinding and all the area flood-fills in grand strategies are built on;</li>
+      <li>or find nodes in a scene hierarchy or a skeleton;</li>
+      <li>look up entities by world chunk, components by entity, entities by archetype in an ECS;</li>
+      <li>find subscribers by event type, active modifiers by object;</li>
+      <li>walk a location's neighbors and collect some metrics;</li>
+      <li>select regiments by army / corps to compute the formation's total <code>health</code> and average <code>mood</code>;</li>
+      <li>the same "owner → set of entities" relationship for buildings in a location, orders on a market, modifiers on a country, neighbors on the map, entities by chunk in an ECS.</li>
+      <li>and lots more...</li>
+    </ul>
+    <p>What these examples have in common is that the relationships between elements are already present in the source data. We don't need to invent any new links, we just need a structure that lets us quickly pick out a certain subset. For example, if there is a list of armies with a note of where each one is standing, we need to quickly get the reverse index of armies by location or position, ideally in constant time and without stirring up the CPU cache too much.</p>
+    <p>Another implicit property is that we update this structure rarely and read it many times. We update it when the map loads, at the start of a frame or after the scene is rebuilt, and in general when exactly doesn't matter; what matters is that the build and query phases are separated. That looks like a pretty harsh restriction, but look at the list above... almost all of that data doesn't change its position within the overall structure over some time interval, and that opens the door to all kinds of tricks and hacks.</p>
+    <h2>The idea vs real life</h2>
+    <img src="../../assets/articles/array-of-arrays/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And everything seems fine as long as your array of arrays is small, but in our use case it turned out that after mid-game a snapshot of this structure costs more than all the work it was made for. For example, copying a <code>std::vector&lt;std::vector&lt;unsigned int&gt;&gt;</code> for a million locations is a deep copy of a million vectors and takes 90 milliseconds (on my machine; don't stare at the numbers, they're illustrative, what matters is how they relate to each other, not the absolute time). A full traversal of the same structure, the very thing the snapshot is needed for, takes 14 milliseconds. So we were going to parallelize 14 ms of work and paid 90 ms just to get started. For the tests I used a million elements in the outer array and six million elements in total across the inner ones, i.e. six per list on average, which is actually not much, and that's roughly what piles up across various systems by mid-session in something like Victoria 3/EU4.</p>
+    <p>Let's count what we paid for. The outer array's <code>std::vector</code> on a 64-bit system is 24 bytes (three pointers, or a pointer plus two sizes), and a million elements take 24 megabytes just for the bookkeeping, before any data at all. Moreover, those 24 bytes are paid for every location, including empty ones. If units are standing in five percent of the map's locations, the other 95% honestly occupy their 24 bytes too, but, worse, they also take up cache space when you walk this array of arrays.</p>
+    <p>Another implicit property that often gets overlooked is the reserve (capacity): the actual size of a <code>vector</code>'s memory block grows faster than the vector's real size, and our 6 elements actually occupy eight "slots" of data.</p>
+    <p>That's not all, and here we have to remember the allocator metadata and block rounding, which are hidden from us but also take up space on the heap: with glibc, the chunk header plus alignment turn a 32-byte request into a 48-byte block, so data that is only 24 bytes in size costs 48.</p>
+    <p>And that's still not all: to get to capacity 8, the vector allocates four times and copies what it has accumulated three times along the way, so building a million lists gives us roughly four million mallocs and three million frees. Granted, this isn't about memory anymore and it's all spread across frames, but it's pure time that has to be taken away from the game. I call it "smeared" perf, in the sense that we've "smeared" our frame time across lots of tiny places. In total, per element we get (~roughly): 24 bytes for the outer <code>vector</code>, 48 bytes for the heap block, and seventy-two bytes to store twenty-four.</p>
+<pre style="margin:1.4rem 0"><code>Naive layout, a million locations:
+regiments[]                   heap (blocks scattered)
++----------------+            +--------------------------+
+| ptr size cap   | ---------&gt; | hdr | 7 idx | 2 unused  |  48 bytes
++----------------+            +--------------------------+
+| ptr size cap   | ---------&gt; | hdr | 4 idx | 2 unused  |  48 bytes
++----------------+            +--------------------------+
+| ptr size cap   | --&gt; nullptr   (location is empty, but 24 bytes are paid for)
++----------------+
+   24 bytes              +          48 bytes         = 72 bytes per 24 useful
+// roughly, depends on the build configuration
+
+regiments[]  [ {loc, health, mood, speed}, ... ]   // dense array of entities</code></pre>
+    <p>And here comes the important point, the reason it made sense to dig into this code at all and fix something inside the array of arrays. All that byte math above and the talk about memory size is just a consequence; the main reason is, once again, the cache. When the game update walks the locations and reads <code>mood</code> and <code>speed</code> for every regiment, the CPU makes at least two memory accesses per list to get the index: one into <code>by_location[i]</code>, a second through the pointer into the heap, and then one more for the data. But the second and (especially) the third jump will be an almost guaranteed miss, where the CPU has to stall and go to L2/L3 or even main memory, because the blocks lie all over the place (possibly between other game subsystems' allocations). And while the CPU waits for memory to answer, it does nothing, and those idle cycles turn into frame drops when "you only have a million objects".</p>
+    <h3>Measurements, so we have something to compare against</h3>
+    <p>Further on I'll keep coming back to the first benchmark (a million locations, six million structures, random long-tailed distribution across locations, x86-64, MSVC 19.4 in release). A long tail means that part of your data falls out of the cache and you have to go to main memory for it. Measured separately:</p>
+    <ul>
+      <li>build — build the location → entities index from scratch;</li>
+      <li>query — walk all the lists in location order (read <code>health</code> / <code>mood</code> / <code>speed</code>) and run some logic over them;</li>
+      <li>query random — the same as query, but the locations are visited in random order (this is what a real gameplay query looks like, when the player is doing something during the game);</li>
+      <li>snapshot — a deep copy of the index for another thread (start of the frame, we hand the data out to the threads);</li>
+      <li>teardown — free the index (rare; this kind of thing should be deferred to the end of the frame).</li>
+    </ul>
+    <div class="table"><table>
+      <thead><tr><th>Variant</th><th>Memory</th><th>Allocations</th><th>Build</th><th>Query</th><th>Query random</th><th>Snapshot</th><th>Teardown</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector&lt;vector&lt;uint&gt;&gt;</code></td><td>63.1 MB</td><td>3.42M</td><td>1045 ms</td><td>14.5 ms</td><td>96.8 ms</td><td>96.7 ms</td><td>61.8 ms</td></tr>
+      </tbody>
+    </table></div>
+    <p>Why so many allocations? Because we don't know the length of each list in advance, and that's where we get the capacity growth, the chain of reallocations, and the slack in the buffer.</p>
+    <img src="../../assets/articles/array-of-arrays/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Hack one</h2>
+    <p>But nothing stops us from asking each entity for its location — the data is already there, we just need to walk it one extra time and count, so...</p>
+    <img src="../../assets/articles/array-of-arrays/04.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>struct RegimentList {
+    unsigned int count   = 0;
+    unsigned int written = 0;
+    unsigned int* data   = nullptr;
+};
+
+std::vector&lt;RegimentList&gt; by_location(location_count);
+
+// pass 1: how many regiments are in each location
+for (unsigned int r = 0; r &lt; regiment_count; ++r)
+    by_location[regiments[r].location].count++;
+
+// pass 2: allocate exactly as much as needed
+for (unsigned int i = 0; i &lt; location_count; ++i)
+    if (by_location[i].count &gt; 0)
+        by_location[i].data = new unsigned int[by_location[i].count];
+
+// pass 3: distribute the indices
+for (unsigned int r = 0; r &lt; regiment_count; ++r) {
+    RegimentList&amp; list = by_location[regiments[r].location];
+    list.data[list.written] = r;
+    list.written++;
+}</code></pre>
+    <p>Yes, now there are three passes instead of one, but less time is spent, because the extra passes over a dense array are cheap, while the three million reallocations we saved are expensive. This, by the way, is the common storyline of optimizations of this kind: a linear pass over memory is almost free compared to any work on the heap.</p>
+    <p>Along the way we threw <code>std::vector</code> out of the inner lists, and we no longer need its size and capacity: we already know the length, and the list won't grow any further until the next update. What's left is a 16-byte struct instead of 24 and one heap block per non-empty list.</p>
+    <p>A separate word about the temptation to replace all of this with a <code>reserve()</code> with a guessed number. It won't work: guess too low and you're back to reallocations, guess too high and you pay in memory for all million lists at once. Here we don't guess, we count how much we'll have in memory and lay the data out. Let's see what we got after this trick:</p>
+    <div class="table"><table>
+      <thead><tr><th>Variant</th><th>Memory</th><th>Allocations</th><th>Build</th><th>Query</th><th>Query random</th><th>Snapshot</th><th>Teardown</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector&lt;vector&lt;uint&gt;&gt;</code></td><td>63.1 MB</td><td>3 409 088</td><td>1045 ms</td><td>14.5 ms</td><td>96.8 ms</td><td>96.7 ms</td><td>61.8 ms</td></tr>
+        <tr><td>Count, then allocate</td><td>46.7 MB</td><td>650 599</td><td>153 ms<br />(‑x6.6)</td><td>13.7 ms<br />(‑x1.10)</td><td>40.8 ms</td><td>44.0 ms</td><td>28.0 ms</td></tr>
+      </tbody>
+    </table></div>
+    <p>And the result is quite interesting: we sped up build and memory dropped by a factor of one and a half, but query barely changed, which makes sense, since we're still making two jumps through memory per list before getting to <code>regiments[id].mood</code>. On the other hand, random-access time improved, because the data is packed more densely and more of it fits in the cache.</p>
+    <h3>Hack two</h3>
+    <img src="../../assets/articles/array-of-arrays/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Noticed that each list still lives in its own allocation? We got rid of the vectors, but the allocations themselves didn't go anywhere, so we still have the heap metadata, the scattering in memory, and the need to drag an 8-byte pointer around in every record.</p>
+    <p>If we counted the sizes in the first step, why not allocate one big buffer for all the lists and lay them out in it back to back? Then we get just one allocation and lists laid out at offsets; the pointer becomes unnecessary and an offset is enough, and unless you allocate more than 4 GB, an offset lives perfectly well in 32 bits. As you can see, we only have about 48 MB of data, so that suits us just fine.</p>
+    <p>Solving this takes almost no new code: in the previous variant we already had to introduce an <code>offset</code> for each list to know which slot to write the next element into. The only difference is that now <code>offset</code> starts not from zero, but from the sum of the lengths of all preceding lists. This is a well-known trick, and it's called a prefix sum.</p>
+<pre style="margin:1.4rem 0"><code>struct RegimentList {
+    unsigned int count  = 0;
+    unsigned int offset = 0;
+};
+
+std::vector&lt;RegimentList&gt; by_location(location_count);
+for (unsigned int r = 0; r &lt; regiment_count; ++r)
+    by_location[regiments[r].location].count++;
+
+// prefix sum: where each location's list begins
+unsigned int sum = 0;
+for (unsigned int i = 0; i &lt; location_count; ++i) {
+    by_location[i].offset = sum;
+    sum += by_location[i].count;
+}
+
+// one allocation for all indices at once
+std::vector&lt;unsigned int&gt; data(sum);
+for (unsigned int r = 0; r &lt; regiment_count; ++r) {
+    RegimentList&amp; list = by_location[regiments[r].location];
+    data[list.offset] = r;
+    list.offset++;
+}
+
+// offset has moved forward by the list length, move it back
+for (unsigned int i = 0; i &lt; location_count; ++i)
+    by_location[i].offset -= by_location[i].count;</code></pre>
+    <p>Here's how our data will now be laid out in memory:</p>
+<pre style="margin:1.4rem 0"><code>Merged layout:
+regiments[]                  blob[] — one buffer for everything
++---------------+            +---+---+---+---+---+---+---+---+---+---+---+
+| cnt=1 off=0   |----------&gt; | 0 |                                       |
++---------------+            +---+---+---+---+---+---+---+---+---+---+---+
+| cnt=6 off=1   |---------------&gt;| 1 | 2 | 3 | 4 | 5 | 6 |
++---------------+                +---+---+---+---+---+---+---+---+
+| cnt=5 off=7   |---------------------------------------&gt;| 7 | 8 | ...
++---------------+                                        +---+---+
+   8 bytes           +        24 bytes of data     = 32 bytes per 24 useful
+
+// the data lives separately
+regiments[]  [ {loc, health, mood, speed}, ... ]</code></pre>
+    <p>And what we get in terms of time:</p>
+    <div class="table"><table>
+      <thead><tr><th>Variant</th><th>Memory</th><th>Allocations</th><th>Build</th><th>Query</th><th>Query random</th><th>Snapshot</th><th>Teardown</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector&lt;vector&lt;uint&gt;&gt;</code></td><td>63.1 MB</td><td>3 409 088</td><td>1045 ms</td><td>14.5 ms</td><td>96.8 ms</td><td>96.7 ms</td><td>61.8 ms</td></tr>
+        <tr><td>Count, then allocate</td><td>46.7 MB</td><td>650 599</td><td>153 ms (x6.6)</td><td>13.7 ms (x1.10)</td><td>40.8 ms</td><td>44.0 ms</td><td>28.0 ms</td></tr>
+        <tr><td>Single buffer, count + offset</td><td>30.5 MB</td><td>2</td><td>75.6 ms (x15)</td><td>13.2 ms (x1.2)</td><td>31.7 ms</td><td>5.3 ms</td><td>2.2 ms</td></tr>
+      </tbody>
+    </table></div>
+    <p>Fifteen times... not percent. With that you can go to your tech lead or even to a conference and proudly carry the banner of heroic struggle. There are now two allocations — one for the array of descriptors and one for the index buffer — but snapshotting the index has stopped being a deep copy of a million vectors and became two <code>memcpy</code> calls taking 5 ms instead of 90, and freeing is also just two <code>free</code> calls instead of hundreds of thousands. Random traversal got roughly three times faster than the first version, because neighboring regiment lists now sit densely in memory and the prefetcher manages to pull in the data needed for the calculations. The entities themselves can be snapshotted separately, with a single copy of the dense array, or not snapshotted at all... the main thing in an investigation is not to end up tracking down yourselves :) It turns out that what was expensive was precisely the convenient implementation of the jagged index via standard containers, not the access to the entity array.</p>
+    <p>Don't think I'm that clever... as usual, everything was invented before us: this trick was already used back in the eighties for laying out sprites in memory on the NES with maximum packing, because memory was scarce and sprites were plentiful :) And there the offsets were sprite indices you used when you wanted to draw one on screen.</p>
+    <img src="../../assets/articles/array-of-arrays/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And along the way we get a bunch of bonuses: this structure now serializes as is and can be put into a save without any traversal, just two <code>fwrite</code> calls, and on load another two <code>fread</code> calls, with no pointer fix-ups after reading. It's also copied with a single <code>memcpy</code>, so if you need a snapshot of the structure for another thread, you can just copy two buffers and there's no need for any deep copy of a million vectors.</p>
+    <img src="../../assets/articles/array-of-arrays/07.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Continuing the list of bonuses... this structure can now live in a linear allocator, and if it's built once per frame, you can put it entirely into memory at the start of the frame, reset the pointer at the start of the next one, and get rid of <code>free</code> altogether. Also, this structure no longer breaks on relocation and moves: if you ever need to move it, the indices stay valid.</p>
+    <h2>Hack three</h2>
+    <img src="../../assets/articles/array-of-arrays/08.jpg" alt="" class="post-image" loading="lazy" />
+    <p>This hack arrived after half a year of using the new structure in the game, when one of my colleagues noticed that the list lengths could be optimized. Look at what happens with the lengths:</p>
+<pre style="margin:1.4rem 0"><code>count:   [ 1   7   4   4  5  ]
+offset:  [ 0   1   8  12  16 ]</code></pre>
+    <p>And now, what we get in the offsets array:</p>
+<pre style="margin:1.4rem 0"><code>offset:  [ 0   1   8  12  16 ]
+   count:  [ 1   7   4   4  ... ]</code></pre>
+    <p>The length of list <code>i</code> is the difference of two neighboring offsets: <code>count[i] == offset[i + 1] - offset[i]</code>. This works because all the lists lie back to back in one buffer, and the end of one list is the start of the next, which means the length field doesn't need to be stored at all. We just need to append one element to the end of the offsets array, pointing to the end of the last list. What remains is a single array of N + 1 elements.</p>
+<pre style="margin:1.4rem 0"><code>// N + 1 elements: regiments of location i lie between offsets[i] and offsets[i + 1]
+std::vector&lt;unsigned int&gt; offsets(location_count + 1);
+
+// offsets[0] starts at zero and stays zero
+unsigned int* offsets1 = &amp;offsets[1];
+
+// pass 1: count the lengths, but write them shifted by one
+for (unsigned int r = 0; r &lt; regiment_count; ++r)
+    offsets1[regiments[r].location]++;
+
+// pass 2: turn the lengths into offsets in place
+unsigned int sum = 0;
+for (unsigned int i = 0; i &lt; location_count; ++i) {
+    unsigned int count = offsets1[i];
+    offsets1[i] = sum;
+    sum += count;
+}
+
+// pass 3: distribute the indices; the offsets move to the correct values on their own
+std::vector&lt;unsigned int&gt; blob(sum);
+for (unsigned int r = 0; r &lt; regiment_count; ++r) {
+    const unsigned int location = regiments[r].location;
+    blob[offsets1[location]] = r;
+    offsets1[location]++;
+}
+
+// no fourth pass needed: offsets1[i] has moved exactly to offsets[i + 1]</code></pre>
+    <p>And we'll traverse such an array like this:</p>
+<pre style="margin:1.4rem 0"><code>const unsigned int begin = offsets[location];
+const unsigned int end   = offsets[location + 1];
+for (unsigned int i = begin; i &lt; end; ++i) {
+    const Regiment&amp; regiment = regiments[data[i]];
+    if (regiment.mood &lt; 0.25f || regiment.health &lt;= 0.0f) {
+        continue;
+    }
+    travel_budget += regiment.speed;
+}
+
+Final layout:
+offsets[]  [ 0 | 1 | 8 | 12 | 16 | 21 ]        N + 1 elements, 4 bytes each
+             \___/\___/\__/
+              loc0 loc1  loc2
+blob[]     [ 0 | 1 2 3 4 5 6 7 | 8 9 10 11 12 | ... ]
+   4 bytes     +     24 bytes of data    = 28 bytes per 24 useful</code></pre>
+    <div class="table"><table>
+      <thead><tr><th>Variant</th><th>Memory</th><th>Allocations</th><th>Build</th><th>Query</th><th>Query random</th><th>Snapshot</th><th>Teardown</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector&lt;vector&lt;uint&gt;&gt;</code></td><td>63.1 MB</td><td>3 409 088</td><td>1045 ms</td><td>14.5 ms</td><td>96.8 ms</td><td>96.7 ms</td><td>61.8 ms</td></tr>
+        <tr><td>Same, fragmented heap</td><td>174.3 MB</td><td>3 409 088</td><td>1308 ms</td><td>14.9 ms</td><td>95.5 ms</td><td>99.2 ms</td><td>117.3 ms</td></tr>
+        <tr><td>Count, then allocate</td><td>46.7 MB</td><td>650 599</td><td>153 ms</td><td>13.7 ms</td><td>40.8 ms</td><td>44.0 ms</td><td>28.0 ms</td></tr>
+        <tr><td>Single buffer, count + offset</td><td>30.5 MB</td><td>2</td><td>75.6 ms</td><td>13.2 ms</td><td>31.7 ms</td><td>5.3 ms</td><td>2.2 ms</td></tr>
+        <tr><td>Offsets only (CSR)</td><td>26.7 MB</td><td>2</td><td>59.9 ms</td><td>12.4 ms</td><td>26.8 ms</td><td>4.2 ms</td><td>1.9 ms</td></tr>
+      </tbody>
+    </table></div>
+    <p>By removing just four bytes per element (and four megabytes across all entities), we ended up with the structure exactly as academic literature describes CSR... and on top of everything else, we got a format that sparse linear algebra libraries understand. That didn't help us much, admittedly, because unpatched Eigen runs about twice as slow as our own math, but that's a story for another time...</p>
+    <p>At small sizes (100 and 1k) all the variants are nearly indistinguishable, because the data fits entirely in the cache; the gap appears closer to 64k-128k and becomes quite large by the time we reach a million objects.</p>
+    <p>Compared to the original variant, the final one builds 17 times faster, snapshots 23 times faster, frees 32 times faster, does random traversal 3.6 times faster, uses 2.4 times less memory, and makes two allocations instead of three and a half million.</p>
+    <img src="../../assets/articles/array-of-arrays/09.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>Why the gain in real code will be even bigger</h3>
+    <img src="../../assets/articles/array-of-arrays/10.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Noticed the row with the fragmented heap? That's what happens when, while our array of arrays is being built, another game subsystem manages to allocate its own blocks in between our arrays, which happens in 99% of cases in a big game, and later half of them remain as holes. So instead of 63 MB in some nearby chunk of memory, we get an area three times larger with blocks scattered all over it. That shows up in the cost of the whole algorithm, and such fragmentation hits both read speed and the cost of the structure's lifecycle.</p>
+    <img src="../../assets/articles/array-of-arrays/11.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In the naive version that came in for review, the CPU makes two separate memory accesses per list, and these accesses are dependent, yet the prefetcher can't see them anyway. A cache line is only 64 bytes, and it fits either two and a half outer <code>vector</code>s or sixteen indices, so in the naive scheme we pull at least two lines into the cache per list and use only 24 bytes out of 128. In the final variant, a single <code>blob[]</code> line already covers two or three whole lists, and <code>offsets[]</code> is read sequentially, so the prefetcher simply feeds the next blocks of data into L1. In other words, the gain comes from having properly shaped the data for the way the CPU works.</p>
+    <p>Everything comes at a price, and here you pay with the rigidity of this structure. If the lists need to change arbitrarily, inserting into the middle means shifting the whole buffer, so this is not a structure for dynamic data: if your list changes one element at a time in response to game events, you're better off keeping the vector of vectors. But very often you can reshape the task so that the index is rebuilt entirely once (per frame, for example), and a full rebuild of a million elements turns out cheaper than maintaining a vector of vectors.</p>
+    <h2>Why a million</h2>
+    <p>In grand strategies like Civilization, Stellaris, Victoria or Humankind, there won't be "a million provinces on the map". A map rarely exceeds 16 thousand locations (~12k land, ~3k sea), but every country has its own snapshot of locations, and every map mode adds another layer so you can quickly switch from the general view to forests, or roads, or profitability. So the million adds up as the sum of live simulation objects, not as the size of a single <code>locations[]</code> array.</p>
+    <p>An outer index is needed for everything that "lies on the ground" — buildings, regiments, modifiers, demand, control — and a single pass "over all locations" is cheap in itself, but almost every subsystem builds its own reverse index or its own per-location list.</p>
+    <p>Then the economy piles on top: each building type also produces its own map of locations; add cities, unique buildings, levels, markets, trade orders, supply/demand for goods per market and location. By the end of the game all of this turns into thousands of separate entities, each with its own <code>health</code> / <code>mood</code> / <code>speed</code>.</p>
+    <p>And then there are temporary and derived objects, like modifiers on a country/location/army/character, event subscribers, paths. You'll never see them on the map, but they're there in memory and in the indices in the form of "owner → set of entities".</p>
+    <p>So the benchmark's "a million slots outside, six million indices inside" isn't the literal size of a strategy game's map, but the order of magnitude of the number of objects the game grows to by the middle of a long playthrough. So next time you open Task Manager and wonder why the game has eaten 24 gigabytes of RAM... don't be surprised, it's for the reasons above. And you still have to somehow make all those gigabytes move :)</p>
+    <h2>This existed before games and ECS</h2>
+    <img src="../../assets/articles/array-of-arrays/12.jpg" alt="" class="post-image" loading="lazy" />
+    <p>This was invented long before us, and not even in gamedev. The "count, prefix sum, distribute" layout has been known since the mid-1950s, and the idea of storing a sparse structure as a pair of "offsets plus data" arrays came from late-1960s linear algebra, as I already mentioned with CSR and the Yale format. We simply "invented" it and applied "a bit" of numerical methods from matrix work to our problems and location lookups.</p>
+    <p>This technique, which you might like and take into your own project, isn't really about jagged arrays at all. It's about splitting the operation into build and query, so that you can build the data in a form that is radically better suited for reading. It works not only with lists: navigation meshes are built this way, ECS archetypes work this way, vertex buffers live this way. We pay for the structure once at build time so we don't pay every time we read.</p>
+    <p>When my colleagues and I were preparing a presentation of this solution for the team, I came across the 2023 article <a href="https://zeux.io/2023/06/30/efficient-jagged-arrays/" target="_blank" rel="noopener">Efficient jagged arrays</a>, where the author arrived at the same layout for mesh vertices in his project. We came at it from the side of game entities and cross-thread snapshots, he came from the side of triangle indices, but in the end we arrived at the same scheme. That in itself is a good sign that the problem comes up in development often enough that it's worth not reinventing it and finding some more reusable solution. Unfortunately, I didn't find one publicly available... maybe I didn't look hard enough.</p>
+    <p>Fundamentally, the task is the same as it was in the 80s and earlier: the data needs to be in the right place, in the right shape, by the time the hot path goes through it.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

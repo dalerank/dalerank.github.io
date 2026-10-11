@@ -43,6 +43,30 @@
 
   <ul class="artlist">
     <li>
+      <a href="where-complexity-comes-from.html">
+        <span class="tag clay">Craft</span>
+        <h3>Where Complexity Comes From</h3>
+        <p>The second part of “Dirty Games”: nobody writes complex code for fun — complexity arrives together with a number: 16 ms per frame, 5 GB of available memory, a patch-size limit, ten seconds to the first interactive frame. Broadphase levels from O(n²) to a SIMD BVH as the mechanism of buying complexity, why two constraints are worse than one constraint twice, how data-oriented design drags the cache line up through the whole architecture, hard and soft limits with a console memory budget, the Jevons paradox in gamedev, and constraints that are not in any document.</p>
+        <div class="pmeta"><span>Oct 11, 2026</span><span>7 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="dirty-games.html">
+        <span class="tag clay">Craft</span>
+        <h3>Dirty Games</h3>
+        <p>Why games with “dirty” architecture sell millions while games on beautiful engines with ECS and a job system sit in your backlog: a frame budget where logic for 200 enemies costs 0.05 ms, the cargo cult of GDC interfaces, Vampire Survivors on Phaser, Balatro on Löve and VVVVVV, a boring stack as risk management, a monolithic GameManager and a linear Tick versus an EventBus — and where simplicity does break: boundaries between data and logic, save games and certification.</p>
+        <div class="pmeta"><span>Oct 11, 2026</span><span>9 min</span></div>
+      </a>
+    </li>
+    <li>
+      <a href="array-of-arrays.html">
+        <span class="tag">C++</span>
+        <h3>What You Can Do with an Array of Arrays</h3>
+        <p>A reverse “location → regiments” index for snapshotting game state in a 4X strategy: why vector&lt;vector&lt;uint&gt;&gt; over a million locations spends 72 bytes per 24 useful ones and 90 ms per copy, and how three hacks — “count, then allocate”, a single buffer with a prefix sum, and offsets only (CSR) — make the build 17× faster, the snapshot 23× faster and random traversal 3.6× faster. Plus heap fragmentation, cache lines, where a strategy game gets a million objects, and why the trick predates games and ECS.</p>
+        <div class="pmeta"><span>Oct 11, 2026</span><span>13 min</span></div>
+      </a>
+    </li>
+    <li>
       <a href="wrong-cpp-bees.html">
         <span class="tag">C++</span>
         <h3>These Bees Make the Wrong C++</h3>

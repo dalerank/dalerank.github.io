@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dirty Games — dalerank</title>
+<meta name="description" content="Why games with “dirty” architecture sell millions: the frame budget, the cargo cult of interfaces, Vampire Survivors on Phaser and Balatro on Löve, a boring stack, a monolith and a linear Tick versus an EventBus — and where simplicity does break." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/dirty-games.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/dirty-games.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/dirty-games.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/dirty-games.html">RU</a><i>/</i><a class="on" href="dirty-games.html">EN</a><i>/</i><a href="../../it/articles/dirty-games.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>Dirty Games</h1><div class="ameta"><span>Oct 11, 2026</span><span>9 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/dirty-games/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Did you know that games can be architecturally very "dirty" on the inside? That didn't stop them from selling millions of copies, or from being written by a single person on a browser-game framework, or in Lua on top of a game-jam library, or even by a kid in the free version of Unity. At the same time, you also know a powerful custom engine with ECS, a job system, its own renderer and reflection everywhere — but the game built on it has most likely been sitting in your backlog for three years, never played for even a couple of hours.</p>
+    <p>About half a year ago some old friends asked me to help them develop a game and ship it on Steam. The guys used to be in the oil business, saved up some money and decided to, as they say, leave their mark on the industry. To be honest, I'd gotten a bit unused to such "childish" code and simple solutions, which surprised me somewhat, though it also brought me back down to earth from the embrace of enterprise. But let me say right away: simple architecture is not an excuse for bad code, it's a way of choosing where exactly you allow yourself to be complex. The complexity budget is finite... limited above all by the size of your own biological RAM, and it should be spent where the player will see it.</p>
+    <hr />
+    <p>Let's start with the fact that overengineering isn't stupidity or laziness — it's almost always the result of intelligence and conscientious work. Someone read a smart article, watched a strong talk, worked at a good studio and is trying to do things right, but "right" came from the context of large or specialized development, where you simply can't do it any other way, and where there's a "performance culture" or, if you prefer, the "curse of scale"... pick your poison.</p>
+    <p>Talks about data-oriented design, about packing a struct properly into a cache line — and that's just 64 bytes — discussions of virtual calls and indirection that kill the branch predictor, all of that is true... But that truth was told by people who have a hundred thousand entities living on screen at the same time. I'm serious... on our project we "ran out" of uint16 for ECS identifiers. And there's also a 16-millisecond budget for the whole frame, including rendering, physics and audio, for all those "bazillions" of entities (not all of them need everything computed, but that's another story). The guys, meanwhile, had about two hundred enemies in a top-down shooter, and yet it still lagged sometimes.</p>
+<pre style="margin:1.4rem 0"><code>Frame budget at 60 fps:             16.6 ms
+200 entities, naive Update()
+  with a virtual call:              ~200 × 50 ns = 0.01 ms
+  plus a cache miss on each:        ~200 × 200 ns = 0.04 ms
+
+Total game logic:                   ~0.05 ms out of 16.6 ms
+
+Same frame, real costs:
+  rendering and command submit:     4–8 ms
+  physics:                          1–3 ms
+  GC pause on an unlucky frame:     2–15 ms  ← this is where it hurts</code></pre>
+    <p>In other words, you can make your logic twenty times faster and not gain a single extra frame, because the lag was coming from allocations in a hot loop. Do you know what they ended up doing? They dropped the target frame rate to 30 and, lo and behold... the lag disappeared, because the engine stopped trying to squeeze a square peg into a round hole. I'm being a little disingenuous here: they had two days before showing the game to a publisher, and going in to change anything in the code, well... you might end up not going to the publisher demo at all.</p>
+    <h3>The interface cargo cult</h3>
+    <img src="../../assets/articles/dirty-games/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Big studios love interfaces, and some <code>IAudioSystem</code> exists not because it's pretty — although it really is pretty — but because the engine has five platforms and three audio backends, and those backends keep getting reworked during development, so here the interface is a way to call people from the audio subsystem into code review less often.</p>
+    <p>In a team of three people with one target platform, the interface will have one (just one) implementation and one mock that nobody runs, because there are no tests... heh, yet another problem of small teams. But you still paid the full big-engine price for the abstraction and got none of the things it exists for in the first place. Was it worth it? And now we're off to a game conference to listen to a smart talk from the folks who write audio subsystems and want to sell us their <code>IAudioSystem</code></p>
+<pre style="margin:1.4rem 0"><code>What a GDC talk viewer sees:
+    IWeaponSystem ──► WeaponSystemPS5
+                 ├──► WeaponSystemXbox
+                 └──► WeaponSystemPC
+    (three platforms, three teams, a shared contract)
+
+What you get in a three-person project:
+    IWeaponSystem ──► WeaponSystem
+                 └──► WeaponSystemMock  // unused since 2023
+    (one implementation, two extra files, and go-to-definition is broken)</code></pre>
+    <p>Programmers have a special fondness for writing a big system for ten thousand objects before anyone has figured out whether the game will even have them. And if it won't... well, we got our dopamine hit from writing a cool system that nobody needs. Writing pooling, chunks and an SoA layout is pleasant, because the task is well-defined and there's a measurable result at the end, whereas figuring out why your game is boring is unpleasant, and the result there can't be measured. So programmers honestly and happily optimize a game that nobody is playing yet... which is why you shouldn't let programmers make the game — let the monster, level and mechanics designer make it.</p>
+    <h3>What the ones who succeeded did</h3>
+    <img src="../../assets/articles/dirty-games/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Luca Galante, a slot-machine developer, quit his well-paid, cushy job in early 2021 and wrote Vampire Survivors on the HTML5 framework Phaser (inspired by the mobile Magic Survival, if I remember correctly). The Early Access release in December 2021 became one of the biggest hits of the decade, elbowing aside various AAA releases and spawning a new genre, and only in 2023 did the game move to Unity for performance and cross-platform support. That is, the game first found its audience on a browser framework, and only then was a "grown-up" stack put under it.</p>
+    <p>Solo hero LocalThunk spent two and a half years making Balatro on the Löve engine (originally as a side project for his portfolio when applying for a designer position), and by January 2025 it had sold five million copies. Löve is Lua plus a thin wrapper over SDL, with no editor at all, no scene and no inspector. Modders who took the game apart found plain Lua inside, a pile of sticks and substances of various colors, functions 2–3k lines long, and a bare minimum of comments.</p>
+    <p>Stardew Valley, Undertale, Minecraft, Unturned, Phasmophobia (XNA, GameMaker, LWJGL, Unity, Unity) — and again one or two people, no custom engine, no architectural exotica, "smelly code", but the authors spent their effort on content rather than on code infrastructure.</p>
+    <p>And so you don't think a game engine comes for free — when Vampire Survivors moved from Phaser to Unity, it took about a year of work and a team that had grown to ten people. So a simple stack is cheap, but the cost doesn't vanish without a trace, and you'll have to pay it once you already have money and people — but pay it you will. I think it's a good deal, but it's a deal, not a gift.</p>
+    <h3>Pick a boring stack</h3>
+    <img src="../../assets/articles/dirty-games/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>A ready-made commercial engine isn't an admission of creative impotence, although that opinion is alive and actively spread at conferences, and when I myself look at yet another Unreal knockoff and can't tell it apart from a different knockoff I played a week ago, I'm plagued by vague suspicions that people don't say this for nothing.</p>
+    <p>But a boring stack is more about risk management: Unity, Unreal and Godot have already debugged asset loading, audio, gamepad support and build export for you, and, more importantly for those planning on consoles, they have solid platform backends and minimal certification problems — Microsoft has an entire department that reviews nothing but Unity games.</p>
+    <p>And one more thing... by choosing someone else's engine, you also take on someone else's business decisions, and if somebody in top management is a few shekels short of a bigger yacht, he'll roll out yet another brilliant idea without a second thought, and suddenly you're paying per install, for free installs from the Play Store... of course they come to their senses later, but the trust is already broken and many will say "thanks, but no thanks". The price of a boring stack is measured in years of development saved, but one day someone on a board of directors that isn't yours will want a herd of five hundred pink mares, and you'll have to put up with it again.</p>
+    <h3>A monolith beats a web of systems</h3>
+    <p>This one usually causes the most outrage when I suggest a team drop their sprawling subsystems. Because in game code, one big straightforward class that does a lot of things is often more profitable than a composition of eight small entities. Not because it's better written, but because game logic changes, and the cost of change becomes more important than the cost of reading and the beauty of the code. Once you have money and devoted fans, you can think about beauty and philosophy, but there will be a version you're ashamed to show at code review, and if you're ashamed to show it at code review, well... you'll just be ashamed. Nobody has ever died of shame, and in exchange the feature is in the game half an hour later.</p>
+<pre style="margin:1.4rem 0"><code>class GameManager {
+    Player      player;
+    WaveSpawner spawner;
+    UpgradeList upgrades;
+    float       runTime;
+
+    void Update(float dt) {
+        runTime += dt;
+        spawner.SpawnIfNeeded(runTime);
+        player.Update(dt);
+        enemies.UpdateAll(dt);
+        CheckCollisions();
+        if (player.xp &gt;= nextLevelXp) OpenUpgradeScreen();
+        hud.Refresh(player, runTime);
+    }
+}</code></pre>
+    <p>And here's how it was done "properly" at first (EventBus + ServiceLocator + IUpgradeProvider + TimeScaleService), and every change took several hours. You had to figure out who was subscribed to PlayerLevelUp, in what order the subscribers would fire, why TimeScaleService had already been applied to the projectiles — and then add a fourth service to keep that from happening.</p>
+    <p>An abstraction is a bet that you'll guess the axis of change a month, two months or a year ahead. In the engine, in the renderer, in resource loading you do guess it — the axes there are known — but in game logic you'll almost never guess it, especially if the team is small and still looking for its niche, and the designer rewords the task from iteration to iteration. Then a beautiful interface turns into an obstacle that you first have to take apart and then put back together. But a monolithic manager very easily turns into a global singleton accessed from a hundred places, and that's when things really go bad — but that's a whole other story, and you'll be fixing it after the game ships, if you ever do...</p>
+    <h3>Synchronous and linear is fine</h3>
+    <img src="../../assets/articles/dirty-games/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Event buses, reactivity and asynchrony in gameplay are sold under the slogan of "loose coupling". These gizmos are usually sold to the folks busy writing <code>IAudioSystem</code>, who have a year to spare to make sense of it all and roll it out, but an indie team buying into it only gets the inability to read the frame's execution order from the code. The classic bug here is that damage gets applied after the UI has updated the health bar, so the player sees the old value for a while — and on weak hardware sees it even longer — and such bugs and dependencies keep multiplying until you need a dedicated person just to keep an eye on the async systems.</p>
+<pre style="margin:1.4rem 0"><code>// boring, but the whole frame fits in your head
+void Tick(float dt) {
+    input.Poll();
+    player.Move(dt);
+    enemies.Move(dt);
+    physics.Step(dt);
+    combat.ResolveDamage();     // damage is computed here and only here
+    world.RemoveDead();
+    hud.Refresh();              // the UI always sees the final state
+}</code></pre>
+    <p>In the event-driven version, though, the order is determined by who managed to subscribe when, and that in turn is determined by the scene loading order, which changes whenever you add a prefab or a system. And as soon as you need to configure script execution order, you've already lost control of the frame, and now you have to negotiate with various systems, build intermediaries and create fake entities. Just remember that a single explicit <code>Tick</code> is, in most cases, cheaper than any amount of configuration.</p>
+    <p>Everything has a price, and a linear <code>Tick</code> grows along with the game, at some point reaching two hundred calls, half of them conditional. That's unpleasant, but it can be read top to bottom in a minute, unlike a subscription graph, which can only be read under a debugger and only for one particular run.</p>
+    <h3>False complexity</h3>
+    <img src="../../assets/articles/dirty-games/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Everything above only makes sense if the freed-up effort goes into the game itself, which, fortunately, is almost always the case: developers' effort goes into more interesting mechanics and "juicy" gameplay, what the talks call juice. In reality it's a dozen cheap tricks like screen shake, hit-stop pauses, proper scaling, particles, a separate sound for every event. None of these tricks requires any architecture or complex technical systems... but all of them require time for tuning numbers and thoughtful testing on a live player.</p>
+    <p>Whereas a complex system with a pool for ten thousand units will require profiling and some extraordinary engineering thinking, yet won't affect the game's fps at all, because fps is a nonlinear quantity: a drop from 120 to 90 costs you 2.8 ms, while a drop from 30 to 25 costs 6.7 ms. In reality these are completely different magnitudes, and your hard-won 0.2 ms will improve fps by less than one percent while taking up five percent of the code, because your intuition about the hot spots was wrong before you ever launched the profiler.</p>
+    <p>Where complexity is justified is build and test systems: automated builds with reproducible output, autotests, compliance with platform requirements, which differ between Sony, Microsoft and Nintendo — all of this is boring, none of it shows up in the trailer, it's invisible to programmers and designers, but it's the work that separates "we made a game" from "the game shipped". You can make a game and still fail to release it on time, or get hit with publisher penalties for failing certification because of incorrect handling of a gamepad disconnect. You'll agree that's far more painful than not writing your own ECS.</p>
+    <h3>Where simple architecture breaks</h3>
+    <p>It would be dishonest to end by saying you just need to write simpler code and everything will be fine. It won't, because simplicity has its own problems, and whether to live with them or not is everyone's own choice.</p>
+    <p>Simple code turns into a swamp over time due to a lack of boundaries. And even a minimal set of boundaries always pays off everywhere while costing next to nothing: keep game data separate from game logic, game logic separate from presentation, and presentation separate from the user interface. You end up with zero interfaces, but you can no longer accidentally change the player's health from a button click handler.</p>
+    <p>And then there are saves... this is probably the only place where I'm willing to defend designing up front, because here you'll be obliged to provide backward compatibility, and you can't do that properly without good architecture. And you'll have to do it anyway, because a player who sank forty hours and lost their save... to put it mildly, can throw quite a lot of something at the fan, and what if there's more than one such player, more than a hundred even?</p>
+    <p>Everything else can be as clunky as your conscience allows. You can ask the author of the very entertaining little game VVVVVV — the game is great, but once again it's made of sticks and various substances. (<a href="https://github.com/TerryCavanagh/VVVVVV/blob/master/desktop_version/src/Logic.cpp" target="_blank" rel="noopener">github.com/TerryCavanagh/VVVVVV/blob/master/desktop_version/src/Logic.cpp</a>)</p>
+    <img src="../../assets/articles/dirty-games/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>Architecture is a tool</h3>
+    <p>The game as code exists only in your head. The player won't open the repository and won't find out whether you had ECS, whether you used a slightly smelly interface, or how often you tormented <code>GameManager</code> in the renderer. A developer's time is limited, and it should be spent not on complexity but on what's visible on screen, keeping in mind that every beautiful engineering solution has its price. Have you ever seen a Steam review saying "Gameplay is excellent, visuals are stunning, but for the singleton in the game loop I give it two Meyers out of ten"? Neither have I...</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

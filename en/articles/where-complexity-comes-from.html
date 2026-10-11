@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Where Complexity Comes From — dalerank</title>
+<meta name="description" content="The second part of “Dirty Games”: complexity in games arrives together with a number — 16 ms, 5 GB of memory, a patch-size limit. How complexity is bought, why two constraints are worse than one constraint twice, how they break modularity, hard and soft limits, memory budgets and the Jevons paradox." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/where-complexity-comes-from.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/where-complexity-comes-from.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/where-complexity-comes-from.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/where-complexity-comes-from.html">RU</a><i>/</i><a class="on" href="where-complexity-comes-from.html">EN</a><i>/</i><a href="../../it/articles/where-complexity-comes-from.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Craft</span><h1>Where Complexity Comes From</h1><div class="ameta"><span>Oct 11, 2026</span><span>7 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/where-complexity-comes-from/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Looks like the topic of <a href="dirty-games.html">complexity and dirt in games</a> struck a chord with Habr readers, and <a href="https://habr.com/ru/users/anz/" target="_blank" rel="noopener">@anz</a> (hi, Andrey!) even promised to give it a thousand upvotes if he could. By the way, he has been building his own game engine with blackjack and all the bells and whistles for about ten years now, so I think he has seen a thing or two. So here is the second part, which should have been in the first part, but for some reason wasn't.</p>
+    <p>At the heart of any engineering craft lies the great illusion of control over chaos, and whenever we open an empty file we sincerely believe that this time, for real, the architecture will stay crystal clean. Nobody in their right mind writes complex code for fun (well, actually, I do know a couple of people, but they're more of an exception to the rule), and if you open a particle system and find hardcode for every platform in there, it's most likely because the programmer who wrote it was handed a number, very little time, and told to make it nice and "just-make-it-work". But just-make-it-work isn't always nice, nice isn't always fast, and fast doesn't always work.</p>
+    <p>A number... say, 16 ms, or 33 ms, or 8 gigabytes of which 5 are available, or "the game must show its first interactive frame no later than ten seconds after launch, or we won't pass certification". As soon as a property of the system gets a measurable target, simplicity stops being free and turns into the currency you pay with.</p>
+    <hr />
+    <p>Everything comes at a price, and together with the number comes a constraint, which is a measurable property of the system. For example, not "the game should be fast" but "a frame fits into 16 ms on the base console model", or not "the game should install fine" but "the initial download is smaller than the limit beyond which the store demands Wi-Fi". The list of things that actually become constraints in game production is much longer than it seems, and performance is far from the most prominent item on it; lately it's not even performance that comes first, but content and man-hours.</p>
+    <ul>
+      <li>the number of assets one artist can handle per sprint; yes, that's a constraint too, it just isn't measured with a profiler.</li>
+      <li>project build time and designer iteration time, i.e. how long it takes from an edit until the edit is visible in the game;</li>
+      <li>peak memory consumption: consoles have no swap, and going over means a crash;</li>
+      <li>install size and, separately, patch size, because everyone downloads patches, and often;</li>
+      <li>frame time, separately on CPU and GPU, separately on average and at the 99th percentile;</li>
+      <li>cold start time and level load time;</li>
+      <li>thermal envelope and battery drain on mobile and handheld devices;</li>
+    </ul>
+    <p>As you can see, optimization ranks somewhere around build size in priority, and that's what I've been observing for the last ten years or so, ever since all-in-one engines took over the market. Beyond that, each constraint has variants: for example, is performance about the average frame or the worst one? And the worst over a session or the worst over ten seconds? Streaming throughput or response latency? Are thirty stable frames better or worse than five jittery ones? The answer, as always, depends on the genre and platform, and it's also what determines exactly what kind of complexity you'll have to build.</p>
+    <p>In scientific terms these are called non-functional requirements, but I consider that term rather harmful, because it creates the impression of something secondary, whereas it simply means the requirement has a range of acceptable values. In practice, though, it's exactly these requirements that define the architecture, while the functional ones define how you're going to implement it.</p>
+    <h3>The complexity you buy</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>There are few simple algorithms that solve a hard problem. There are many complex algorithms solving all sorts of problems, and the chance that a randomly picked simple algorithm will fit a hard number is noticeably lower than for a complex one, simply because a complex one has more degrees of freedom you can tweak. Take the algorithm for finding potentially overlapping pairs of objects in a scene: every engine solves this problem, even if there's no physics in it at all.</p>
+<pre style="margin:1.4rem 0"><code>// Level 0: O(n²)
+for (int i = 0; i &lt; n; ++i)
+    for (int j = i + 1; j &lt; n; ++j)
+        if (overlap(aabb[i], aabb[j]))
+            emit_pair(i, j);
+// 200 objects give 20 thousand checks
+// 5000 objects give 12.5 million already
+
+// Level 1: uniform grid
+//   + fast, clear, easy to debug
+//   - bad with mixed sizes: one large object
+//     lands in a hundred cells and breaks the whole idea
+
+// Level 2: BVH with incremental updates
+//   + good with any sizes
+//   - needs rebuilds, needs a splitting heuristic,
+//     needs separate code for fast-moving objects,
+//     needs a decision about what to do with removed nodes
+
+// Level 3: the same, but with SoA layout,
+//   SIMD tests four pairs at a time
+//   and a separate path for static geometry
+//   + even faster
+//   - the debugger shows a mush of floats</code></pre>
+    <p>Each next level is faster and more complex than the previous one, and this is the mechanism of buying complexity: you trade clarity for hitting the number. You can't buy the simplicity back, because a year after you wrote level 3 nobody remembers under what conditions level 1 stopped coping, and removing the complexity that crept in becomes scary.</p>
+    <p>Think of it as a simplicity reserve that you spend to buy frame time, memory, build size, crash resilience, decent logging. Sometimes you manage to economize and get both, because someone came up with a genuinely good solution, but that happens rarely, usually once per project.</p>
+    <h3>Two constraints are worse than one constraint twice</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The nastiest property of constraints is that they interact and tend to combine, and the combination almost always makes the algorithm worse. Any memory-for-time trade is an example: every cache, every precomputed table, every atlas improves one thing at the expense of another.</p>
+<pre style="margin:1.4rem 0"><code>Constraint A: level load time.
+  We want to read sequentially, without seeks,
+  so all the level's assets have to sit together
+  in order of use.
+
+Constraint B: install size and patch size.
+  We want to store every asset exactly once
+  and deduplicate everything we can.
+
+These two requirements are directly opposed:
+  Optimal for A:                 Optimal for B:
+  [level_01: A B C D E]          [pool: A B C D E F G]
+  [level_02: A B F G]            [level_01 -&gt; refs]
+  [level_03: A C E G]            [level_02 -&gt; refs]
+   A is stored three times,       A is stored once,
+   read in a single pass          three seeks per load</code></pre>
+    <p>Both options are correct and both satisfy their requirement. But try to combine them and you get an algorithm that duplicates only hot assets, only for levels with a strict load budget, only above a certain size... yes, it works, but now your project has a system with heuristics, a config, and a dedicated person whose job is to walk through the levels and assemble assets for patches so that a patch weighs three hundred megabytes instead of three gigabytes.</p>
+    <p>And if code that's already been complicated for the sake of memory has to be complicated for the sake of frame time, the second helping of complexity lands on top of the first, multiplying it.</p>
+    <h3>Constraints break modularity</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>As long as there's a single hotspot, everything is bearable: you find it with a profiler, write your scary but local code there, wrap it in comments and move on. The trouble starts when you need not a twofold speedup in one place but ten percent across the whole frame, and to get ten percent on the frame you have to find ten places worth ten percent each that aren't in the hotspot. Those percents live in overhead smeared across the entire codebase.</p>
+    <p>And the overhead lives in exactly the places we usually praise code for. In abstraction layers over the platform, in interfaces with virtual calls, in a factored-out shared function or a neat <code>shared_ptr</code> with non-obvious ownership, in a manager and another manager. Each such thing costs half a percent, and "a little" becomes significant when you need ten percent and there's clearly nowhere to take it from.</p>
+<pre style="margin:1.4rem 0"><code>// Before: correct and modular
+for (IComponent* c : components)
+    c-&gt;Update(dt);              // virtual call, I-cache miss,
+                                // objects scattered across the heap
+
+// After: wrong and fast
+UpdateTransforms(transform_soa, count, dt);
+UpdateAnimators(animator_soa, count, dt);
+UpdateColliders(collider_soa, count, dt);
+// components are no longer polymorphic, the update order
+// is baked into the calling code, adding a new type
+// requires edits in four places</code></pre>
+    <p>This is that very data-oriented design that came into game development, but notice what happened: we didn't just rewrite a loop, we dragged the structure of the CPU cache up through three layers of architecture, all the way to the place that defines how entities in the game are built in the first place. The constraint punched holes through every abstraction, and a program that in theory shouldn't know anything about the hardware is now built around the length of a cache line.</p>
+    <p>My previous <a href="console-memory.html">article on console memory</a> is essentially about the same thing. The three memory islands on the PS2 were a hardware implementation detail that game developers weren't supposed to know about, yet they shaped the game code entirely, because explicit DMA transfers between islands can't be hidden behind an abstraction.</p>
+    <h3>Hard and soft limits</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>A soft limit can be exceeded a little or occasionally: a dip to 45 frames in a cutscene goes into the bug tracker with "after release" priority, and a twelve-second level load instead of ten can be "waived" at certification if you ask nicely.</p>
+    <p>A hard limit, on the other hand, can't be bent: you physically don't have more than 5.5 gigabytes of available memory, you have exactly what you have, and going over it isn't stuttering anymore, it's a crash and a failed certification or a slipped release date.</p>
+    <p>That, by the way, is where all the subsystem budgets console developers live by come from, and later those budgets determine how many objects you'll have on a level and what quality your textures end up at.</p>
+<pre style="margin:1.4rem 0"><code>Memory budget, base console, 5120 MB available:
+
+  executable code and static data           180
+  textures (resident)                      1600
+  textures (streaming pool)                1200
+  meshes and animations                     700
+  audio                                     420
+  physics and navigation                    260
+  scripts and gameplay logic                300
+  render targets and intermediate buffers   380
+  reserve for fragmentation and spikes       80
+                                          -----
+                                           5120
+
+The 80 MB reserve isn't a "just in case" margin, it's an hour of play
+while fragmentation nibbles away at memory, so consider it gone</code></pre>
+    <p>These budgets are complexity too: they have to be maintained, checked, and you need tools that show which team ate someone else's megabytes, but none of that would be needed if the limit were soft, like on PC.</p>
+    <h3>The Jevons paradox strikes here too</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>I've already written about William Jevons, who noticed that improving the efficiency of steam engines increased coal consumption in England, because coal became cheaper per unit of useful work and people started using it where it previously hadn't paid off. The same thing happens with constraints in development.</p>
+    <p>Say you improved a metric, the metric stopped being the bottleneck, and then the people who were limited by it, designers for instance, change their behavior. Use cases appear that didn't exist before because they were physically impossible, and those use cases bring new requirements and new complexity, often more than you saved.</p>
+    <p>Fast SSDs in the current generation removed the loading-speed constraint that used to make us build corridors, elevators and narrow passages. Wonderful, but as a result worlds grew, draw distance grew, content density requirements grew, and instead of a predictive streaming system we got a virtual texture residency management system so complex that a single person can no longer design and write it.</p>
+    <p>We sped up the content rebuild from five hours to forty minutes, and it was a good, honest engineering achievement. Two months later it turned out that designers now iterate five times as often, the number of level revisions in version control grew by an order of magnitude, QA could no longer keep up with checking changes, and we had to hire more testers. The project's total complexity went up, just not where you expected.</p>
+    <p>We added hot reloading of scripts so we wouldn't have to restart the game, and a month later it turned out that nobody restarts the game at all anymore, and half the bugs caught in playtests are accumulated-state bugs that can't be reproduced from a clean start. We had to write a state consistency check after reload, i.e. a new subsystem that wasn't needed before the optimization.</p>
+    <p>I'm not suggesting you stop optimizing, just remember that after a successful optimization the complexity budget isn't freed up, it moves somewhere else, often somewhere the optimizer wouldn't think to look. There's never a case where you've simply saved ten percent of the frame: there are already a couple of grabby hands reaching for it that you don't know about.</p>
+    <h3>The constraint that isn't in the document</h3>
+    <p>"The game should run fine on the minimum spec" isn't a constraint, it's a wish, because you can't check it automatically, can't put it in the build file, can't bring it up at planning. It becomes a constraint when you run the build on the minimum spec and discover eight fps, and now you have to pour as much complexity into the project in the remaining time as would normally have accumulated over a year.</p>
+    <p>A constraint without a number and without an automatic check stops being a constraint and becomes a way to postpone paying the bills, with interest. Complexity added in a panic a month before release is always more expensive and worse than functionally identical complexity added at a calm pace, and both stay in the project forever.</p>
+    <p>Complexity always goes where the meter is, and if the only thing you measure automatically is frame time, you'll get polished frame code and thirty seconds of loading. Add a load-time check and you'll get both metrics looking good and a patch size of a gigabyte and a half, not because the team is slacking, but simply because the team is rational and optimizes what gets checked. What gets checked will be good, and what doesn't... well, it doesn't, and that's fine, the players will check it later.</p>
+    <img src="../../assets/articles/where-complexity-comes-from/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>The price</h3>
+    <p>I'm deliberately not giving any list of recommendations, because they're unique to each project and team. Complexity in a project isn't dirt or debt left over from bad work, and making things simpler just won't happen.</p>
+    <p>Configurations that are no longer in the requirements, manual workarounds for bugs in drivers that are older than dirt (the drivers, I mean), special SDK modes nobody uses: all of this sits in the project because the constraint disappeared but the complexity stayed, and nobody will risk removing that complexity, since it's unclear what you'll have to pay for it. The complexity of game engines (and of software in general) hasn't decreased even once in all these umpteen years, and it's worth remembering that if you want to make something simple.</p>
+
+    <a class="backlink" href="index.html">← All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

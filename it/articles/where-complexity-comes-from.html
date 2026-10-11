@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Da dove viene la complessità — dalerank</title>
+<meta name="description" content="La seconda parte di «Giochi sporchi»: la complessità nei giochi arriva insieme a un numero — 16 ms, 5 GB di memoria, un limite sulla patch. Come si compra la complessità, perché due vincoli sono peggio di uno due volte, come rompono la modularità, limiti rigidi e morbidi, budget di memoria e paradosso di Jevons." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/where-complexity-comes-from.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/where-complexity-comes-from.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/where-complexity-comes-from.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/where-complexity-comes-from.html">RU</a><i>/</i><a href="../../en/articles/where-complexity-comes-from.html">EN</a><i>/</i><a class="on" href="where-complexity-comes-from.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag clay">Mestiere</span><h1>Da dove viene la complessità</h1><div class="ameta"><span>11 ottobre 2026</span><span>7 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/where-complexity-comes-from/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>A quanto pare il tema della <a href="dirty-games.html">complessità e dello sporco nei giochi</a> ha trovato eco tra i lettori di Habr, e <a href="https://habr.com/ru/users/anz/" target="_blank" rel="noopener">@anz</a> (ciao, Andrej!) ha persino promesso che avrebbe messo mille upvote, se solo avesse potuto. Tra l'altro da una decina d'anni sta facendo il suo motore di gioco, con tanto di poker e signorine, e immagino ne abbia viste parecchie. Quindi eccovi la seconda parte, che sarebbe dovuta stare nella prima, ma lì, chissà perché, non c'era.</p>
+    <p>Alla base di qualsiasi arte ingegneristica c'è la grande illusione di controllare il caos: aprendo un file vuoto crediamo sinceramente che questa volta l'architettura resterà davvero‑davvero cristallina. Nessuno sano di mente scrive codice complicato per divertimento (anzi no, un paio di persone così le conosco, ma sono più l'eccezione che la regola), e se aprite un sistema di particelle e ci trovate hardcode per ogni piattaforma, molto probabilmente al programmatore che l'ha scritto hanno dato un numero, poco tempo e detto di farlo bello e «bastachefunzioni», ma bastachefunzioni non sempre è bello, bello non sempre è veloce, e veloce non sempre funziona.</p>
+    <p>Il numero... per esempio 16 ms, o 33 ms, o 8 gigabyte di cui 5 disponibili, oppure «il gioco deve mostrare il primo frame interattivo entro dieci secondi dall'avvio, altrimenti non passiamo la certificazione». Appena una proprietà del sistema ha un obiettivo misurabile, la semplicità smette di essere gratuita e diventa la moneta con cui pagate.</p>
+    <hr />
+    <p>Tutto si paga, e insieme al numero arriva un vincolo, che è una proprietà misurabile del sistema. Per esempio, non «il gioco deve essere veloce», ma «il frame sta nei 16 ms sul modello base della console»; oppure non «il gioco deve installarsi bene», ma «il download iniziale è sotto il limite oltre il quale lo store richiede il Wi‑Fi». L'elenco di ciò che diventa davvero un vincolo nella produzione di giochi è molto più lungo di quanto sembri, e le prestazioni non ne sono affatto la voce più vistosa: ultimamente in primo piano non ci sono nemmeno loro, ma i contenuti e le ore‑uomo.</p>
+    <ul>
+      <li>il numero di asset che un artista riesce a gestire in uno sprint: sì, anche questo è un vincolo, solo che non si misura col profiler;</li>
+      <li>il tempo di build del progetto e il tempo di iterazione per il designer, cioè quanto passa da una modifica al momento in cui la si vede nel gioco;</li>
+      <li>il picco di consumo di memoria: sulla console non c'è swap e sforare significa crash;</li>
+      <li>la dimensione dell'installazione e, separatamente, la dimensione della patch, perché le patch le scaricano tutti e spesso;</li>
+      <li>il tempo di frame, separatamente su CPU e su GPU, separatamente in media e al 99° percentile;</li>
+      <li>il tempo di avvio a freddo e il tempo di caricamento del livello;</li>
+      <li>il budget termico e il consumo di batteria su mobile e dispositivi portatili;</li>
+    </ul>
+    <p>Come vedete, la priorità delle ottimizzazioni sta più o meno allo stesso livello della dimensione della build, ed è quello che osservo da una decina d'anni, da quando i motori‑mietitrebbia si sono presi il mercato. Poi ogni vincolo ha le sue varianti: per esempio, le prestazioni sono il frame medio o il peggiore? E il peggiore della sessione o il peggiore degli ultimi dieci secondi? Conta il throughput dello streaming o la latenza di risposta? Trenta frame stabili sono meglio o peggio di cinque ballerini? La risposta, come sempre, dipende dal genere e dalla piattaforma, ed è proprio lei a determinare quale complessità toccherà costruire.</p>
+    <p>In termini scientifici si chiamano requisiti non funzionali, ma trovo questa definizione piuttosto dannosa, perché dà l'impressione di qualcosa di secondario, mentre significa solo che il requisito ha un intervallo di validità. In pratica, però, sono proprio questi requisiti a determinare l'architettura, mentre quelli funzionali determinano come ci arriverete.</p>
+    <h3>La complessità che comprate</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Gli algoritmi semplici che risolvono un problema complesso sono pochi. Gli algoritmi complessi che risolvono problemi diversi sono tanti, e la probabilità che un algoritmo semplice preso a caso stia dentro un numero rigido è sensibilmente più bassa di quella di uno complesso, semplicemente perché quello complesso ha più gradi di libertà su cui si può agire. Prendete l'algoritmo che cerca le coppie di oggetti potenzialmente intersecanti nella scena: è un problema che si risolve in qualsiasi motore, anche se di fisica non ce n'è proprio.</p>
+<pre style="margin:1.4rem 0"><code>// Livello 0: O(n²)
+for (int i = 0; i &lt; n; ++i)
+    for (int j = i + 1; j &lt; n; ++j)
+        if (overlap(aabb[i], aabb[j]))
+            emit_pair(i, j);
+// 200 oggetti danno 20 mila controlli
+// 5000 oggetti ne danno già 12.5 milioni
+
+// Livello 1: griglia uniforme
+//   + veloce, comprensibile, facile da debuggare
+//   - va male con dimensioni eterogenee: un oggetto grande
+//     finisce in un centinaio di celle e manda all'aria l'idea
+
+// Livello 2: BVH con aggiornamento incrementale
+//   + va bene con qualsiasi dimensione
+//   - serve la ricostruzione, serve un'euristica di suddivisione,
+//     serve codice a parte per gli oggetti che si muovono veloci,
+//     bisogna decidere cosa fare con i nodi rimossi
+
+// Livello 3: lo stesso, ma con layout SoA,
+//   test SIMD su quattro coppie alla volta
+//   e un percorso a parte per la geometria statica
+//   + ancora più veloce
+//   - il debugger mostra una poltiglia di float</code></pre>
+    <p>Ogni livello è più veloce e più complesso del precedente, ed è questo il meccanismo con cui si compra complessità: scambiate la comprensibilità con il rientrare nel numero. La semplicità poi non si ricompra più, perché un anno dopo aver scritto il livello 3 nessuno ricorda più in quali condizioni il livello 1 smetteva di bastare, e togliere la complessità che si è accumulata fa paura.</p>
+    <p>Pensatela come una riserva di semplicità, che spendete per comprare tempo di frame, memoria, dimensione della build, resistenza ai crash, un logging decente. A volte si riesce a risparmiare e ad avere l'una e l'altra cosa, perché qualcuno ha trovato una soluzione davvero buona, ma succede di rado e di solito una volta per progetto.</p>
+    <h3>Due vincoli sono peggio di un vincolo preso due volte</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>La proprietà più sgradevole dei vincoli è che interagiscono e tendono a combinarsi, ma quasi sempre la combinazione peggiora l'algoritmo. L'esempio è qualsiasi scambio di memoria contro tempo: qualunque cache, qualunque tabella precalcolata, qualunque atlas migliora una cosa a spese dell'altra.</p>
+<pre style="margin:1.4rem 0"><code>Vincolo A: tempo di caricamento del livello.
+  Vogliamo leggere in sequenza, senza seek,
+  quindi tutti gli asset del livello devono stare vicini
+  nell'ordine in cui vengono usati.
+
+Vincolo B: dimensione dell'installazione e della patch.
+  Vogliamo salvare ogni asset esattamente una volta
+  e deduplicare tutto il possibile.
+
+Questi due requisiti sono diametralmente opposti:
+  Ottimale per A:                Ottimale per B:
+  [level_01: A B C D E]          [pool: A B C D E F G]
+  [level_02: A B F G]            [level_01 -&gt; riferimenti]
+  [level_03: A C E G]            [level_02 -&gt; riferimenti]
+   A è salvato tre volte,         A è salvato una volta,
+   si legge in un colpo solo      tre seek per caricamento</code></pre>
+    <p>Entrambe le varianti sono corrette ed entrambe soddisfano il proprio requisito. Ma provando a unirle ottenete un algoritmo che duplica solo gli asset caldi, solo per i livelli con un budget di caricamento rigido, solo oltre una certa dimensione... sì, funziona, ma vi ritrovate nel progetto un sistema con euristiche, un config e una persona dedicata, il cui compito sarà girare per i livelli e raccogliere gli asset per le patch, così che pesino trecento megabyte e non tre gigabyte.</p>
+    <p>E se il codice, già complicato per la memoria, va complicato anche per il tempo di frame, la seconda dose di complessità si posa sopra la prima, moltiplicandola.</p>
+    <h3>I vincoli rompono la modularità</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Finché l'hot spot è uno solo, tutto è sopportabile: lo trovate col profiler, ci scrivete il vostro codice orribile ma locale, lo ricoprite di commenti e andate avanti. I problemi cominciano quando bisogna trovare non un'accelerazione di due volte in un punto, ma il dieci per cento su tutto il frame, e per guadagnare il dieci per cento sul frame bisogna trovare dieci punti da un dieci per cento ciascuno, che non stanno nell'hot spot. Quelle percentuali stanno nell'overhead, spalmato su tutta la codebase.</p>
+    <p>E l'overhead sta proprio nelle cose per cui di solito lodiamo il codice. Negli strati di astrazione sopra la piattaforma, nelle interfacce con chiamate virtuali, nella funzione comune estratta o nel <code>shared_ptr</code> ordinato con un ownership poco evidente, nel manager e nell'altro manager. Ognuna di queste cose costa mezzo punto percentuale, e quel «poco» diventa sostanziale quando vi serve il dieci per cento ma non c'è nessun posto evidente da cui prenderlo.</p>
+<pre style="margin:1.4rem 0"><code>// Prima: corretto e modulare
+for (IComponent* c : components)
+    c-&gt;Update(dt);              // chiamata virtuale, miss nella I-cache,
+                                // oggetti sparsi per l'heap
+
+// Dopo: scorretto e veloce
+UpdateTransforms(transform_soa, count, dt);
+UpdateAnimators(animator_soa, count, dt);
+UpdateColliders(collider_soa, count, dt);
+// i componenti non sono più polimorfici, l'ordine di aggiornamento
+// è cablato nel codice chiamante, aggiungere un nuovo tipo
+// richiede modifiche in quattro punti</code></pre>
+    <p>È proprio quel data‑oriented design che è arrivato nello sviluppo di giochi, ma notate cos'è successo: non abbiamo semplicemente riscritto un ciclo, abbiamo trascinato la struttura della cache del processore su per tre strati di architettura, fino al punto in cui si decide come sono fatte le entità del gioco. Il vincolo ha bucato tutte le astrazioni, e un programma che in teoria non dovrebbe sapere nulla dell'hardware ora è costruito attorno alla lunghezza della cache line.</p>
+    <p>Nel mio precedente <a href="console-memory.html">articolo sulla memoria delle console</a> tutta la storia, in sostanza, parla della stessa cosa. Le tre isole di memoria della PS2 erano un dettaglio implementativo dell'hardware che gli sviluppatori di giochi non avrebbero dovuto conoscere, eppure determinavano per intero la forma del codice di gioco, perché i trasferimenti DMA espliciti tra le isole non si possono nascondere dietro un'astrazione.</p>
+    <h3>Limiti rigidi e limiti morbidi</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Un limite morbido si può superare un po' o ogni tanto: un calo a 45 frame in una cutscene finisce nel bug tracker con priorità «dopo il rilascio», e per un caricamento del livello in dodici secondi invece di dieci si può chiedere una deroga in certificazione.</p>
+    <p>Un limite rigido invece non si può cambiare: fisicamente non avete più di 5.5 gigabyte di memoria disponibile, ne avete esattamente quanta ne avete, e sforare non vuol dire rallentamenti, ma crash e certificazione fallita, o data di uscita che slitta.</p>
+    <p>Da qui, tra l'altro, nascono tutti i budget dei sottosistemi a cui si attengono gli sviluppatori console, e poi sono questi budget a stabilire quanti oggetti avrete nel livello e di che qualità verranno le texture.</p>
+<pre style="margin:1.4rem 0"><code>Budget di memoria, console base, disponibili 5120 MB:
+
+  codice eseguibile e dati statici          180
+  texture (residenti)                      1600
+  texture (pool di streaming)              1200
+  mesh e animazioni                         700
+  audio                                     420
+  fisica e navigazione                      260
+  script e logica di gioco                  300
+  render target e buffer intermedi          380
+  riserva per frammentazione e picchi        80
+                                          -----
+                                           5120
+
+La riserva di 80 MB non è un «margine per ogni evenienza», è un'ora di gioco
+mentre la frammentazione si rosicchia la memoria: fate conto che non ci siano</code></pre>
+    <p>Anche questi budget sono complessità: vanno mantenuti, controllati, servono strumenti che mostrino quale team si è mangiato i megabyte altrui, ma niente di tutto ciò servirebbe se il limite fosse morbido come su PC.</p>
+    <h3>Il paradosso di Jevons, anche qui</h3>
+    <img src="../../assets/articles/where-complexity-comes-from/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Ho già scritto di William Jevons, che notò come l'aumento di efficienza delle macchine a vapore avesse fatto crescere il consumo di carbone in Inghilterra, perché il carbone era diventato più economico in rapporto al lavoro utile e si era cominciato a usarlo dove prima non conveniva. Con i vincoli nello sviluppo succede la stessa cosa.</p>
+    <p>Avete migliorato una metrica, per esempio, e la metrica ha smesso di essere un collo di bottiglia: allora le persone che ne erano limitate, i designer ad esempio, cambiano comportamento. Compaiono scenari d'uso che prima non esistevano, perché erano fisicamente impossibili, e questi scenari portano nuovi requisiti e nuova complessità, spesso più di quanta ne abbiate risparmiata.</p>
+    <p>Gli SSD veloci dell'attuale generazione hanno tolto il limite sulla velocità di caricamento a causa del quale prima si costruivano corridoi, ascensori e passaggi stretti. Splendido, ma di conseguenza i mondi sono cresciuti, la distanza visiva è cresciuta, i requisiti di densità dei contenuti sono cresciuti, e al posto di un sistema di streaming predittivo è comparso un sistema di gestione della residenza delle texture virtuali, così complesso che una sola persona non è più in grado di progettarlo e scriverlo.</p>
+    <p>Abbiamo accelerato il rebuild dei contenuti da cinque ore a quaranta minuti, ed era un buon risultato ingegneristico, onesto. Due mesi dopo si è scoperto che i designer ora iteravano cinque volte più spesso, il numero di versioni dei livelli nel sistema di controllo versione era cresciuto di un ordine di grandezza, il QA non faceva più in tempo a verificare le modifiche, e si è dovuto aumentare il numero di tester. La complessità totale del progetto è cresciuta, ma non dove ve lo aspettavate.</p>
+    <p>Abbiamo fatto l'hot reload degli script per non dover riavviare il gioco, e dopo un mese è venuto fuori che nessuno riavviava più il gioco, punto, e metà dei bug trovati nei playtest erano bug di stato accumulato, non riproducibili da un avvio pulito. Abbiamo dovuto scrivere un controllo di consistenza dello stato dopo il reload, cioè un nuovo sottosistema che prima dell'ottimizzazione non serviva.</p>
+    <p>Non vi sto proponendo di non ottimizzare niente: ricordate solo che dopo un'ottimizzazione riuscita il budget di complessità non si libera, ma trasloca altrove, spesso in un posto tutt'altro che ovvio per chi ottimizza. Non succederà mai che vi resti in tasca quel dieci per cento di frame risparmiato: ci sono già un paio di manine avide pronte ad arraffarlo, di cui non sapete nulla.</p>
+    <h3>Il vincolo che non sta nel documento</h3>
+    <p>«Il gioco deve girare decentemente sulla configurazione minima» non è un vincolo, è un auspicio, perché non si può verificare automaticamente, non si può mettere nel file di build, non si può tirare fuori in fase di pianificazione. Diventa un vincolo quando avviate la build sulla configurazione minima e scoprite di fare otto fps, e nel tempo che resta vi tocca infilare nel progetto tanta complessità quanta, lavorando normalmente, se ne sarebbe accumulata in un anno.</p>
+    <p>Un vincolo senza numero e senza verifica automatica smette di essere un vincolo e diventa un modo per rimandare il pagamento del conto, con tanto di interessi. La complessità aggiunta in preda al panico un mese prima del rilascio è sempre più cara e peggiore della stessa complessità, a parità di funzione, aggiunta con calma, ed entrambe restano nel progetto per sempre.</p>
+    <p>La complessità va sempre dove c'è uno strumento di misura: se da voi si misura automaticamente solo il tempo di frame, avrete un codice del frame tirato a lucido e trenta secondi di caricamento. Se aggiungete il controllo sul caricamento, otterrete due ottime metriche e una patch da un gigabyte e mezzo, non perché il team lavori male, ma semplicemente perché il team è razionale e ottimizza ciò che viene controllato. Quello che si controlla verrà bene, e quello che non si controlla... beh, non si controlla e amen, poi ci penseranno i giocatori a controllarlo.</p>
+    <img src="../../assets/articles/where-complexity-comes-from/07.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>Il prezzo</h3>
+    <p>Di proposito non vi do nessun elenco di raccomandazioni, perché sono uniche per ogni progetto e ogni team. La complessità in un progetto non è sporco né un debito lasciato da un lavoro fatto male, e renderla più semplice non si può.</p>
+    <p>Configurazioni che non sono più nei requisiti, workaround manuali per bug di driver vecchi come il cucco (i driver, intendo), modalità speciali per SDK che nessuno usa: tutto questo sta nel progetto perché il vincolo è sparito ma la complessità è rimasta, e nessuno si azzarderà a toglierla, perché non è chiaro con cosa toccherà pagarla. La complessità dei motori di gioco (e del software in generale) in questi ...anta anni non è mai diminuita nemmeno una volta: vale la pena ricordarselo, se volete fare qualcosa di semplice.</p>
+
+    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>
