@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/disobedient-using.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/disobedient-using.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a class="on" href="disobedient-using.html">RU</a><i>/</i><a href="../en/articles/disobedient-using.html">EN</a><i>/</i><a href="../it/articles/disobedient-using.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Непослушный using</h1><div class="ameta"><span>20 мая 2026</span><span>12 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Непослушный using</h1><div class="ameta"><span>20 мая 2026</span><span>12 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/disobedient-using/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>В <a href="simple-name-lookup.html">прошлой статье</a> я разобрал, как работает квалифицированный поиск и как <code>using namespace</code> участвует в нём только в качестве запасного варианта, когда собственных объявлений в указанной области нет. Компилятор сначала смотрит, что объявлено непосредственно в текущем контексте, и только при неудаче переходит к именам, подмешанным через директиву <code>using</code>. Казалось бы, схема прозрачная и предсказуемая: есть область поиска, есть приоритет явных объявлений, есть «правило N-объявлений» как страховка.</p>
@@ -245,9 +245,9 @@ h.set(nullptr);  // ошибка компиляции, а не неявное п
     <p>Материалом для следующих статей мне видится рассмотрение процессов, которые управляют типами самих аргументов и возвращаемых значений в шаблонах. Именно здесь мы впервые столкнёмся с type deduction — механизмом, с помощью которого компилятор выводит типы шаблонных параметров из переданных аргументов, и template instantiation, который подставляет эти типы в тело шаблона для создания конкретной функции или класса.</p>
     <p>Понимание этих механизмов определяет, какие перегрузки шаблонов будут выбраны и как будут разрешаться вызовы функций — и об этом будет следующая статья…</p>
     <p>З.Ы. Первые 7 глав «Нескучного программирования» выложил на гитхабе в ru/en (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>), хотя вот <a href="https://habr.com/ru/users/olegsivchenko/" target="_blank" rel="noopener">@OlegSivchenko</a> предлагает назвать серию «Pragmatic C++» — слишком уж практические и скучные вопросы поднимаются. Если будет желание поправить текст или примеры кода, напишите в личку.</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

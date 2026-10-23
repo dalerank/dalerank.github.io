@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/array-of-arrays.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/array-of-arrays.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/array-of-arrays.html">RU</a><i>/</i><a href="../../en/articles/array-of-arrays.html">EN</a><i>/</i><a class="on" href="array-of-arrays.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Cosa si può fare con un array di array</h1><div class="ameta"><span>11 ottobre 2026</span><span>13 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Cosa si può fare con un array di array</h1><div class="ameta"><span>11 ottobre 2026</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/array-of-arrays/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>In uno dei progetti (uno strategico storico 4X) è saltato fuori il compito di spostare parte della logica su altri thread, passando loro uno snapshot dello stato di gioco: così, mentre il thread principale calcola il suo tick, gli altri (AI, pathfinding, UI e così via) possono far girare la propria logica, tipo «chi si trova in questa location», senza lock e senza il rischio di vedere a metà la scrittura di qualcun altro. Per realizzare un sistema del genere bisogna inventarsi come ottenere un indice inverso dei reggimenti per location, e renderne la ricerca economica per i thread: in pratica ogni thread deve avere il proprio snapshot dello stato di una certa parte del mondo di gioco, fotografato al momento in cui parte l'update (frame, tick della logica, giorno, mese ecc.)</p>
@@ -284,10 +284,10 @@ blob[]     [ 0 | 1 2 3 4 5 6 7 | 8 9 10 11 12 | ... ]
     <p>Mentre con i colleghi preparavo la presentazione di questa soluzione per il team, mi sono imbattuto nell'articolo <a href="https://zeux.io/2023/06/30/efficient-jagged-arrays/" target="_blank" rel="noopener">Efficient jagged arrays</a> del 2023, in cui l'autore arriva alla stessa disposizione per i vertici di una mesh nel suo progetto. Noi siamo partiti dalle entità di gioco e dallo snapshot tra thread, lui dagli indici dei triangoli, ma alla fine siamo arrivati allo stesso identico schema. Già questo è un buon segnale che il problema si presenta nello sviluppo abbastanza spesso da non doverlo reinventare ogni volta e da meritare una soluzione più riutilizzabile. Purtroppo non ne ho trovata nessuna open source... forse ho cercato male.</p>
     <p>Fondamentalmente il problema è rimasto lo stesso degli anni '80 e anche di prima: bisogna che i dati si trovino nel posto giusto, nella forma giusta, nel momento in cui ci passa sopra l'hot path.</p>
 
-    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

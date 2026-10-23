@@ -10,7 +10,7 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="dalerank" />
@@ -44,7 +44,6 @@
 <main class="wrap">
 
   <div class="article-head" style="max-width:760px;margin:0 auto">
-    <span class="tag clay">Блог</span>
     <h1>Статьи</h1>
     <div class="ameta"><span>о коде, реверс-инжиниринге и геймдизайне</span></div>
   </div>
@@ -52,7 +51,7 @@
   <ul class="artlist">
     <li>
       <a href="where-complexity-comes-from.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Откуда берётся сложность</h3>
         <p>Вторая часть «Грязных игр»: никто не пишет сложный код ради удовольствия — сложность приходит вместе с числом: 16 мс на кадр, 5 ГБ доступной памяти, лимит размера патча, десять секунд до первого кадра. Уровни broadphase от O(n²) до SIMD-BVH как механизм покупки сложности, почему два ограничения хуже, чем одно дважды, как data-oriented design протаскивает кеш-линию через всю архитектуру, жёсткие и мягкие пределы с бюджетом памяти консоли, парадокс Джевонса в геймдеве и ограничения, которых нет в документе.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>7 мин</span></div>
@@ -60,7 +59,7 @@
     </li>
     <li>
       <a href="dirty-games.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Грязные игры</h3>
         <p>Почему игры с «грязной» архитектурой продаются миллионами, а игры на красивых движках с ECS и job-системой лежат в беклоге: бюджет кадра, в котором логика на 200 врагов стоит 0.05 мс, карго-культ интерфейсов с GDC, Vampire Survivors на Phaser, Balatro на Löve и VVVVVV, скучный стек как управление рисками, монолитный GameManager и линейный Tick против EventBus — и где простота всё-таки ломается: границы данных и логики, сохранения и сертификация.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>9 мин</span></div>
@@ -68,7 +67,7 @@
     </li>
     <li>
       <a href="array-of-arrays.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Что можно сделать с массивом массивов</h3>
         <p>Обратный индекс «локация → полки» для снапшота игрового состояния в 4X-стратегии: почему vector&lt;vector&lt;uint&gt;&gt; на миллион локаций тратит 72 байта на 24 полезных и 90 мс на копию, и как три хака — «посчитать, потом выделить», один буфер с префиксной суммой и только offsets (CSR) — ускоряют сборку в 17 раз, снапшот в 23 раза и случайный обход в 3.6 раза. Плюс фрагментированная куча, кеш-линии, откуда в стратегиях миллион объектов и почему приём старше игр и ECS.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>13 мин</span></div>
@@ -76,7 +75,7 @@
     </li>
     <li>
       <a href="wrong-cpp-bees.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Эти пчелы делают неправильный C++</h3>
         <p>«Арканутый C++» команды из Остина: C++14, из которого вырезали исключения, RTTI и глобальные new/delete. Result&lt;T, E&gt; с [[nodiscard]] и единый panic() с source_location, zero frame allocations и двадцать аллокаций на кадр ценой 20-мегабайтного стека, доменная память FrameArena/StagePool/LevelHeap, переписанные OpenSSL и zlib и сторонние библиотеки в изолированных worker-процессах с watchdog — и почему время кадра покупалось временем жизни программиста.</p>
         <div class="pmeta"><span>1 октября 2026</span><span>11 мин</span></div>
@@ -84,7 +83,7 @@
     </li>
     <li>
       <a href="anatomy-of-rakes.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Анатомия граблей</h3>
         <p>Классификация хитиновых товарищей игрового движка: очепятка, которую мозг автокорректирует, off-by-one и преждевременная оптимизация, запись за границу фиксированного пула, утечки памяти и ссылок, повреждение памяти с разорванными во времени причиной и симптомом, гонки, пятничный фикс, гейзенбаги, фичебаги от Street Fighter II до распрыжки в Quake, эффект бабочки на float, спагетти-зависимости, инверсия приоритетов и плавающий dt.</p>
         <div class="pmeta"><span>6 сентября 2026</span><span>8 мин</span></div>
@@ -92,7 +91,7 @@
     </li>
     <li>
       <a href="fibonacci-enemies.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Фибоначь врагов</h3>
         <p>Строки из единиц и двоек, ранг как сумма цифр — и числа Фибоначчи, которые знали в древней Индии за тысячу лет до самого Фибоначчи. Граф Юнга-Фибоначчи, четыре правила Фомина и Стенли, и две студии, независимо пришедшие к нему при расстановке врагов: ранг строки как бюджет сегмента, градуированность вместо случайных скачков сложности, и решётка Юнга в дереве технологий.</p>
         <div class="pmeta"><span>6 сентября 2026</span><span>6 мин</span></div>
@@ -100,7 +99,7 @@
     </li>
     <li>
       <a href="play-good-not-bad.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Играй в хорошее, в плохое не играй</h3>
         <p>Пятнадцать лет в геймдеве и всё ещё нечем объяснить ребёнку, почему его игра плохая. Удержание есть в любой игре, которая вам нравилась, — от Elden Ring до тетриса, — и разница только в том, где стоит касса. Трение решает больше качества, трое в лобби кладут на лопатки и BG3, и Миядзаки, а арифметика часа контента объясняет, почему «хорошие» студии всё равно делают сервисы.</p>
         <div class="pmeta"><span>6 сентября 2026</span><span>6 мин</span></div>
@@ -108,7 +107,7 @@
     </li>
     <li>
       <a href="lemons-and-remake-economics.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Лимоны, игры и экономика ремейков</h3>
         <p>«Рынок лимонов» Акерлофа, приложенный к игровым движкам: покупателю продают не архитектуру, а демо-сцену на купленных ассетах, инженерное мнение стоит дешевле утреннего кофе, а «покупай, а не делай» собирает игру из чужих модулей, которые ничего не знают ни про вашу память, ни про вашу игру. Куда девается технологичная core competency и почему её потеря заканчивается конвейером ремейков.</p>
         <div class="pmeta"><span>5 сентября 2026</span><span>5 мин</span></div>
@@ -116,7 +115,7 @@
     </li>
     <li>
       <a href="what-consoles-gave-developers.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Что консоли подарили разработчикам</h3>
         <p>Пятьдесят лет консольных подарков разработчику: картридж Fairchild отделил игру от железа, «гонка за лучом» на Atari 2600 родила отдельную профессию, Exec на Intellivision стал первым SDK, а 10NES — лицензионной моделью. Дальше Mode 7, карта памяти, ачивки Xbox 360 и подписка вместо игры — и счёт, который за каждый подарок пришлось оплатить.</p>
         <div class="pmeta"><span>24 августа 2026</span><span>21 мин</span></div>
@@ -124,7 +123,7 @@
     </li>
     <li>
       <a href="production-has-fallen.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Продакшен пал, Милорд</h3>
         <p>Летопись падения замка Кривенгард: единый устав сигналов вводят за девять дней до осады, в подвале дремлет забытый механизм мастера Годфрида, а восьмую башню бережливый писец не внёс в реестр. Крепость, выдержавшая одиннадцать осад, пала без единого пробитого камня — и в разборе виновных не нашлось.</p>
         <div class="pmeta"><span>6 августа 2026</span><span>16 мин</span></div>
@@ -132,7 +131,7 @@
     </li>
     <li>
       <a href="english-instead-of-code.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Английский вместо кода</h3>
         <p>COBOL, SQL, 4GL, CASE, UML и No-Code обещали избавить индустрию от программистов, а каждый раз рождали новую специальность со своей зарплатной вилкой. Почему «естественный язык вместо кода» упирается в потолок: неустранимая двусмысленность, теорема Райса, дискурсивная теория репрезентации Кампа и Хайм — и парадокс Джевонса, из-за которого дешёвый код только увеличивает спрос на разработчиков.</p>
         <div class="pmeta"><span>9 августа 2026</span><span>14 мин</span></div>
@@ -140,7 +139,7 @@
     </li>
     <li>
       <a href="eastl-guide.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Путеводитель по EASTL</h3>
         <p>Вторая часть путеводителя по «чужим» стандартным библиотекам, теперь про EASTL от Electronic Arts: почему STL плохо ложится на консольный геймдев, аллокаторы-объекты с состоянием и флагами вместо привязки к типу, fixed- и intrusive-контейнеры, sorted vectors и reset() для scratch-памяти — и как многие из этих идей спустя годы доехали до стандарта: pmr, string_view, flat_map, inplace_vector и trivial relocation.</p>
         <div class="pmeta"><span>24 июля 2026</span><span>15 мин</span></div>
@@ -148,7 +147,7 @@
     </li>
     <li>
       <a href="dirty-coding-tricks-3.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Dirty Coding Tricks, part 3</h3>
         <p>Шутливое продолжение классической подборки Dirty Coding Tricks: студийные легенды и байки геймдева — батарейка вместо фикса краша в Super Time Force, фпсометр, чинящий физику в Burnout 3, невидимые белки-таймеры в Titan Quest, ядерный Ганди, психованные копы, породившие GTA, и советские калькуляторные игры.</p>
         <div class="pmeta"><span>2 августа 2026</span><span>16 мин</span></div>
@@ -156,7 +155,7 @@
     </li>
     <li>
       <a href="game-engine-phases.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Все там будем…</h3>
         <p>Любой игровой движок проходит четыре стадии — от «всё есть объект» и божественного GameObject через компоненты и конфиги к собственному скриптовому языку, и круг замыкается. Почему data-driven вовсе не неизбежен, чем архитектура отличается от дизайна систем и какой самый дорогой движок индустрии проще выбросить, чем починить.</p>
         <div class="pmeta"><span>18 июля 2026</span><span>11 мин</span></div>
@@ -164,7 +163,7 @@
     </li>
     <li>
       <a href="victims-of-clean-code.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Жертвы чистого кода</h3>
         <p>Почему сделка «10% производительности ради удобства программиста» в геймдеве бьёт и по играм, и по самим разработчикам: чистый код по Мартину как лишний слой абстракции, кеш-промахи и виртуальные вызовы против SoA, стоимость не только рантайма, но и каждой итерации, и как тормоза расползаются по циклическому графу зависимостей студии, движков и SDK.</p>
         <div class="pmeta"><span>18 июля 2026</span><span>9 мин</span></div>
@@ -172,7 +171,7 @@
     </li>
     <li>
       <a href="senior-gamedev-paths.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Куда расти синьору в игродеве</h3>
         <p>Три принципиально разных пути роста после сеньора в геймдеве: архитектор (система систем), техлид (технология и глубина) и продюсер (продукт и рынок). Цена каждого пути, гибриды и несимметричные переходы между ними, супер-продюсеры вроде Боба Котика, архетип «человек-тостер» и как понять, куда тянет именно вас.</p>
         <div class="pmeta"><span>18 июля 2026</span><span>9 мин</span></div>
@@ -180,7 +179,7 @@
     </li>
     <li>
       <a href="worst-programming-language.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Худший язык программирования всех времён /s</h3>
         <p>Почему C++ ругают: зоопарк инициализаций, врущие ключевые слова, десятки целочисленных типов, нестандартная стандартная библиотека, нечитаемые ошибки шаблонов и не-такие-уж-нулевые абстракции. И почему всё это сходится в одну точку — обратную совместимость ценой всего.</p>
         <div class="pmeta"><span>14 июля 2026</span><span>24 мин</span></div>
@@ -188,7 +187,7 @@
     </li>
     <li>
       <a href="course-new-delete.html">
-        <span class="tag gold">Курс · C++</span>
+        <span class="tag lane-cpp">Курс · C++</span>
         <h3>Что делают new и delete</h3>
         <p>Чем выражения new/delete в C++ отличаются от malloc/free: вызов конструктора и деструктора, оператор new/delete и работа с сырой памятью — с разбором ассемблера. Бесплатный урок из курса «С++ без аллокаций памяти».</p>
         <div class="pmeta"><span>25 июня 2026</span><span>3 мин</span></div>
@@ -196,7 +195,7 @@
     </li>
     <li>
       <a href="course-vtable.html">
-        <span class="tag gold">Курс · C++</span>
+        <span class="tag lane-cpp">Курс · C++</span>
         <h3>Как работает vtable</h3>
         <p>Как компилятор C++ реализует виртуальные функции: скрытый указатель vptr, таблица vtable и динамическая диспетчеризация — с ручной реализацией механизма на указателях на функции. Бесплатный урок из курса «С++ без аллокаций памяти».</p>
         <div class="pmeta"><span>25 июня 2026</span><span>5 мин</span></div>
@@ -204,7 +203,7 @@
     </li>
     <li>
       <a href="course-assoc.html">
-        <span class="tag gold">Курс · C++</span>
+        <span class="tag lane-cpp">Курс · C++</span>
         <h3>Ассоциативные контейнеры STL</h3>
         <p>Ассоциативные контейнеры STL: set, map, multiset и multimap — чем отличаются, когда ключи уникальны, а когда повторяются, с короткими примерами. Бесплатный урок из курса «С++ без аллокаций памяти».</p>
         <div class="pmeta"><span>25 июня 2026</span><span>3 мин</span></div>
@@ -212,7 +211,7 @@
     </li>
     <li>
       <a href="course-heap-stack.html">
-        <span class="tag gold">Курс · C++</span>
+        <span class="tag lane-cpp">Курс · C++</span>
         <h3>Компромиссы кучи и стека</h3>
         <p>Куча против стека: детерминированность, фрагментация, размер бинарника и потребление памяти — почему в играх и на консолях выгодно минимизировать кучу. Бесплатный урок из курса «С++ без аллокаций памяти».</p>
         <div class="pmeta"><span>25 июня 2026</span><span>6 мин</span></div>
@@ -220,7 +219,7 @@
     </li>
     <li>
       <a href="megacity-on-iphone.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Как «ужать» мегаполис до размеров iPhone 4</h3>
         <p>Инженерная изнанка мобильной SimCity BuildIt: как в EA (и питерской студии EA SPB) затолкали десктопный ситибилдер в 100–300 МБ памяти айфона — server-authoritative экономика на таймерах, «глупый» клиент-терминал, батчинг и текстурные атласы, TBDR-рендер с превью-секторами, вырезанная симуляция и пробки-спрайты, электричество через Capacity − Demand и рынок-«доска объявлений». В конце — фотки с закрытия офиса EA в 2016.</p>
         <div class="pmeta"><span>12 июля 2026</span><span>10 мин</span></div>
@@ -228,7 +227,7 @@
     </li>
     <li>
       <a href="foreign-stl-guide.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Путеводитель по чужим STL</h3>
         <p>Обзор альтернативных «стандартных» библиотек C++ из игровых студий и больших контор: EASTL и её best practices, LLVM SmallVector/DenseMap, Folly и устройство fbstring (SSO, eager copy, COW и связка с jemalloc), boost flat_map, сериализуемые контейнеры Zmeya, Stlab от Adobe и value-oriented programming — зачем каждая появилась и где об неё можно больно удариться.</p>
         <div class="pmeta"><span>6 июля 2026</span><span>12 мин</span></div>
@@ -236,7 +235,7 @@
     </li>
     <li>
       <a href="cpp101-part1.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>C++101 (Ч.1)</h3>
         <p>Каталог из ~100 идиом и приёмов C++, выросший из раздела Game++. Часть 1: ресурсы и компиляция — RAII, scope guard, copy-and-swap, smart pointer, copy-on-write, Pimpl и Fast Pimpl, interface class, include/inline/export guard, CRTP, Barton-Nackman, EBO и metafunction.</p>
         <div class="pmeta"><span>21 июня 2026</span><span>38 мин</span></div>
@@ -244,7 +243,7 @@
     </li>
     <li>
       <a href="cpp101-part2.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>C++101 (Ч.2)</h3>
         <p>Часть 2: метапрограммирование и шаблоны — traits, tag dispatching, int-to-type, type selection, SFINAE и enable-if, member detector, policy-based design, type erasure, thin template, named template parameters, expression templates и result_of, плюс именованные и вычислительные конструкторы и base-from-member.</p>
         <div class="pmeta"><span>21 июня 2026</span><span>36 мин</span></div>
@@ -252,7 +251,7 @@
     </li>
     <li>
       <a href="cpp101-part3.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>C++101 (Ч.3)</h3>
         <p>Часть 3: инициализация, полиморфизм и контейнеры — calling virtuals during init, construction tracker, NVI и thread-safe interface, acyclic visitor, covariant return types, virtual friend function, algebraic hierarchy, polymorphic value types, функторы, iterator pair, generic container, erase-remove, safe bool и attorney-client.</p>
         <div class="pmeta"><span>21 июня 2026</span><span>36 мин</span></div>
@@ -260,7 +259,7 @@
     </li>
     <li>
       <a href="cpp101-part4.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>C++101 (Ч.4)</h3>
         <p>Часть 4: дружба, память объектов и современный C++ — non-member non-friend, SOO/SSO, prohibiting heap, execute-around pointer, temporary proxy, nullptr, move constructor, boost mutant, deprecate and delete, function poisoning, rule of zero/three/five, most vexing parse, pass-key и spaceship-оператор.</p>
         <div class="pmeta"><span>21 июня 2026</span><span>38 мин</span></div>
@@ -268,7 +267,7 @@
     </li>
     <li>
       <a href="game-gui-rewritten-2.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Как игровой GUI пишут заново (Ч.2)</h3>
         <p>Продолжение: архитектура игрового UI по шести независимым осям — расположение относительно мира (diegetic / HUD / meta / spatial / narrative, от Metroid Prime и Dead Space до Spec Ops и Hellblade), функция, хранение в памяти (scene graph, flat list, immediate mode, ECS), поток данных (MVC/MVVM, reactive, unidirectional, data binding), раскладка (constraint, flexbox, anchors, RIMD) и рендер (canvas, layer, SDF, GPU-driven). Часть 2.</p>
         <div class="pmeta"><span>17 июня 2026</span><span>43 мин</span></div>
@@ -276,7 +275,7 @@
     </li>
     <li>
       <a href="game-gui-rewritten.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Почему игровой GUI пишут заново (Ч.1)</h3>
         <p>Архитектура игрового UI и почему её переписывают из проекта в проект: дерево контролов как Composite, свойства с рефлексией, развязка с игровым кодом через биндинги, шаблоны-прототипы задолго до Unity Prefab, три уровня обработчиков, хит-тест по форме, синхронные сообщения, раскладка и 9-slice, целочисленные координаты, Bridge поверх рендера, стили как CSS, боль локализации, SDF-шрифты и диегетический UI (Dead Space, Doom, Metro). Часть 1.</p>
         <div class="pmeta"><span>16 июня 2026</span><span>22 мин</span></div>
@@ -284,7 +283,7 @@
     </li>
     <li>
       <a href="random-people-in-it.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Про «случайных» людей в ИТ</h3>
         <p>Ответ на тезис «без профильного образования в IT даже не думай»: история игровой индустрии как история юристов, домохозяек, лётчиков, капельдинеров и экспортёров консервированной фасоли. От Гэри Гайгэкса и D&amp;D до Миямото, Иватани, Роберты Уильямс, Уилла Райта, Кодзимы, Молинье, Миядзаки, Нотча, Эрика Барона и Дэйви Вредена — люди без релевантного опыта, которые построили всё, во что вы играли.</p>
         <div class="pmeta"><span>14 июня 2026</span><span>5 мин</span></div>
@@ -292,7 +291,7 @@
     </li>
     <li>
       <a href="soviet-gta.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Почему советские программисты не сделали GTA</h3>
         <p>Почему страна, проектировавшая «Буран», Ту-160 и атомные ледоколы, не сделала массовую игру уровня Запада: игра как большая инженерная задача, откуда берутся талантливые разработчики, арифметика на пальцах по соцблоку, глобальный «пылесос талантов» Кремниевой долины, обзор постсоветского игродева от «Тетриса» и «Вангеров» до S.T.A.L.K.E.R., Atomic Heart и War Thunder — и почему «русский Unreal» по щелчку не сделать.</p>
         <div class="pmeta"><span>10 июня 2026</span><span>12 мин</span></div>
@@ -300,7 +299,7 @@
     </li>
     <li>
       <a href="resource-manager.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Менеджер ресурсов</h3>
         <p>Почему менеджер ресурсов — это не синглтон, а целая подсистема движка: идентичность ресурса как пара «источник + параметры», кэш на слабых ссылках с LRU, явные и неявные параметры, точечная перезагрузка и hot-reload, восстановление после device lost от пулов D3D9 до DX12/Vulkan, общая шаблонная база менеджеров и смена настроек графики без рестарта — на примерах Unreal, Unity, Source, id Tech, Godot, No Man's Sky и Cyberpunk.</p>
         <div class="pmeta"><span>8 июня 2026</span><span>28 мин</span></div>
@@ -308,7 +307,7 @@
     </li>
     <li>
       <a href="architecture-tradeoffs.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Архитектурные компромиссы в разработке игр</h3>
         <p>Большой разбор архитектурных паттернов и компромиссов в геймдеве: слои, метаслои, подсистемы, конвейер, микроядро и blackboard на примерах Source, CryEngine, Unreal, id Tech и Naughty Dog; стратегии проектирования (top-down/bottom-up/constant refactoring), ось push vs pull, скриптовые языки и переосмысление GoF в современном игровом C++.</p>
         <div class="pmeta"><span>3 июня 2026</span><span>106 мин</span></div>
@@ -316,7 +315,7 @@
     </li>
     <li>
       <a href="three-in-a-boat.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Трое в лодке, нищета и собаки (с)</h3>
         <p>Честный взгляд на состояние игровой индустрии в 2026-м: инди на энтузиазме и опционах, сервисные проекты-казино, ремастеры ремастеров, миграция разработчиков в «дочерние структуры» ради зарплаты и профессия геймдева как искусство договариваться с самим собой — где мы все в одной дырявой лодке.</p>
         <div class="pmeta"><span>27 мая 2026</span><span>7 мин</span></div>
@@ -324,7 +323,7 @@
     </li>
     <li>
       <a href="disobedient-using.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Непослушный using</h3>
         <p>Почему using namespace и ADL делают поиск имён в C++ непредсказуемым: argument-dependent lookup и operator&lt;&lt;, перехват std локальной подменой, проверка пригодности функции (function viability), ранги неявных преобразований и почему =delete-функции участвуют в overload resolution как полноценные кандидаты.</p>
         <div class="pmeta"><span>20 мая 2026</span><span>12 мин</span></div>
@@ -332,7 +331,7 @@
     </li>
     <li>
       <a href="10x-programmers.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Про 10x программистов</h3>
         <p>Существуют ли 10x программисты или это миф стартаперов и мечта менеджеров: пять реальных типов «быстрых» разработчиков — человек, сросшийся с проектом, тот, кто пишет меньше кода, DoItProperlyMan, узкая экспертиза и миф про фокус — и почему 10x всегда про накопленный контекст, а не про врождённый коэффициент.</p>
         <div class="pmeta"><span>12 мая 2026</span><span>6 мин</span></div>
@@ -340,7 +339,7 @@
     </li>
     <li>
       <a href="console-memory.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Как работают с памятью в игровых консолях</h3>
         <p>История архитектуры памяти игровых консолей от Atari 2600 до PS5 и Xbox Series: счёт тактов и бланки, дележ шины и DMA, быстрая-но-медленная RDRAM на N64, тайловый рендер Dreamcast, три острова памяти PS2, SPU и Local Store на PS3, унификация памяти на PS4 и SSD как новый уровень иерархии памяти.</p>
         <div class="pmeta"><span>5 мая 2026</span><span>22 мин</span></div>
@@ -348,7 +347,7 @@
     </li>
     <li>
       <a href="dream-portfolio-second-job.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Как не перепутать мечту, портфолио и вторую работу</h3>
         <p>Про пет-проекты в геймдеве: почему «проект на пару вечеров» превращается в годы жизни, чем обучение отличается от написания своего движка, почему маленькая библиотека выживает чаще амбициозного комбайна, цена C++ для хобби-проектов и как open-source незаметно становится второй работой.</p>
         <div class="pmeta"><span>28 апреля 2026</span><span>7 мин</span></div>
@@ -356,7 +355,7 @@
     </li>
     <li>
       <a href="simple-name-lookup.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Простой поиск имён в C++</h3>
         <p>Простой (неквалифицированный) и квалифицированный поиск имён в C++: почему пространство имён и локальная переменная с одним именем сосуществуют, скрытие имён и целых перегрузок при наследовании, неоднозначность ромбовидного наследования, правило using namespace при квалифицированном поиске и исторические различия GCC, Clang и MSVC.</p>
         <div class="pmeta"><span>22 апреля 2026</span><span>11 мин</span></div>
@@ -364,7 +363,7 @@
     </li>
     <li>
       <a href="compilers-confused-names.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Компиляторы тоже путаются в именах</h3>
         <p>Поиск имён в C++: идентификаторы, unqualified-id, qualified-id, template-id и «терминальное имя», история ADL (Koenig lookup) от проблемы с пространствами имён до решения Кёнига, двухфазный поиск в шаблонах и почему GCC, Clang и MSVC исторически вели себя по-разному.</p>
         <div class="pmeta"><span>14 апреля 2026</span><span>10 мин</span></div>
@@ -372,7 +371,7 @@
     </li>
     <li>
       <a href="redundant-computations.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Лишние вычисления</h3>
         <p>Как спекулятивное выполнение и предсказание ветвлений взаимодействуют с подсистемой памяти: почему branchless-код не всегда быстрее, цена ошибки предсказания против задержек памяти, история от Томасуло до Pentium Pro, бинарный поиск и бенчмарки на Jaguar (PS4).</p>
         <div class="pmeta"><span>6 апреля 2026</span><span>12 мин</span></div>
@@ -380,7 +379,7 @@
     </li>
     <li>
       <a href="pragmatic-generalizations-2.html">
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Обобщения в C++ (часть 2)</h3>
         <p>Продолжение главы 1 PragmatiC++: идентичность и равенство объектов, процедуры и стек вызовов, соглашения о вызовах и категории in/out/in-out, вычислительная база от ENIAC до AMX и регулярность типов как практическое руководство по проектированию предсказуемых абстракций.</p>
         <div class="pmeta"><span>18 марта 2026</span><span>26 мин</span></div>
@@ -388,7 +387,7 @@
     </li>
     <li>
       <a href="why-no-l5-cache.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Почему у нас нет кешей L5?</h3>
         <p>Почему в процессоре несколько уровней кэша, а не один большой: физика сигнала на кристалле, аналогия с ёлочными игрушками, история от i486 до Nehalem, зачем разделять L1I и L1D, протоколы когерентности (MSI/MESI/MOESI…), eDRAM и HBM как «скрытый» L4 и почему L5 пока не имеет смысла.</p>
         <div class="pmeta"><span>11 марта 2026</span><span>13 мин</span></div>
@@ -396,7 +395,7 @@
     </li>
     <li>
       <a href="joy-of-programming.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>О радости программирования и невесомости достижений</h3>
         <p>Размышление разработчика, заставшего эпоху, когда код писали руками без ИИ-помощников: почему достижение, добытое слишком легко, кажется невесомым, как иишка убирает «полезное трение» и состояние потока, и в чём может быть новое мастерство программиста — в архитектуре и глубине решений, а не в скорости набора кода.</p>
         <div class="pmeta"><span>5 марта 2026</span><span>8 мин</span></div>
@@ -404,7 +403,7 @@
     </li>
     <li>
       <a href="writing-a-book-about-code.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Писать код проще, чем книгу о том, как писать код</h3>
         <p>Как из цикла статей Game++ на Хабре выросла книга о прагматичном C++ и разработке движков: что такое «хороший» C++, люди, которые помогли книге случиться, редактура как отдельное ремесло и большой блок ответов на частые вопросы о написании и издании.</p>
         <div class="pmeta"><span>22 февраля 2026</span><span>4 мин</span></div>
@@ -412,7 +411,7 @@
     </li>
     <li>
       <a href="red-fps-hunt.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Охота за красным fps</h3>
         <p>Профилирование игр как философия разработки: эволюция требований к FPS, как контент художников бьёт по перфу (геометрия, текстуры, рендер, кулинг), методы профилирования — сэмплирование, инструментирование, трассировка, event-based, статический анализ и реплеи — и устройство трассирующего профайлера с zero-allocation архитектурой и строками-хендлами.</p>
         <div class="pmeta"><span>19 февраля 2026</span><span>25 мин</span></div>
@@ -420,7 +419,7 @@
     </li>
     <li>
       <a href="university-doesnt-train-programmers.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Почему универ не готовит программистов</h3>
         <p>Почему классическое университетское образование не делает из студентов программистов: преподаватели без реального опыта, замкнутый круг зарплат, программирование как практический навык вроде игры на гитаре, менторство в студиях и почему программистами становятся через самообучение.</p>
         <div class="pmeta"><span>30 января 2026</span><span>8 мин</span></div>
@@ -428,7 +427,7 @@
     </li>
     <li>
       <a href="dont-panic-aa-gamedev.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Не паникуй, ты просто попал в AA+ игрострой</h3>
         <p>Как не паниковать, попав в большую AA+ студию с кодовой базой на миллионы строк: ориентирование в чужом легаси, системы сборки, почему сеньоры не помнят код наизусть, поиск по видимым пользователю строкам, история git, кодстайл и почему исходник — последняя инстанция истины.</p>
         <div class="pmeta"><span>3 декабря 2025</span><span>10 мин</span></div>
@@ -436,7 +435,7 @@
     </li>
     <li>
       <a href="gamedev-myths.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Мифы, суеверия и народные мудрости в разработке игр</h3>
         <p>Разбор 12 распространённых «истин» геймдева на C++ — где миф, где суеверие, а где народная мудрость: культ чистого C, «плохой хороший билд», цена исключений и RTTI, умные указатели и STL-контейнеры, полиморфизм, inline-ассемблер, template bloat, преждевременная оптимизация и проклятье пятничного коммита.</p>
         <div class="pmeta"><span>24 ноября 2025</span><span>23 мин</span></div>
@@ -444,7 +443,7 @@
     </li>
     <li>
       <a href="string-zoo.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Зоопарк строк в вашем C++ коде?</h3>
         <p>Большой обзор строковых типов C++ как зоопарка зверей: char* и char[N], строковые литералы, std::string и SSO, string_view, pmr::string, QString, NSString, std::wstring, frame-строки, FString из Unreal, StringAtom и интернирование, COW-строки и StringID на хеше — и где какой тип уместен в игровых движках.</p>
         <div class="pmeta"><span>20 ноября 2025</span><span>26 мин</span></div>
@@ -452,7 +451,7 @@
     </li>
     <li>
       <a href="good-bad-colored-fast.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Хороший, плохой, цветной и быстрый</h3>
         <p>Ненормальные аллокаторы памяти из практики: аллокатор с отслеживанием времени жизни объектов для поиска утечек, рандомизирующий (chaos) аллокатор для стресс-теста долгоживущих систем, «цветной» аллокатор для изоляции подсистем (на примере Deathloop) и быстрый TLSF — с диаграммами и бенчмарком по циклам процессора.</p>
         <div class="pmeta"><span>10 октября 2025</span><span>13 мин</span></div>
@@ -460,7 +459,7 @@
     </li>
     <li>
       <a href="be-your-own-breakpoint.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Сам себе breakpoint</h3>
         <p>Как устроены программные и аппаратные точки останова: подмена байта на int 3 (0xCC), отладочные регистры x86-64 DR0–DR7 и формат DR7, условные, функциональные и временные бряки, watchpoint на запись через GetThreadContext, «буферная канарейка» и кнопка hardware breakpoint прямо в редакторе игры на ImGui.</p>
         <div class="pmeta"><span>6 октября 2025</span><span>15 мин</span></div>
@@ -468,7 +467,7 @@
     </li>
     <li>
       <a href="why-pharaoh-best.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Почему Фараон остаётся лучшей игрой в серии</h3>
         <p>Почему оригинальный Pharaoh (1999) глубже Zeus и ремейка A New Era: распределение рабочих через рекрутёров против глобального пула, налоги бедных домов, структура миссий, 20 уровней жилья и логика миграции, «египетская тупость» случайных поворотов ходоков — с кодом, восстановленным в ремейке Akhenaten.</p>
         <div class="pmeta"><span>26 сентября 2025</span><span>14 мин</span></div>
@@ -476,7 +475,7 @@
     </li>
     <li>
       <a href="reject-heap-commits.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Я отклоняю комиты с использованием кучи и прошу коллег переписать такую логику</h3>
         <p>Опыт разработки больших игр на C++ без кучи: почему динамические аллокации опасны на консолях и мобилках (фрагментация, деградация времени malloc, отказ в сертификации), и чем их заменить — контейнеры фиксированного размера gtl::vector&lt;T,N&gt;, etl/FastDelegate вместо std::function, CRTP и статический полиморфизм на std::variant, пулы объектов и placement new.</p>
         <div class="pmeta"><span>17 сентября 2025</span><span>11 мин</span></div>
@@ -484,7 +483,7 @@
     </li>
     <li>
       <a href="blackbox-gameplay.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Blackbox gameplay</h3>
         <p>Black box gameplay в стратегиях и ситибилдерах: зачем серии Caesar/Pharaoh/Zeus прятали числа и механики, песочница против заскриптованных миссий, когнитивный предел в 12 пар, комбинаторика механик важнее количества контента и почему «нарушенный» баланс держит игроков годами — на примере Age of Empires II.</p>
         <div class="pmeta"><span>31 мая 2025</span><span>12 мин</span></div>
@@ -492,7 +491,7 @@
     </li>
     <li>
       <a href="performance-traps.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Performance traps</h3>
         <p>Финал серии Game++: типичные ловушки производительности C++ — лишние аллокации, коварный RVO, тяжёлый std::function, дорогие строковые идентификаторы, приближённый синус, медленное деление, цена промахов кеша, std::pair/tuple и расплата за виртуальность — с бенчмарками quick-bench и историями из прода.</p>
         <div class="pmeta"><span>29 мая 2025</span><span>18 мин</span></div>
@@ -500,7 +499,7 @@
     </li>
     <li>
       <a href="pharaoh-house-evolution.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Механика эволюции домов в Pharaoh (1999)</h3>
         <p>Как устроена эволюция домов в Pharaoh (1999): дома как FSM, система потребностей и атрибутов (желательность земли, налоги, пожарная безопасность, здоровье), оверлеи, восстановленный из оригинала switch эволюции, потребление еды и ресурсов, общий буфер runtime_data и обновление текстур — на примере ремейка Akhenaten.</p>
         <div class="pmeta"><span>24 мая 2025</span><span>13 мин</span></div>
@@ -508,7 +507,7 @@
     </li>
     <li>
       <a href="while-game-over.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. while (!game(over))</h3>
         <p>Стоит ли писать свой игровой движок: зачем и надо ли, что такое движок и что он умеет — игровой цикл, ввод, графика, ассеты, аудио, физика, скрипты и конфиги, сеть, AI, UI и архитектура (библиотечный подход, GodObject, ECS), плюс тулзы — с кодом, ссылками на библиотеки и личным опытом.</p>
         <div class="pmeta"><span>6 мая 2025</span><span>35 мин</span></div>
@@ -516,7 +515,7 @@
     </li>
     <li>
       <a href="patching-patterns.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Patching patterns</h3>
         <p>Паттерны проектирования в играх: что осталось от «синей книги» GoF и какие шаблоны прижились именно в игрострое — Command, State и FSM с pushdown-стеком, Flyweight и instancing, Observer и EventBus, Dirty Flag, Update Layers и GOAP — с кодом, схемами и областями применения.</p>
         <div class="pmeta"><span>29 апреля 2025</span><span>30 мин</span></div>
@@ -524,7 +523,7 @@
     </li>
     <li>
       <a href="just-write-code.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Просто пиши код</h3>
         <p>Манифест в духе «просто пиши код»: пока остальные спорят на митинге, в какую борду переместить таску, ни одна Jira не напишет багфикс. О работающем говнокоде, обесценившихся лычках, литкоде на собесах и о том, что если ошибок нет — значит ты просто не писал код.</p>
         <div class="pmeta"><span>24 апреля 2025</span><span>5 мин</span></div>
@@ -532,7 +531,7 @@
     </li>
     <li>
       <a href="work-hard.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Work hard</h3>
         <p>Модели параллелизма в игровых движках: shared/separate/shadow state, воркеры и пул потоков, stateless-воркеры (Assassin's Creed, Factorio), цепочки воркеров и неблокирующий IO, файберы Naughty Dog и библиотека marl — с диаграммами, кодом и бенчмарками загрузки.</p>
         <div class="pmeta"><span>14 апреля 2025</span><span>16 мин</span></div>
@@ -540,7 +539,7 @@
     </li>
     <li>
       <a href="things-game-programmer-should-know.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Пара вещей, которые должен знать игровой программист</h3>
         <p>Сборник саркастичных «законов» игровой разработки: про std::move, undefined behavior, GameObject и ECS, cert submission и TRC, гейзенбаги, техдолг, // TODO и //TMP, менеджеров, художников и пятничные патчи — горькая правда геймдева одной строкой.</p>
         <div class="pmeta"><span>5 апреля 2025</span><span>6 мин</span></div>
@@ -548,7 +547,7 @@
     </li>
     <li>
       <a href="heap-less.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Heap? Less</h3>
         <p>Как в играх избавляются от аллокаций в куче: пять областей памяти, стек против кучи, детерминизм и фрагментация, RVO/NRVO, локальные inplace-строки и pmr::string, ad-hoc полиморфизм на std::variant, и реальные оптимизации vector/map/string через monotonic_buffer_resource и профайлер.</p>
         <div class="pmeta"><span>3 апреля 2025</span><span>20 мин</span></div>
@@ -556,7 +555,7 @@
     </li>
     <li>
       <a href="why-gamedev-stays-cpp17.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Почему игродев остаётся на C++17</h3>
         <p>Почему игровые студии не спешат с C++20 и остаются на C++17: auto и +10-15% к времени компиляции, лучший в мире отладчик Visual Studio, экономика билдферм и тулов, недоверие к STL и Boost в игрострое, отсутствие автотестов и немасштабируемость отладки.</p>
         <div class="pmeta"><span>26 марта 2025</span><span>14 мин</span></div>
@@ -564,7 +563,7 @@
     </li>
     <li>
       <a href="unpacking-containers.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Unpacking containers</h3>
         <p>Специализированные контейнеры в игровых движках: fixed array и матрицы, linear/stable/sparse/packed/static/small/dirty/buddy vector, deque и bcdeque, bounded_priority_deque, intrusive list, octree и quadtree, object_pool, ring buffer, cached_hashtable, handle_container и slot_container — устройство, схемы и области применения.</p>
         <div class="pmeta"><span>19 марта 2025</span><span>40 мин</span></div>
@@ -572,7 +571,7 @@
     </li>
     <li>
       <a href="building-arcs.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Game++. Building arcs</h3>
         <p>Архитектуры игровых движков и закон Конвея: унитарная (Big Ball of Mud) у Unity, многоуровневая в Unreal Engine, микроядерная в CryEngine и O3DE, data-driven в Dagor, монолитная в X-Ray и микромодульная в Godot — история, плюсы и минусы каждого подхода.</p>
         <div class="pmeta"><span>28 февраля 2025</span><span>24 мин</span></div>
@@ -580,7 +579,7 @@
     </li>
     <li>
       <a href="ready-player-one.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Первому игроку приготовиться</h3>
         <p>История видеоигр: от аркадных автоматов и мейнфреймовых игр до Computer Space, Atari и Pong, Galaxian и Pac-Man, Donkey Kong, рождения консолей, Atari 2600, краха рынка 1983-го, Nintendo, Sega и эпохи ПК.</p>
         <div class="pmeta"><span>20 февраля 2025</span><span>40 мин</span></div>
@@ -588,7 +587,7 @@
     </li>
     <li>
       <a href="run-thread-run.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. run, thread, run…</h3>
         <p>Многопоточность в играх: проблемы блокировок (deadlock, голодание потоков, инверсия приоритетов на примере Cyberpunk 2077 и Crysis), модель памяти C++11, lock-free и атомики, спинлоки с backoff, пул потоков и система задач, hitching, read-write mutex и 8 правил хорошей многопоточности.</p>
         <div class="pmeta"><span>17 февраля 2025</span><span>33 мин</span></div>
@@ -596,7 +595,7 @@
     </li>
     <li>
       <a href="juggling-stl-algorithms.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Game++. Juggling STL algorithms</h3>
         <p>Почему алгоритмы STL — это «разговорный» C++: они показывают Что вы делаете, а не Как; убирают ошибки границ, пустых коллекций и «размазанного перфа», дают код уровня компилятора. История EASTL, итераторы и back_inserter, кеширование шейдеров через set_difference и большая шпаргалка по алгоритмам.</p>
         <div class="pmeta"><span>9 февраля 2025</span><span>29 мин</span></div>
@@ -604,7 +603,7 @@
     </li>
     <li>
       <a href="dancing-with-allocators.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Dancing with allocators</h3>
         <p>Большой разбор аллокаторов памяти в играх: linear, step-back, frame/double/N-frame, stack и double-stack, pool, free list, arena, segregated, buddy, thread-cache, fibonacci, compacting, hot/cold splitting и TLSF — с кодом, схемами, областями применения и бенчмарком.</p>
         <div class="pmeta"><span>30 января 2025</span><span>34 мин</span></div>
@@ -612,7 +611,7 @@
     </li>
     <li>
       <a href="pharaoh-demo-vs-retail.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Добро пожаловать в Древний…</h3>
         <p>Pharaoh (1999): почему ситибилдер не запускается на Windows 10/11 (баг 640×480, масштабирование, оверлеи, стук в мёртвый сервис Microsoft, звук) и чем демка отличается от релиза — экраны, меню, текстуры из Caesar III, разливы Нила, каналы орошения и вырезанный контент. На примере ремейка Akhenaten.</p>
         <div class="pmeta"><span>22 января 2025</span><span>12 мин</span></div>
@@ -620,7 +619,7 @@
     </li>
     <li>
       <a href="cooking-vectors.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. Cooking vectors</h3>
         <p>Как устроены векторы в движках и чем за них платят: рост ёмкости и фрагментация памяти, одномерная против каскадной композиции, std::array, static_vector на стеке, hybrid_vector с SSO-подобной оптимизацией и подводные камни pmr-аллокаторов и monotonic_buffer_resource у вендоров.</p>
         <div class="pmeta"><span>15 января 2025</span><span>12 мин</span></div>
@@ -628,7 +627,7 @@
     </li>
     <li>
       <a href="string-interning.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Game++. String interning</h3>
         <p>String interning (пул строк) в игровых движках: одна копия строки на все ссылки, интернирование литералов компилятором в clang/GCC и почему трюк ломается на Xbox, опасность сравнения через ==, борьба с фрагментацией памяти и простая реализация xstring на хешах с подсчётом ссылок.</p>
         <div class="pmeta"><span>13 января 2025</span><span>9 мин</span></div>
@@ -636,7 +635,7 @@
     </li>
     <li>
       <a href="all-programmers-are-seniors.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>В Испании все программисты сеньоры</h3>
         <p>Чем отличается работа в западных gamedev-студиях от ру-команд: культура «стукачества», запрет трогать чужие задачи, вся связь через ПМа, чрезмерная вежливость, уважение через решённые таски, национальные особенности команд, контекстное против детального общения и слова-якоря.</p>
         <div class="pmeta"><span>26 декабря 2024</span><span>14 мин</span></div>
@@ -644,7 +643,7 @@
     </li>
     <li>
       <a href="fit-elephant-in-suitcase.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Как засунуть слона в чемодан</h3>
         <p>Уровни оптимизации при портировании игр на слабое железо (Switch, Apple TV, мобилки): архитектура, алгоритмы и код. История про дорогую проверку экранирования строк — от наивного цикла с ранним выходом к версии без ветвлений, lookup-таблице и SIMD на _mm_movemask_epi8, с таблицами времени загрузки на iPhone.</p>
         <div class="pmeta"><span>21 декабря 2024</span><span>10 мин</span></div>
@@ -652,7 +651,7 @@
     </li>
     <li>
       <a href="spears-and-bits.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Spears &amp; bits</h3>
         <p>Упаковка булевых значений в биты в играх: std::bitset, std::vector&lt;bool&gt;, наивный байтовый массив и решение из CryEngine, бенчмарки с выбросами на 32/64/128, промахи предсказателя переходов и финальная SSE-векторизация на _mm_movemask_epi8 — с 4 мс до 1 мс на кадр.</p>
         <div class="pmeta"><span>17 декабря 2024</span><span>15 мин</span></div>
@@ -660,7 +659,7 @@
     </li>
     <li>
       <a href="task-based-game-engines.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Task-based мышление в игровых движках</h3>
         <p>Основные шаблоны системы задач в игровых движках: вынос movement, физики, скриптов, поиска пути, анимаций, рендеринга и ввода-вывода в отдельные потоки, группировка задач, обмен сообщениями и сравнение простой задачи, менеджера потоков и менеджера задач.</p>
         <div class="pmeta"><span>28 ноября 2024</span><span>16 мин</span></div>
@@ -668,7 +667,7 @@
     </li>
     <li>
       <a href="ai-books-for-gamedev.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Хорошие книги для gamedev AI программиста</h3>
         <p>Подборка книг для программиста игрового ИИ с личными отзывами: AI for Game Developers, Game AI Pro, Game Engine Gems, The Pyramid of Game Design, Behavioral Mathematics for Game AI и AI Game Programming Wisdom — что и как читать.</p>
         <div class="pmeta"><span>18 ноября 2024</span><span>8 мин</span></div>
@@ -676,7 +675,7 @@
     </li>
     <li>
       <a href="heavy-header.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Тяжёлый H[header]</h3>
         <p>Как время полной сборки большого C++-проекта снижали с 15:32 до 5:16: антивирус и проводник, тяжёлые шаблонные хедеры, forward declaration, precompiled headers, PIMPL и отключение анализаторов, юнит-тестов и LTO — с таблицами времени сборки заголовков.</p>
         <div class="pmeta"><span>10 ноября 2024</span><span>14 мин</span></div>
@@ -684,7 +683,7 @@
     </li>
     <li>
       <a href="486-enough-for-everyone.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>486-го хватит всем</h3>
         <p>Какие общие технологии появились в процессорах со времён 486, которыми мы пользуемся каждый день: кэши и предвыборка, TLB, спекулятивное выполнение, NUMA, SIMD, out-of-order, GPGPU и предсказание переходов — с примерами из консолей и бенчмарками.</p>
         <div class="pmeta"><span>6 ноября 2024</span><span>13 мин</span></div>
@@ -692,7 +691,7 @@
     </li>
     <li>
       <a href="unity-cow-strings.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Как Unity отказались от своих строк</h3>
         <p>История COW-строк в Unity: copy-on-write с частичным копированием буфера и почти нулевыми аллокациями, конфликт с дизайном <code>std::string</code>, висячие указатели и почему движок в итоге вернулся к стандартной библиотеке.</p>
         <div class="pmeta"><span>29 октября 2024</span><span>7 мин</span></div>
@@ -700,7 +699,7 @@
     </li>
     <li>
       <a href="pharaoh-engine-tricks.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>ecs, dynvtbl, логические потоки и Фараон</h3>
         <p>Кодоархеология движка Pharaoh и Caesar III: древнеегипетский ECS на массивах, VMT на минималках через колбеки, логические потоки из прошлого века и god object ради экономии памяти.</p>
         <div class="pmeta"><span>8 октября 2024</span><span>2 мин</span></div>
@@ -708,7 +707,7 @@
     </li>
     <li>
       <a href="boss-its-all-gone.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Шеф, всё пропало</h3>
         <p>Продолжение «Феди, дичи»: 16 пятничных багов из реальных движков и игр — выход за границы массива, утечки дескрипторов на Switch, <code>memset</code> по нетривиальному типу, <code>=!</code> вместо <code>!=</code> и <code>alloca</code> в цикле. Угадай причину.</p>
         <div class="pmeta"><span>7 октября 2024</span><span>12 мин</span></div>
@@ -716,7 +715,7 @@
     </li>
     <li>
       <a href="do-not-copy.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Просто не копируй это</h3>
         <p>Передача по значению против <code>const&amp;</code>, скрытые аллокации на строках и векторах, <code>reserve</code> и реальная просадка до 10 FPS — всё с бенчмарками на QuickBench.</p>
         <div class="pmeta"><span>30 сентября 2024</span><span>5 мин</span></div>
@@ -724,7 +723,7 @@
     </li>
     <li>
       <a href="strings-in-engines.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Строки в игровых движках</h3>
         <p>Почему <code>std::string</code> не любят в движках: C-строки и NTBS, SSO и string_view, sized/pool/arena-строки, shared string и идентификаторы, а ещё SIMD-парсинг конфигов.</p>
         <div class="pmeta"><span>5 сентября 2024</span><span>15 мин</span></div>
@@ -732,7 +731,7 @@
     </li>
     <li>
       <a href="catch-the-paying-player.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Ловись игрок, платящий и не очень…</h3>
         <p>Тёмные паттерны монетизации в играх: дейлики, премиум-валюта, лутбоксы, power creep, time gates и комплексный фреймворк MINDSPACE — как студии играют на психологии игрока.</p>
         <div class="pmeta"><span>15 августа 2024</span><span>16 мин</span></div>
@@ -740,7 +739,7 @@
     </li>
     <li>
       <a href="bioshock-infinite-lessons.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Чему стоит поучиться у старенькой Bioshock: Infinite?</h3>
         <p>Уроки геймдизайна из BioShock: Infinite: принцип наглядности, фиксированный и эмергентный нарратив, иллюзия выбора и многослойное повествование Кена Левина — и почему линейный шутер ломает пятую стену.</p>
         <div class="pmeta"><span>24 июля 2024</span><span>8 мин</span></div>
@@ -748,7 +747,7 @@
     </li>
     <li>
       <a href="twenty-cores-not-enough.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>И целых 20 ядер мало</h3>
         <p>Одиннадцать приёмов оптимизации C++ из боевых движков: разогрев кэша, compile-time диспетчеризация, разворачивание циклов, согласование знаков и типов, hotpath, SIMD, prefetch, constexpr и lock-free — с бенчмарками и историями из жизни.</p>
         <div class="pmeta"><span>18 июля 2024</span><span>27 мин</span></div>
@@ -756,7 +755,7 @@
     </li>
     <li>
       <a href="fistful-of-achievements.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>За пригоршню ачивок</h3>
         <p>Психология коллекционных механик в играх: доминирование, социализация, эффект недостроя и зависть, типы коллекций по доступности, ачивки и экипировка как коллекции.</p>
         <div class="pmeta"><span>28 июня 2024</span><span>8 мин</span></div>
@@ -764,7 +763,7 @@
     </li>
     <li>
       <a href="last-of-deus-ex.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Последний из Deus Ex</h3>
         <p>Разбор уровней Deus Ex: Mankind Divided — движок Dawn Engine, чёрно-золотой визуальный стиль, внимание к деталям, вариативность против сюжета и комбинаторика механик immersive sim.</p>
         <div class="pmeta"><span>23 июня 2024</span><span>12 мин</span></div>
@@ -772,7 +771,7 @@
     </li>
     <li>
       <a href="corridors-tell-no-tales.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Коридоры не рассказывают сказки</h3>
         <p>Как архитектура и левел-дизайн рассказывают историю на примере BioShock: коридоры и тени, визуальные магниты, frozen story, геометрия под особенности врагов и немного фэн-шуй.</p>
         <div class="pmeta"><span>9 мая 2024</span><span>12 мин</span></div>
@@ -780,7 +779,7 @@
     </li>
     <li>
       <a href="miss-old-game-mechanics.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Я скучаю по механикам из старых игр</h3>
         <p>Побурчать про потерянные механики старых игр: чёткие цели, системный дизайн, behavior-base уровни, уровень врагов, обучение через взаимодействие, награду и наказание, карму и невидимые стены.</p>
         <div class="pmeta"><span>21 апреля 2024</span><span>15 мин</span></div>
@@ -788,7 +787,7 @@
     </li>
     <li>
       <a href="red-barrel-problem.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Проблема красной бочки</h3>
         <p>Что такое «красная бочка» в геймдизайне: как взрывающиеся бочки стали клише шутеров и почему унаследованные механики обрастают вопросами, а игроки ими в итоге не пользуются.</p>
         <div class="pmeta"><span>27 марта 2024</span><span>4 мин</span></div>
@@ -796,7 +795,7 @@
     </li>
     <li>
       <a href="cpp-in-gamedev.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Каков C++ в gamedev'е?</h3>
         <p>Почему gamedev намертво прикован к C++ и как язык живёт в движке на трёх уровнях: hardcore-числодробилки, «обычный» C++ со скриптами и хотрелоадом, и мета-уровень с рефлексией и кодогенерацией.</p>
         <div class="pmeta"><span>25 февраля 2024</span><span>11 мин</span></div>
@@ -804,7 +803,7 @@
     </li>
     <li>
       <a href="what-else-to-read-game-programmer.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Что ещё почитать игровому программисту?</h3>
         <p>Продолжение списка: Joel on Software, «Кровь, пот и пиксели», исходники Doom 3, MISRA C++, EASTL, daScript, доклады GDC и блоги, которые стоит читать.</p>
         <div class="pmeta"><span>15 февраля 2024</span><span>6 мин</span></div>
@@ -812,7 +811,7 @@
     </li>
     <li>
       <a href="what-to-read-game-programmer.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Что почитать игровому программисту?</h3>
         <p>Список книг, блогов и репозиториев для игрового программиста: от Code Complete и Effective C++ до Game Engine Architecture, Game AI Pro, GDC и awesome-подборок на GitHub.</p>
         <div class="pmeta"><span>11 февраля 2024</span><span>6 мин</span></div>
@@ -820,7 +819,7 @@
     </li>
     <li>
       <a href="need-own-game-engine.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Вам [не] нужен свой игровой движок</h3>
         <p>Зачем студиям и инди собственный движок вместо Unreal/Unity: дорого ли это, сложно ли, опыт с Frostbite, Unity и Dagor — и почему уникальные технологии двигают индустрию.</p>
         <div class="pmeta"><span>24 декабря 2023</span><span>15 мин</span></div>
@@ -828,7 +827,7 @@
     </li>
     <li>
       <a href="swizzle-cpp.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Магия swizzle из шейдеров в C++</h3>
         <p>Как реализовать swizzle (vec.xxy, vec.zx, vec.rgb) в C++ через union и шаблоны: от первой версии с копипастой до единого constexpr-решения, баг с default operator= и бенчмарки против glm и CxxSwizzle.</p>
         <div class="pmeta"><span>10 декабря 2023</span><span>9 мин</span></div>
@@ -836,7 +835,7 @@
     </li>
     <li>
       <a href="gamedev-programmer.html">
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Вы точно хотите пойти программистом в gamedev?</h3>
         <p>Честный взгляд изнутри: чем заняты программисты в геймдеве, собеседования, переработки, движки и их школы, традиции студий, дизайнеры — и почему это всё-таки того стоит.</p>
         <div class="pmeta"><span>19 ноября 2023</span><span>12 мин</span></div>
@@ -844,7 +843,7 @@
     </li>
     <li>
       <a href="not-unity-alone.html">
-        <span class="tag">Инструменты</span>
+        <span class="tag lane-cpp">Инструменты</span>
         <h3>Не Unity единым…</h3>
         <p>Обзор более 50 игровых движков и фреймворков, кроме Unity: от nCine, RayLib и SDL2 до Godot, CryEngine, Unreal и DagorEngine — ссылки, языки, лицензии и личный опыт.</p>
         <div class="pmeta"><span>4 ноября 2023</span><span>15 мин</span></div>
@@ -852,7 +851,7 @@
     </li>
     <li>
       <a href="cover-generation.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Процедурная генерация укрытий в играх</h3>
         <p>Как автоматически генерировать точки укрытий для NPC по геометрии уровня: обход краёв навмеша, рейпики, отбраковка точек и cover evaluation в рантайме. На примере 4A Engine.</p>
         <div class="pmeta"><span>24 октября 2023</span><span>8 мин</span></div>
@@ -860,7 +859,7 @@
     </li>
     <li>
       <a href="pharaoh-map-rendering.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Как рисуется карта в Фараоне</h3>
         <p>Алгоритм отрисовки изометрической карты, города и анимации в Pharaoh: diagonal-path и zig-zag, сортировка по глубине, слои и формат карты оригинала.</p>
         <div class="pmeta"><span>17 октября 2023</span><span>10 мин</span></div>
@@ -868,7 +867,7 @@
     </li>
     <li>
       <a href="where-are-your-bugs.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Федя, дичь</h3>
         <p>Коллекция диких багов из реальных движков: пропущенная точка с запятой в Unity, <code>memset</code>, выкинутый компилятором, гонки на битовых полях в CryEngine, most vexing parse и ещё десяток — найди ошибку сам.</p>
         <div class="pmeta"><span>30 сентября 2023</span><span>8 мин</span></div>
@@ -876,7 +875,7 @@
     </li>
     <li>
       <a href="private-but-want-public.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Когда private, но очень хочется public</h3>
         <p>Как тестировать приватные члены C++-класса без правки хедеров: от 100+ friend-ов и #define private public до шаблонного хака с подменой типа.</p>
         <div class="pmeta"><span>21 сентября 2023</span><span>8 мин</span></div>
@@ -884,7 +883,7 @@
     </li>
     <li>
       <a href="switch-sdk-three-sin.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Зачем в Switch SDK три разных sin?</h3>
         <p>Как при портировании игр на Nintendo Switch обнаружились три реализации sin — и что показал дизасм для -O1, -O3 -math:precise и -O3 -math:fast.</p>
         <div class="pmeta"><span>11 июня 2023</span><span>8 мин</span></div>
@@ -892,7 +891,7 @@
     </li>
     <li>
       <a href="enum-name-runtime.html">
-        <span class="tag">Ненормальное программирование</span>
+        <span class="tag lane-abn">Ненормальное программирование</span>
         <h3>Имя enum'a C++ в рантайме</h3>
         <p>Как достать имя типа и значения enum'а в рантайме на C++ без RTTI — через __PRETTY_FUNCTION__, шаблоны и constexpr-магию.</p>
         <div class="pmeta"><span>7 ноября 2022</span><span>10 мин</span></div>
@@ -900,7 +899,7 @@
     </li>
     <li>
       <a href="should-players-be-hand-held.html">
-        <span class="tag clay">Геймдизайн</span>
+        <span class="tag lane-design">Геймдизайн</span>
         <h3>Надо ли вести игрока за ручку?</h3>
         <p>Приёмы левел-дизайна из Witcher 3, Zelda и Metro Exodus — как направлять игрока, не ведя его за руку.</p>
         <div class="pmeta"><span>Апр 2025</span><span>14 мин</span></div>
@@ -908,7 +907,7 @@
     </li>
     <li>
       <a href="spinlocks.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Торопиться не надо… (Про спинлоки)</h3>
         <p>Реализации спинлоков на C++ — от наивной TAS до тикет-спинлока — с бенчмарками, кэш-миссами и нюансами приоритезации потоков.</p>
         <div class="pmeta"><span>27 сентября 2022</span><span>13 мин</span></div>
@@ -916,7 +915,7 @@
     </li>
     <li>
       <a href="cache-pollution.html">
-        <span class="tag gold">Производительность</span>
+        <span class="tag lane-perf">Производительность</span>
         <h3>Cache pollution? Запасайтесь тестами</h3>
         <p>Как кэш, ассоциативность, когерентность и выравнивание данных влияют на производительность — с бенчмарками.</p>
         <div class="pmeta"><span>9 сентября 2022</span><span>12 мин</span></div>
@@ -924,7 +923,7 @@
     </li>
     <li>
       <a href="how-caesar-draws-city.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: извлечение текстур</h3>
         <p>Формат текстур .sg2/.555, палитра RGB555, IDA и Hex-Rays — и как хобби превратилось в ремейк. Часть 1.</p>
         <div class="pmeta"><span>5 мая 2014</span><span>Часть 1</span><span>14 мин</span></div>
@@ -932,7 +931,7 @@
     </li>
     <li>
       <a href="caesar3-rendering.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: отрисовка города</h3>
         <p>Формат карт, выбор и порядок отрисовки тайлов, рисование города. Часть 2.</p>
         <div class="pmeta"><span>15 мая 2014</span><span>Часть 2</span><span>12 мин</span></div>
@@ -940,7 +939,7 @@
     </li>
     <li>
       <a href="caesar3-game-logic.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: игровая логика</h3>
         <p>Игровая логика: симуляция жителей, ходьба, очереди событий.</p>
         <div class="pmeta"><span>9 июня 2014</span><span>Часть 3</span><span>18 мин</span></div>
@@ -948,7 +947,7 @@
     </li>
     <li>
       <a href="caesar3-generation.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: генерация мира</h3>
         <p>Процедурная генерация мира и карт.</p>
         <div class="pmeta"><span>23 июля 2014</span><span>Часть 4</span><span>6 мин</span></div>
@@ -956,7 +955,7 @@
     </li>
     <li>
       <a href="caesar3-city-model.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: модель города</h3>
         <p>Внутренняя модель города: данные, слои, состояние.</p>
         <div class="pmeta"><span>15 сентября 2014</span><span>Часть 5</span><span>9 мин</span></div>
@@ -964,7 +963,7 @@
     </li>
     <li>
       <a href="caesar3-part6.html">
-        <span class="tag">Реверс-инжиниринг</span>
+        <span class="tag lane-rev">Реверс-инжиниринг</span>
         <h3>Реверс-инжиниринг Caesar III: игровой цикл</h3>
         <p>Расчёт одного игрового дня: цикл симуляции, боги, настроения, налоги, здоровье, структуры данных.</p>
         <div class="pmeta"><span>20 октября 2014</span><span>Часть 6</span><span>20 мин</span></div>
@@ -978,10 +977,7 @@
   <div class="wrap foot">
     <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
     <span>
-      <a href="https://github.com/dalerank">GitHub</a> ·
-      <a href="https://www.patreon.com/cw/dalerank">Patreon</a> ·
-      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
-      <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
+      <a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
     </span>
   </div>
 </footer>

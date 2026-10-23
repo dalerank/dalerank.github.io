@@ -6,7 +6,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cache-pollution.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cache-pollution.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -23,7 +23,7 @@
   <div class="actions"><span class="lang"><a class="on" href="cache-pollution.html">RU</a><i>/</i><a href="../en/articles/cache-pollution.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Производительность</span><h1>Cache pollution? Запасайтесь тестами</h1><div class="ameta"><span>9 сентября 2022</span><span>12 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>Cache pollution? Запасайтесь тестами</h1><div class="ameta"><span>9 сентября 2022</span><span>12 мин</span></div></div>
   <article class="prose">
     <p>Всем ведь приходилось заниматься улучшением производительности? Для игр особенно актуально, ну может какая-то три-в-ряд не страдает этим. Как обычно серебряной пули нет, начинаем со структур данных, алгоритмов, спускаемся ниже, а если не помогает, придумываем SoA, AoS шаблоны. Если проблема не решается, подтягиваем профайлеры и предметно разбираем узкие места, но чтобы мы не делали, таким узким местом всегда будет &quot;железо&quot;. Можно сколько угодно оптимизировать алгоритм работы, но CPU c его гигагерцами будет простаивать 90% времени если его неправильно &quot;кормить&quot; данными. Одной (только одной из проблем) проблемой организации эффективной работы с данными будет меньше, если знать и уметь работать с кэшами разных уровней.</p>
     <p>Тут на вики описано (Cache pollution) как &quot;на пальцах&quot; быстренько убить перф на обходе массива, общего решения для такого примера нет, но приведено решение для конкретного случая (This can be achieved by using special cache control instructions, operating system support or hardware support). Можно и дальше увеличивать размер кэша, что собственно и делают (где то здесь на хабре была новость, что Интел при переходе на L1 кэш размером 32кб, заново спроектировал блок доступа к нему, сорян не нашел ссылку), но это дорого, неэффективно на масштабах современных процов, и всегда найдутся данные которые этот кэш отравят, опять. Интересно как починить? го под кат...</p>
@@ -482,9 +482,9 @@ Test01/64       19001 ns        18589 ns        36462</code></pre></details>
     <p>Книгу &quot;алгоритмы и структуры данных&quot; в современном издании надо переименовывать в &quot;структуры данных и алгоритмы&quot; - в порядке приоритета/важности (с)  Книга Никлауса Вирта тут: ссылка на книгу.</p>
     <p>Благодарю, что дочитали, всем безбажшенных решений.</p>
     <p>З.Ы. После написания статьи, я поискал похожие на хабре: раз и два, примеры на шарпе. В общем, проблемы никуда не делись, все теже, все тамже...</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

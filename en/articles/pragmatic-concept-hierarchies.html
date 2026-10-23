@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-concept-hierarchies.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-concept-hierarchies.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pragmatic-concept-hierarchies.html">RU</a><i>/</i><a class="on" href="pragmatic-concept-hierarchies.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Concept hierarchies in C++</h1><div class="ameta"><span>PragmatiC++ · chapter 5</span><span>13 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Concept hierarchies in C++</h1><div class="ameta"><span>PragmatiC++ · chapter 5</span><span>13 min</span></div></div>
   <article class="prose">
     <p style="color:var(--ink-soft);font-style:italic">This is the fifth chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
 
@@ -293,10 +293,10 @@ concept Contiguous = FastDistanceMeasurable&lt;T&gt; &amp;&amp; std::contiguous_
 <p>To sum up, the picture is as follows — the compiler picks an overload based on the strictness of the requires constraints and the formal relations between them, which lets you build concept hierarchies and write expressive, type-safe interfaces, but the syntactic identity of constraints matters more than their logical equivalence, and overly complex hierarchies can hurt code clarity.</p>
 <p>As at the end of the previous article, where I talked about the need for moderation in constraints, here too I repeat the thought that good design combines carefully extracted concepts and a sound balance between compiler automation and explicit logic in the code — all of which helps create code that not only works correctly but also stays understandable to other developers. Nevertheless, for all its power, the concept system has limits of applicability, and it's important to understand where those limits lie — and that will be the subject of the next chapter...</p>
 
-    <a class="backlink" href="../index.html#books">← All books</a>
+    <a class="backlink" href="../index.html#books">All books</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

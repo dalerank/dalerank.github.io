@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-constraints-again.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-constraints-again.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pragmatic-constraints-again.html">RU</a><i>/</i><a class="on" href="pragmatic-constraints-again.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Constraints, once again</h1><div class="ameta"><span>PragmatiC++ · chapter 6</span><span>8 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Constraints, once again</h1><div class="ameta"><span>PragmatiC++ · chapter 6</span><span>8 min</span></div></div>
   <article class="prose">
     <p style="color:var(--ink-soft);font-style:italic">This is the sixth chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
 
@@ -106,10 +106,10 @@ int main() {
 <p>So I'll repeat the conclusion from the previous article — if you want one concept to be considered more specialized than another, it must explicitly include the other's constraints in the same syntactic form (logically straight), rather than just being logically equivalent (logically curved), otherwise you can get a situation where two overloads turn out to be incomparable and the call becomes ambiguous.</p>
 <p>That broadly concludes the introductory part about concepts, and I'll start dissecting the actual "meat" of how the compiler finds the names of entities in code and what problems there are with this, how it determines which namespace to take an overload from, where ADL comes in and how to break it, and why mangling ate all your types — come along, it'll be terribly interesting.</p>
 
-    <a class="backlink" href="../index.html#books">← All books</a>
+    <a class="backlink" href="../index.html#books">All books</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

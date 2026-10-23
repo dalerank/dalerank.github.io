@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/twenty-cores-not-enough.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/twenty-cores-not-enough.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a class="on" href="twenty-cores-not-enough.html">RU</a><i>/</i><a href="../en/articles/twenty-cores-not-enough.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Производительность</span><h1>И целых 20 ядер мало</h1><div class="ameta"><span>18 июля 2024</span><span>27 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>И целых 20 ядер мало</h1><div class="ameta"><span>18 июля 2024</span><span>27 мин</span></div></div>
   <article class="prose">
     <p>Если вы посмотрите на общую раздутость современного софта, загружаемые 100 гигабайтные игры, ежегодную Nvidia X090 дающую +20% год от года, и 20-ядерные процессоры, то со стороны может показаться, что оптимизация производительности неважно чего, будь то игры или другой софт, казалось бы, утратила свою актуальность. В эпоху безнаказанной производительности аппаратной части можно расплескивать хоть половину этой мощи, и пользователь этого даже не заметит. Это все может и верно, если вы не делаете игру. Почему же тогда на этих двадцати ядрах, фризит и тормозит (хорошо что не вылетает часто) игра выпущенная два года назад?</p>
     <p>Почему тормозит я вам не скажу: возможно разработчики, которые делали её (на не самом новом движке, надо сказать) просто делали игру и не задумывались о рядовых игроках, которые сидят на пятилетнем железе, хотя даже пятилетнее железо уделывает приставки текущего поколения. Возможно это другая причина — когда твоя рабочая машина с 64 гибайтами оперативки и 4080 на борту тянет редактор, то беспокоиться об игроках можно начинать после патча первого дня.</p>
@@ -758,9 +758,9 @@ BM_MutexInc/10000      164190 ns       163240 ns         3733</code></pre>
 
     <h2>Это все работает?</h2>
     <p>Все эти шаблоны проектирования, оптимизаций и микрооптимизаций с той или иной долей успеха были обкатаны на рабочих движках, и я попробовал собрать их в виде списка с простыми и понятными примерами. Это никак не отменяет необходимость знания и применения подходящих для конкретной задачи структур данных и алгоритмов. Никакой самый быстрый проц не вывезет алгоритм с O(n!^2). Надеюсь удалось показать вам немного путей для улучшения производительности, казалось бы уже там, где выжать еще немного перформанса уже не выйдет. И там где было 20 фпс, становится и 30, и 40, даже 60.</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

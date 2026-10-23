@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/why-no-l5-cache.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/why-no-l5-cache.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -24,7 +24,7 @@
   <div class="actions"><span class="lang"><a class="on" href="why-no-l5-cache.html">RU</a><i>/</i><a href="../en/articles/why-no-l5-cache.html">EN</a><i>/</i><a href="../it/articles/why-no-l5-cache.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Производительность</span><h1>Почему у нас нет кешей L5?</h1><div class="ameta"><span>11 марта 2026</span><span>13 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>Почему у нас нет кешей L5?</h1><div class="ameta"><span>11 марта 2026</span><span>13 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/why-no-l5-cache/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Вы не задавались на первый взгляд тривиальным вопросом: почему в процессоре есть уровни кэша, если можно было бы взять один большой? Ответ на этот вопрос тесно переплетается с физикой полупроводников, историей архитектуры процессоров и тем, как компиляторы научились использовать иерархию памяти.</p>
@@ -87,8 +87,8 @@
     <p>Проблема когерентности тоже нарастает нелинейно: каждый новый уровень, который разделяется между ядрами, требует усложнения протокола MESI/MOESI, добавляет новые классы гонок и увеличивает время согласования, создавая новые классы конфликтов при инвалидации. Три уровня уже будет сложной инженерной системой, четыре выливается в нишевые решения для специфических нагрузок, а пять уже фактически та точка, где сложность управления, вероятно, начинает съедать весь потенциальный выигрыш.</p>
     <p>Но не все так однозначно, и вместо добавления ещё одного уровня кэша индустрия пошла по другим путям, которые по смыслу выполняют ту же функцию, но называются иначе. Как я уже написал AMD 3D V-Cache, формально позиционируемый как расширенный L3, но физически является отдельным кристаллом SRAM, уложенным поверх вычислительного чипа и в некоторых архитектурных моделях его вполне можно считать L4. Но тот же Intel вводит понятие «High Bandwidth Cache» или «Memory-side Cache», намеренно уходя от нумерации и в серверных системах такая сущность фактически выполняет роль «L5» с точки зрения задержки, и он быстрее диска, но в несколько раз медленнее локальной DRAM, но только это уже не кэш в аппаратном смысле, а просто другой регион адресного пространства с другими латентностями.</p>
     <p>Если рассуждать спекулятивно, то единственным реалистичным сценарием для L5 будут системы с очень неоднородной памятью: например, будущие чипы с несколькими уровнями 3D-памяти, где можно было бы построить цепочку «SRAM → EDRAM → HBM → L5? → DDR → NVM». Исследовательские проекты в академической литературе такие схемы описывают, и IBM в своих мейнфреймах серии z исторически использовала нестандартные иерархии памяти с бо́льшим числом уровней, чем принято в x86-мире, но для массового рынка это пока остаётся областью архитектурных исследований, а не производственных решений. Возвращаясь к аналогии с ёлкой, никто пока не придумал, что поставить между чердаком и комодом так, чтобы это было быстрее комода, дешевле чердака и достаточно большим, чтобы вообще иметь смысл.</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 </body></html>

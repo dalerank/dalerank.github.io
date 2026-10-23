@@ -6,7 +6,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cache-pollution.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cache-pollution.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -23,7 +23,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/cache-pollution.html">RU</a><i>/</i><a class="on" href="cache-pollution.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Performance</span><h1>Cache pollution? Stock up on tests</h1><div class="ameta"><span>Sep 9, 2022</span><span>12 min</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>Cache pollution? Stock up on tests</h1><div class="ameta"><span>Sep 9, 2022</span><span>12 min</span></div></div>
   <article class="prose">
     <p>We&#x27;ve all had to work on performance, haven&#x27;t we? It&#x27;s especially relevant for games — well, maybe some match-3 doesn&#x27;t suffer from it. As usual there&#x27;s no silver bullet: we start with data structures and algorithms, go lower, and if that doesn&#x27;t help we come up with SoA / AoS patterns. If the problem still isn&#x27;t solved, we go down to the hardware level — and that&#x27;s where it gets interesting.</p>
     <p>The wiki describes (Cache pollution) how to quickly kill performance on an array traversal “on your fingers”; there&#x27;s no general solution for such a case, but a fix for a specific one is given (special cache-control instructions, OS support or hardware support). Let&#x27;s poke at it ourselves.</p>
@@ -482,9 +482,9 @@ Test01/64       19001 ns        18589 ns        36462</code></pre></details>
     <p>The book “Algorithms and Data Structures” in a modern edition should be renamed “Data Structures and Algorithms” — in order of priority/importance. Niklaus Wirth&#x27;s book is here: link.</p>
     <p>Thanks for reading — may your solutions be bug-free.</p>
     <p>P.S. After writing the article I searched for similar ones on Habr: one and two, plus C# examples. In short, the problems haven&#x27;t gone anywhere — same ones, same places…</p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

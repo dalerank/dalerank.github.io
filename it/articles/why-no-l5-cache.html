@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/why-no-l5-cache.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/why-no-l5-cache.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/why-no-l5-cache.html">RU</a><i>/</i><a href="../../en/articles/why-no-l5-cache.html">EN</a><i>/</i><a class="on" href="why-no-l5-cache.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Prestazioni</span><h1>Perché non abbiamo cache L5?</h1><div class="ameta"><span>11 marzo 2026</span><span>13 min</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Prestazioni</span><h1>Perché non abbiamo cache L5?</h1><div class="ameta"><span>11 marzo 2026</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/why-no-l5-cache/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Ti sei mai posto una domanda apparentemente banale: perché una CPU ha in generale dei livelli di cache, se si potrebbe semplicemente mettere una sola grande cache? La risposta a questa domanda è strettamente intrecciata con la fisica dei semiconduttori, la storia dell'architettura dei processori e il modo in cui i compilatori hanno imparato a sfruttare la gerarchia della memoria.</p>
@@ -89,9 +89,9 @@
     <p>Anche il problema della coerenza cresce in modo non lineare: ogni nuovo livello condiviso tra i core richiede di complicare il protocollo MESI/MOESI, aggiunge nuove classi di race e aumenta il tempo di accordo, creando nuove classi di conflitti sull'invalidazione. Tre livelli sono già un sistema ingegneristico complesso, quattro sfociano in soluzioni di nicchia per carichi specifici, e cinque è essenzialmente il punto in cui la complessità di gestione probabilmente comincia a divorare tutto il potenziale guadagno.</p>
     <p>Ma non è tutto così netto, e invece di aggiungere l'ennesimo livello di cache l'industria ha imboccato altre strade che assolvono la stessa funzione nello spirito ma si chiamano in un altro modo. Come ho già scritto, AMD 3D V-Cache è formalmente posizionata come una L3 estesa, ma fisicamente è un die SRAM separato impilato sopra il chip di calcolo, e in alcuni modelli architetturali può benissimo essere considerata una L4. Intel, invece, introduce il concetto di «High Bandwidth Cache» o «Memory-side Cache», allontanandosi deliberatamente dalla numerazione — e nei sistemi server una simile entità gioca di fatto il ruolo di «L5» in termini di latenza: è più veloce del disco ma parecchie volte più lenta della DRAM locale, solo che questa non è più una cache nel senso hardware, ma solo una regione diversa dello spazio degli indirizzi con latenze diverse.</p>
     <p>Ipotizzando, l'unico scenario realistico per una L5 sarebbero i sistemi con memoria molto eterogenea: per esempio, chip futuri con diversi livelli di memoria 3D, dove si potrebbe costruire una catena come «SRAM → EDRAM → HBM → L5? → DDR → NVM». Progetti di ricerca nella letteratura accademica descrivono simili schemi, e IBM nei suoi mainframe della serie z ha storicamente usato gerarchie di memoria non standard con più livelli di quanti sia usuale nel mondo x86, ma per il mercato di massa questa resta per ora un'area di ricerca architetturale piuttosto che di soluzioni di produzione. Tornando all'analogia dell'albero — nessuno ha ancora capito cosa mettere tra la soffitta e il cassettone in modo che sia più veloce del cassettone, più economico della soffitta e abbastanza grande da avere un qualche senso.</p>
-    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

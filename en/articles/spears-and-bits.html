@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/spears-and-bits.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/spears-and-bits.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/spears-and-bits.html">RU</a><i>/</i><a class="on" href="spears-and-bits.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Performance</span><h1>Spears &amp; bits</h1><div class="ameta"><span>Dec 17, 2024</span><span>15 min</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>Spears &amp; bits</h1><div class="ameta"><span>Dec 17, 2024</span><span>15 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/spears-and-bits/01-header.jpg" alt="Spears &amp; bits" class="post-image" loading="lazy" />
     <p>Games often use the pattern of packing boolean values into bits. It's handy for optimizing memory and speeding up bulk checks. For example, such checks might include whether a player is in a tile, determining cell availability on a four- or six-sided grid, or other spatial checks that have to run fast. It's not rocket science, but when the profiler showed one of these functions among the hot ones, I got curious about how exactly it works and whether it could be optimized. The bitset data structure is a way to efficiently represent a set of integer indices, which on top of that supports various operations over it — for example union, difference, intersection.</p>
@@ -481,9 +481,9 @@ for (size_t j = 0; j &lt; lenDiv16y16; j += 16) {
       <li>Attention to branches matters, especially in hot functions, since it can substantially boost performance — just check that spot 33 times with a profiler first.</li>
       <li>Don't rush to swap your own reinvented wheel for the standard bitset; it doesn't always work out for the better.</li>
     </ul>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

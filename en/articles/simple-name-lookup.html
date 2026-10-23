@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/simple-name-lookup.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/simple-name-lookup.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/simple-name-lookup.html">RU</a><i>/</i><a class="on" href="simple-name-lookup.html">EN</a><i>/</i><a href="../../it/articles/simple-name-lookup.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Simple name lookup in C++</h1><div class="ameta"><span>Apr 22, 2026</span><span>11 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Simple name lookup in C++</h1><div class="ameta"><span>Apr 22, 2026</span><span>11 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/simple-name-lookup/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>This is a continuation of the topic started in <a href="pragmatic-names.html">Do names matter to the compiler</a>, continued in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">At night all cats are grey, and all using's are alike</a> (in Russian) and further in <a href="compilers-confused-names.html">Compilers get confused by names too</a>. If you haven't read them, it's better to skim through. Now we've gotten to such an interesting topic as qualified and unqualified lookup.</p>
@@ -373,9 +373,9 @@ int main() {
     <p>One of the examples above showed that name hiding in classes doesn't work the way you'd intuitively expect. A declaration in <code>Derived</code> hides all overloads from <code>Base</code>, not just the matching one, and this behavior is a direct consequence of how name lookup works over the base-class hierarchy.</p>
     <p>It's precisely for such cases that the using-declaration exists, allowing you to explicitly bring names from a base class into the derived scope without breaking the lookup rules and without creating conflicts. But <code>using</code> isn't only about inheritance: by C++14 it became a full-fledged visibility-management tool that works by its own rules and interacts with name lookup in a predictable and strictly defined way — and I'll talk about that in the next article...</p>
     <p>I've already accumulated material for two more chapters (the history of concepts and name lookup); I'll publish them on GitHub soon — <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>.</p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

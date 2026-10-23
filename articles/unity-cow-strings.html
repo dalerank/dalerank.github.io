@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/unity-cow-strings.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/unity-cow-strings.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a class="on" href="unity-cow-strings.html">RU</a><i>/</i><a href="../en/articles/unity-cow-strings.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Ненормальное программирование</span><h1>Как Unity отказались от своих строк</h1><div class="ameta"><span>29 октября 2024</span><span>7 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Как Unity отказались от своих строк</h1><div class="ameta"><span>29 октября 2024</span><span>7 мин</span></div></div>
   <article class="prose">
     <p>В 2014 году в движке Unity набралось столько критических изменений и новинок, что «пятерка» фактически была другим движком. И хотя многие за одинаковым фасадом не особо этого и заметили, но изменения коснулись всех компонентов движка, начиная от файловой системы и заканчивая рендером. Питерский офис EA имел свою ветку основного репозитария, отставая от мастера максимум на месяц. Я уже писал про различные реализации и типы <a href="strings-in-engines.html">строк в игровых движках</a>, но в Unity была своя реализация, имевшая и положительные и отрицательные стороны, которая использовалась практически во всех подсистемах. К ней привыкли, знали слабые стороны и плохие «use cases» и хорошие «best practices». Поэтому когда эту систему стали выпиливать из движка много чего поломалось, и если у обычных пользователей был сразу переход на новую версию и наблюдались только отголоски шторма, то допущенные до «тела» наловили много прикольных багов.</p>
     <img src="../assets/articles/unity-cow-strings/01-cow-strings.jpg" alt="COW-строки в Unity" class="post-image" loading="lazy" />
@@ -143,9 +143,9 @@ Program returned: 0
     <p>Лучше всего этот тип данных показывал себя на неизменяемых строках, вроде строковых хешах, идентификаторах и ключах, которых было подавляющее большинство в коде движка. Это когда строки не предполагают операции, где происходит изменение данных. Строки по-прежнему могут быть присвоены, но нельзя напрямую изменить данные строки, например, заменить «H» на «B» в слове «Hurry». В случае с COW-строками в движке они поддерживали амортизированное константное время инициализации из строковых литералов через hash ключ для операций сравнения и различные операции подстрок с константным временем работы, например в качестве ключа в map. И это было, наверное, самым большим плюсом таких COW-строк — отсутствие операций сравнения строк при поиске в массиве или <code>map'e</code>. В пятерке разработка стала отходить от велосипедов и кастомных решений, даже если это приводило к снижению производительности и увеличению расхода памяти, как в случае с контейнерами стандартной библиотеки. Сейчас движок и вовсе опирается на стандартную библиотеку.</p>
     <p>З.Ы. C 2017 года я не участвую в разработке движка, но вряд-ли принятый курс на унификацию программных решений слишком сильно изменился.</p>
     <p>Спасибо, что дочитали!</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

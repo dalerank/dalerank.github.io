@@ -11,7 +11,7 @@
 <link rel="alternate" hreflang="x-default" href="https://dalerank.github.io/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="dalerank" />
@@ -46,115 +46,48 @@
 
 <main class="wrap">
 
-  <!-- HERO -->
   <section class="hero">
-    <div>
-      <div class="eyebrow reveal d1">Код · Ремесло · Реверс-инжиниринг</div>
-      <h1 class="reveal d2">Люблю <em>старый код</em>,<br>игры и <span class="u">алгоритмы</span></h1>
-      <p class="lead reveal d3">Заметки о ремесле, программировании и внутренностях игр.</p>
-      <div class="cta reveal d4">
-        <a class="btn" href="#writing">Читать блог</a>
-        <a class="btn ghost" href="#books">Смотреть книги</a>
+    <h1>Люблю старый код, игры и алгоритмы</h1>
+    <p class="lead">Заметки о C++, производительности игровых движков и реверс-инжиниринге игр девяностых. Пишу с 2014 года.</p>
+    <figure class="trace" id="topics" data-unit="мин" data-label="Статьи по дате публикации">
+      <div class="trace-grid">
+        <a class="lane-label lane-cpp" data-lane="cpp" href="topics/cpp.html">C++</a>
+        <a class="lane-label lane-abn" data-lane="abn" href="topics/abnormal-programming.html">Ненормальное программирование</a>
+        <a class="lane-label lane-perf" data-lane="perf" href="topics/performance.html">Производительность</a>
+        <a class="lane-label lane-rev" data-lane="rev" href="topics/reverse-engineering.html">Реверс-инжиниринг</a>
+        <a class="lane-label lane-design" data-lane="design" href="topics/game-design.html">Геймдизайн</a>
+        <a class="lane-label lane-craft" data-lane="craft" href="topics/craft.html">Ремесло</a>
       </div>
-      <div class="meta reveal d5">
-        <span><b>118</b> эссе</span>
-        <span><b>2</b> книги</span>
-        <span>с <b>2014</b></span>
-      </div>
-    </div>
-    <div class="sphere reveal d3">
-      <a class="s2" href="articles/joy-of-programming.html">радость программирования</a>
-      <a class="s2" href="articles/writing-a-book-about-code.html">как писалась Game++</a>
-      <a class="s2" href="articles/red-fps-hunt.html">охота за fps</a>
-      <a class="s2" href="articles/university-doesnt-train-programmers.html">универ и программисты</a>
-      <a class="s2" href="articles/pragmatic-names.html">имена и компилятор</a>
-      <a class="s1" href="articles/pragmatic-constraints-again.html">и снова ограничения</a>
-      <a class="s2" href="articles/pragmatic-concept-hierarchies.html">иерархия концептов</a>
-      <a class="s1" href="articles/pragmatic-concepts-history.html">история концептов</a>
-      <a class="s2" href="articles/pragmatic-constraints.html">концепты в C++</a>
-      <a class="s3" href="articles/pragmatic-overloads.html">перегрузки в C++</a>
-      <a class="s2" href="articles/dont-panic-aa-gamedev.html">AA+ игрострой</a>
-      <a class="s2" href="articles/building-arcs.html">архитектура движков</a>
-      <a class="s2" href="articles/ready-player-one.html">история игр</a>
-      <a class="s2" href="articles/run-thread-run.html">многопоточность</a>
-      <a class="s2" href="articles/juggling-stl-algorithms.html">STL алгоритмы</a>
-      <a class="s2" href="articles/dancing-with-allocators.html">аллокаторы</a>
-      <a class="s2" href="articles/pharaoh-demo-vs-retail.html">древний Египет</a>
-      <a class="s2" href="articles/cooking-vectors.html">cooking vectors</a>
-      <a class="s2" href="articles/string-interning.html">string interning</a>
-      <a class="s2" href="articles/all-programmers-are-seniors.html">все сеньоры</a>
-      <a class="s2" href="articles/fit-elephant-in-suitcase.html">слон в чемодане</a>
-      <a class="s2" href="articles/spears-and-bits.html">spears &amp; bits</a>
-      <a class="s2" href="articles/task-based-game-engines.html">task-based движки</a>
-      <a class="s2" href="articles/ai-books-for-gamedev.html">книги по игровому ИИ</a>
-      <a class="s2" href="articles/heavy-header.html">тяжёлый хедер</a>
-      <a class="s3" href="articles/486-enough-for-everyone.html">486-го хватит всем</a>
-      <a class="s3" href="articles/unity-cow-strings.html">Unity и свои строки</a>
-      <a class="s2" href="articles/bioshock-infinite-lessons.html">уроки BioShock: Infinite</a>
-      <a class="s2" href="articles/twenty-cores-not-enough.html">20 ядер мало</a>
-      <a class="s3" href="articles/gamedev-programmer.html">программист в gamedev</a>
-      <a class="s2" href="articles/need-own-game-engine.html">свой игровой движок?</a>
-      <a class="s1" href="articles/what-to-read-game-programmer.html">что почитать?</a>
-      <a class="s1" href="articles/what-else-to-read-game-programmer.html">что ещё почитать?</a>
-      <a class="s2" href="articles/cpp-in-gamedev.html">C++ в gamedev'е</a>
-      <a class="s1" href="articles/red-barrel-problem.html">красная бочка</a>
-      <a class="s2" href="articles/swizzle-cpp.html">swizzle в C++</a>
-      <a class="s1" href="articles/private-but-want-public.html">private → public</a>
-      <a class="s2" href="articles/switch-sdk-three-sin.html">три sin в Switch SDK</a>
-      <a class="s2" href="articles/not-unity-alone.html">Не Unity единым</a>
-      <a class="s1" href="articles/cover-generation.html">генерация укрытий</a>
-      <a class="s2" href="articles/should-players-be-hand-held.html">вести игрока за ручку?</a>
-      <a class="s1" href="articles/catch-the-paying-player.html">тёмные паттерны игр</a>
-      <a class="s2" href="articles/miss-old-game-mechanics.html">механики старых игр</a>
-      <a class="s1" href="articles/corridors-tell-no-tales.html">коридоры BioShock</a>
-      <a class="s2" href="articles/last-of-deus-ex.html">последний Deus Ex</a>
-      <a class="s1" href="articles/fistful-of-achievements.html">пригоршня ачивок</a>
-      <a class="s2" href="articles/strings-in-engines.html">строки в движках</a>
-      <a class="s1" href="articles/do-not-copy.html">не копируй это</a>
-      <a class="s2" href="articles/where-are-your-bugs.html">Федя, дичь</a>
-      <a class="s2" href="articles/boss-its-all-gone.html">шеф, всё пропало</a>
-      <a class="s1" href="articles/spinlocks.html">спинлоки</a>
-      <a class="s1" href="articles/cache-pollution.html">cache pollution</a>
-      <a class="book" href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">Game++</a>
-      <a class="s1" href="articles/enum-name-runtime.html">enum в рантайме</a>
-      <a class="s1" href="articles/how-caesar-draws-city.html">Caesar III: текстуры</a>
-      <a class="s2" href="articles/caesar3-rendering.html">Caesar III: рендер</a>
-      <a class="s1" href="articles/caesar3-game-logic.html">Caesar III: логика</a>
-      <a class="s2" href="articles/caesar3-generation.html">Caesar III: генерация</a>
-      <a class="s1" href="articles/caesar3-city-model.html">Caesar III: модель города</a>
-      <a class="s2" href="articles/caesar3-part6.html">Caesar III: игровой цикл</a>
-      <a class="s2" href="topics/reverse-engineering.html">reverse-engineering</a>
-      <a class="book" href="articles/pragmatic-generalizations.html">PragmatiC++</a>
-      <a class="s2" href="articles/pharaoh-engine-tricks.html">ECS в Фараоне</a>
-      <a class="s1" href="articles/pharaoh-map-rendering.html">карта Фараона</a>
-      <a class="book" href="assets/books/zapiski-ezdovogo-kota.pdf">Записки ездового кота</a>
-    </div>
+      <figcaption data-tpl="Все {n} по дате публикации. Длина полосы — время чтения, всего около {h}. Проведите по полосам, чтобы выбрать статью." data-n="статья|статьи|статей" data-h="час|часа|часов">Все статьи по дате публикации. Длина полосы — время чтения.</figcaption>
+      <noscript><p><a href="articles/index.html">Все статьи</a></p></noscript>
+    </figure>
   </section>
+  <script type="application/json" id="trace-data">[{"href":"articles/how-caesar-draws-city.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: извлечение текстур","date":"5 мая 2014","year":2014,"min":14},{"href":"articles/caesar3-rendering.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: отрисовка города","date":"15 мая 2014","year":2014,"min":12},{"href":"articles/caesar3-game-logic.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: игровая логика","date":"9 июня 2014","year":2014,"min":18},{"href":"articles/caesar3-generation.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: генерация мира","date":"23 июля 2014","year":2014,"min":6},{"href":"articles/caesar3-city-model.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: модель города","date":"15 сентября 2014","year":2014,"min":9},{"href":"articles/caesar3-part6.html","lane":"rev","title":"Реверс-инжиниринг Caesar III: игровой цикл","date":"20 октября 2014","year":2014,"min":20},{"href":"articles/cache-pollution.html","lane":"perf","title":"Cache pollution? Запасайтесь тестами","date":"9 сентября 2022","year":2022,"min":12},{"href":"articles/spinlocks.html","lane":"perf","title":"Торопиться не надо… (Про спинлоки)","date":"27 сентября 2022","year":2022,"min":13},{"href":"articles/enum-name-runtime.html","lane":"abn","title":"Имя enum'a C++ в рантайме","date":"7 ноября 2022","year":2022,"min":10},{"href":"articles/switch-sdk-three-sin.html","lane":"abn","title":"Зачем в Switch SDK три разных sin?","date":"11 июня 2023","year":2023,"min":8},{"href":"articles/private-but-want-public.html","lane":"abn","title":"Когда private, но очень хочется public","date":"21 сентября 2023","year":2023,"min":8},{"href":"articles/where-are-your-bugs.html","lane":"abn","title":"Федя, дичь","date":"30 сентября 2023","year":2023,"min":8},{"href":"articles/pharaoh-map-rendering.html","lane":"rev","title":"Как рисуется карта в Фараоне","date":"17 октября 2023","year":2023,"min":10},{"href":"articles/cover-generation.html","lane":"design","title":"Процедурная генерация укрытий в играх","date":"24 октября 2023","year":2023,"min":8},{"href":"articles/not-unity-alone.html","lane":"cpp","title":"Не Unity единым…","date":"4 ноября 2023","year":2023,"min":15},{"href":"articles/gamedev-programmer.html","lane":"craft","title":"Вы точно хотите пойти программистом в gamedev?","date":"19 ноября 2023","year":2023,"min":12},{"href":"articles/swizzle-cpp.html","lane":"abn","title":"Магия swizzle из шейдеров в C++","date":"10 декабря 2023","year":2023,"min":9},{"href":"articles/need-own-game-engine.html","lane":"craft","title":"Вам [не] нужен свой игровой движок","date":"24 декабря 2023","year":2023,"min":15},{"href":"articles/what-to-read-game-programmer.html","lane":"craft","title":"Что почитать игровому программисту?","date":"11 февраля 2024","year":2024,"min":6},{"href":"articles/what-else-to-read-game-programmer.html","lane":"craft","title":"Что ещё почитать игровому программисту?","date":"15 февраля 2024","year":2024,"min":6},{"href":"articles/cpp-in-gamedev.html","lane":"craft","title":"Каков C++ в gamedev'е?","date":"25 февраля 2024","year":2024,"min":11},{"href":"articles/red-barrel-problem.html","lane":"design","title":"Проблема красной бочки","date":"27 марта 2024","year":2024,"min":4},{"href":"articles/miss-old-game-mechanics.html","lane":"design","title":"Я скучаю по механикам из старых игр","date":"21 апреля 2024","year":2024,"min":15},{"href":"articles/corridors-tell-no-tales.html","lane":"design","title":"Коридоры не рассказывают сказки","date":"9 мая 2024","year":2024,"min":12},{"href":"articles/last-of-deus-ex.html","lane":"design","title":"Последний из Deus Ex","date":"23 июня 2024","year":2024,"min":12},{"href":"articles/fistful-of-achievements.html","lane":"design","title":"За пригоршню ачивок","date":"28 июня 2024","year":2024,"min":8},{"href":"articles/twenty-cores-not-enough.html","lane":"perf","title":"И целых 20 ядер мало","date":"18 июля 2024","year":2024,"min":27},{"href":"articles/bioshock-infinite-lessons.html","lane":"design","title":"Чему стоит поучиться у старенькой Bioshock: Infinite?","date":"24 июля 2024","year":2024,"min":8},{"href":"articles/catch-the-paying-player.html","lane":"design","title":"Ловись игрок, платящий и не очень…","date":"15 августа 2024","year":2024,"min":16},{"href":"articles/strings-in-engines.html","lane":"abn","title":"Строки в игровых движках","date":"5 сентября 2024","year":2024,"min":15},{"href":"articles/do-not-copy.html","lane":"perf","title":"Просто не копируй это","date":"30 сентября 2024","year":2024,"min":5},{"href":"articles/boss-its-all-gone.html","lane":"abn","title":"Шеф, всё пропало","date":"7 октября 2024","year":2024,"min":12},{"href":"articles/pharaoh-engine-tricks.html","lane":"rev","title":"ecs, dynvtbl, логические потоки и Фараон","date":"8 октября 2024","year":2024,"min":2},{"href":"articles/unity-cow-strings.html","lane":"abn","title":"Как Unity отказались от своих строк","date":"29 октября 2024","year":2024,"min":7},{"href":"articles/486-enough-for-everyone.html","lane":"perf","title":"486-го хватит всем","date":"6 ноября 2024","year":2024,"min":13},{"href":"articles/heavy-header.html","lane":"abn","title":"Тяжёлый H[header]","date":"10 ноября 2024","year":2024,"min":14},{"href":"articles/ai-books-for-gamedev.html","lane":"craft","title":"Хорошие книги для gamedev AI программиста","date":"18 ноября 2024","year":2024,"min":8},{"href":"articles/task-based-game-engines.html","lane":"perf","title":"Task-based мышление в игровых движках","date":"28 ноября 2024","year":2024,"min":16},{"href":"articles/spears-and-bits.html","lane":"perf","title":"Spears & bits","date":"17 декабря 2024","year":2024,"min":15},{"href":"articles/fit-elephant-in-suitcase.html","lane":"perf","title":"Как засунуть слона в чемодан","date":"21 декабря 2024","year":2024,"min":10},{"href":"articles/all-programmers-are-seniors.html","lane":"craft","title":"В Испании все программисты сеньоры","date":"26 декабря 2024","year":2024,"min":14},{"href":"articles/string-interning.html","lane":"abn","title":"Game++. String interning","date":"13 января 2025","year":2025,"min":9},{"href":"articles/cooking-vectors.html","lane":"abn","title":"Game++. Cooking vectors","date":"15 января 2025","year":2025,"min":12},{"href":"articles/pharaoh-demo-vs-retail.html","lane":"rev","title":"Добро пожаловать в Древний…","date":"22 января 2025","year":2025,"min":12},{"href":"articles/dancing-with-allocators.html","lane":"abn","title":"Game++. Dancing with allocators","date":"30 января 2025","year":2025,"min":34},{"href":"articles/juggling-stl-algorithms.html","lane":"craft","title":"Game++. Juggling STL algorithms","date":"9 февраля 2025","year":2025,"min":29},{"href":"articles/run-thread-run.html","lane":"abn","title":"Game++. run, thread, run…","date":"17 февраля 2025","year":2025,"min":33},{"href":"articles/ready-player-one.html","lane":"design","title":"Первому игроку приготовиться","date":"20 февраля 2025","year":2025,"min":40},{"href":"articles/building-arcs.html","lane":"craft","title":"Game++. Building arcs","date":"28 февраля 2025","year":2025,"min":24},{"href":"articles/unpacking-containers.html","lane":"abn","title":"Game++. Unpacking containers","date":"19 марта 2025","year":2025,"min":40},{"href":"articles/why-gamedev-stays-cpp17.html","lane":"craft","title":"Почему игродев остаётся на C++17","date":"26 марта 2025","year":2025,"min":14},{"href":"articles/should-players-be-hand-held.html","lane":"design","title":"Надо ли вести игрока за ручку?","date":"Апр 2025","year":2025,"min":14},{"href":"articles/heap-less.html","lane":"abn","title":"Game++. Heap? Less","date":"3 апреля 2025","year":2025,"min":20},{"href":"articles/things-game-programmer-should-know.html","lane":"craft","title":"Пара вещей, которые должен знать игровой программист","date":"5 апреля 2025","year":2025,"min":6},{"href":"articles/work-hard.html","lane":"abn","title":"Game++. Work hard","date":"14 апреля 2025","year":2025,"min":16},{"href":"articles/just-write-code.html","lane":"craft","title":"Просто пиши код","date":"24 апреля 2025","year":2025,"min":5},{"href":"articles/patching-patterns.html","lane":"abn","title":"Game++. Patching patterns","date":"29 апреля 2025","year":2025,"min":30},{"href":"articles/while-game-over.html","lane":"abn","title":"Game++. while (!game(over))","date":"6 мая 2025","year":2025,"min":35},{"href":"articles/pharaoh-house-evolution.html","lane":"rev","title":"Механика эволюции домов в Pharaoh (1999)","date":"24 мая 2025","year":2025,"min":13},{"href":"articles/performance-traps.html","lane":"abn","title":"Game++. Performance traps","date":"29 мая 2025","year":2025,"min":18},{"href":"articles/blackbox-gameplay.html","lane":"design","title":"Blackbox gameplay","date":"31 мая 2025","year":2025,"min":12},{"href":"articles/reject-heap-commits.html","lane":"perf","title":"Я отклоняю комиты с использованием кучи и прошу коллег переписать такую логику","date":"17 сентября 2025","year":2025,"min":11},{"href":"articles/why-pharaoh-best.html","lane":"design","title":"Почему Фараон остаётся лучшей игрой в серии","date":"26 сентября 2025","year":2025,"min":14},{"href":"articles/be-your-own-breakpoint.html","lane":"abn","title":"Сам себе breakpoint","date":"6 октября 2025","year":2025,"min":15},{"href":"articles/good-bad-colored-fast.html","lane":"perf","title":"Хороший, плохой, цветной и быстрый","date":"10 октября 2025","year":2025,"min":13},{"href":"articles/string-zoo.html","lane":"abn","title":"Зоопарк строк в вашем C++ коде?","date":"20 ноября 2025","year":2025,"min":26},{"href":"articles/gamedev-myths.html","lane":"abn","title":"Мифы, суеверия и народные мудрости в разработке игр","date":"24 ноября 2025","year":2025,"min":23},{"href":"articles/dont-panic-aa-gamedev.html","lane":"craft","title":"Не паникуй, ты просто попал в AA+ игрострой","date":"3 декабря 2025","year":2025,"min":10},{"href":"articles/university-doesnt-train-programmers.html","lane":"craft","title":"Почему универ не готовит программистов","date":"30 января 2026","year":2026,"min":8},{"href":"articles/red-fps-hunt.html","lane":"perf","title":"Охота за красным fps","date":"19 февраля 2026","year":2026,"min":25},{"href":"articles/writing-a-book-about-code.html","lane":"craft","title":"Писать код проще, чем книгу о том, как писать код","date":"22 февраля 2026","year":2026,"min":4},{"href":"articles/joy-of-programming.html","lane":"craft","title":"О радости программирования и невесомости достижений","date":"5 марта 2026","year":2026,"min":8},{"href":"articles/why-no-l5-cache.html","lane":"perf","title":"Почему у нас нет кешей L5?","date":"11 марта 2026","year":2026,"min":13},{"href":"articles/pragmatic-generalizations-2.html","lane":"cpp","title":"Обобщения в C++ (часть 2)","date":"18 марта 2026","year":2026,"min":26},{"href":"articles/redundant-computations.html","lane":"perf","title":"Лишние вычисления","date":"6 апреля 2026","year":2026,"min":12},{"href":"articles/compilers-confused-names.html","lane":"cpp","title":"Компиляторы тоже путаются в именах","date":"14 апреля 2026","year":2026,"min":10},{"href":"articles/simple-name-lookup.html","lane":"cpp","title":"Простой поиск имён в C++","date":"22 апреля 2026","year":2026,"min":11},{"href":"articles/dream-portfolio-second-job.html","lane":"craft","title":"Как не перепутать мечту, портфолио и вторую работу","date":"28 апреля 2026","year":2026,"min":7},{"href":"articles/console-memory.html","lane":"perf","title":"Как работают с памятью в игровых консолях","date":"5 мая 2026","year":2026,"min":22},{"href":"articles/10x-programmers.html","lane":"craft","title":"Про 10x программистов","date":"12 мая 2026","year":2026,"min":6},{"href":"articles/disobedient-using.html","lane":"cpp","title":"Непослушный using","date":"20 мая 2026","year":2026,"min":12},{"href":"articles/three-in-a-boat.html","lane":"craft","title":"Трое в лодке, нищета и собаки (с)","date":"27 мая 2026","year":2026,"min":7},{"href":"articles/architecture-tradeoffs.html","lane":"abn","title":"Архитектурные компромиссы в разработке игр","date":"3 июня 2026","year":2026,"min":106},{"href":"articles/resource-manager.html","lane":"abn","title":"Менеджер ресурсов","date":"8 июня 2026","year":2026,"min":28},{"href":"articles/soviet-gta.html","lane":"craft","title":"Почему советские программисты не сделали GTA","date":"10 июня 2026","year":2026,"min":12},{"href":"articles/random-people-in-it.html","lane":"craft","title":"Про «случайных» людей в ИТ","date":"14 июня 2026","year":2026,"min":5},{"href":"articles/game-gui-rewritten.html","lane":"abn","title":"Почему игровой GUI пишут заново (Ч.1)","date":"16 июня 2026","year":2026,"min":22},{"href":"articles/game-gui-rewritten-2.html","lane":"abn","title":"Как игровой GUI пишут заново (Ч.2)","date":"17 июня 2026","year":2026,"min":43},{"href":"articles/cpp101-part4.html","lane":"abn","title":"C++101 (Ч.4)","date":"21 июня 2026","year":2026,"min":38},{"href":"articles/cpp101-part3.html","lane":"abn","title":"C++101 (Ч.3)","date":"21 июня 2026","year":2026,"min":36},{"href":"articles/cpp101-part2.html","lane":"abn","title":"C++101 (Ч.2)","date":"21 июня 2026","year":2026,"min":36},{"href":"articles/cpp101-part1.html","lane":"abn","title":"C++101 (Ч.1)","date":"21 июня 2026","year":2026,"min":38},{"href":"articles/course-heap-stack.html","lane":"cpp","title":"Компромиссы кучи и стека","date":"25 июня 2026","year":2026,"min":6},{"href":"articles/course-assoc.html","lane":"cpp","title":"Ассоциативные контейнеры STL","date":"25 июня 2026","year":2026,"min":3},{"href":"articles/course-vtable.html","lane":"cpp","title":"Как работает vtable","date":"25 июня 2026","year":2026,"min":5},{"href":"articles/course-new-delete.html","lane":"cpp","title":"Что делают new и delete","date":"25 июня 2026","year":2026,"min":3},{"href":"articles/foreign-stl-guide.html","lane":"abn","title":"Путеводитель по чужим STL","date":"6 июля 2026","year":2026,"min":12},{"href":"articles/megacity-on-iphone.html","lane":"abn","title":"Как «ужать» мегаполис до размеров iPhone 4","date":"12 июля 2026","year":2026,"min":10},{"href":"articles/worst-programming-language.html","lane":"abn","title":"Худший язык программирования всех времён /s","date":"14 июля 2026","year":2026,"min":24},{"href":"articles/senior-gamedev-paths.html","lane":"craft","title":"Куда расти синьору в игродеве","date":"18 июля 2026","year":2026,"min":9},{"href":"articles/victims-of-clean-code.html","lane":"craft","title":"Жертвы чистого кода","date":"18 июля 2026","year":2026,"min":9},{"href":"articles/game-engine-phases.html","lane":"abn","title":"Все там будем…","date":"18 июля 2026","year":2026,"min":11},{"href":"articles/eastl-guide.html","lane":"abn","title":"Путеводитель по EASTL","date":"24 июля 2026","year":2026,"min":15},{"href":"articles/dirty-coding-tricks-3.html","lane":"abn","title":"Dirty Coding Tricks, part 3","date":"2 августа 2026","year":2026,"min":16},{"href":"articles/production-has-fallen.html","lane":"craft","title":"Продакшен пал, Милорд","date":"6 августа 2026","year":2026,"min":16},{"href":"articles/english-instead-of-code.html","lane":"craft","title":"Английский вместо кода","date":"9 августа 2026","year":2026,"min":14},{"href":"articles/what-consoles-gave-developers.html","lane":"craft","title":"Что консоли подарили разработчикам","date":"24 августа 2026","year":2026,"min":21},{"href":"articles/lemons-and-remake-economics.html","lane":"craft","title":"Лимоны, игры и экономика ремейков","date":"5 сентября 2026","year":2026,"min":5},{"href":"articles/play-good-not-bad.html","lane":"craft","title":"Играй в хорошее, в плохое не играй","date":"6 сентября 2026","year":2026,"min":6},{"href":"articles/fibonacci-enemies.html","lane":"design","title":"Фибоначь врагов","date":"6 сентября 2026","year":2026,"min":6},{"href":"articles/anatomy-of-rakes.html","lane":"cpp","title":"Анатомия граблей","date":"6 сентября 2026","year":2026,"min":8},{"href":"articles/wrong-cpp-bees.html","lane":"cpp","title":"Эти пчелы делают неправильный C++","date":"1 октября 2026","year":2026,"min":11},{"href":"articles/array-of-arrays.html","lane":"cpp","title":"Что можно сделать с массивом массивов","date":"11 октября 2026","year":2026,"min":13},{"href":"articles/dirty-games.html","lane":"craft","title":"Грязные игры","date":"11 октября 2026","year":2026,"min":9},{"href":"articles/where-complexity-comes-from.html","lane":"craft","title":"Откуда берётся сложность","date":"11 октября 2026","year":2026,"min":7}]</script>
 
   <!-- WRITING -->
   <section class="sec" id="writing">
     <div class="sec-head">
-      <h2><span class="n">01</span>Свежие статьи</h2>
-      <a class="more" href="articles/index.html">Все статьи →</a>
+      <h2>Свежие статьи</h2>
+      <a class="more" href="articles/index.html">Все статьи</a>
     </div>
     <div class="grid">
-      <a class="post reveal d1" href="articles/where-complexity-comes-from.html">
+      <a class="post" href="articles/where-complexity-comes-from.html">
         <span class="arrow">↗</span>
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Откуда берётся сложность</h3>
         <p>Сложность приходит вместе с числом: 16 мс, 5 ГБ памяти, лимит патча. Как её покупают, почему два ограничения хуже одного дважды и куда переезжает бюджет после удачной оптимизации.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>7 мин</span></div>
       </a>
-      <a class="post reveal d2" href="articles/dirty-games.html">
+      <a class="post" href="articles/dirty-games.html">
         <span class="arrow">↗</span>
-        <span class="tag clay">Ремесло</span>
+        <span class="tag lane-craft">Ремесло</span>
         <h3>Грязные игры</h3>
         <p>Vampire Survivors на Phaser, Balatro на Löve и монолитный GameManager против EventBus и IAudioSystem: почему бюджет сложности конечен и тратить его надо туда, где игрок это увидит.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>9 мин</span></div>
       </a>
-      <a class="post reveal d3" href="articles/array-of-arrays.html">
+      <a class="post" href="articles/array-of-arrays.html">
         <span class="arrow">↗</span>
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Что можно сделать с массивом массивов</h3>
         <p>vector&lt;vector&lt;uint&gt;&gt; на миллион локаций: 72 байта на 24 полезных и 90 мс на снапшот. «Посчитать, потом выделить», префиксная сумма в одном буфере и CSR — сборка быстрее в 17 раз, снапшот в 23.</p>
         <div class="pmeta"><span>11 октября 2026</span><span>13 мин</span></div>
@@ -166,7 +99,7 @@
   <section class="sec" id="books">
     <div class="books">
       <div class="sec-head">
-        <h2><span class="n">02</span>Книги</h2>
+        <h2>Книги</h2>
       </div>
       <div class="booklist">
         <article class="book">
@@ -254,12 +187,12 @@
   <!-- PROJECTS -->
   <section class="sec" id="projects">
     <div class="sec-head">
-      <h2><span class="n">03</span>Проекты</h2>
-      <a class="more" href="https://github.com/dalerank" target="_blank" rel="noopener">Весь GitHub →</a>
+      <h2>Проекты</h2>
+      <a class="more" href="https://github.com/dalerank" target="_blank" rel="noopener">Весь GitHub</a>
     </div>
     <div class="projects-stack">
 
-      <a class="project reveal d1" href="https://dalerank.github.io/Akhenaten/about.html">
+      <a class="project" href="https://dalerank.github.io/Akhenaten/about.html">
         <div class="project-shot pixel">
           <span class="badge">Open source</span>
           <img src="https://dalerank.github.io/Akhenaten/images/pharaoh_oss.png" alt="Скриншот Akhenaten — город в стиле Pharaoh" loading="lazy" />
@@ -274,11 +207,11 @@
             <span class="chip">Реверс-инжиниринг</span>
             <span class="chip">AGPL-3.0</span>
           </div>
-          <span class="project-cta">Об игре →</span>
+          <span class="project-cta">Об игре</span>
         </div>
       </a>
 
-      <a class="project rev reveal d2" href="https://github.com/dalerank/imspinner" target="_blank" rel="noopener">
+      <a class="project rev" href="https://github.com/dalerank/imspinner" target="_blank" rel="noopener">
         <div class="project-shot">
           <span class="badge">Header-only</span>
           <img src="assets/projects/imspinner.gif" alt="Демо анимированных спиннеров imspinner для Dear ImGui" loading="lazy" />
@@ -293,11 +226,11 @@
             <span class="chip">single-header</span>
             <span class="chip">MIT</span>
           </div>
-          <span class="project-cta">Открыть на GitHub →</span>
+          <span class="project-cta">Открыть на GitHub</span>
         </div>
       </a>
 
-      <div class="project reveal d3">
+      <div class="project">
         <div class="project-shot">
           <span class="badge">Онлайн-курс</span>
           <img src="assets/projects/cpp-course-ru.svg" alt="Обложка курса «С++ без аллокаций памяти» на Stepik" loading="lazy" />
@@ -312,31 +245,17 @@
             <span class="chip">Embedded</span>
             <span class="chip">Производительность</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:9px">
-            <span style="color:var(--ink-soft);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase">Примеры уроков на сайте</span>
-            <a href="articles/course-new-delete.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Что делают new и delete →</a>
-            <a href="articles/course-vtable.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Как работает vtable →</a>
-            <a href="articles/course-assoc.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Ассоциативные контейнеры STL →</a>
-            <a href="articles/course-heap-stack.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Компромиссы кучи и стека →</a>
+          <div class="lessons">
+            <span>Примеры уроков на сайте</span>
+            <a href="articles/course-new-delete.html">Что делают new и delete</a>
+            <a href="articles/course-vtable.html">Как работает vtable</a>
+            <a href="articles/course-assoc.html">Ассоциативные контейнеры STL</a>
+            <a href="articles/course-heap-stack.html">Компромиссы кучи и стека</a>
           </div>
-          <a class="project-cta" href="https://stepik.org/a/251888" target="_blank" rel="noopener" style="margin-top:auto">Открыть курс на Stepik →</a>
+          <a class="project-cta" href="https://stepik.org/a/251888" target="_blank" rel="noopener">Открыть курс на Stepik</a>
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- TOPICS -->
-  <section class="sec" id="topics">
-    <div class="sec-head"><h2><span class="n">04</span>По темам</h2></div>
-    <div class="topics">
-      <a class="chip" href="topics/reverse-engineering.html">Реверс-инжиниринг <b>11</b></a>
-      <a class="chip" href="topics/cpp.html">C++ <b>60</b></a>
-      <a class="chip" href="topics/abnormal-programming.html">Ненормальное программирование <b>17</b></a>
-      <a class="chip" href="topics/craft.html">Ремесло <b>26</b></a>
-      <a class="chip" href="topics/game-design.html">Геймдизайн <b>13</b></a>
-      <a class="chip" href="topics/performance.html">Производительность <b>11</b></a>
-      <a class="chip" href="topics/tools.html">Инструменты <b>1</b></a>
     </div>
   </section>
 
@@ -346,13 +265,11 @@
   <div class="wrap foot">
     <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
     <span>
-      <a href="https://github.com/dalerank">GitHub</a> ·
-      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
-      <a href="#">RSS</a>
+      <a href="https://github.com/dalerank">GitHub</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a>
     </span>
   </div>
 </footer>
 
-<script src="sphere.js"></script>
+<script src="trace.js"></script>
 </body>
 </html>

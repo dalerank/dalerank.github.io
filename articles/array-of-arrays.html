@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/array-of-arrays.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/array-of-arrays.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a class="on" href="array-of-arrays.html">RU</a><i>/</i><a href="../en/articles/array-of-arrays.html">EN</a><i>/</i><a href="../it/articles/array-of-arrays.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Что можно сделать с массивом массивов</h1><div class="ameta"><span>11 октября 2026</span><span>13 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Что можно сделать с массивом массивов</h1><div class="ameta"><span>11 октября 2026</span><span>13 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/array-of-arrays/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>На одном из проектов (4Х историческая стратегия) появилась задача убрать часть логики в потоки, отдав им снапшот игрового состояния, чтобы пока основной поток считает свой тик, остальные (AI, поиск пути, UI и др) могли крутить свою логику, вроде «кто стоит в этой локации» и делать это без блокировок или риска увидеть половину чужой записи. Чтобы реализовать такую систему, надо придумать как получить обратный индекс полка по локации, причем сделать поиск дешевым для потоков, то есть у потока должен быть свой снапшот состояния некоторой части игрового мира на момент старта апдейта (кадра, тика логики, дня, месяца и т.д)</p>
@@ -284,10 +284,10 @@ blob[]     [ 0 | 1 2 3 4 5 6 7 | 8 9 10 11 12 | ... ]
     <p>Когда я с коллегами готовил презентацию этого решения для команды, то наткнулся на статью <a href="https://zeux.io/2023/06/30/efficient-jagged-arrays/" target="_blank" rel="noopener">Efficient jagged arrays</a> 2023 года, где автор пришел к той же укладке для вертексов в меше для своего проекта. Мы шли со стороны игровых сущностей и снапшота между потоками, а он со стороны индексов треугольников, но в итоге пришли к одной и той же схеме. Само по себе это хороший признак, что задача встречается в разработке достаточно часто, чтобы не изобретать ее заново и найти какое‑то более переиспользуемое решение. К сожалению, я такого в открытом доступе не нашел... возможно, плохо искал.</p>
     <p>Фундаментально задача осталась той же, что и в 80-х и раньше, надо чтобы данные оказались в правильном месте, в правильной форме, к тому моменту, когда по ним пойдёт хотпас.</p>
 
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

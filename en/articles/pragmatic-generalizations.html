@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-generalizations.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-generalizations.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pragmatic-generalizations.html">RU</a><i>/</i><a class="on" href="pragmatic-generalizations.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Generalizations in C++ (part 1)</h1><div class="ameta"><span>PragmatiC++ · chapter 1, part 1</span><span>22 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Generalizations in C++ (part 1)</h1><div class="ameta"><span>PragmatiC++ · chapter 1, part 1</span><span>22 min</span></div></div>
   <article class="prose">
     <p style="color:var(--ink-soft);font-style:italic">This is the published version of the first chapter of the <strong>PragmatiC++</strong> draft (part 1) — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
 
@@ -418,10 +418,10 @@ Logical object Complex[1] = {real[1], imag[1]}
 <p>Part of the properties for value types carry over to object types too. If a value is well-formed and its binary representation is admissible for the chosen type, then an object with such a state is correct too; if the value type is properly partial, representing only part of the possible abstract entities (like int with respect to all integers), then the object type implementing this int will be partial too; if the value type has a unique representation, like two's complement for integers, then for objects of this type equality by meaning can be implemented through comparison of bytes, which is historically important for optimization, giving compilers the ability to reduce comparison of POD-type objects to a simple memcmp, if they know that the representation is unique and there are no "holes" with uninitialized bits, or go further and replace memcmp with a direct comparison of registers or vector instructions — but you should remember that a pure transfer of operator== → memcmp for structs with possible padding leads to potential bugs.</p>
 <p>I'll wrap up here, and about identity, procedures, the computational basis and regularity I'll tell in the next part...</p>
 
-    <a class="backlink" href="../index.html#books">← All books</a>
+    <a class="backlink" href="../index.html#books">All books</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

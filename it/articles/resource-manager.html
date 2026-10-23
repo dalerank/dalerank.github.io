@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/resource-manager.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/resource-manager.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/resource-manager.html">RU</a><i>/</i><a href="../../en/articles/resource-manager.html">EN</a><i>/</i><a class="on" href="resource-manager.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Programmazione anormale</span><h1>Il resource manager</h1><div class="ameta"><span>8 giugno 2026</span><span>28 min</span></div></div>
+  <div class="article-head"><span class="tag lane-abn">Programmazione anormale</span><h1>Il resource manager</h1><div class="ameta"><span>8 giugno 2026</span><span>28 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/resource-manager/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Nell'<a href="../../en/articles/architecture-tradeoffs.html">articolo precedente ho passato in rassegna i pattern</a> e la necessità di compromessi nello sviluppo reale, e c'era un'idea che ho deliberatamente lasciato da parte. I pattern raramente vivono da soli, e qualsiasi sistema reale non è un singolo pattern ma diversi di essi, incollati, attorcigliati, appiccicati insieme e in alcuni punti inchiodati di lato, ciascuno dei quali chiude solo una parte del problema. Il resource manager è probabilmente l'esempio più eloquente di un simile mashup, perché dall'esterno di solito sembra un paio di righe come <code>LoadTexture("bark.dds")</code>, mentre all'interno è una cache, una policy di default, meccaniche di recupero dai guasti e un'altra mezza dozzina di cose, ognuna delle quali è passata attraverso sudore, sangue e pixel ed è rimasta nell'architettura di questo sistema.</p>
@@ -263,9 +263,9 @@ TextureManager::instance().reloadGroup("shadows")</code></pre>
     <p>Se provi a esprimere tutto il testo qui sopra in un singolo paragrafo, suonerebbe all'incirca così. Il resource manager non è l'ennesimo pattern Singleton applicato alle texture, ma un'architettura ben rodata del ciclo di vita degli asset, in cui c'è la nozione di identità della risorsa, una cache e policy di gruppo dei default, e due tipi di reload diversi per natura — quello di emergenza per un lost device e quello utente per un cambio di impostazioni — e un'API amichevole per il programmatore in cui questo meccanismo multilivello è ordinatamente avvolto. Una buona architettura si distingue dai pattern di moda di quest'anno proprio per il fatto che le sue formulazioni sopravvivono sia alle API su cui è stata descritta per la prima volta, sia alle generazioni di console in cui è stata provata per la prima volta, sia ai team che l'hanno scritta, e continuano a portare valore là dove nessuno ricorda più nemmeno i nomi delle persone che l'hanno inventata.</p>
     <p>P.S. Tutto quanto scritto sopra descrive con discreta accuratezza i resource manager fino a circa il 2022; quel periodo lo conosco per esperienza di produzione personale. Oltre inizia un territorio in cui ho più letture che pratica, e tre argomenti meritano una conversazione a parte: il bindless rendering, Nanite e la PSO cache. Se lavori con uno stack moderno, questi argomenti vale la pena studiarli da materiali più freschi.</p>
     <p>P.P.S. La copertina e le immagini delle sezioni sono prese dal meraviglioso sito <a href="https://refactoring.guru/" target="_blank" rel="noopener">https://refactoring.guru/</a> con il loro permesso e ritoccate un po' con la lima.</p>
-    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

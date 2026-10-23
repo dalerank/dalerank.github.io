@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-concept-hierarchies.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-concept-hierarchies.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a class="on" href="pragmatic-concept-hierarchies.html">RU</a><i>/</i><a href="../en/articles/pragmatic-concept-hierarchies.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Иерархия концептов в C++</h1><div class="ameta"><span>PragmatiC++ · глава 5</span><span>13 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Иерархия концептов в C++</h1><div class="ameta"><span>PragmatiC++ · глава 5</span><span>13 мин</span></div></div>
   <article class="prose">
     <p style="color:var(--ink-soft);font-style:italic">Это пятая глава черновика книги <strong>PragmatiC++</strong> — о прагматичном и «понятном через год» C++. Исходный текст главы открыт на <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
 
@@ -293,10 +293,10 @@ concept Contiguous = FastDistanceMeasurable&lt;T&gt; &amp;&amp; std::contiguous_
 <p>Если подвести итог, картина складывается следующая — компилятор выбирает перегрузку, опираясь на строгость ограничений requires и формальные отношения между ними, что позволяет строить иерархии концептов и писать выразительные, типобезопасные интерфейсы, но при этом синтаксическая идентичность ограничений важнее их логической эквивалентности, а чрезмерно сложные иерархии могут вредить ясности кода.</p>
 <p>Как в завершении предыдущей статьи, где я говорил про необходимость умеренности в ограничениях, так и здесь повторяю мысль, что хороший дизайн сочетает аккуратно выделенные концепты и здравый баланс между автоматикой компилятора и явной логикой в коде — всё это помогает создавать код, который не только работает корректно, но и остаётся понятным для других разработчиков. Тем не менее при всей своей мощи система концептов имеет границы применимости, и важно понимать, где эти границы проходят, и об этом будет следующая глава...</p>
 
-    <a class="backlink" href="../index.html#books">← Все книги</a>
+    <a class="backlink" href="../index.html#books">Все книги</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

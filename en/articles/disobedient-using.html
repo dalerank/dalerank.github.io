@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/disobedient-using.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/disobedient-using.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/disobedient-using.html">RU</a><i>/</i><a class="on" href="disobedient-using.html">EN</a><i>/</i><a href="../../it/articles/disobedient-using.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>The disobedient using</h1><div class="ameta"><span>May 20, 2026</span><span>12 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>The disobedient using</h1><div class="ameta"><span>May 20, 2026</span><span>12 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/disobedient-using/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>In the <a href="simple-name-lookup.html">previous article</a> I broke down how qualified lookup works and how <code>using namespace</code> participates in it only as a fallback, when there are no own declarations in the specified scope. The compiler first looks at what's declared directly in the current context, and only on failure moves on to names mixed in via the <code>using</code> directive. The scheme would seem transparent and predictable: there's a lookup scope, there's the priority of explicit declarations, there's the "N-declarations rule" as insurance.</p>
@@ -245,9 +245,9 @@ h.set(nullptr);  // compile error, not an implicit conversion to int</code></pre
     <p>As material for the next articles I see covering the processes that govern the types of the arguments and return values themselves in templates. This is where we'll first encounter type deduction — the mechanism by which the compiler deduces the types of template parameters from the passed arguments, and template instantiation, which substitutes these types into the template body to create a concrete function or class.</p>
     <p>Understanding these mechanisms determines which template overloads will be chosen and how function calls will be resolved — and that's what the next article will be about…</p>
     <p>P.S. I've published the first 7 chapters of "Playful Programming" on GitHub in ru/en (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>), although <a href="https://habr.com/ru/users/olegsivchenko/" target="_blank" rel="noopener">@OlegSivchenko</a> suggests calling the series "Pragmatic C++" — the questions raised are just too practical and dull. If you feel like fixing the text or the code examples, drop me a message.</p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part3.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part3.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/cpp101-part3.html">RU</a><i>/</i><a class="on" href="cpp101-part3.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 3)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
+  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>C++101 (Part 3)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
   <article class="prose">
     <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <a href="cpp101-part2.html">Part 2</a> · <b>Part 3</b> · <a href="cpp101-part4.html">Part 4</a></p>
     <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#calling-virtuals-during-initialization">Calling Virtuals During Initialization</a></li><li><a href="#construction-tracker">Construction Tracker</a></li><li><a href="#attach-by-initialization">Attach by Initialization</a></li><li><a href="#non-virtual-interface-nvi">Non-Virtual Interface (NVI)</a></li><li><a href="#thread-safe-interface">Thread-Safe Interface</a></li><li><a href="#acyclic-visitor-pattern-tricky">Acyclic Visitor Pattern (tricky)</a></li><li><a href="#capability-query">Capability Query</a></li><li><a href="#covariant-return-types">Covariant Return Types</a></li><li><a href="#virtual-friend-function">Virtual Friend Function</a></li><li><a href="#fake-vtable">Fake Vtable</a></li><li><a href="#algebraic-hierarchy">Algebraic Hierarchy</a></li><li><a href="#polymorphic-exception">Polymorphic Exception</a></li><li><a href="#polymorphic-value-types">Polymorphic Value Types</a></li><li><a href="#hierarchy-generation">Hierarchy Generation</a></li><li><a href="#function-object-functor">Function Object (Functor)</a></li><li><a href="#object-generator">Object Generator</a></li><li><a href="#object-template">Object Template</a></li><li><a href="#iterator-pair">Iterator Pair</a></li><li><a href="#generic-container">Generic Container</a></li><li><a href="#erase-remove">Erase-Remove</a></li><li><a href="#clear-and-minimize">Clear-and-minimize</a></li><li><a href="#shrink-to-fit">Shrink-to-fit</a></li><li><a href="#safe-bool">Safe bool</a></li><li><a href="#type-safe-enum">Type Safe Enum</a></li><li><a href="#attorney-client">Attorney-Client</a></li></ul></div></details>
@@ -594,10 +594,10 @@ class RendererAttorney {
     <p>In games attorney-client appears in specific places at the boundaries of engine subsystems, where, say, a serializer or a debug inspector needs to dig into a class's private guts, but only into strictly defined ones, not all of them. Instead of making the serializer an all-encompassing friend of every class (flinging open all the encapsulation just to save a couple of fields), the attorney opens up exactly the needed fields to it.</p>
     <p>But in general, large engines more often solve this task through reflection systems that register serializable fields explicitly, or through a well-thought-out split into public/private interface, than through attorney-client. The idiom remains more of an elegant tool from the library author's arsenal, useful to know so you can recognize it in someone else's code and understand that what you're looking at is an attempt to make friendship granular. In everyday game code you'll see it rarely, and that's probably fine, and if you find yourself frequently doling out private access, it's usually simpler to reconsider who owns what.</p>
 
-    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part4.html">Part 4 →</a></p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <p style="margin-top:2rem"><a class="backlink" href="cpp101-part4.html">Part 4</a></p>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

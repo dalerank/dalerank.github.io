@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pharaoh-map-rendering.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-map-rendering.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a class="on" href="pharaoh-map-rendering.html">RU</a><i>/</i><a href="../en/articles/pharaoh-map-rendering.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Реверс-инжиниринг</span><h1>Как рисуется карта в Фараоне</h1><div class="ameta"><span>17 октября 2023</span><span>10 мин</span></div></div>
+  <div class="article-head"><span class="tag lane-rev">Реверс-инжиниринг</span><h1>Как рисуется карта в Фараоне</h1><div class="ameta"><span>17 октября 2023</span><span>10 мин</span></div></div>
   <article class="prose">
     <p>В свободное время я восстанавливаю старенькую, но довольно известную игру Pharaoh. Это ситибилдер, выпущенный в прошлом веке и разработанный Impressions Games. Технология рендеринга в этой игре была значительным достижением для своего времени и способствовала созданию впечатляющей атмосферы Древнего Египта, которая погружает игрока в проработанное окружение, удивляет вниманием к мелким деталям и передаёт богатство и разнообразие древнеегипетских пейзажей. В этой статье я опишу алгоритм отрисовки города, зданий, объектов, анимации и формат карты оригинальной игры.</p>
     <img src="../assets/articles/pharaoh-map-rendering/cover.jpg" alt="Карта города в Pharaoh" class="post-image" loading="lazy" />
@@ -169,9 +169,9 @@ UINT8  floodplain_growth[N] - прогресс роста травы на пло
     <p>В завершение этой статьи о том, как рисуется карта в игре, хочу отметить, что даже спустя почти четверть века «Фараон» сохраняет популярность среди поклонников стратегий. Игра остаётся классическим образцом в жанре ситибилдеров и примером того, как выдающийся дизайн и отменный визуальный стиль продолжают восхищать и вдохновлять игроков даже спустя годы и годы после своего выпуска. И даже запуск провального ремейка от Triskell Interactive не смог снизить интерес к старому доброму Фараону со стороны сообщества. Честно, я очень ждал ремейк, активно участвуя в обсуждениях с разработчиками, но когда понял, что игра движется в сторону всё большего упрощения, как-то подрастерял запал. А когда недавно от Трискеллов прошли слухи, что они занимаются портом на мобилки и f2p-режимом, я совсем расстроился.</p>
     <p>Если хотите посмотреть, как это всё работает в коде, и сдуть пыль веков с легаси-кода 25-летней выдержки — подключайтесь к репозиторию <a href="https://github.com/dalerank/Ozymandias" target="_blank" rel="noopener">github.com/dalerank/Ozymandias</a>. Игра ещё не восстановлена на 100%, но всё к этому идёт.</p>
     <p>Ещё я сделал обновляемый билд на <a href="https://dalerank.itch.io/ozymandias" target="_blank" rel="noopener">dalerank.itch.io/ozymandias</a> — кому неохота компилить игру под свою ОС, можно взять уже готовую сборку. Ресурсы, конечно же, вам нужны от оригинала, мы ведь не пираты.</p>
-    <a class="backlink" href="index.html">← Все статьи</a>
+    <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

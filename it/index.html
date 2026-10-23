@@ -11,7 +11,7 @@
 <link rel="alternate" hreflang="x-default" href="https://dalerank.github.io/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="dalerank" />
@@ -46,115 +46,48 @@
 
 <main class="wrap">
 
-  <!-- HERO -->
   <section class="hero">
-    <div>
-      <div class="eyebrow reveal d1">Codice · Mestiere · Reverse engineering</div>
-      <h1 class="reveal d2">Amo il <em>codice vecchio</em>,<br>i giochi e gli <span class="u">algoritmi</span></h1>
-      <p class="lead reveal d3">Note sul mestiere, sulla programmazione e sulle interiora dei giochi.</p>
-      <div class="cta reveal d4">
-        <a class="btn" href="#writing">Leggi il blog</a>
-        <a class="btn ghost" href="#books">Guarda i libri</a>
+    <h1>Amo il codice vecchio, i giochi e gli algoritmi</h1>
+    <p class="lead">Note su C++, prestazioni dei motori di gioco e reverse engineering dei giochi degli anni Novanta. Scrivo dal 2014.</p>
+    <figure class="trace" id="topics" data-unit="min" data-label="Articoli per data di pubblicazione">
+      <div class="trace-grid">
+        <a class="lane-label lane-cpp" data-lane="cpp" href="topics/cpp.html">C++</a>
+        <a class="lane-label lane-abn" data-lane="abn" href="topics/abnormal-programming.html">Programmazione anormale</a>
+        <a class="lane-label lane-perf" data-lane="perf" href="topics/performance.html">Prestazioni</a>
+        <a class="lane-label lane-rev" data-lane="rev" href="topics/reverse-engineering.html">Reverse engineering</a>
+        <a class="lane-label lane-design" data-lane="design" href="topics/game-design.html">Game design</a>
+        <a class="lane-label lane-craft" data-lane="craft" href="topics/craft.html">Mestiere</a>
       </div>
-      <div class="meta reveal d5">
-        <span><b>118</b> saggi</span>
-        <span><b>2</b> libri</span>
-        <span>dal <b>2014</b></span>
-      </div>
-    </div>
-    <div class="sphere reveal d3">
-      <a class="s2" href="../en/articles/joy-of-programming.html">la gioia di programmare</a>
-      <a class="s2" href="../en/articles/writing-a-book-about-code.html">come è nato Game++</a>
-      <a class="s2" href="../en/articles/red-fps-hunt.html">a caccia di fps</a>
-      <a class="s2" href="../en/articles/university-doesnt-train-programmers.html">università e programmatori</a>
-      <a class="s2" href="../en/articles/pragmatic-names.html">i nomi e il compilatore</a>
-      <a class="s1" href="../en/articles/pragmatic-constraints-again.html">di nuovo i constraint</a>
-      <a class="s2" href="../en/articles/pragmatic-concept-hierarchies.html">gerarchie di concept</a>
-      <a class="s1" href="../en/articles/pragmatic-concepts-history.html">storia dei concept</a>
-      <a class="s2" href="../en/articles/pragmatic-constraints.html">i concept in C++</a>
-      <a class="s3" href="../en/articles/pragmatic-overloads.html">gli overload in C++</a>
-      <a class="s2" href="../en/articles/dont-panic-aa-gamedev.html">gamedev AA+</a>
-      <a class="s2" href="../en/articles/building-arcs.html">architettura dei motori</a>
-      <a class="s2" href="../en/articles/ready-player-one.html">storia dei giochi</a>
-      <a class="s2" href="../en/articles/run-thread-run.html">multithreading</a>
-      <a class="s2" href="../en/articles/juggling-stl-algorithms.html">algoritmi STL</a>
-      <a class="s2" href="../en/articles/dancing-with-allocators.html">allocatori</a>
-      <a class="s2" href="../en/articles/pharaoh-demo-vs-retail.html">antico Egitto</a>
-      <a class="s2" href="../en/articles/cooking-vectors.html">cooking vectors</a>
-      <a class="s2" href="../en/articles/string-interning.html">string interning</a>
-      <a class="s2" href="../en/articles/all-programmers-are-seniors.html">tutti senior</a>
-      <a class="s2" href="../en/articles/fit-elephant-in-suitcase.html">elefante in valigia</a>
-      <a class="s2" href="../en/articles/spears-and-bits.html">spears &amp; bits</a>
-      <a class="s2" href="../en/articles/task-based-game-engines.html">motori task-based</a>
-      <a class="s2" href="../en/articles/ai-books-for-gamedev.html">libri sull'IA nei giochi</a>
-      <a class="s2" href="../en/articles/heavy-header.html">l'header pesante</a>
-      <a class="s3" href="../en/articles/486-enough-for-everyone.html">basta un 486</a>
-      <a class="s3" href="../en/articles/unity-cow-strings.html">le stringhe di Unity</a>
-      <a class="s2" href="../en/articles/bioshock-infinite-lessons.html">lezioni da BioShock: Infinite</a>
-      <a class="s2" href="../en/articles/twenty-cores-not-enough.html">20 core non bastano</a>
-      <a class="s3" href="../en/articles/gamedev-programmer.html">programmatore nel gamedev</a>
-      <a class="s2" href="../en/articles/need-own-game-engine.html">un motore tutto tuo?</a>
-      <a class="s1" href="../en/articles/what-to-read-game-programmer.html">cosa leggere?</a>
-      <a class="s1" href="../en/articles/what-else-to-read-game-programmer.html">cos'altro leggere?</a>
-      <a class="s2" href="../en/articles/cpp-in-gamedev.html">C++ nel gamedev</a>
-      <a class="s1" href="../en/articles/red-barrel-problem.html">il barile rosso</a>
-      <a class="s2" href="../en/articles/swizzle-cpp.html">swizzle in C++</a>
-      <a class="s1" href="../en/articles/private-but-want-public.html">private → public</a>
-      <a class="s2" href="../en/articles/switch-sdk-three-sin.html">tre peccati nel Switch SDK</a>
-      <a class="s2" href="../en/articles/not-unity-alone.html">non di sola Unity</a>
-      <a class="s1" href="../en/articles/cover-generation.html">generazione delle coperture</a>
-      <a class="s2" href="../en/articles/should-players-be-hand-held.html">tenere il giocatore per mano?</a>
-      <a class="s1" href="../en/articles/catch-the-paying-player.html">dark pattern nei giochi</a>
-      <a class="s2" href="../en/articles/miss-old-game-mechanics.html">meccaniche dei vecchi giochi</a>
-      <a class="s1" href="../en/articles/corridors-tell-no-tales.html">i corridoi di BioShock</a>
-      <a class="s2" href="../en/articles/last-of-deus-ex.html">l'ultimo Deus Ex</a>
-      <a class="s1" href="../en/articles/fistful-of-achievements.html">un pugno di achievement</a>
-      <a class="s2" href="../en/articles/strings-in-engines.html">stringhe nei motori</a>
-      <a class="s1" href="../en/articles/do-not-copy.html">non copiarlo</a>
-      <a class="s2" href="../en/articles/where-are-your-bugs.html">dove sono i tuoi bug?</a>
-      <a class="s2" href="../en/articles/boss-its-all-gone.html">capo, è tutto perduto</a>
-      <a class="s1" href="../en/articles/spinlocks.html">spinlock</a>
-      <a class="s1" href="../en/articles/cache-pollution.html">cache pollution</a>
-      <a class="book" href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">Game++</a>
-      <a class="s1" href="../en/articles/enum-name-runtime.html">nome enum a runtime</a>
-      <a class="s1" href="../en/articles/how-caesar-draws-city.html">Caesar III: texture</a>
-      <a class="s2" href="../en/articles/caesar3-rendering.html">Caesar III: rendering</a>
-      <a class="s1" href="../en/articles/caesar3-game-logic.html">Caesar III: logica</a>
-      <a class="s2" href="../en/articles/caesar3-generation.html">Caesar III: generazione</a>
-      <a class="s1" href="../en/articles/caesar3-city-model.html">Caesar III: modello di città</a>
-      <a class="s2" href="../en/articles/caesar3-part6.html">Caesar III: game loop</a>
-      <a class="s2" href="topics/reverse-engineering.html">reverse engineering</a>
-      <a class="book" href="../en/articles/pragmatic-generalizations.html">PragmatiC++</a>
-      <a class="s2" href="../en/articles/pharaoh-engine-tricks.html">ECS in Pharaoh</a>
-      <a class="s1" href="../en/articles/pharaoh-map-rendering.html">la mappa di Pharaoh</a>
-      <a class="book" href="../assets/books/zapiski-ezdovogo-kota.pdf">Note di un gatto viaggiatore</a>
-    </div>
+      <figcaption data-tpl="Tutti i {n} per data di pubblicazione. La lunghezza della barra è il tempo di lettura, circa {h} in tutto. Scorri lungo le corsie per sceglierne uno." data-n="articolo|articoli" data-h="ora|ore">Tutti gli articoli per data di pubblicazione. La lunghezza della barra è il tempo di lettura.</figcaption>
+      <noscript><p><a href="articles/index.html">Tutti gli articoli</a></p></noscript>
+    </figure>
   </section>
+  <script type="application/json" id="trace-data">[{"href":"../en/articles/how-caesar-draws-city.html","lane":"rev","title":"Reverse engineering di Caesar III: estrarre le texture","date":"5 maggio 2014","year":2014,"min":14},{"href":"../en/articles/caesar3-rendering.html","lane":"rev","title":"Reverse engineering di Caesar III: il rendering della città","date":"15 maggio 2014","year":2014,"min":9},{"href":"../en/articles/caesar3-game-logic.html","lane":"rev","title":"Reverse engineering di Caesar III: la logica di gioco","date":"9 giugno 2014","year":2014,"min":18},{"href":"../en/articles/caesar3-generation.html","lane":"rev","title":"Reverse engineering di Caesar III: la generazione del mondo","date":"23 luglio 2014","year":2014,"min":6},{"href":"../en/articles/caesar3-city-model.html","lane":"rev","title":"Reverse engineering di Caesar III: il modello della città","date":"15 settembre 2014","year":2014,"min":9},{"href":"../en/articles/caesar3-part6.html","lane":"rev","title":"Reverse engineering di Caesar III: il game loop","date":"20 ottobre 2014","year":2014,"min":20},{"href":"../en/articles/cache-pollution.html","lane":"perf","title":"Cache inquinata? Fai scorta di test","date":"9 settembre 2022","year":2022,"min":12},{"href":"../en/articles/spinlocks.html","lane":"perf","title":"Non c'è fretta… (sugli spinlock)","date":"27 settembre 2022","year":2022,"min":13},{"href":"../en/articles/enum-name-runtime.html","lane":"abn","title":"Il nome di un enum C++ a runtime","date":"7 novembre 2022","year":2022,"min":10},{"href":"../en/articles/switch-sdk-three-sin.html","lane":"abn","title":"Perché l'SDK di Switch ha tre funzioni sin diverse?","date":"11 giugno 2023","year":2023,"min":8},{"href":"../en/articles/private-but-want-public.html","lane":"abn","title":"Quando è private ma vorresti tanto public","date":"21 settembre 2023","year":2023,"min":8},{"href":"../en/articles/where-are-your-bugs.html","lane":"abn","title":"Dove sono i tuoi bug?","date":"30 settembre 2023","year":2023,"min":8},{"href":"../en/articles/pharaoh-map-rendering.html","lane":"rev","title":"Come viene disegnata la mappa in Pharaoh","date":"17 ottobre 2023","year":2023,"min":10},{"href":"../en/articles/cover-generation.html","lane":"design","title":"Generazione procedurale delle coperture nei giochi","date":"24 ottobre 2023","year":2023,"min":8},{"href":"../en/articles/not-unity-alone.html","lane":"cpp","title":"Non di sola Unity…","date":"4 novembre 2023","year":2023,"min":15},{"href":"../en/articles/gamedev-programmer.html","lane":"craft","title":"Sei sicuro di voler diventare un programmatore nel gamedev?","date":"19 novembre 2023","year":2023,"min":12},{"href":"../en/articles/swizzle-cpp.html","lane":"abn","title":"La magia dello swizzle degli shader in C++","date":"10 dicembre 2023","year":2023,"min":9},{"href":"../en/articles/need-own-game-engine.html","lane":"craft","title":"Perché [non] ti serve un motore di gioco tutto tuo","date":"24 dicembre 2023","year":2023,"min":15},{"href":"../en/articles/what-to-read-game-programmer.html","lane":"craft","title":"Cosa dovrebbe leggere un programmatore di giochi?","date":"11 febbraio 2024","year":2024,"min":6},{"href":"../en/articles/what-else-to-read-game-programmer.html","lane":"craft","title":"Cos'altro dovrebbe leggere un programmatore di giochi?","date":"15 febbraio 2024","year":2024,"min":6},{"href":"../en/articles/cpp-in-gamedev.html","lane":"craft","title":"Cos'è il C++ nel gamedev?","date":"25 febbraio 2024","year":2024,"min":11},{"href":"../en/articles/red-barrel-problem.html","lane":"design","title":"Il problema del barile rosso","date":"27 marzo 2024","year":2024,"min":4},{"href":"../en/articles/miss-old-game-mechanics.html","lane":"design","title":"Mi mancano le meccaniche dei vecchi giochi","date":"21 aprile 2024","year":2024,"min":15},{"href":"../en/articles/corridors-tell-no-tales.html","lane":"design","title":"I corridoi non raccontano storie","date":"9 maggio 2024","year":2024,"min":12},{"href":"../en/articles/last-of-deus-ex.html","lane":"design","title":"L'ultimo dei Deus Ex","date":"23 giugno 2024","year":2024,"min":12},{"href":"../en/articles/fistful-of-achievements.html","lane":"design","title":"Per un pugno di achievement","date":"28 giugno 2024","year":2024,"min":8},{"href":"../en/articles/twenty-cores-not-enough.html","lane":"perf","title":"E 20 core ancora non bastano","date":"18 luglio 2024","year":2024,"min":27},{"href":"../en/articles/bioshock-infinite-lessons.html","lane":"design","title":"Cosa possiamo imparare dal vecchio BioShock: Infinite?","date":"24 luglio 2024","year":2024,"min":8},{"href":"../en/articles/catch-the-paying-player.html","lane":"design","title":"Prendi il giocatore, pagante o no…","date":"15 agosto 2024","year":2024,"min":16},{"href":"../en/articles/strings-in-engines.html","lane":"abn","title":"Le stringhe nei motori di gioco","date":"5 settembre 2024","year":2024,"min":15},{"href":"../en/articles/do-not-copy.html","lane":"perf","title":"Quello non copiarlo e basta","date":"30 settembre 2024","year":2024,"min":5},{"href":"../en/articles/boss-its-all-gone.html","lane":"abn","title":"Capo, è tutto perduto","date":"7 ottobre 2024","year":2024,"min":12},{"href":"../en/articles/pharaoh-engine-tricks.html","lane":"rev","title":"ECS, dynvtbl, thread logici e Pharaoh","date":"8 ottobre 2024","year":2024,"min":2},{"href":"../en/articles/unity-cow-strings.html","lane":"abn","title":"Come Unity ha rinunciato alle proprie stringhe","date":"29 ottobre 2024","year":2024,"min":7},{"href":"../en/articles/486-enough-for-everyone.html","lane":"perf","title":"Un 486 dovrebbe bastare a tutti","date":"6 novembre 2024","year":2024,"min":13},{"href":"../en/articles/heavy-header.html","lane":"abn","title":"Il pesante H[eader]","date":"10 novembre 2024","year":2024,"min":14},{"href":"../en/articles/ai-books-for-gamedev.html","lane":"craft","title":"Buoni libri per un programmatore di IA nel gamedev","date":"18 novembre 2024","year":2024,"min":8},{"href":"../en/articles/task-based-game-engines.html","lane":"perf","title":"Pensare a task nei motori di gioco","date":"28 novembre 2024","year":2024,"min":16},{"href":"../en/articles/spears-and-bits.html","lane":"perf","title":"Spears & bits","date":"17 dicembre 2024","year":2024,"min":15},{"href":"../en/articles/fit-elephant-in-suitcase.html","lane":"perf","title":"Come far entrare un elefante in una valigia","date":"21 dicembre 2024","year":2024,"min":10},{"href":"../en/articles/all-programmers-are-seniors.html","lane":"craft","title":"In Spagna tutti i programmatori sono senior","date":"26 dicembre 2024","year":2024,"min":14},{"href":"../en/articles/string-interning.html","lane":"abn","title":"Game++. String interning","date":"13 gennaio 2025","year":2025,"min":9},{"href":"../en/articles/cooking-vectors.html","lane":"abn","title":"Game++. Cucinare i vector","date":"15 gennaio 2025","year":2025,"min":12},{"href":"../en/articles/pharaoh-demo-vs-retail.html","lane":"rev","title":"Welcome to Ancient…","date":"22 gennaio 2025","year":2025,"min":12},{"href":"../en/articles/dancing-with-allocators.html","lane":"abn","title":"Game++. Danze con gli allocatori","date":"30 gennaio 2025","year":2025,"min":34},{"href":"../en/articles/juggling-stl-algorithms.html","lane":"craft","title":"Game++. Giocoleria con gli algoritmi STL","date":"9 febbraio 2025","year":2025,"min":29},{"href":"../en/articles/run-thread-run.html","lane":"abn","title":"Game++. corri, thread, corri…","date":"17 febbraio 2025","year":2025,"min":33},{"href":"../en/articles/ready-player-one.html","lane":"design","title":"Ready Player One","date":"20 febbraio 2025","year":2025,"min":40},{"href":"../en/articles/building-arcs.html","lane":"craft","title":"Game++. Costruire archi","date":"28 febbraio 2025","year":2025,"min":24},{"href":"../en/articles/unpacking-containers.html","lane":"abn","title":"Game++. Spacchettare i container","date":"19 marzo 2025","year":2025,"min":40},{"href":"../en/articles/why-gamedev-stays-cpp17.html","lane":"craft","title":"Perché gli sviluppatori di giochi restano su C++17","date":"26 marzo 2025","year":2025,"min":14},{"href":"../en/articles/should-players-be-hand-held.html","lane":"design","title":"Bisogna tenere i giocatori per mano?","date":"aprile 2025","year":2025,"min":10},{"href":"../en/articles/heap-less.html","lane":"abn","title":"Game++. Heap? Less","date":"3 aprile 2025","year":2025,"min":20},{"href":"../en/articles/things-game-programmer-should-know.html","lane":"craft","title":"Un paio di cose che un programmatore di giochi dovrebbe sapere","date":"5 aprile 2025","year":2025,"min":6},{"href":"../en/articles/work-hard.html","lane":"abn","title":"Game++. Work hard","date":"14 aprile 2025","year":2025,"min":16},{"href":"../en/articles/just-write-code.html","lane":"craft","title":"Scrivi codice e basta","date":"24 aprile 2025","year":2025,"min":5},{"href":"../en/articles/patching-patterns.html","lane":"abn","title":"Game++. Rattoppando i pattern","date":"29 aprile 2025","year":2025,"min":30},{"href":"../en/articles/while-game-over.html","lane":"abn","title":"Game++. while (!game(over))","date":"6 maggio 2025","year":2025,"min":35},{"href":"../articles/pharaoh-house-evolution.html","lane":"rev","title":"Механика эволюции домов в Pharaoh (1999)","date":"24 мая 2025","year":2025,"min":13},{"href":"../en/articles/performance-traps.html","lane":"abn","title":"Game++. Trappole di prestazioni","date":"29 maggio 2025","year":2025,"min":18},{"href":"../en/articles/blackbox-gameplay.html","lane":"design","title":"Gameplay a scatola nera","date":"31 maggio 2025","year":2025,"min":12},{"href":"../en/articles/reject-heap-commits.html","lane":"perf","title":"Respingo i commit che usano lo heap e chiedo ai colleghi di riscrivere quella logica","date":"17 settembre 2025","year":2025,"min":11},{"href":"../en/articles/why-pharaoh-best.html","lane":"design","title":"Perché Pharaoh resta il miglior gioco della serie","date":"26 settembre 2025","year":2025,"min":14},{"href":"../en/articles/be-your-own-breakpoint.html","lane":"abn","title":"Sii il breakpoint di te stesso","date":"6 ottobre 2025","year":2025,"min":15},{"href":"../en/articles/good-bad-colored-fast.html","lane":"perf","title":"Il buono, il brutto, il colorato e il veloce","date":"10 ottobre 2025","year":2025,"min":13},{"href":"../en/articles/string-zoo.html","lane":"abn","title":"Uno zoo di stringhe nel tuo codice C++?","date":"20 novembre 2025","year":2025,"min":26},{"href":"../en/articles/gamedev-myths.html","lane":"abn","title":"Miti, superstizioni e saggezza popolare nello sviluppo di giochi","date":"24 novembre 2025","year":2025,"min":23},{"href":"../en/articles/dont-panic-aa-gamedev.html","lane":"craft","title":"Niente panico, sei appena atterrato nel gamedev AA+","date":"3 dicembre 2025","year":2025,"min":10},{"href":"../en/articles/university-doesnt-train-programmers.html","lane":"craft","title":"Perché l'università non forma programmatori","date":"30 gennaio 2026","year":2026,"min":8},{"href":"articles/red-fps-hunt.html","lane":"perf","title":"A caccia degli fps rossi","date":"19 febbraio 2026","year":2026,"min":25},{"href":"articles/writing-a-book-about-code.html","lane":"craft","title":"Scrivere codice è più facile che scrivere un libro sullo scrivere codice","date":"22 febbraio 2026","year":2026,"min":4},{"href":"articles/joy-of-programming.html","lane":"craft","title":"Sulla gioia di programmare e l'imponderabilità dei traguardi","date":"5 marzo 2026","year":2026,"min":8},{"href":"articles/why-no-l5-cache.html","lane":"perf","title":"Perché non abbiamo cache L5?","date":"11 marzo 2026","year":2026,"min":13},{"href":"articles/pragmatic-generalizations-2.html","lane":"cpp","title":"Generalizzazioni in C++ (parte 2)","date":"18 marzo 2026","year":2026,"min":26},{"href":"articles/redundant-computations.html","lane":"perf","title":"Calcoli ridondanti","date":"6 aprile 2026","year":2026,"min":12},{"href":"articles/compilers-confused-names.html","lane":"cpp","title":"Anche i compilatori si confondono con i nomi","date":"14 aprile 2026","year":2026,"min":10},{"href":"articles/simple-name-lookup.html","lane":"cpp","title":"Il name lookup semplice in C++","date":"22 aprile 2026","year":2026,"min":11},{"href":"articles/dream-portfolio-second-job.html","lane":"craft","title":"Come non confondere un sogno, un portfolio e un secondo lavoro","date":"28 aprile 2026","year":2026,"min":7},{"href":"articles/console-memory.html","lane":"perf","title":"Come funziona la memoria nelle console di gioco","date":"5 maggio 2026","year":2026,"min":22},{"href":"articles/10x-programmers.html","lane":"craft","title":"Sui programmatori 10x","date":"12 maggio 2026","year":2026,"min":6},{"href":"articles/disobedient-using.html","lane":"cpp","title":"Lo using disobbediente","date":"20 maggio 2026","year":2026,"min":12},{"href":"articles/three-in-a-boat.html","lane":"craft","title":"Tre in barca, per non parlar della miseria e dei cani","date":"27 maggio 2026","year":2026,"min":7},{"href":"articles/architecture-tradeoffs.html","lane":"abn","title":"Compromessi architetturali nello sviluppo di videogiochi","date":"3 giugno 2026","year":2026,"min":106},{"href":"articles/resource-manager.html","lane":"abn","title":"Il resource manager","date":"8 giugno 2026","year":2026,"min":28},{"href":"articles/soviet-gta.html","lane":"craft","title":"Perché i programmatori sovietici non fecero GTA","date":"10 giugno 2026","year":2026,"min":12},{"href":"articles/random-people-in-it.html","lane":"craft","title":"Sulle persone \"capitate per caso\" nell'IT","date":"14 giugno 2026","year":2026,"min":5},{"href":"articles/game-gui-rewritten.html","lane":"abn","title":"Perché la GUI dei giochi viene riscritta (Parte 1)","date":"16 giugno 2026","year":2026,"min":22},{"href":"articles/game-gui-rewritten-2.html","lane":"abn","title":"Come la GUI dei giochi viene riscritta (Parte 2)","date":"17 giugno 2026","year":2026,"min":43},{"href":"../en/articles/cpp101-part4.html","lane":"abn","title":"C++101 (Parte 4)","date":"21 giugno 2026","year":2026,"min":38},{"href":"../en/articles/cpp101-part3.html","lane":"abn","title":"C++101 (Parte 3)","date":"21 giugno 2026","year":2026,"min":36},{"href":"../en/articles/cpp101-part2.html","lane":"abn","title":"C++101 (Parte 2)","date":"21 giugno 2026","year":2026,"min":36},{"href":"../en/articles/cpp101-part1.html","lane":"abn","title":"C++101 (Parte 1)","date":"21 giugno 2026","year":2026,"min":38},{"href":"../en/articles/course-heap-stack.html","lane":"cpp","title":"Compromessi tra heap e stack","date":"25 giugno 2026","year":2026,"min":6},{"href":"../en/articles/course-assoc.html","lane":"cpp","title":"Container associativi della STL","date":"25 giugno 2026","year":2026,"min":3},{"href":"../en/articles/course-vtable.html","lane":"cpp","title":"Come funziona una vtable","date":"25 giugno 2026","year":2026,"min":5},{"href":"../en/articles/course-new-delete.html","lane":"cpp","title":"Cosa fanno davvero new e delete","date":"25 giugno 2026","year":2026,"min":3},{"href":"articles/foreign-stl-guide.html","lane":"abn","title":"Guida sul campo alle STL degli altri","date":"6 luglio 2026","year":2026,"min":12},{"href":"articles/megacity-on-iphone.html","lane":"abn","title":"Comprimere una megalopoli fino alle dimensioni di un iPhone 4","date":"12 luglio 2026","year":2026,"min":10},{"href":"articles/worst-programming-language.html","lane":"abn","title":"Il peggior linguaggio di programmazione di tutti i tempi /s","date":"14 luglio 2026","year":2026,"min":24},{"href":"articles/senior-gamedev-paths.html","lane":"craft","title":"Dove può crescere un senior nel gamedev","date":"18 luglio 2026","year":2026,"min":9},{"href":"articles/victims-of-clean-code.html","lane":"craft","title":"Le vittime del clean code","date":"18 luglio 2026","year":2026,"min":9},{"href":"articles/game-engine-phases.html","lane":"abn","title":"Finiremo tutti lì…","date":"18 luglio 2026","year":2026,"min":11},{"href":"articles/eastl-guide.html","lane":"abn","title":"Guida sul campo a EASTL","date":"24 luglio 2026","year":2026,"min":15},{"href":"articles/dirty-coding-tricks-3.html","lane":"abn","title":"Dirty Coding Tricks, part 3","date":"2 agosto 2026","year":2026,"min":16},{"href":"articles/production-has-fallen.html","lane":"craft","title":"La produzione è caduta, Milord","date":"6 agosto 2026","year":2026,"min":16},{"href":"articles/english-instead-of-code.html","lane":"craft","title":"L'inglese invece del codice","date":"9 agosto 2026","year":2026,"min":14},{"href":"articles/what-consoles-gave-developers.html","lane":"craft","title":"Cosa hanno regalato le console agli sviluppatori","date":"24 agosto 2026","year":2026,"min":21},{"href":"articles/lemons-and-remake-economics.html","lane":"craft","title":"Limoni, giochi e l'economia dei remake","date":"5 settembre 2026","year":2026,"min":5},{"href":"articles/play-good-not-bad.html","lane":"craft","title":"Gioca ai giochi buoni, a quelli brutti non giocare","date":"6 settembre 2026","year":2026,"min":6},{"href":"articles/fibonacci-enemies.html","lane":"design","title":"Fibonaccia i nemici","date":"6 settembre 2026","year":2026,"min":6},{"href":"articles/anatomy-of-rakes.html","lane":"cpp","title":"Anatomia dei rastrelli che pestiamo","date":"6 settembre 2026","year":2026,"min":8},{"href":"articles/wrong-cpp-bees.html","lane":"cpp","title":"Queste api fanno il C++ sbagliato","date":"1 ottobre 2026","year":2026,"min":11},{"href":"articles/array-of-arrays.html","lane":"cpp","title":"Cosa si può fare con un array di array","date":"11 ottobre 2026","year":2026,"min":13},{"href":"articles/dirty-games.html","lane":"craft","title":"Giochi sporchi","date":"11 ottobre 2026","year":2026,"min":9},{"href":"articles/where-complexity-comes-from.html","lane":"craft","title":"Da dove viene la complessità","date":"11 ottobre 2026","year":2026,"min":7}]</script>
 
   <!-- WRITING -->
   <section class="sec" id="writing">
     <div class="sec-head">
-      <h2><span class="n">01</span>Ultimi articoli</h2>
-      <a class="more" href="articles/index.html">Tutti gli articoli →</a>
+      <h2>Ultimi articoli</h2>
+      <a class="more" href="articles/index.html">Tutti gli articoli</a>
     </div>
     <div class="grid">
-      <a class="post reveal d1" href="articles/where-complexity-comes-from.html">
+      <a class="post" href="articles/where-complexity-comes-from.html">
         <span class="arrow">↗</span>
-        <span class="tag clay">Mestiere</span>
+        <span class="tag lane-craft">Mestiere</span>
         <h3>Da dove viene la complessità</h3>
         <p>La complessità arriva insieme a un numero: 16 ms, 5 GB di memoria, un limite sulla patch. Come la si compra, perché due vincoli sono peggio di uno due volte e dove si sposta il budget dopo un’ottimizzazione riuscita.</p>
         <div class="pmeta"><span>11 ottobre 2026</span><span>7 min</span></div>
       </a>
-      <a class="post reveal d2" href="articles/dirty-games.html">
+      <a class="post" href="articles/dirty-games.html">
         <span class="arrow">↗</span>
-        <span class="tag clay">Mestiere</span>
+        <span class="tag lane-craft">Mestiere</span>
         <h3>Giochi sporchi</h3>
         <p>Vampire Survivors su Phaser, Balatro su Löve e un GameManager monolitico contro EventBus e IAudioSystem: perché il budget di complessità è finito e va speso dove il giocatore lo vede.</p>
         <div class="pmeta"><span>11 ottobre 2026</span><span>9 min</span></div>
       </a>
-      <a class="post reveal d3" href="articles/array-of-arrays.html">
+      <a class="post" href="articles/array-of-arrays.html">
         <span class="arrow">↗</span>
-        <span class="tag">C++</span>
+        <span class="tag lane-cpp">C++</span>
         <h3>Cosa si può fare con un array di array</h3>
         <p>vector&lt;vector&lt;uint&gt;&gt; su un milione di località: 72 byte ogni 24 utili e 90 ms per snapshot. Conta-poi-alloca, somma prefissa in un unico buffer e CSR — build 17 volte più veloce, snapshot 23.</p>
         <div class="pmeta"><span>11 ottobre 2026</span><span>13 min</span></div>
@@ -166,7 +99,7 @@
   <section class="sec" id="books">
     <div class="books">
       <div class="sec-head">
-        <h2><span class="n">02</span>I libri</h2>
+        <h2>I libri</h2>
       </div>
       <div class="booklist">
         <article class="book">
@@ -254,12 +187,12 @@
   <!-- PROJECTS -->
   <section class="sec" id="projects">
     <div class="sec-head">
-      <h2><span class="n">03</span>Progetti</h2>
-      <a class="more" href="https://github.com/dalerank" target="_blank" rel="noopener">Tutto su GitHub →</a>
+      <h2>Progetti</h2>
+      <a class="more" href="https://github.com/dalerank" target="_blank" rel="noopener">Tutto su GitHub</a>
     </div>
     <div class="projects-stack">
 
-      <a class="project reveal d1" href="https://dalerank.github.io/Akhenaten/about.html">
+      <a class="project" href="https://dalerank.github.io/Akhenaten/about.html">
         <div class="project-shot pixel">
           <span class="badge">Open source</span>
           <img src="https://dalerank.github.io/Akhenaten/images/pharaoh_oss.png" alt="Screenshot di Akhenaten — una città in stile Pharaoh" loading="lazy" />
@@ -274,11 +207,11 @@
             <span class="chip">Reverse engineering</span>
             <span class="chip">AGPL-3.0</span>
           </div>
-          <span class="project-cta">Info sul gioco →</span>
+          <span class="project-cta">Info sul gioco</span>
         </div>
       </a>
 
-      <a class="project rev reveal d2" href="https://github.com/dalerank/imspinner" target="_blank" rel="noopener">
+      <a class="project rev" href="https://github.com/dalerank/imspinner" target="_blank" rel="noopener">
         <div class="project-shot">
           <span class="badge">Header-only</span>
           <img src="../assets/projects/imspinner.gif" alt="Demo degli spinner animati imspinner per Dear ImGui" loading="lazy" />
@@ -293,11 +226,11 @@
             <span class="chip">single-header</span>
             <span class="chip">MIT</span>
           </div>
-          <span class="project-cta">Apri su GitHub →</span>
+          <span class="project-cta">Apri su GitHub</span>
         </div>
       </a>
 
-      <div class="project reveal d3">
+      <div class="project">
         <div class="project-shot">
           <span class="badge">Corso online</span>
           <img src="../assets/projects/cpp-course-en.svg" alt="Copertina del corso «C++ senza allocazioni di memoria» su Stepik" loading="lazy" />
@@ -312,31 +245,17 @@
             <span class="chip">Embedded</span>
             <span class="chip">Prestazioni</span>
           </div>
-          <div style="display:flex;flex-direction:column;gap:9px">
-            <span style="color:var(--ink-soft);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase">Lezioni di esempio sul sito</span>
-            <a href="../en/articles/course-new-delete.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Cosa fanno davvero new e delete →</a>
-            <a href="../en/articles/course-vtable.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Come funziona una vtable →</a>
-            <a href="../en/articles/course-assoc.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Container associativi della STL →</a>
-            <a href="../en/articles/course-heap-stack.html" style="color:var(--rust-deep);font-weight:600;font-size:16px;border-bottom:1.5px solid rgba(142,52,23,.3);align-self:flex-start;padding-bottom:1px">Compromessi tra heap e stack →</a>
+          <div class="lessons">
+            <span>Lezioni di esempio sul sito</span>
+            <a href="../en/articles/course-new-delete.html">Cosa fanno davvero new e delete</a>
+            <a href="../en/articles/course-vtable.html">Come funziona una vtable</a>
+            <a href="../en/articles/course-assoc.html">Container associativi della STL</a>
+            <a href="../en/articles/course-heap-stack.html">Compromessi tra heap e stack</a>
           </div>
-          <a class="project-cta" href="https://stepik.org/a/255930" target="_blank" rel="noopener" style="margin-top:auto">Apri il corso su Stepik →</a>
+          <a class="project-cta" href="https://stepik.org/a/255930" target="_blank" rel="noopener">Apri il corso su Stepik</a>
         </div>
       </div>
 
-    </div>
-  </section>
-
-  <!-- TOPICS -->
-  <section class="sec" id="topics">
-    <div class="sec-head"><h2><span class="n">04</span>Sfoglia per argomento</h2></div>
-    <div class="topics">
-      <a class="chip" href="topics/reverse-engineering.html">Reverse engineering <b>10</b></a>
-      <a class="chip" href="topics/cpp.html">C++ <b>60</b></a>
-      <a class="chip" href="topics/abnormal-programming.html">Programmazione anormale <b>17</b></a>
-      <a class="chip" href="topics/craft.html">Mestiere <b>26</b></a>
-      <a class="chip" href="topics/game-design.html">Game design <b>13</b></a>
-      <a class="chip" href="topics/performance.html">Prestazioni <b>11</b></a>
-      <a class="chip" href="topics/tools.html">Strumenti <b>1</b></a>
     </div>
   </section>
 
@@ -346,13 +265,11 @@
   <div class="wrap foot">
     <span>© 2026 dalerank — creato e ospitato su GitHub Pages</span>
     <span>
-      <a href="https://github.com/dalerank">GitHub</a> ·
-      <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> ·
-      <a href="#">RSS</a>
+      <a href="https://github.com/dalerank">GitHub</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a>
     </span>
   </div>
 </footer>
 
-<script src="../sphere.js"></script>
+<script src="../trace.js"></script>
 </body>
 </html>

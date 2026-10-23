@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/why-no-l5-cache.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/why-no-l5-cache.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -24,7 +24,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/why-no-l5-cache.html">RU</a><i>/</i><a class="on" href="why-no-l5-cache.html">EN</a><i>/</i><a href="../../it/articles/why-no-l5-cache.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Performance</span><h1>Why don't we have L5 caches?</h1><div class="ameta"><span>Mar 11, 2026</span><span>13 min</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>Why don't we have L5 caches?</h1><div class="ameta"><span>Mar 11, 2026</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/why-no-l5-cache/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Have you ever asked yourself a seemingly trivial question: why does a CPU have cache levels at all, if you could just take one big cache instead? The answer to this question is tightly interwoven with semiconductor physics, the history of processor architecture, and the way compilers learned to make use of the memory hierarchy.</p>
@@ -87,8 +87,8 @@
     <p>The coherence problem also grows nonlinearly: each new level shared between cores requires complicating the MESI/MOESI protocol, adds new classes of races, and increases the agreement time, creating new classes of conflicts on invalidation. Three levels are already a complex engineering system, four spills into niche solutions for specific workloads, and five is essentially the point where management complexity probably starts eating up the entire potential gain.</p>
     <p>But it's not all so clear-cut, and instead of adding yet another cache level the industry went down other paths that fulfill the same function in spirit but are called something else. As I already wrote, AMD 3D V-Cache is formally positioned as an extended L3, but physically it's a separate SRAM die stacked on top of the compute chip, and in some architectural models it can well be considered L4. Intel, on the other hand, introduces the notion of a “High Bandwidth Cache” or “Memory-side Cache,” deliberately moving away from numbering — and in server systems such an entity effectively plays the role of “L5” in terms of latency: it's faster than disk but several times slower than local DRAM, except this is no longer a cache in the hardware sense, just a different region of the address space with different latencies.</p>
     <p>Speculating, the only realistic scenario for L5 would be systems with very heterogeneous memory: for example, future chips with several levels of 3D memory, where you could build a chain like “SRAM → EDRAM → HBM → L5? → DDR → NVM.” Research projects in the academic literature describe such schemes, and IBM in its z-series mainframes has historically used nonstandard memory hierarchies with more levels than is customary in the x86 world, but for the mass market this remains an area of architectural research rather than production solutions for now. Going back to the tree analogy — nobody has yet figured out what to put between the attic and the chest of drawers so that it would be faster than the chest, cheaper than the attic, and large enough to make any sense at all.</p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 </body></html>

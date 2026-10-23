@@ -8,7 +8,7 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/console-memory.html" />
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/console-memory.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -26,7 +26,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/console-memory.html">RU</a><i>/</i><a href="../../en/articles/console-memory.html">EN</a><i>/</i><a class="on" href="console-memory.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag gold">Prestazioni</span><h1>Come funziona la memoria nelle console di gioco</h1><div class="ameta"><span>5 maggio 2026</span><span>22 min</span></div></div>
+  <div class="article-head"><span class="tag lane-perf">Prestazioni</span><h1>Come funziona la memoria nelle console di gioco</h1><div class="ameta"><span>5 maggio 2026</span><span>22 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/console-memory/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>La console più venduta della sua generazione aveva la peggiore architettura di memoria, quella tecnicamente più valida fu la meno venduta di tutte, e quella su cui era più facile sviluppare apparteneva a un'azienda che non aveva mai prodotto console prima. Probabilmente avrai riconosciuto qui la PS2, il GameCube e l'Xbox.</p>
@@ -322,9 +322,9 @@ IWRAM_CODE void critical_update_function(void) {
     <p>Questo compito è in parte risolto dalle moderne API di basso livello come Vulkan, DX12 e Metal, che richiedono allo sviluppatore di descrivere esplicitamente la proprietà delle risorse, i punti di sincronizzazione e le barriere, ma concettualmente questo problema non è risolto — abbiamo semplicemente spostato i problemi dell'hardware in su al livello dello sviluppatore.</p>
     <p>Sony vede la soluzione a questo problema in ancora un altro strato di DMA, solo che ora su un bus separato tra CPU e GPU, mentre Microsoft e Apple la vedono nell'unificazione dell'APU in modo che possa gestire entrambi gli insiemi di compiti. Ma il compito fondamentale è rimasto lo stesso: i dati devono finire nel posto giusto, al momento giusto, e nella forma giusta, altrimenti puoi dimenticarti delle prestazioni.</p>
     <p>P.S. Come ha giustamente notato <a href="https://habr.com/ru/users/xenre/" target="_blank" rel="noopener">@XenRE</a>, senza un mapper (NROM) lo spazio di indirizzamento della CPU è rigidamente limitato all'intervallo 0x8000–0xFFFF, che dà un massimo di 32 KB per la PRG e 8 KB per la CHR tramite l'intervallo PPU 0x0000–0x1FFF. La cifra di 512 KB si riferisce al mapper MMC3 come uno dei più diffusi nella libreria commerciale del NES (Super Mario Bros. 3, Mega Man 3–6, Contra, e centinaia di altri). L'MMC3 commuta i banchi PRG e CHR al volo, aggirando i limiti fisici del bus. Non c'è alcun limite teorico per la ROM PRG/CHR con un mapper, e tutto si riduce solo allo schema specifico del mapper.</p>
-    <a class="backlink" href="index.html">← Tutti gli articoli</a>
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

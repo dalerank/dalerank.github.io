@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/cpp101-part4.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part4.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/cpp101-part4.html">RU</a><i>/</i><a class="on" href="cpp101-part4.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Abnormal programming</span><h1>C++101 (Part 4)</h1><div class="ameta"><span>Jun 21, 2026</span><span>38 min</span></div></div>
+  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>C++101 (Part 4)</h1><div class="ameta"><span>Jun 21, 2026</span><span>38 min</span></div></div>
   <article class="prose">
     <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <a href="cpp101-part2.html">Part 2</a> · <a href="cpp101-part3.html">Part 3</a> · <b>Part 4</b></p>
     <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#making-new-friends-tricky">Making New Friends (tricky)</a></li><li><a href="#non-member-non-friend-function-tricky">Non-member Non-friend Function (tricky)</a></li><li><a href="#small-object-optimization-soo-sso">Small Object Optimization (SOO/SSO)</a></li><li><a href="#prohibiting-heap-based-objects">Prohibiting Heap-based Objects</a></li><li><a href="#storage-class-tracker">Storage Class Tracker</a></li><li><a href="#execute-around-pointer">Execute-Around Pointer</a></li><li><a href="#temporary-proxy">Temporary Proxy</a></li><li><a href="#address-of">Address Of</a></li><li><a href="#nullptr">nullptr</a></li><li><a href="#move-constructor">Move Constructor</a></li><li><a href="#implicit-conversions">Implicit conversions</a></li><li><a href="#recursive-type-composition-tricky">Recursive Type Composition (tricky)</a></li><li><a href="#temporary-base-class">Temporary Base Class</a></li><li><a href="#boost-mutant">Boost mutant</a></li><li><a href="#multi-statement-macro">Multi-statement Macro</a></li><li><a href="#named-loop">Named Loop</a></li><li><a href="#named-parameter">Named Parameter</a></li><li><a href="#named-external-argument">Named External Argument</a></li><li><a href="#deprecate-and-delete">Deprecate and Delete</a></li><li><a href="#function-poisoning">Function Poisoning</a></li><li><a href="#inner-class">Inner Class</a></li><li><a href="#rule-of-zero-three-five">Rule of Zero/Three/Five</a></li><li><a href="#most-vexing-parse">Most Vexing Parse</a></li><li><a href="#pass-key">Pass-key</a></li><li><a href="#defaulted-comparisons-and-the-operator-spaceship">Defaulted Comparisons and the &lt;=&gt; operator (Spaceship)</a></li><li><a href="#what-to-do-with-all-this">What to do with all this</a></li></ul></div></details>
@@ -643,9 +643,9 @@ bool same  = a == b;
     <p>P.P.P.P.S. Habr-cake! Thanks to everyone who sends in corrections.</p>
     <p>If you liked it, drop by <a href="https://t.me/game_cpp_book" target="_blank" rel="noopener">https://t.me/game_cpp_book</a>, I write rarely</p>
 
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

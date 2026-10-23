@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pragmatic-names.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pragmatic-names.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pragmatic-names.html">RU</a><i>/</i><a class="on" href="pragmatic-names.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">C++</span><h1>Do names matter to the compiler</h1><div class="ameta"><span>PragmatiC++ · chapter 7</span><span>8 min</span></div></div>
+  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Do names matter to the compiler</h1><div class="ameta"><span>PragmatiC++ · chapter 7</span><span>8 min</span></div></div>
   <article class="prose">
     <p style="color:var(--ink-soft);font-style:italic">This is the seventh chapter of the <strong>PragmatiC++</strong> draft — a book on pragmatic C++ that still makes sense a year later. The chapter source is open on <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">GitHub</a>.</p>
 
@@ -254,10 +254,10 @@ void f(double);</code></pre>
 </ul>
 <p>So when we get to the linking stage, if two declarations give the same "mangled" name, the compiler considers that we're talking about one and the same entity. That's exactly why <code>void g(int);</code> and <code>void g(const int);</code> give the same mangled identifier, and it's one declaration rather than an overload, whereas different parameters (by type) give different mangled names and are considered an overload. Here we've come to the rules of name lookup, which I'll try to cover in the next chapter. Come along — it'll be terribly interesting, or at least not boring.</p>
 
-    <a class="backlink" href="../index.html#books">← All books</a>
+    <a class="backlink" href="../index.html#books">All books</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>

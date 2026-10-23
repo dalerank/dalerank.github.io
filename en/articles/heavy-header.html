@@ -7,7 +7,7 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/heavy-header.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/heavy-header.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
@@ -25,7 +25,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/heavy-header.html">RU</a><i>/</i><a class="on" href="heavy-header.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag">Abnormal programming</span><h1>The heavy H[header]</h1><div class="ameta"><span>Nov 10, 2024</span><span>14 min</span></div></div>
+  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>The heavy H[header]</h1><div class="ameta"><span>Nov 10, 2024</span><span>14 min</span></div></div>
   <article class="prose">
     <p>I always wanted to write about something light and airy, the way <a href="https://habr.com/ru/users/antoshkka/" target="_blank" rel="noopener">@antoshkka</a> writes about userver, for example, or about how easily and casually you can wrap some thingy algorithm in a dozen templates, pour <code>std::optional</code> all over it, and, sipping coffee, wait for the compiler to deign to chew through it all. But fate (and not the team lead, no, how could you think that) keeps tossing me tasks where the debugger's harsh embrace won't let a programmer's dreamy soul go until late at night, and the eternal fight with the compiler ruins every attempt to wrap the result of the thingy algorithm in another dozen templates. This time, one clear June morning, fate tossed me an amusing task — the full bundle build time was creeping toward two hours, and building bundles these days is not the fastest pleasure. But looking at the stats, it became clear that ~55% of the time goes on building resources: textures, models, localization and so on. There's plenty to fix there, but that's the realm of the build engineers. Another 30%, or forty minutes, goes on tests — now everything we've gathered and re-converted has to be checked, loaded, shot at, run around, monsters killed, behavior trees exercised; let QA deal with that. And in the remaining 15%, or about 15 minutes, we did the "real work," building the heart of the project — the binary. "It's fine, it's always like that for us, even on an empty UE project," said our mobile guys and went off to drink coffee on the terrace. But we're not mobile guys, we're serious AAA folks, we have our own engine and a custom pipeline on the build farm. And besides, 15 minutes is still a lot, even if you have 27k files in the project. Let's go see where the time went.</p>
 
@@ -236,9 +236,9 @@ std::vector&lt;int&gt;:                      0.002384s
     <p>Combining these flags in Visual Studio gives a lot of information about where compile time goes. For clang there's the <code>-ftime-report</code> flag; I recommend checking out <a href="https://aras-p.info/blog/2019/01/16/time-trace-timeline-flame-chart-profiler-for-Clang/" target="_blank" rel="noopener">this post</a> — it's quite old, but fundamentally nothing has changed.</p>
     <p>If you have additions or suggestions — write in the comments. Don't suggest ccache/RAM disk: expensive, lots of hassle and little payoff.</p>
     <p>Thanks for reading!</p>
-    <a class="backlink" href="index.html">← All articles</a>
+    <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> · <a href="https://www.patreon.com/cw/dalerank">Patreon</a> · <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> · <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
 </body></html>
