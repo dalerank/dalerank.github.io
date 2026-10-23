@@ -322,6 +322,17 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding:40px 0 60px}
   .project-body{padding:30px 28px 28px}
   nav.links{display:none}
 }
+@media(max-width:560px){
+  .wrap{padding:0 20px}
+  .nav{height:64px;gap:10px}
+  .brand{gap:9px;font-size:20px}
+  .brand .seal{width:34px;height:34px}
+  .actions{gap:10px}
+  .topbar .btn{padding:9px 12px;font-size:11px;letter-spacing:.06em}
+}
+@media(max-width:380px){
+  .brand .seal + span{display:none}
+}
 
 /* ---------- about page ---------- */
 .about-hero{display:grid;grid-template-columns:200px 1fr;gap:44px;align-items:center;padding:70px 0 36px}
