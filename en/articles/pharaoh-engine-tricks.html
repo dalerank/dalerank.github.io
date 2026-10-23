@@ -11,13 +11,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://dalerank.github.io/en/articles/pharaoh-engine-tricks.html" />
 <meta property="og:title" content="ECS, dynvtbl, logical threads and Pharaoh — dalerank" />
 <meta property="og:description" content="Code archaeology of the Pharaoh and Caesar III engine: an ancient-Egyptian ECS on flat arrays, a bare-bones VMT made of callbacks, logical threads from the last century, and a god object for the sake of saving memory." />
-<meta property="og:image" content="https://dalerank.github.io/assets/articles/pharaoh-engine-tricks/cover.gif" />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/pharaoh-engine-tricks/cover.poster.jpg" />
 <meta name="twitter:card" content="summary_large_image" />
 </head>
 <body>
@@ -49,7 +51,7 @@
   </div>
 
   <article class="prose">
-    <img src="../../assets/articles/pharaoh-engine-tricks/cover.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/pharaoh-engine-tricks/cover.mp4" poster="../../assets/articles/pharaoh-engine-tricks/cover.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>In the late 90s Sierra's historical city-builder series was at the peak of its popularity, getting great reviews and spawning plenty of followers and imitators — from Children of the Nile and on through Banished (2014), Pharaoh: A New Era (2023), Nebuchadnezzar (2021), Builders of Egypt (sadly cancelled) — effectively becoming the granddaddy of the genre. Pharaoh appeared in 1999 after two years of development, following the beloved Caesar III. It was the first game in the series to move the setting from Ancient Rome to Ancient Egypt and offered (though really just repeated — the actual step forward in mechanics was Zeus) a complex gameplay that nonetheless wasn't built on the micromanagement of buildings and citizens. Many people remember these games thanks to hundreds of failed missions, when the emperor angrily sent troops or the kingdom revoked your title over debts. The first "Paradox" game is still a whole year away, and the genres and settings are quite distant, so in 1999 and 2000 Pharaoh reaped the laurels and the cream of the sales, while <a href="https://www.youtube.com/watch?v=m5CI9ch7b0U" target="_blank" rel="noopener">Simon Bradbury</a>, the studio's chief technical genius and the soul of the project, left the team and founded his own Firefly Studios to give us Stronghold.</p>
     <p>In the course of code-archaeology digs into the Caesar and Pharaoh binaries, I found plenty of interesting <s>legacy fossils</s> technical solutions, many of which I've seen in other projects, and not only in games. This dense legacy (though not as dense as AoE1/2) may look crude, but there's definitely beauty in the solutions — and bear in mind these games launched and delivered decent FPS (15-30) running on all sorts of early Pentiums, 586s and Athlons with just 32 MB of RAM, not cache. And they ran fast, looked good, and did it on a single core.</p>
     <p>All the screenshots in the article are taken from the open-source version of the game.</p>
@@ -204,7 +206,7 @@ b-&gt;bar();</code></pre>
     ....</code></pre>
 
     <h2>GodObject and running out of memory</h2>
-    <img src="../../assets/articles/pharaoh-engine-tricks/god-object.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/pharaoh-engine-tricks/god-object.mp4" poster="../../assets/articles/pharaoh-engine-tricks/god-object.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>In general a <code>god class/object</code> is an anti-pattern in programming that consists of creating a class or data structure that does too many tasks. I haven't yet seen a game engine that managed to avoid such an object appearing; everyone tries to minimize its influence on the architecture, with varying success.</p>
     <p>Such a class is usually huge, contains many dependencies and manages various objects, performing practically all of the objects' functions. But it had one very significant property for that era — it allowed substantial memory savings and placing objects in one place. On the weak machines of the time, with 32MB of RAM or less, the game launched with cut-down display settings and a limit on the number of citizens in the city; if a normal session allowed 4k figures on the map, a cut-down one only 2k — and that way the developers managed to let more people play.</p>
     <p>The memory saving lies in the fact that we can lay out sets of data through a <code>union</code>, packing them without the need to bloat the data structures. That's pretty much where the advantages of this approach end, and from there on it's all problems, because a <code>god object</code> is a <code>god</code> precisely in that it really starts doing everything — and at night it also corrupts a little memory.</p>
@@ -243,7 +245,7 @@ public:
 
     <h2>Eternal pyramids</h2>
     <p>Things are still bad with the pyramids — I just can't find the time to figure out the mess of asm that the logic of building them turns out to be. But with something simpler there's already progress: <a href="https://habr.com/ru/articles/804153/" target="_blank" rel="noopener">the engine can already build mastabas</a>.</p>
-    <img src="../../assets/articles/pharaoh-engine-tricks/mastaba.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/pharaoh-engine-tricks/mastaba.mp4" poster="../../assets/articles/pharaoh-engine-tricks/mastaba.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Thanks for reading to the end! I hope it was interesting. If the project caught your interest, come to the proper <s>telegram channel</s> <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">github repo</a> — let's build pyramids together.</p>
 
     <a class="backlink" href="index.html">All articles</a>

@@ -3,16 +3,20 @@
 <head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Reverse-engineering Caesar III: Game Logic (Part 3) — dalerank</title>
+<meta name="description" content="Simulating citizens, walking, event queues." />
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-game-logic.html" />
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/caesar3-game-logic.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://dalerank.github.io/en/articles/caesar3-game-logic.html" />
 <meta property="og:title" content="Reverse-engineering Caesar III: Game Logic (Part 3) — dalerank" />
+<meta property="og:description" content="Simulating citizens, walking, event queues." />
 <meta property="og:image" content="https://avatars.githubusercontent.com/u/918081?v=4" />
 <meta name="twitter:card" content="summary" />
 </head>
@@ -557,8 +561,8 @@ progress += 100 * (productionRate * numberWorkers) / (12 * 16 * maximumWorkers);
 
     <h2>Links</h2>
     <ul>
-      <li><a href="http://caesar-iii.ru/" rel="noopener">Russian-language Caesar III fan community</a></li>
-      <li><a href="http://caesar3.heavengames.com/" rel="noopener">HeavenGames Caesar III — extensive English-language resource</a></li>
+      <li><a href="https://caesar-iii.ru/" rel="noopener">Russian-language Caesar III fan community</a></li>
+      <li><a href="https://caesar3.heavengames.com/" rel="noopener">HeavenGames Caesar III — extensive English-language resource</a></li>
       <li><a href="https://github.com/AntonBaracuda/opencaesar3/tree/master/c3_rev" rel="noopener">Recovered original game source code (compiles, does not yet fully run)</a></li>
       <li><a href="https://bitbucket.org/dalerank/caesaria/wiki/Home" rel="noopener">CaesarIA — open-source C++/SDL remake (Windows, Linux, Mac, Haiku, Android)</a></li>
     </ul>

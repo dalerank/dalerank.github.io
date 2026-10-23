@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="ru_RU" />
@@ -97,7 +99,7 @@ for (y = 0; y &lt; map.size; y++) {
     <p>Получаем в итоге вот такую картинку.</p>
     <img src="../assets/articles/pharaoh-map-rendering/zigzag-result.jpg" alt="Результат zig-zag-line" class="post-image" loading="lazy" />
     <p>Анимация работы обоих алгоритмов.</p>
-    <img src="../assets/articles/pharaoh-map-rendering/anim.gif" alt="Анимация работы diagonal-path и zig-zag-line" class="post-image" loading="lazy" />
+    <video class="post-image" src="../assets/articles/pharaoh-map-rendering/anim.mp4" poster="../assets/articles/pharaoh-map-rendering/anim.poster.jpg" autoplay loop muted playsinline aria-label="Анимация работы diagonal-path и zig-zag-line"></video>
     <h2>Переходим к отрисовке города</h2>
     <p>Кроме непосредственно тайлов земли, на карте расположены здания, анимации статичных объектов, а также присутствуют подвижные объекты (люди, животные и другие). Есть объекты, сквозь которые можно пройти (арка, ворота, мосты по отношению к кораблям), есть объекты, которые расположены поверх других объектов (и рендер должен учитывать это) — например мосты. Дополнительная анимация тайлов и объектов, такие как тайлы воды или каналов. В конечном счёте на карте могут быть расположены неквадратные объекты, отображение которых тоже имеет свои особенности, потому что они не могут быть нарисованы за один проход. Всё это усложняет процесс отрисовки и требует дополнительных правил и условий.</p>
     <img src="../assets/articles/pharaoh-map-rendering/city.jpg" alt="Город в Pharaoh" class="post-image" loading="lazy" />

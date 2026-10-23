@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
@@ -97,7 +99,7 @@ for (y = 0; y &lt; map.size; y++) {
     <p>We end up with a picture like this.</p>
     <img src="../../assets/articles/pharaoh-map-rendering/zigzag-result.jpg" alt="Zig-zag-line result" class="post-image" loading="lazy" />
     <p>An animation of how both algorithms work.</p>
-    <img src="../../assets/articles/pharaoh-map-rendering/anim.gif" alt="Animation of diagonal-path and zig-zag-line" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/pharaoh-map-rendering/anim.mp4" poster="../../assets/articles/pharaoh-map-rendering/anim.poster.jpg" autoplay loop muted playsinline aria-label="Animation of diagonal-path and zig-zag-line"></video>
     <h2>On to drawing the city</h2>
     <p>Besides the ground tiles themselves, the map has buildings, animations of static objects, and also moving objects (people, animals and others). There are objects you can pass through (an arch, gates, bridges relative to ships), there are objects placed on top of other objects (and the renderer must account for this) — bridges, for example. Additional animation of tiles and objects, such as water or canal tiles. Ultimately the map can hold non-square objects whose display has its own peculiarities too, because they can't be drawn in a single pass. All of this complicates the rendering process and requires additional rules and conditions.</p>
     <img src="../../assets/articles/pharaoh-map-rendering/city.jpg" alt="A city in Pharaoh" class="post-image" loading="lazy" />

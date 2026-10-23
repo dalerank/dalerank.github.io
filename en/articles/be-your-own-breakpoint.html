@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
@@ -470,7 +472,7 @@ void AOETools_DebugShowPropertyBreakpoint(const char* /*field*/, const T&amp; v,
     ImGui::PopItemFlag();
 }</code></pre>
 <p>What happens in the video (this was a pitch of the technical idea to the team): in the game editor, next to each property (health, damage, etc.) an "active debug" button appears; pressing it installs a hardware breakpoint on writes to that variable. When the game logic changes the variable → the debugger stops → you can look at the call stack in Visual Studio: in the example it drops us into the attached debugger the moment variables are changed from the property editor. So while debugging various bugs you get the ability, without diving into the code, to see who changed or corrupted a variable for a specific unit and from where — and in code terms, to drive debugging programmatically for the hard cases.</p>
-<img src="../../assets/articles/be-your-own-breakpoint/02.gif" alt="" class="post-image" loading="lazy" />
+<video class="post-image" src="../../assets/articles/be-your-own-breakpoint/02.mp4" poster="../../assets/articles/be-your-own-breakpoint/02.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
 
     <a class="backlink" href="index.html">All articles</a>
 

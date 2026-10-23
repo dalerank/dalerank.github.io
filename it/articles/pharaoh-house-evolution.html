@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>La meccanica dell'evoluzione delle case in Pharaoh (1999) — dalerank</title>
+<meta name="description" content="Come funziona l'evoluzione delle case in Pharaoh (1999): le case come FSM, il sistema di bisogni e attributi (desiderabilità del terreno, tasse, sicurezza antincendio, salute), gli overlay, lo switch di evoluzione ricostruito dall'originale, il consumo di cibo e risorse, il buffer condiviso runtime_data e l'aggiornamento delle texture, sull'esempio del remake Akhenaten." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pharaoh-house-evolution.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-house-evolution.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/pharaoh-house-evolution.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:url" content="https://dalerank.github.io/it/articles/pharaoh-house-evolution.html" />
+<meta property="og:title" content="La meccanica dell'evoluzione delle case in Pharaoh (1999) — dalerank" />
+<meta property="og:description" content="Come funziona l'evoluzione delle case in Pharaoh (1999): le case come FSM, il sistema di bisogni e attributi (desiderabilità del terreno, tasse, sicurezza antincendio, salute), gli overlay, lo switch di evoluzione ricostruito dall'originale, il consumo di cibo e risorse, il buffer condiviso runtime_data e l'aggiornamento delle texture, sull'esempio del remake Akhenaten." />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/pharaoh-house-evolution/01.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pharaoh-house-evolution.html">RU</a><i>/</i><a href="../../en/articles/pharaoh-house-evolution.html">EN</a><i>/</i><a class="on" href="pharaoh-house-evolution.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><span class="tag lane-rev">Reverse engineering</span><h1>La meccanica dell'evoluzione delle case in Pharaoh (1999)</h1><div class="ameta"><span>24 maggio 2025</span><span>13 min</span></div></div>
+  <article class="prose">
+
+<img src="../../assets/articles/pharaoh-house-evolution/01.jpg" alt="" class="post-image" loading="lazy" />
+<p>In <em>Pharaoh</em> il cammino dalle semplici capanne alle ville sontuose, decorate con affreschi e colonne, non è solo una questione di architettura e di texture diverse. È il riflesso di quanto il giocatore si prende cura della sua città virtuale, dei suoi bisogni, della sua fede e della sua sicurezza. Ogni abitazione della città è una FSM che reagisce alle condizioni circostanti: abbondanza di cibo, accesso all'acqua, riti religiosi, svaghi culturali e molto altro.</p><p>Non appena inizierete a soddisfare bisogni sempre più vari dei cittadini, le loro case cominceranno a cambiare: a volte impercettibilmente, a volte in un lampo. Questo sistema è il cuore stesso del gioco, come lo era già nel capitolo precedente della serie: le case si influenzano a vicenda e influenzano gli edifici vicini, e dietro una componente visiva semplice, un paio di texture per livello di casa, si nasconde un complesso meccanismo di simulazione che rende unico ogni quartiere della città.</p><p>In questo articolo provo a raccontare come funziona l'evoluzione delle case, quali requisiti stanno dietro a ogni livello abitativo e come tutto questo era implementato nel gioco originale. Se per caso vi siete persi l'ultima riunione della nostra cerchia sacerdotale... pardon, gli articoli precedenti sul recupero dei sorgenti di questo vecchio city builder, trovate assolutamente il tempo di dare un'occhiata ad alcuni passaggi interessanti (<a href="../../en/articles/pharaoh-demo-vs-retail.html" target="_blank" rel="noopener">Benvenuti nell'Antico…</a>, <a href="../../en/articles/pharaoh-engine-tricks.html" target="_blank" rel="noopener">ecs, dynvtbl, thread logici e Pharaoh</a>, <a href="https://habr.com/ru/articles/804153/" target="_blank" rel="noopener">Come costruire una mastaba</a>, <a href="../../en/articles/pharaoh-map-rendering.html" target="_blank" rel="noopener">Come viene disegnata la mappa in Pharaoh</a>, <a href="https://habr.com/ru/articles/749478/" target="_blank" rel="noopener">Una nuova casa per il Faraone</a>)</p><p>Tutti gli screenshot dell'articolo sono stati fatti con il renderer del progetto, <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">i sorgenti sono su github</a></p><hr/><h2>Teoria senza codice</h2>
+<img src="../../assets/articles/pharaoh-house-evolution/02.jpg" alt="" class="post-image" loading="lazy" />
+<p>I vostri sudditi pretendono sempre qualcosa: grano, birra, un posto dove pregare... Naturalmente i bisogni sono una parte inseparabile del gioco e del ciclo di vita della città: è un city builder, dopotutto. I bisogni si trasformano in vantaggi concreti: gli abitanti soddisfatti pagano più tasse, si ribellano più di rado e non hanno fretta di appiccare il fuoco alle case dei vicini (la meccanica dei rioters). In queste condizioni la città prospera, e le statue in vostro onore si innalzano verso il dio del sole Ra.</p><p>Ogni bisogno soddisfatto deve innescare una certa logica di gioco, che si tratti di maggiore stabilità, di tasse o di stanze per nuovi abitanti. Non so come si chiamassero queste meccaniche nel gioco originale; dalla mia corrispondenza con Simon Bradbury, tech lead dell'originale Caesar3, ho capito che lui le chiama <em>proprietà o</em> attributi (attributes). Queste proprietà si combinano in un sistema armonioso, che richiede pensiero strategico e pianificazione su scala dell'intera città, e gli errori vengono puniti piuttosto in fretta con un esodo della popolazione, da qualche parte verso le azzime e la terra promessa.</p><p>Al giocatore di <em>Caesar/Pharaoh/Zeus </em>questi attributi erano nascosti dietro testi del tipo "Serve un tempio, manca l'acqua pulita, oppure il granaio dà fastidio": era un tratto distintivo della serie e permetteva di realizzare una meccanica in apparenza complessa (niente numeri espliciti), con interazioni tra edifici e desiderabilità del terreno. Ma dentro, questo sistema si è rivelato sorprendentemente semplice.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/03.jpg" alt="" class="post-image" loading="lazy" />
+<p>Cose come il reddito, la felicità (desirability, la desiderabilità del terreno) e la popolazione erano già presenti nei capitoli precedenti della serie. Come al solito, scegliere quali bisogni soddisfare per primi e quali obiettivi aggiuntivi completare per ottenere bonus fa parte del rompicapo dello sviluppo della città. Proprio un rompicapo: i livelli originali erano calcolati in modo che il giocatore trovasse una soluzione efficiente con un insieme limitato di risorse; i livelli vanilla, sia di Caesar sia di Pharaoh, erano stati creati proprio come un puzzle di risorse con un numero limitato di pezzi.</p><p>I parametri principali delle case sono la popolazione, le risorse consumate e i servizi forniti dai vari edifici, e crescono soprattutto soddisfacendo i bisogni delle case, collocando nelle vicinanze gli edifici che li forniscono. La meccanica dei parametri è stata ereditata direttamente da Caesar: se garantite cibo e accesso all'acqua pulita agli abitanti delle case dei primi livelli, ognuna di queste abitazioni servite dà già un bonus di popolazione e la possibilità di ricavare un reddito, se costruite un esattore delle tasse.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/04.jpg" alt="" class="post-image" loading="lazy" />
+<p>Tra l'altro il gioco mostra solo le quantità di merci immagazzinate nella casa in quel momento e la descrizione di ciò che manca all'edificio per salire di livello.</p><h2>Ancora un po' di teoria</h2><p>Ma non si tratta solo di felicità, reddito e popolazione. Nel gruppo degli attributi rientrano anche la sicurezza antincendio, la sanità e una serie di altri parametri legati alle possibilità che si sbloccano man mano che si avanza nelle missioni. Anche questi vengono misurati con dei numeri, ma il giocatore non li vede affatto: nello screenshot qui sotto si vede come il livello di rischio d'incendio di un edificio viene rappresentato tramite overlay, e come esiste realmente nel gioco.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/05.jpg" alt="" class="post-image" loading="lazy" />
+
+<img src="../../assets/articles/pharaoh-house-evolution/06.jpg" alt="" class="post-image" loading="lazy" />
+<p>Nel gioco originale l'elenco dei layer di overlay non era molto lungo, ma sono riuscito a recuperarne di più: a quanto pare gli autori non li ritenevano importanti, oppure non hanno fatto in tempo a rifinirli per l'uscita.</p><p>Un ampio insieme di attributi legati al sistema dei bisogni offre grande libertà sia nella progettazione dei legami stessi, sia in termini di rigiocabilità relativamente infinita e di un gran numero di combinazioni di attributi, lasciando al giocatore la scelta dei modi di risolvere i problemi più adatti al suo stile di gestione o alla situazione attuale sulla mappa.</p><details><summary>Overlay</summary><pre style="margin:1.4rem 0"><code>enum e_overlay {
+    OVERLAY_NONE = 0,
+    OVERLAY_WATER = 2,
+    OVERLAY_RELIGION = 4,
+    OVERLAY_FIRE = 8,
+    OVERLAY_DAMAGE = 9,
+    OVERLAY_CRIME = 10,
+    OVERLAY_ENTERTAINMENT = 11,
+    OVERLAY_BOOTH = 12,
+    OVERLAY_BANDSTAND = 13,
+    OVERLAY_PAVILION = 14,
+    OVERLAY_SENET_HOUSE = 15,
+    OVERLAY_EDUCATION = 16,
+    OVERLAY_SCRIBAL_SCHOOL = 17,
+    OVERLAY_LIBRARY = 18,
+    OVERLAY_ACADEMY = 19,
+    OVERLAY_APOTHECARY = 20,
+    OVERLAY_DENTIST = 21,
+    OVERLAY_PHYSICIAN = 22,
+    OVERLAY_MORTUARY = 23,
+    OVERLAY_TAX_INCOME = 24,
+    OVERLAY_FOOD_STOCKS = 25,
+    OVERLAY_DESIRABILITY = 26,
+    OVERLAY_WORKERS_UNUSED = 27,
+    OVERLAY_NATIVE = 28,
+    OVERLAY_PROBLEMS = 29,
+    /// qui finivano gli overlay visibili dell'originale
+    /// ma ce n'erano anche altri, e non li ho ancora estratti tutti
+    OVERLAY_RELIGION_OSIRIS = 30,
+    OVERLAY_RELIGION_RA = 31,
+    OVERLAY_RELIGION_PTAH = 32,
+    OVERLAY_RELIGION_SETH = 33,
+    OVERLAY_RELIGION_BAST = 34,
+    OVERLAY_FERTILITY = 35,
+    OVERLAY_BAZAAR_ACCESS = 36,
+    OVERLAY_ROUTING = 37,
+    OVERLAY_HEALTH = 38,
+    OVERLAY_LABOR = 39,
+    OVERLAY_COUTHOUSE = 40,
+    OVERLAY_BREWERY = 41,
+    OVERLAY_LABOR_ACCESS = 42,
+
+    OVERLAY_SIZE
+};</code></pre></details><p>I parametri sono davvero tanti, e per permettere al giocatore di avere un quadro più completo dello stato della mappa si usavano i cosiddetti overlay, che visualizzano sulla mappa i diversi parametri, come nei due screenshot qui sopra. Questo aiuta a capire rapidamente cosa influisce su un certo indicatore e, ad esempio, a rimediare a un basso livello di sicurezza antincendio ricostruendo un quartiere o aggiungendo nuovi edifici. Il disegno degli overlay è un argomento a parte, anch'esso interessante, ma tocca molto il rendering ed esce dai confini di questo articolo; se a qualcuno interessa, ne scriverò separatamente.</p><p>Risolvere il puzzle dei bisogni ha un ruolo chiave nella crescita della popolazione e nel completamento del livello: tutti gli attributi forniti da un edificio residenziale dipendono direttamente da quali bisogni vi sono soddisfatti<strong> </strong>- questa formula era già stata collaudata in Caesar e si era dimostrata valida. I bisogni di livello più alto danno valori degli attributi più alti, sia direttamente (grazie alla crescita del livello della casa), sia indirettamente: i nuovi bisogni richiedono nuovi edifici, che di solito richiedono nuove risorse, per le quali servono altri edifici che le producano. Ecco le catene produttive nascoste. </p><h2>Il codice</h2><p>La FSM dell'evoluzione delle case si trova (per ora) nel file building_house.cpp (<a href="https://github.com/dalerank/Akhenaten/blob/master/src/building/building_house.cpp" target="_blank" rel="noopener">https://github.com/dalerank/Akhenaten/blob/master/src/building/building_house.cpp</a>)</p><p>Il lavoro della FSM è diviso in più parti: consumo di cibo, di risorse, di servizi e infine il vero e proprio miglioramento o declassamento della casa. Dato che nel motore non ci sono praticamente allocazioni di memoria, tutto questo gira piuttosto veloce su mappe grandi, in un solo thread. Per una parte dei dati non sono mai riuscito a capire a cosa servissero, quindi sono marcati più o meno così: <code>unused.unknown_00c0</code></p><pre style="margin:1.4rem 0"><code>void city_resources_t::consume_food(const simulation_time_t&amp; t) {
+    calculate_available_food();
+    g_city.unused.unknown_00c0 = 0;
+    resource_list consumed_food;
+    buildings_house_do([&amp;] (building_house *house) {
+        resource_list consumed = house-&gt;consume_food();
+
+        consumed_food.append(consumed);
+    });
+
+    res_this_month.consumed.append(consumed_food);
+}
+
+void city_resources_t::consume_goods(const simulation_time_t&amp; t) {
+    if (t.day == 0 || t.day == 7) {
+        resource_list consumed_goods;
+        buildings_house_do([&amp;] (building_house *house) {
+            auto house_consumed = house-&gt;consume_resources();
+            consumed_goods.append(house_consumed);
+        });
+
+        res_this_month.consumed.append(consumed_goods);
+    }
+}</code></pre>
+<img src="../../assets/articles/pharaoh-house-evolution/07.jpg" alt="" class="post-image" loading="lazy" />
+<p>All'inizio, nei sorgenti sviscerati c'era un'enorme salsiccia di <code>if</code>, e anche la versione ripulita superava le ottocento righe. Che fosse il compilatore ad aver srotolato così i sorgenti originali (cosa dubbia, visto che il motore è stato scritto nel '98 e i compilatori ottimizzanti non erano ancora molto diffusi) o che fosse proprio l'idea originale, quel che era, era.</p><details><summary>Archeologia</summary><pre style="margin:1.4rem 0"><code>  if (state == HouseState::CRUDE_HUT) {
+        if (status == e_house_evolve)
+            change_to(BUILDING_HOUSE_STURDY_HUT);
+    } else if (state == HouseState::STURDY_HUT) {
+        if (status == e_house_evolve)
+            change_to(BUILDING_HOUSE_MEAGER_SHANTY);
+        else if (status == e_house_decay)
+            change_to(BUILDING_HOUSE_CRUDE_HUT);
+    } else if (state == HouseState::MEAGER_SHANTY) {
+        if (status == e_house_evolve)
+            change_to(BUILDING_HOUSE_COMMON_SHANTY);
+        else if (status == e_house_decay)
+            change_to(BUILDING_HOUSE_STURDY_HUT);
+    } else if (state == HouseState::COMMON_SHANTY) {
+       ....</code></pre></details><p>Ho dovuto ripulire a lungo questa logica per ottenerne una versione leggibile, e alla fine tutto si è ridotto a uno <code>switch</code> più piccolo, di questo tipo:</p><details><summary>Versione leggibile</summary><pre style="margin:1.4rem 0"><code>enum HouseState {
+    CRUDE_HUT,
+    STURDY_HUT,
+    MEAGER_SHANTY,
+    COMMON_SHANTY,
+    ROUGH_COTTAGE,
+    // ...
+    PALATIAL_ESTATE
+};
+
+struct House {
+    HouseState state;
+    house_demands* demands;
+
+    bool evolve() {
+        if (house_population() &lt;= 0)
+            return false;
+
+        merge(); // Avviene sempre se pop &gt; 0
+
+        auto status = check_requirements(demands);
+        if (has_devolve_delay(status))
+            return false;
+
+        switch (state) {
+            case HouseState::CRUDE_HUT:
+                if (status == e_house_evolve)
+                    change_to(BUILDING_HOUSE_STURDY_HUT);
+                break;
+            case HouseState::STURDY_HUT:
+                if (status == e_house_evolve)
+                    change_to(BUILDING_HOUSE_MEAGER_SHANTY);
+                else if (status == e_house_decay)
+                    change_to(BUILDING_HOUSE_CRUDE_HUT);
+                break;
+            // ... e così via per ogni stato ...
+            case HouseState::FANCY_RESIDENCE:
+                if (status == e_house_evolve &amp;&amp; can_expand(9)) {
+                    expand_to_common_manor();
+                    map_tiles_gardens_update_all();
+                    return true;
+                } else if (status == e_house_decay)
+                    change_to(BUILDING_HOUSE_ELEGANT_RESIDENCE);
+                break;
+            // ...
+            default:
+                break;
+        }
+
+        return false;
+    }
+};</code></pre></details><p>Più tardi ancora tutta la logica è stata divisa in implementazioni separate, in cui ha iniziato a intravedersi una parvenza di struttura che ormai si riesce a modificare senza lacrime. C'è ancora parecchio copia-incolla, ma non ho avuto tempo di sistemarlo ulteriormente.</p><pre style="margin:1.4rem 0"><code>bool building_house_elegant_manor::evolve(house_demands* demands) {
+    if (house_population() &lt;= 0) {
+        return false;
+    }
+
+    e_house_progress status = check_requirements(demands);
+    if (has_devolve_delay(status)) {
+        return false;
+    }
+
+    if (status == e_house_evolve) {
+        change_to(base, BUILDING_HOUSE_STATELY_MANOR);
+    } else if (status == e_house_decay) {
+        change_to(base, BUILDING_HOUSE_SPACIOUS_MANOR);
+    }
+
+    return false;
+}</code></pre><p>Per passare al livello successivo, una casa deve verificare la disponibilità di varie condizioni: più alto è il livello, più servizi le servono. Questi controlli sono piuttosto semplici, quindi si possono eseguire spesso senza temere per gli fps; gli autori del gioco originale (tenete presente che il gioco doveva girare su mostri da 200 megahertz; l'autore dell'articolo ha giocato per la prima volta all'OG su un AMD K6 a 266 MHz (Super Socket 7, se non ricordo male) e doveva abbassare la velocità della città perché tutto andava troppo veloce) facevano questo controllo una volta per giorno di gioco, per tutte le case della mappa insieme, il che dava un aggiornamento delle case un po' robotico nelle prime fasi del gioco, quando la città è piccola.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/08.jpg" alt="" class="post-image" loading="lazy" />
+
+<img src="../../assets/articles/pharaoh-house-evolution/09.jpg" alt="" class="post-image" loading="lazy" />
+
+<img src="../../assets/articles/pharaoh-house-evolution/10.jpg" alt="" class="post-image" loading="lazy" />
+
+<img src="../../assets/articles/pharaoh-house-evolution/11.jpg" alt="" class="post-image" loading="lazy" />
+
+<img src="../../assets/articles/pharaoh-house-evolution/12.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>+--------------------------+           +-----------------------------+
+|  Start &amp; house_level     |    +----&gt; | Religion checks:            |
+|  if for_upgrade: ++level |    |      | - num_gods vs requirement   |
++--------------------------+    |      | - update demands-&gt;missing   |
+           |                    |      | - update demands-&gt;requiring |
+           v                    |      +-----------------------------+
++--------------------------+    |                   |
+| Load model for level     |    |                   v
+| model = model_get_house  |    |      +-----------------------------+
++--------------------------+    |      | Health services:            |
+           |                    |      | - dentist, magistrate       |
+           v                    |      | - health level check        |
++--------------------------+    |      | - update demands-&gt;missing   |
+| Water access:            |    |      | - update demands-&gt;requiring |
+| - needs fountain or well |    |      +-----------------------------+
+| - update demands-&gt;missing|    |                   |
++--------------------------+    |                   v
+           |                    |      +-----------------------------+
+           v                    |      | Food types available        |
++--------------------------+    |      | - count types               |
+| Entertainment &amp; Education|    |      | - if &lt; required: missing    |
+| - check d.entertainment  |    |      +-----------------------------+
+| - check d.education      |    |                   |
+| - update demands-&gt;missing|    |                   v
++--------------------------+    |      +----------------------------+
+          | Goods check:        |      |                            |
+          |                     |      | - pottery, linen, jewelry  |
+          +---------&gt;&gt;&gt;&gt;&gt;&gt;------|      | - beer and wine            |
+                                       | - update demands if miss   |
+                                       +----------------------------+
+                                                   |
+                                                   v
+                                      +--------------------------+
+                                      | Return e_house_evolve    |
+                                      | (if all passed)          |
+                                      +--------------------------+</code></pre><p>E se la casetta era pronta per l'upgrade, partiva il cambio di texture e l'unione delle case vicine di dimensione 1 casella in un'unica grande casa 2x2.</p><h2>Ancora un po' di codice</h2><p>Anche in un gioco così vecchio gli sviluppatori dedicavano molta attenzione a un modello relativamente realistico del funzionamento della casa, che teneva conto di molti parametri. E altri 6 non sono riuscito a ricostruirli, perché nessun codice del gioco originale toccava quegli indirizzi: forse era qualcosa di debug.</p><details><summary>Questo è l'insieme dei parametri su cui opera una casa a ogni frame</summary><pre style="margin:1.4rem 0"><code>    struct runtime_data_t : no_copy_assignment {
+        //e_house_level level;
+        uint16_t foods[8];
+        uint16_t inventory[8];
+        uint16_t highest_population;
+        uint16_t unreachable_ticks;
+        uint16_t last_update_day;
+        building_id tax_collector_id;
+        uint16_t population;
+        int16_t tax_income_or_storage;
+        uint8_t is_merged;
+        uint8_t booth_juggler;
+        uint8_t bandstand_juggler;
+        uint8_t bandstand_musician;
+        uint8_t pavillion_musician;
+        uint8_t pavillion_dancer;
+        uint8_t senet_player;
+        uint8_t magistrate;
+        uint8_t bullfighter;
+        uint8_t school;
+        uint8_t library;
+        uint8_t academy;
+        uint8_t apothecary;
+        uint8_t dentist;
+        uint8_t mortuary;
+        uint8_t physician;
+        uint8_t temple_osiris;
+        uint8_t temple_ra;
+        uint8_t temple_ptah;
+        uint8_t temple_seth;
+        uint8_t temple_bast;
+        uint8_t no_space_to_expand;
+        uint8_t num_foods;
+        uint8_t entertainment;
+        uint8_t education;
+        uint8_t health;
+        uint8_t num_gods;
+        uint8_t shrine_access;
+        uint8_t devolve_delay;
+        uint8_t bazaar_access;
+        uint8_t fancy_bazaar_access;
+        uint8_t water_supply;
+        uint8_t house_happiness;
+        uint8_t criminal_active;
+        uint8_t tax_coverage;
+        uint8_t days_without_food;
+        uint8_t hsize;
+        uint8_t unknown_00;
+        uint8_t unknown_01;
+        uint8_t unknown_02;
+        uint8_t unknown_03;
+        uint8_t unknown_04;
+        uint8_t unknown_05;
+        building_id worst_desirability_building_id;
+        xstring evolve_text;
+    };</code></pre></details><p>Quando tutti i parametri sono adatti all'upgrade, manca davvero poco per cambiare la texture. Dell'implementazione della <code>vtable</code> in plain-C ho già scritto <a href="../../en/articles/pharaoh-engine-tricks.html" target="_blank" rel="noopener">qui</a>, ma c'è un altro punto interessante: questa riga<br/><code>auto &amp;d = (building_house::runtime_data_t)b.runtime_data;</code> </p><p>fa riferimento a un buffer di dati comune, condiviso tra tutti i tipi di edifici presenti nel gioco, che però si trasforma nei dati specifici su cui opera l'edificio esistente.</p><pre style="margin:1.4rem 0"><code>building g_all_buildings[5000];
+
+class building {
+public:
+    enum { max_figures = 4 };
+    using ptr_buffer_t = char[24];
+
+private:
+    ptr_buffer_t _ptr_buffer = { 0 };
+    class building_impl *_ptr = nullptr; // dcast
+
+public:
+    e_building_type type;
+
+    animation_context anim;
+    std::array&lt;figure_id, max_figures&gt; figure_ids;
+    char runtime_data[512] = { 0 };</code></pre><p>Una soluzione piuttosto elegante per l'epoca, che permetteva di ottenere una parvenza di virtualità e di avere funzioni sovraccaricate per ogni tipo di edificio (update, draw, handle etc), mantenendo però la velocità del C puro. Il motore di Pharaoh non era ancora completamente passato al C++, come avvenne in <em>Zeus, </em>dove si vedono già i nomi mangled di classi e strutture, ma non era nemmeno puro C, come in Caesar. </p><p>Lo svantaggio di questa soluzione con una cache comune era l'impossibilità di memorizzare più di 512 byte nella cache di un singolo edificio, ma credo che fosse molto più di quanto servisse davvero alle classi. Oggi uno schema del genere si potrebbe chiamare runtime_data, quando in un pool di blocchi di dimensione uguale si creano dati per strutture diverse; solo che qui questo pool ce lo portiamo sempre dietro.</p><p>Persino la classe più pesante, quella che descrive le piramidi, o meglio la sua cache, occupava solo 234 byte. Nel gioco originale la struttura di un edificio occupa 836 byte, il che con un array statico di 5000 edifici dava ~ 4,2Mb di RAM; considerando che il gioco è uscito nel 1999, quando la memoria media era di circa 64Mb nei sistemi normali e 128Mb in quelli da gioco, doveva bastare per una città molto grande. Purtroppo non sono ancora arrivato alle piramidi, ma le mastabe si possono già costruire, e la loro logica è praticamente la stessa.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/13.jpg" alt="" class="post-image" loading="lazy" />
+<p>Raramente una mappa riusciva a essere riempita con così tanti edifici. I vantaggi di questa soluzione: questo pezzo di memoria si può semplicemente salvare e rileggere senza preoccuparsi della serializzazione. E in generale, analizzando i sorgenti del gioco ottenuti col reverse, mi convinco sempre di più che l'abbiano scritto, come minimo, dei geni, capaci di far stare in volumi del genere (il gioco partiva con un minimo di 32Mb, e per di più con le texture) un ottimo city builder.</p><p>Torniamo all'aggiornamento della texture: qui il codice è già in C++ ed è mio, ma gran parte della logica è stata conservata. In particolare, è rimasto l'hardcode degli offset nelle texture per le case unite e per quelle singole.</p><pre style="margin:1.4rem 0"><code>void building_house::change_to(building &amp;b, e_building_type new_type) {
+    auto &amp;d = *(building_house::runtime_data_t*)b.runtime_data;
+
+    const int house_update_delay = std::min(house_up_delay(), 7);
+    const int absolute_day = game.simtime.absolute_day(true);
+    const bool can_update = (absolute_day - d.last_update_day &lt; house_update_delay);
+    if (house_update_delay &gt; 0 &amp;&amp; (new_type &gt; b.type) &amp;&amp; can_update) {
+        return;
+    }
+
+    b.clear_impl(); // rimuove la vecchia impl
+    b.type = new_type;
+
+    auto house = b.dcast_house();
+    int image_id = house_image_group&lt;false&gt;(house-&gt;house_level());
+
+    const int img_offset = house-&gt;anim(animkeys().house).offset;
+    if (house-&gt;is_merged()) {
+        image_id += 4;
+        if (img_offset) {
+            image_id += 1;
+        }
+    } else {
+        image_id += img_offset;
+        image_id += map_random_get(b.tile) &amp; (house-&gt;params().num_types - 1);
+    }
+
+    map_building_tiles_add(b.id, b.tile, b.size, image_id, TERRAIN_BUILDING);
+    d.last_update_day = game.simtime.absolute_day(true);
+}
+</code></pre><p>Questa riga invece si occupa delle texture casuali delle case singole, perché la città non sembri tutta uguale.</p><pre style="margin:1.4rem 0"><code>image_id += map_random_get(b.tile) &amp; (house-&gt;params().num_types - 1);</code></pre>
+<img src="../../assets/articles/pharaoh-house-evolution/14.jpg" alt="" class="post-image" loading="lazy" />
+<h2>Conclusione</h2><p>Chiudo qui il racconto sugli attributi, un sistema che per molti anni è diventato il punto di riferimento del genere city builder e si è evoluto in giochi noti a molti come Stronghold, Anno, Patrician. Se a qualcuno è venuta nostalgia di un vecchio city builder, <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">passate su github</a> o su itch.io: i sorgenti sono pubblici e si possono giocare le prime 8 missioni. L'obiettivo del progetto è ricostruire il gioco originale (senza preservare l'autenticità dei sorgenti, come fa invece il progetto Julius), permettere di giocarci sulle piattaforme moderne e svilupparlo ulteriormente con mod e pacchetti grafici.</p>
+<img src="../../assets/articles/pharaoh-house-evolution/15.jpg" alt="" class="post-image" loading="lazy" />
+
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
+  </article>
+
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+</body></html>

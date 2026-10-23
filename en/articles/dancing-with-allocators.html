@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
@@ -516,7 +518,7 @@ public:
 };</code></pre>
     <p>Advantages: fast allocation/freeing, minimal fragmentation, predictable execution time — useful for objects that are created and destroyed en masse and frequently, e.g. bullets, effects, particles, game entities.</p>
     <p>Among the downsides are the fixed block size and the relative non-universality of pools: if objects are of different sizes, you need different pools. And you have to do upfront pool tuning to reduce redundancy when blocks aren't fully used.</p>
-    <p>Related reading: <a href="https://github.com/endurodave/Allocator" target="_blank" rel="noopener">endurodave/Allocator</a>, <a href="http://dmitrysoshnikov.com/compilers/writing-a-pool-allocator/" target="_blank" rel="noopener">dmitrysoshnikov: writing a pool allocator</a>, <a href="https://www.gingerbill.org/article/2019/02/16/memory-allocation-strategies-004/" target="_blank" rel="noopener">gingerbill: pool allocator</a>.</p>
+    <p>Related reading: <a href="https://github.com/endurodave/Allocator" target="_blank" rel="noopener">endurodave/Allocator</a>, <a href="https://dmitrysoshnikov.com/compilers/writing-a-pool-allocator/" target="_blank" rel="noopener">dmitrysoshnikov: writing a pool allocator</a>, <a href="https://www.gingerbill.org/article/2019/02/16/memory-allocation-strategies-004/" target="_blank" rel="noopener">gingerbill: pool allocator</a>.</p>
 
     <h2>Free List Allocator</h2>
     <img src="../../assets/articles/dancing-with-allocators/11-free-list.jpg" alt="Free List Allocator" class="post-image" loading="lazy" />

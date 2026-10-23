@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
@@ -287,7 +289,7 @@ msg.close();   // &lt;-- here all the handling happens synchronously</code></pre
     <p>If you set control coordinates in floats, sooner or later a designer comes along who makes a button that ends up between two monitor pixels. As a result the button's clean line becomes two semi-transparent lines, the text turns to mush, and the interface itself becomes blurry — this looks especially bad with text. If your game's UI "somehow got blurry", you almost certainly accumulated a fractional part somewhere in the coordinates.</p>
     <p>The cure for this nuisance is exactly one: store control coordinates in <code>int</code>, and do all the intermediate calculations (animation, layout resolution) in the wider <code>float</code> type, but round to int before sending the geometry to the GPU.</p>
     <p>The modern game industry arrived at this and worked out its rule, called "pixel-perfect rendering", and any pixel-art game like Celeste, Dead Cells, or Hyper Light Drifter can't afford floating pixels, and its entire GUI is computed strictly in integers. The same applies to non-pixel games too, it's just that the misses are less noticeable there. If you look at the example below, the Normal part looks smeared for exactly this reason.</p>
-    <img src="../../assets/articles/game-gui-rewritten/14.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/game-gui-rewritten/14.mp4" poster="../../assets/articles/game-gui-rewritten/14.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Players will complain about blurry buttons, no matter how beautiful they look.</p>
     <h2>A good UI is a good Bridge</h2>
     <p>Any UI that aspires to reuse between projects is obliged to be decoupled from everything as much as possible. From the renderer, the sound system, the scripting language, and the input engine, and the only way to decouple is the Bridge pattern, where between the GUI and each subsystem stands an interface that in one project looks at DirectX, in another at OpenGL, in a third at Vulkan, in a fourth at Metal.</p>
@@ -352,7 +354,7 @@ combined = {count, plural,
     <img src="../../assets/articles/game-gui-rewritten/18.jpg" alt="" class="post-image" loading="lazy" />
     <h2>Effects</h2>
     <p>When the designer asks "let's make this window appear transparent and smoothly become visible", the obvious solution is to add the <code>alpha</code>, <code>scale</code>, <code>position_offset</code> properties to the control and hang animation on them. This again works for simple cases, but quickly falls apart if there are many effects, you want to combine them, or some effects don't reduce to a single property (blur, tinting, smooth color shift, glow along the edge).</p>
-    <img src="../../assets/articles/game-gui-rewritten/19.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/game-gui-rewritten/19.mp4" poster="../../assets/articles/game-gui-rewritten/19.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Then an effect is brought into the UI as an architectural decision. Now an effect is a filter that sits between the control's properties and the final geometry, which then goes to rendering.</p>
 <pre style="margin:1.4rem 0"><code>struct IGuiEffect {
     virtual void apply(const Control&amp; src, RenderRequest&amp; out) = 0;

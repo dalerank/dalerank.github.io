@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="it_IT" />
@@ -287,7 +289,7 @@ msg.close();   // &lt;-- qui tutta la gestione avviene in modo sincrono</code></
     <p>Se imposti le coordinate dei controlli in float, prima o poi arriva un designer che fa un pulsante che finisce tra due pixel del monitor. Di conseguenza la linea pulita del pulsante diventa due linee semi-trasparenti, il testo diventa una poltiglia, e l'interfaccia stessa diventa sfocata — questo si vede particolarmente male con il testo. Se la UI del tuo gioco «è diventata sfocata chissà come», quasi certamente hai accumulato una parte frazionaria da qualche parte nelle coordinate.</p>
     <p>La cura per questa seccatura è esattamente una: memorizza le coordinate dei controlli in <code>int</code>, e fai tutti i calcoli intermedi (animazione, risoluzione del layout) nel tipo più ampio <code>float</code>, ma arrotonda a int prima di inviare la geometria alla GPU.</p>
     <p>L'industria dei giochi moderna è arrivata a questo e ha elaborato la sua regola, chiamata «pixel-perfect rendering», e qualsiasi gioco pixel-art come Celeste, Dead Cells o Hyper Light Drifter non può permettersi pixel fluttuanti, e la sua intera GUI è calcolata rigorosamente in interi. Lo stesso vale anche per i giochi non pixel, solo che lì gli errori sono meno evidenti. Se guardi l'esempio qui sotto, la parte Normal appare spalmata esattamente per questo motivo.</p>
-    <img src="../../assets/articles/game-gui-rewritten/14.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/game-gui-rewritten/14.mp4" poster="../../assets/articles/game-gui-rewritten/14.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>I giocatori si lamenteranno dei pulsanti sfocati, per quanto belli possano sembrare.</p>
     <h2>Una buona UI è un buon Bridge</h2>
     <p>Qualsiasi UI che aspiri al riuso tra progetti è tenuta a essere disaccoppiata da tutto il più possibile. Dal renderer, dal sistema del suono, dal linguaggio di scripting e dal motore di input, e l'unico modo per disaccoppiare è il pattern Bridge, dove tra la GUI e ogni sottosistema sta un'interfaccia che in un progetto guarda a DirectX, in un altro a OpenGL, in un terzo a Vulkan, in un quarto a Metal.</p>
@@ -352,7 +354,7 @@ combined = {count, plural,
     <img src="../../assets/articles/game-gui-rewritten/18.jpg" alt="" class="post-image" loading="lazy" />
     <h2>Effetti</h2>
     <p>Quando il designer chiede «facciamo apparire questa finestra trasparente e diventare visibile in modo fluido», la soluzione ovvia è aggiungere al controllo le proprietà <code>alpha</code>, <code>scale</code>, <code>position_offset</code> e appenderci sopra un'animazione. Anche questo funziona per i casi semplici, ma va rapidamente in pezzi se ci sono molti effetti, li vuoi combinare, o alcuni effetti non si riducono a una singola proprietà (blur, tinting, spostamento fluido del colore, glow lungo il bordo).</p>
-    <img src="../../assets/articles/game-gui-rewritten/19.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/game-gui-rewritten/19.mp4" poster="../../assets/articles/game-gui-rewritten/19.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Allora un effetto viene portato nella UI come una decisione architetturale. Ora un effetto è un filtro che sta tra le proprietà del controllo e la geometria finale, che poi va al rendering.</p>
 <pre style="margin:1.4rem 0"><code>struct IGuiEffect {
     virtual void apply(const Control&amp; src, RenderRequest&amp; out) = 0;

@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="ru_RU" />
@@ -287,7 +289,7 @@ msg.close();   // &lt;-- здесь синхронно происходит вс
     <p>Если задавать координаты контролов во флоатах, рано или поздно приходит дизайнер, который делает кнопку, которая оказывается между двумя пикселями монитора. В итоге ровная линия кнопки становится двумя полупрозрачными линиями, текст превращается в кашу, а сам интерфейс становится мутным, это особенно хреново выглядит с текстом. Если у вас в игре UI «как-то размылся», то почти наверняка вы где-то накопили дробную часть в координатах.</p>
     <p>Лекарство от этой бяки ровно одно, координаты контролов хранить в <code>int</code>, а все промежуточные вычисления (анимация, разрешение раскладки) делать в более широком типе <code>float</code>, но перед отправкой геометрии на GPU округлять до int.</p>
     <p>Современная игровая индустрия пришла к этому и выработала свое правило, под названием «pixel perfect rendering» и любая пиксель-арт игра вроде Celeste, Dead Cells или Hyper Light Drifter не может позволить себе плавающие пиксели, и весь её GUI считается строго в целых числах. То же самое относится и не к пиксельным играм, просто там промахи менее заметны. Если вы посмотрите на пример ниже, то Normal часть выглядит смазаной именно поэтому.</p>
-    <img src="../assets/articles/game-gui-rewritten/14.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../assets/articles/game-gui-rewritten/14.mp4" poster="../assets/articles/game-gui-rewritten/14.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Игроки будут жаловаться на смазанные кнопки, как бы красиво они не выглядели.</p>
     <h2>Хороший UI это хороший Bridge</h2>
     <p>Любой UI, претендующий на переиспользование между проектами, обязан быть отвязан от всего максимально возможно. От рендера, звуковой системы, скриптового языка и движка инпута и единственный способ отвязки это паттерн Bridge, когда между GUI и каждой подсистемой стоит интерфейс, который в одном проекте смотрит на DirectX, в другом на OpenGL, в третьем на Vulkan, в четвёртом на Metal.</p>
@@ -352,7 +354,7 @@ combined = {count, plural,
     <img src="../assets/articles/game-gui-rewritten/18.jpg" alt="" class="post-image" loading="lazy" />
     <h2>Эффекты</h2>
     <p>Когда дизайнер просит «давай это окно появится прозрачным и плавно станет видимым», очевидное решение это добавить контролу свойства <code>alpha</code>, <code>scale</code>, <code>position_offset</code> и навешивать на них анимацию. Это опять же работает для простых случаев, но быстро если эффектов становится много, их хочется их комбинировать или некоторые эффекты не сводятся к одному свойству (размытие, тонирование, smooth color shift, glow по краю).</p>
-    <img src="../assets/articles/game-gui-rewritten/19.gif" alt="" class="post-image" loading="lazy" />
+    <video class="post-image" src="../assets/articles/game-gui-rewritten/19.mp4" poster="../assets/articles/game-gui-rewritten/19.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
     <p>Тогда в UI завозится эффект как архитектурное решение. Теперь эффект это фильтр, который сидит между свойствами контрола и итоговой геометрией, которая уже идёт на рендер.</p>
 <pre style="margin:1.4rem 0"><code>struct IGuiEffect {
     virtual void apply(const Control&amp; src, RenderRequest&amp; out) = 0;

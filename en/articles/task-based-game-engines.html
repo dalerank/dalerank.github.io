@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../style.css" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="dalerank" />
 <meta property="og:locale" content="en_US" />
@@ -42,7 +44,7 @@
 
     <h2>Game logic (scripts, event handling, etc.)</h2>
     <p>A game engine performs many tasks to generate each frame (drawing graphics, simulating physics). These tasks have ordering constraints that must be respected for them to run correctly, but they're clearly defined. But what do you do with scripts that run arbitrarily? Here the idea of time-task-splitting comes to the rescue, and it maps very well onto BT/VS logic. The idea is simple: there's some visual script made of blocks, there's a time budget for working with it — we run the processing blocks one after another while the time limit holds. The important thing is that the blocks themselves guarantee their execution time; then sequences of blocks can be paused and carried over between frames. Each block in the diagram (this is a VS, a visual script) runs certain logic, and the execution of the next block can be deferred to another frame if the time-slot budget for that script is already exceeded. With this approach the engine balances the load even with a large amount of game logic.</p>
-    <img src="../../assets/articles/task-based-game-engines/02-visual-script.gif" alt="Time-task-splitting in a visual script" class="post-image" loading="lazy" />
+    <video class="post-image" src="../../assets/articles/task-based-game-engines/02-visual-script.mp4" poster="../../assets/articles/task-based-game-engines/02-visual-script.poster.jpg" autoplay loop muted playsinline aria-label="Time-task-splitting in a visual script"></video>
 
     <h2>AI / Path-finding</h2>
     <p>Path-finding algorithms aim to find the shortest path between two given points. Many games include path-finding mechanisms that can range from simple to far more complex. These mechanisms are mostly used to move agents (characters, NPCs, animals or vehicles) and can play a key role in creating the feeling of realistic artificial intelligence. A distinctive feature of most path-finding algorithms in games is that they're data-closed: if you've handed the algorithm enough information to work with, it can run with almost no additional access to external data, which of course makes it an ideal candidate for moving into a task and running on a separate thread. The main downside of path-finding is its long execution time, even over short distances. So you can't run it too often and have to resort to various tricks, simplifications and timeouts.</p>
