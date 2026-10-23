@@ -17,7 +17,7 @@
 
   // Comments (giscus, GitHub Discussions) and privacy-friendly stats (GoatCounter).
   // Both stay off until their ids are filled in.
-  var GISCUS = { repo: 'dalerank/dalerank.github.io', repoId: 'R_kgDONxj8cg', category: 'Comments', categoryId: '' };
+  var GISCUS = { repo: 'dalerank/dalerank.github.io', repoId: 'R_kgDONxj8cg', category: 'Comments', categoryId: 'DIC_kwDONxj8cs4DJcmi' };
   var GOATCOUNTER = ''; // e.g. 'dalerank' for https://dalerank.goatcounter.com
 
   var root = document.documentElement;
