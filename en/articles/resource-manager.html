@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/resource-manager.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/resource-manager.html">RU</a><i>/</i><a class="on" href="resource-manager.html">EN</a><i>/</i><a href="../../it/articles/resource-manager.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>The resource manager</h1><div class="ameta"><span>Jun 8, 2026</span><span>28 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Abnormal programming</a><h1>The resource manager</h1><div class="ameta"><span>Jun 8, 2026</span><span>28 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/resource-manager/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>In the <a href="architecture-tradeoffs.html">previous article I went through patterns</a> and the need for trade-offs in real-world development, and there was one idea I deliberately left aside. Patterns rarely live alone, and any real system is not a single pattern but several of them, glued, twisted, stuck together, and in places nailed on from the side, each closing off only part of the problem. The resource manager is probably the most telling example of such a mashup, because from the outside it usually looks like a couple of lines such as <code>LoadTexture("bark.dds")</code>, while inside it's a cache, a defaults policy, failure-recovery mechanics, and another half a dozen things, each of which went through sweat, blood, and pixels and stayed in the architecture of this system.</p>
@@ -265,9 +267,20 @@ TextureManager::instance().reloadGroup("shadows")</code></pre>
     <p>If you try to express all the text above in a single paragraph, it would sound roughly like this. The resource manager is not yet another Singleton pattern applied to textures, but a worked-out architecture of the asset lifecycle, in which there's the notion of resource identity, a cache, and group policies of defaults, and two kinds of reload different in nature — the emergency one for a lost device and the user one for a settings change — and a programmer-friendly API into which this multi-level mechanism is neatly wrapped. Good architecture differs from this year's fashionable patterns precisely in that its formulations outlive both the APIs on which it was first described, and the console generations in which it was first proven, and the teams that wrote it, and keep bringing value where nobody even remembers the names of the people who came up with it anymore.</p>
     <p>P.S. Everything written above describes resource managers up to roughly 2022 fairly accurately; I know that period from personal production experience. Beyond that begins territory where I have more reading than practice, and three topics deserve a separate conversation: bindless rendering, Nanite, and PSO cache. If you work with a modern stack, these topics are worth studying from fresher materials.</p>
     <p>P.P.S. The cover and section images are taken from the wonderful site <a href="https://refactoring.guru/" target="_blank" rel="noopener">https://refactoring.guru/</a> with their permission and tweaked a little with a file.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="architecture-tradeoffs.html">Architectural trade-offs in game development</a><div class="pmeta"><span>Jun 3, 2026</span><span>106 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten.html">Why game GUIs get rewritten (Part 1)</a><div class="pmeta"><span>Jun 16, 2026</span><span>22 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten-2.html">How game GUIs get rewritten (Part 2)</a><div class="pmeta"><span>Jun 17, 2026</span><span>43 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

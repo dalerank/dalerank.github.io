@@ -7,7 +7,9 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-game-logic.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -26,7 +28,7 @@
   <div class="actions"><span class="lang"><a class="on" href="caesar3-game-logic.html">RU</a><i>/</i><a href="../en/articles/caesar3-game-logic.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-rev">Реверс-инжиниринг</span><h1>Реверс-инжиниринг Caesar III: игровая логика</h1>
+  <div class="article-head"><a class="tag lane-rev" href="../topics/reverse-engineering.html">Реверс-инжиниринг</a><h1>Реверс-инжиниринг Caesar III: игровая логика</h1>
   <div class="ameta"><span>9 июня 2014</span><span>Часть 3</span><span>18 мин</span></div></div>
   <article class="prose">
     <p>Алгоритмы получения текстур игры Caesar III© и  отрисовки города разобраны, осталась самая «сладкая» часть, которая притягивает «древнеримских архитекторов» уже больше 15 лет — игровая логика. Используя различные подходы к анализу игры, выношу на ваш суд результат этого небольшого исследования. Я заранее прошу прощения за большую статью, но, как говорится, слов из песни не выкинешь. В заключении будет несколько слов о судьбе исходников, восстановленных из исполняемого файла оригинальной игры.</p>
@@ -171,9 +173,20 @@
     <p>Совокупность добычи ресурсов, переработки и сбыта товаров получилась достаточно проработанной. Небольшое число товаров не утомляет игрока микроменеджментом, а автоматизация большей части рутинных действий, таких как выбор мест складирования и распределения, оставляет правителю простор для стратегического планирования.</p>
     <p>На этом моменте я, пожалуй закончу статью, за бортом остались такие темы как торговля между городами и военные действия, каждая из них довольно большая, да и материала еще недостаточно. Спасибо за внимание,</p>
     <p>З.Ы. В завершении статьи хочу сказать, что поклонники игры наверняка могут добавить еще много моментов, которые я не нашел или не обратил внимание при восстановлении исходников оригинальной игры. Мне важно было получить общие представления об игровой логике, дабы не напортачить с балансом, так заботливо отполированным авторами оригинала. Что касается восстановленных исходников, терпения привести их к нормальному (чтобы просто компилировалось) виду не хватило, но нашелся добрый человек (AntonBaracuda, github.com/AntonBaracuda/opencaesar3/c3_rev), который завершил эту действительно нелегкую работу. По указанному адресу вы найдете исходники и частично разнесенные по файлам структуры и некоторые функции, все это компилируется и запускается, в отладчике можно пройти первые функции.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-rev"><a href="caesar3-generation.html">Реверс-инжиниринг Caesar III: генерация мира</a><div class="pmeta"><span>23 июля 2014</span><span>6 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-rendering.html">Реверс-инжиниринг Caesar III: отрисовка города</a><div class="pmeta"><span>15 мая 2014</span><span>12 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-city-model.html">Реверс-инжиниринг Caesar III: модель города</a><div class="pmeta"><span>15 сентября 2014</span><span>9 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

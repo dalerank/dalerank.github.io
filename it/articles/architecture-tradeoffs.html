@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/architecture-tradeoffs.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/it/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/architecture-tradeoffs.html">RU</a><i>/</i><a href="../../en/articles/architecture-tradeoffs.html">EN</a><i>/</i><a class="on" href="architecture-tradeoffs.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Programmazione anormale</span><h1>Compromessi architetturali nello sviluppo di videogiochi</h1><div class="ameta"><span>3 giugno 2026</span><span>106 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Programmazione anormale</a><h1>Compromessi architetturali nello sviluppo di videogiochi</h1><div class="ameta"><span>3 giugno 2026</span><span>106 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/architecture-tradeoffs/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Ho un libro intitolato <a href="https://habr.com/ru/articles/1002546/" target="_blank" rel="noopener">Game++</a> e diversi articoli in cui ho passato in rassegna quali pattern vengono usati nei giochi e nei motori. Il libro dedica quasi un centinaio di pagine proprio a questi pattern e descrive in dettaglio quali tipi esistono, come si presentano in C++, dove sono le loro insidie e come applicarli. Cioè esattamente quei dettagli implementativi che di solito vale la pena rileggere quando decidi ancora una volta se fare di una factory una classe separata o provare a cavartela con std::function. Quando lo scrivevo, mi sembrava che sarebbe stato un testo pratico molto utile, e così è stato, e una persona esperta ci trova ciò di cui ha bisogno abbastanza rapidamente.</p>
@@ -609,9 +611,20 @@ TD |   *     |  ***    | ********  | **********|   top-down
     <p>Grazie per aver letto. Se mi correggi da qualche parte sui dettagli fattuali di specifici motori e progetti, te ne sarò grato. Se obietti sulla sostanza, te ne sarò ancora più grato, perché il beneficio principale di un articolo come questo è provocare una discussione di qualità. Ci vediamo nei prossimi articoli, e magari anche in nuovi libri.</p>
     <img src="../../assets/articles/architecture-tradeoffs/13.jpg" alt="" class="post-image" loading="lazy" />
     <p>Una bozza del prossimo libro è in parte pubblicata su GitHub, basata sugli articoli di Habr (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>); in generale il libro stesso è già scritto, e ne pubblico i capitoli interessanti come articoli. P.S. Le immagini di apertura sono prese dal meraviglioso sito <a href="https://refactoring.guru/" target="_blank" rel="noopener">refactoring.guru</a> con il loro permesso e leggermente ritoccate con la lima.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Altro sull’argomento">
+      <h2>Altro sull’argomento</h2>
+      <ul>
+      <li class="lane-abn"><a href="resource-manager.html">Il resource manager</a><div class="pmeta"><span>8 giugno 2026</span><span>28 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten.html">Perché la GUI dei giochi viene riscritta (Parte 1)</a><div class="pmeta"><span>16 giugno 2026</span><span>22 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten-2.html">Come la GUI dei giochi viene riscritta (Parte 2)</a><div class="pmeta"><span>17 giugno 2026</span><span>43 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Tutti gli articoli</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/it/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

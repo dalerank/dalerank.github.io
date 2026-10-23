@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cpp101-part2.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/cpp101-part2.html">RU</a><i>/</i><a class="on" href="cpp101-part2.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>C++101 (Part 2)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Abnormal programming</a><h1>C++101 (Part 2)</h1><div class="ameta"><span>Jun 21, 2026</span><span>36 min</span></div></div>
   <article class="prose">
     <p class="cap" style="margin-bottom:1.2rem">C++101 — a four-part catalog of C++ idioms and techniques: <a href="cpp101-part1.html">Part 1</a> · <b>Part 2</b> · <a href="cpp101-part3.html">Part 3</a> · <a href="cpp101-part4.html">Part 4</a></p>
     <details class="code"><summary>Contents of this part</summary><div class="spoiler-body" style="padding:14px 20px"><ul><li><a href="#traits">Traits</a></li><li><a href="#tag-dispatching">Tag Dispatching</a></li><li><a href="#int-to-type-integer-to-type-map">Int-To-Type (Integer-to-Type Map)</a></li><li><a href="#type-selection">Type Selection</a></li><li><a href="#sfinae-substitution-failure-is-not-an-error">SFINAE (Substitution Failure Is Not An Error)</a></li><li><a href="#enable-if">enable-if</a></li><li><a href="#member-detector">Member Detector</a></li><li><a href="#policy-based-design">Policy-based Design</a></li><li><a href="#policy-clone-metafunction-wrapper">Policy Clone (Metafunction wrapper)</a></li><li><a href="#type-erasure">Type Erasure</a></li><li><a href="#type-generator-templated-typedef">Type Generator (Templated Typedef)</a></li><li><a href="#thin-template">Thin Template</a></li><li><a href="#named-template-parameters">Named Template Parameters</a></li><li><a href="#coercion-by-member-template">Coercion by Member Template</a></li><li><a href="#shortening-long-template-names">Shortening Long Template Names</a></li><li><a href="#expression-template">Expression-template</a></li><li><a href="#the-result-of-technique">The result_of technique</a></li><li><a href="#exploding-return-type">Exploding Return Type</a></li><li><a href="#return-type-resolver">Return Type Resolver</a></li><li><a href="#named-constructor">Named Constructor</a></li><li><a href="#virtual-constructor">Virtual Constructor</a></li><li><a href="#computational-constructor">Computational Constructor</a></li><li><a href="#construct-on-first-use">Construct On First Use</a></li><li><a href="#nifty-counter">Nifty Counter</a></li><li><a href="#runtime-static-initialization-order">Runtime Static Initialization Order</a></li><li><a href="#base-from-member">Base-from-Member</a></li></ul></div></details>
@@ -585,9 +587,20 @@ public:
     <p>The pattern "the base needs my member" is considered a sign that responsibilities in the hierarchy are poorly distributed and it should be reconsidered, but the idiom is worth knowing, and when you run into the need to pass the base your future member, you have to understand that this is almost always a path to undefined behavior, or else a matter of hoping for the phase of the moon and that it all works out.</p>
 
     <p style="margin-top:2rem"><a class="backlink" href="cpp101-part3.html">Part 3</a></p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="cpp101-part1.html">C++101 (Part 1)</a><div class="pmeta"><span>Jun 21, 2026</span><span>38 min</span></div></li>
+      <li class="lane-abn"><a href="cpp101-part3.html">C++101 (Part 3)</a><div class="pmeta"><span>Jun 21, 2026</span><span>36 min</span></div></li>
+      <li class="lane-abn"><a href="cpp101-part4.html">C++101 (Part 4)</a><div class="pmeta"><span>Jun 21, 2026</span><span>38 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

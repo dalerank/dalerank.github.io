@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>dalerank — заметки о коде и ремесле</title>
+  <link>https://dalerank.github.io/</link>
+  <description>Статьи о C++, производительности игровых движков и реверс-инжиниринге игр.</description>
+  <language>ru</language>
+  <atom:link href="https://dalerank.github.io/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Откуда берётся сложность</title>
+    <link>https://dalerank.github.io/articles/where-complexity-comes-from.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/where-complexity-comes-from.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Вторая часть «Грязных игр»: никто не пишет сложный код ради удовольствия — сложность приходит вместе с числом: 16 мс на кадр, 5 ГБ доступной памяти, лимит размера патча, десять секунд до первого кадра. Уровни broadphase от O(n²) до SIMD-BVH как механизм покупки сложности, почему два ограничения хуже, чем одно дважды, как data-oriented design протаскивает кеш-линию через всю архитектуру, жёсткие и мягкие пределы с бюджетом памяти консоли, парадокс Джевонса в геймдеве и ограничения, которых нет в документе.</description>
+  </item>
+  <item>
+    <title>Грязные игры</title>
+    <link>https://dalerank.github.io/articles/dirty-games.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/dirty-games.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Почему игры с «грязной» архитектурой продаются миллионами, а игры на красивых движках с ECS и job-системой лежат в беклоге: бюджет кадра, в котором логика на 200 врагов стоит 0.05 мс, карго-культ интерфейсов с GDC, Vampire Survivors на Phaser, Balatro на Löve и VVVVVV, скучный стек как управление рисками, монолитный GameManager и линейный Tick против EventBus — и где простота всё-таки ломается: границы данных и логики, сохранения и сертификация.</description>
+  </item>
+  <item>
+    <title>Что можно сделать с массивом массивов</title>
+    <link>https://dalerank.github.io/articles/array-of-arrays.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/array-of-arrays.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Обратный индекс «локация → полки» для снапшота игрового состояния в 4X-стратегии: почему vector&lt;vector&lt;uint&gt;&gt; на миллион локаций тратит 72 байта на 24 полезных и 90 мс на копию, и как три хака — «посчитать, потом выделить», один буфер с префиксной суммой и только offsets (CSR) — ускоряют сборку в 17 раз, снапшот в 23 раза и случайный обход в 3.6 раза. Плюс фрагментированная куча, кеш-линии, откуда в стратегиях миллион объектов и почему приём старше игр и ECS.</description>
+  </item>
+  <item>
+    <title>Эти пчелы делают неправильный C++</title>
+    <link>https://dalerank.github.io/articles/wrong-cpp-bees.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/wrong-cpp-bees.html</guid>
+    <pubDate>Thu, 01 Oct 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>«Арканутый C++» команды из Остина: C++14, из которого вырезали исключения, RTTI и глобальные new/delete. Result&lt;T, E&gt; с [[nodiscard]] и единый panic() с source_location, zero frame allocations и двадцать аллокаций на кадр ценой 20-мегабайтного стека, доменная память FrameArena/StagePool/LevelHeap, переписанные OpenSSL и zlib и сторонние библиотеки в изолированных worker-процессах с watchdog — и почему время кадра покупалось временем жизни программиста.</description>
+  </item>
+  <item>
+    <title>Анатомия граблей</title>
+    <link>https://dalerank.github.io/articles/anatomy-of-rakes.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/anatomy-of-rakes.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Классификация хитиновых товарищей игрового движка: очепятка, которую мозг автокорректирует, off-by-one и преждевременная оптимизация, запись за границу фиксированного пула, утечки памяти и ссылок, повреждение памяти с разорванными во времени причиной и симптомом, гонки, пятничный фикс, гейзенбаги, фичебаги от Street Fighter II до распрыжки в Quake, эффект бабочки на float, спагетти-зависимости, инверсия приоритетов и плавающий dt.</description>
+  </item>
+  <item>
+    <title>Фибоначь врагов</title>
+    <link>https://dalerank.github.io/articles/fibonacci-enemies.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/fibonacci-enemies.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Геймдизайн</category>
+    <description>Строки из единиц и двоек, ранг как сумма цифр — и числа Фибоначчи, которые знали в древней Индии за тысячу лет до самого Фибоначчи. Граф Юнга-Фибоначчи, четыре правила Фомина и Стенли, и две студии, независимо пришедшие к нему при расстановке врагов: ранг строки как бюджет сегмента, градуированность вместо случайных скачков сложности, и решётка Юнга в дереве технологий.</description>
+  </item>
+  <item>
+    <title>Играй в хорошее, в плохое не играй</title>
+    <link>https://dalerank.github.io/articles/play-good-not-bad.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/play-good-not-bad.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Пятнадцать лет в геймдеве и всё ещё нечем объяснить ребёнку, почему его игра плохая. Удержание есть в любой игре, которая вам нравилась, — от Elden Ring до тетриса, — и разница только в том, где стоит касса. Трение решает больше качества, трое в лобби кладут на лопатки и BG3, и Миядзаки, а арифметика часа контента объясняет, почему «хорошие» студии всё равно делают сервисы.</description>
+  </item>
+  <item>
+    <title>Лимоны, игры и экономика ремейков</title>
+    <link>https://dalerank.github.io/articles/lemons-and-remake-economics.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/lemons-and-remake-economics.html</guid>
+    <pubDate>Sat, 05 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>«Рынок лимонов» Акерлофа, приложенный к игровым движкам: покупателю продают не архитектуру, а демо-сцену на купленных ассетах, инженерное мнение стоит дешевле утреннего кофе, а «покупай, а не делай» собирает игру из чужих модулей, которые ничего не знают ни про вашу память, ни про вашу игру. Куда девается технологичная core competency и почему её потеря заканчивается конвейером ремейков.</description>
+  </item>
+  <item>
+    <title>Что консоли подарили разработчикам</title>
+    <link>https://dalerank.github.io/articles/what-consoles-gave-developers.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/what-consoles-gave-developers.html</guid>
+    <pubDate>Mon, 24 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Пятьдесят лет консольных подарков разработчику: картридж Fairchild отделил игру от железа, «гонка за лучом» на Atari 2600 родила отдельную профессию, Exec на Intellivision стал первым SDK, а 10NES — лицензионной моделью. Дальше Mode 7, карта памяти, ачивки Xbox 360 и подписка вместо игры — и счёт, который за каждый подарок пришлось оплатить.</description>
+  </item>
+  <item>
+    <title>Английский вместо кода</title>
+    <link>https://dalerank.github.io/articles/english-instead-of-code.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/english-instead-of-code.html</guid>
+    <pubDate>Sun, 09 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>COBOL, SQL, 4GL, CASE, UML и No-Code обещали избавить индустрию от программистов, а каждый раз рождали новую специальность со своей зарплатной вилкой. Почему «естественный язык вместо кода» упирается в потолок: неустранимая двусмысленность, теорема Райса, дискурсивная теория репрезентации Кампа и Хайм — и парадокс Джевонса, из-за которого дешёвый код только увеличивает спрос на разработчиков.</description>
+  </item>
+  <item>
+    <title>Продакшен пал, Милорд</title>
+    <link>https://dalerank.github.io/articles/production-has-fallen.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/production-has-fallen.html</guid>
+    <pubDate>Thu, 06 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Летопись падения замка Кривенгард: единый устав сигналов вводят за девять дней до осады, в подвале дремлет забытый механизм мастера Годфрида, а восьмую башню бережливый писец не внёс в реестр. Крепость, выдержавшая одиннадцать осад, пала без единого пробитого камня — и в разборе виновных не нашлось.</description>
+  </item>
+  <item>
+    <title>Dirty Coding Tricks, part 3</title>
+    <link>https://dalerank.github.io/articles/dirty-coding-tricks-3.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/dirty-coding-tricks-3.html</guid>
+    <pubDate>Sun, 02 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Шутливое продолжение классической подборки Dirty Coding Tricks: студийные легенды и байки геймдева — батарейка вместо фикса краша в Super Time Force, фпсометр, чинящий физику в Burnout 3, невидимые белки-таймеры в Titan Quest, ядерный Ганди, психованные копы, породившие GTA, и советские калькуляторные игры.</description>
+  </item>
+  <item>
+    <title>Путеводитель по EASTL</title>
+    <link>https://dalerank.github.io/articles/eastl-guide.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/eastl-guide.html</guid>
+    <pubDate>Fri, 24 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Вторая часть путеводителя по «чужим» стандартным библиотекам, теперь про EASTL от Electronic Arts: почему STL плохо ложится на консольный геймдев, аллокаторы-объекты с состоянием и флагами вместо привязки к типу, fixed- и intrusive-контейнеры, sorted vectors и reset() для scratch-памяти — и как многие из этих идей спустя годы доехали до стандарта: pmr, string_view, flat_map, inplace_vector и trivial relocation.</description>
+  </item>
+  <item>
+    <title>Все там будем…</title>
+    <link>https://dalerank.github.io/articles/game-engine-phases.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/game-engine-phases.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Любой игровой движок проходит четыре стадии — от «всё есть объект» и божественного GameObject через компоненты и конфиги к собственному скриптовому языку, и круг замыкается. Почему data-driven вовсе не неизбежен, чем архитектура отличается от дизайна систем и какой самый дорогой движок индустрии проще выбросить, чем починить.</description>
+  </item>
+  <item>
+    <title>Жертвы чистого кода</title>
+    <link>https://dalerank.github.io/articles/victims-of-clean-code.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/victims-of-clean-code.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Почему сделка «10% производительности ради удобства программиста» в геймдеве бьёт и по играм, и по самим разработчикам: чистый код по Мартину как лишний слой абстракции, кеш-промахи и виртуальные вызовы против SoA, стоимость не только рантайма, но и каждой итерации, и как тормоза расползаются по циклическому графу зависимостей студии, движков и SDK.</description>
+  </item>
+  <item>
+    <title>Куда расти синьору в игродеве</title>
+    <link>https://dalerank.github.io/articles/senior-gamedev-paths.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/senior-gamedev-paths.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Три принципиально разных пути роста после сеньора в геймдеве: архитектор (система систем), техлид (технология и глубина) и продюсер (продукт и рынок). Цена каждого пути, гибриды и несимметричные переходы между ними, супер-продюсеры вроде Боба Котика, архетип «человек-тостер» и как понять, куда тянет именно вас.</description>
+  </item>
+  <item>
+    <title>Худший язык программирования всех времён /s</title>
+    <link>https://dalerank.github.io/articles/worst-programming-language.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/worst-programming-language.html</guid>
+    <pubDate>Tue, 14 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Почему C++ ругают: зоопарк инициализаций, врущие ключевые слова, десятки целочисленных типов, нестандартная стандартная библиотека, нечитаемые ошибки шаблонов и не-такие-уж-нулевые абстракции. И почему всё это сходится в одну точку — обратную совместимость ценой всего.</description>
+  </item>
+  <item>
+    <title>Как «ужать» мегаполис до размеров iPhone 4</title>
+    <link>https://dalerank.github.io/articles/megacity-on-iphone.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/megacity-on-iphone.html</guid>
+    <pubDate>Sun, 12 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Инженерная изнанка мобильной SimCity BuildIt: как в EA (и питерской студии EA SPB) затолкали десктопный ситибилдер в 100–300 МБ памяти айфона — server-authoritative экономика на таймерах, «глупый» клиент-терминал, батчинг и текстурные атласы, TBDR-рендер с превью-секторами, вырезанная симуляция и пробки-спрайты, электричество через Capacity − Demand и рынок-«доска объявлений». В конце — фотки с закрытия офиса EA в 2016.</description>
+  </item>
+  <item>
+    <title>Путеводитель по чужим STL</title>
+    <link>https://dalerank.github.io/articles/foreign-stl-guide.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/foreign-stl-guide.html</guid>
+    <pubDate>Mon, 06 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Обзор альтернативных «стандартных» библиотек C++ из игровых студий и больших контор: EASTL и её best practices, LLVM SmallVector/DenseMap, Folly и устройство fbstring (SSO, eager copy, COW и связка с jemalloc), boost flat_map, сериализуемые контейнеры Zmeya, Stlab от Adobe и value-oriented programming — зачем каждая появилась и где об неё можно больно удариться.</description>
+  </item>
+  <item>
+    <title>Что делают new и delete</title>
+    <link>https://dalerank.github.io/articles/course-new-delete.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/course-new-delete.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Курс · C++</category>
+    <description>Чем выражения new/delete в C++ отличаются от malloc/free: вызов конструктора и деструктора, оператор new/delete и работа с сырой памятью — с разбором ассемблера. Бесплатный урок из курса «С++ без аллокаций памяти».</description>
+  </item>
+  <item>
+    <title>Как работает vtable</title>
+    <link>https://dalerank.github.io/articles/course-vtable.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/course-vtable.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Курс · C++</category>
+    <description>Как компилятор C++ реализует виртуальные функции: скрытый указатель vptr, таблица vtable и динамическая диспетчеризация — с ручной реализацией механизма на указателях на функции. Бесплатный урок из курса «С++ без аллокаций памяти».</description>
+  </item>
+  <item>
+    <title>Ассоциативные контейнеры STL</title>
+    <link>https://dalerank.github.io/articles/course-assoc.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/course-assoc.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Курс · C++</category>
+    <description>Ассоциативные контейнеры STL: set, map, multiset и multimap — чем отличаются, когда ключи уникальны, а когда повторяются, с короткими примерами. Бесплатный урок из курса «С++ без аллокаций памяти».</description>
+  </item>
+  <item>
+    <title>Компромиссы кучи и стека</title>
+    <link>https://dalerank.github.io/articles/course-heap-stack.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/course-heap-stack.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Курс · C++</category>
+    <description>Куча против стека: детерминированность, фрагментация, размер бинарника и потребление памяти — почему в играх и на консолях выгодно минимизировать кучу. Бесплатный урок из курса «С++ без аллокаций памяти».</description>
+  </item>
+  <item>
+    <title>C++101 (Ч.1)</title>
+    <link>https://dalerank.github.io/articles/cpp101-part1.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/cpp101-part1.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Каталог из ~100 идиом и приёмов C++, выросший из раздела Game++. Часть 1: ресурсы и компиляция — RAII, scope guard, copy-and-swap, smart pointer, copy-on-write, Pimpl и Fast Pimpl, interface class, include/inline/export guard, CRTP, Barton-Nackman, EBO и metafunction.</description>
+  </item>
+  <item>
+    <title>C++101 (Ч.2)</title>
+    <link>https://dalerank.github.io/articles/cpp101-part2.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/cpp101-part2.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Часть 2: метапрограммирование и шаблоны — traits, tag dispatching, int-to-type, type selection, SFINAE и enable-if, member detector, policy-based design, type erasure, thin template, named template parameters, expression templates и result_of, плюс именованные и вычислительные конструкторы и base-from-member.</description>
+  </item>
+  <item>
+    <title>C++101 (Ч.3)</title>
+    <link>https://dalerank.github.io/articles/cpp101-part3.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/cpp101-part3.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Часть 3: инициализация, полиморфизм и контейнеры — calling virtuals during init, construction tracker, NVI и thread-safe interface, acyclic visitor, covariant return types, virtual friend function, algebraic hierarchy, polymorphic value types, функторы, iterator pair, generic container, erase-remove, safe bool и attorney-client.</description>
+  </item>
+  <item>
+    <title>C++101 (Ч.4)</title>
+    <link>https://dalerank.github.io/articles/cpp101-part4.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/cpp101-part4.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Часть 4: дружба, память объектов и современный C++ — non-member non-friend, SOO/SSO, prohibiting heap, execute-around pointer, temporary proxy, nullptr, move constructor, boost mutant, deprecate and delete, function poisoning, rule of zero/three/five, most vexing parse, pass-key и spaceship-оператор.</description>
+  </item>
+  <item>
+    <title>Как игровой GUI пишут заново (Ч.2)</title>
+    <link>https://dalerank.github.io/articles/game-gui-rewritten-2.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/game-gui-rewritten-2.html</guid>
+    <pubDate>Wed, 17 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Продолжение: архитектура игрового UI по шести независимым осям — расположение относительно мира (diegetic / HUD / meta / spatial / narrative, от Metroid Prime и Dead Space до Spec Ops и Hellblade), функция, хранение в памяти (scene graph, flat list, immediate mode, ECS), поток данных (MVC/MVVM, reactive, unidirectional, data binding), раскладка (constraint, flexbox, anchors, RIMD) и рендер (canvas, layer, SDF, GPU-driven). Часть 2.</description>
+  </item>
+  <item>
+    <title>Почему игровой GUI пишут заново (Ч.1)</title>
+    <link>https://dalerank.github.io/articles/game-gui-rewritten.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/game-gui-rewritten.html</guid>
+    <pubDate>Tue, 16 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Архитектура игрового UI и почему её переписывают из проекта в проект: дерево контролов как Composite, свойства с рефлексией, развязка с игровым кодом через биндинги, шаблоны-прототипы задолго до Unity Prefab, три уровня обработчиков, хит-тест по форме, синхронные сообщения, раскладка и 9-slice, целочисленные координаты, Bridge поверх рендера, стили как CSS, боль локализации, SDF-шрифты и диегетический UI (Dead Space, Doom, Metro). Часть 1.</description>
+  </item>
+  <item>
+    <title>Про «случайных» людей в ИТ</title>
+    <link>https://dalerank.github.io/articles/random-people-in-it.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/random-people-in-it.html</guid>
+    <pubDate>Sun, 14 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Ответ на тезис «без профильного образования в IT даже не думай»: история игровой индустрии как история юристов, домохозяек, лётчиков, капельдинеров и экспортёров консервированной фасоли. От Гэри Гайгэкса и D&amp;D до Миямото, Иватани, Роберты Уильямс, Уилла Райта, Кодзимы, Молинье, Миядзаки, Нотча, Эрика Барона и Дэйви Вредена — люди без релевантного опыта, которые построили всё, во что вы играли.</description>
+  </item>
+  <item>
+    <title>Почему советские программисты не сделали GTA</title>
+    <link>https://dalerank.github.io/articles/soviet-gta.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/soviet-gta.html</guid>
+    <pubDate>Wed, 10 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Почему страна, проектировавшая «Буран», Ту-160 и атомные ледоколы, не сделала массовую игру уровня Запада: игра как большая инженерная задача, откуда берутся талантливые разработчики, арифметика на пальцах по соцблоку, глобальный «пылесос талантов» Кремниевой долины, обзор постсоветского игродева от «Тетриса» и «Вангеров» до S.T.A.L.K.E.R., Atomic Heart и War Thunder — и почему «русский Unreal» по щелчку не сделать.</description>
+  </item>
+  <item>
+    <title>Менеджер ресурсов</title>
+    <link>https://dalerank.github.io/articles/resource-manager.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/resource-manager.html</guid>
+    <pubDate>Mon, 08 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Почему менеджер ресурсов — это не синглтон, а целая подсистема движка: идентичность ресурса как пара «источник + параметры», кэш на слабых ссылках с LRU, явные и неявные параметры, точечная перезагрузка и hot-reload, восстановление после device lost от пулов D3D9 до DX12/Vulkan, общая шаблонная база менеджеров и смена настроек графики без рестарта — на примерах Unreal, Unity, Source, id Tech, Godot, No Man&#x27;s Sky и Cyberpunk.</description>
+  </item>
+  <item>
+    <title>Архитектурные компромиссы в разработке игр</title>
+    <link>https://dalerank.github.io/articles/architecture-tradeoffs.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/architecture-tradeoffs.html</guid>
+    <pubDate>Wed, 03 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Ненормальное программирование</category>
+    <description>Большой разбор архитектурных паттернов и компромиссов в геймдеве: слои, метаслои, подсистемы, конвейер, микроядро и blackboard на примерах Source, CryEngine, Unreal, id Tech и Naughty Dog; стратегии проектирования (top-down/bottom-up/constant refactoring), ось push vs pull, скриптовые языки и переосмысление GoF в современном игровом C++.</description>
+  </item>
+  <item>
+    <title>Трое в лодке, нищета и собаки (с)</title>
+    <link>https://dalerank.github.io/articles/three-in-a-boat.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/three-in-a-boat.html</guid>
+    <pubDate>Wed, 27 May 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Честный взгляд на состояние игровой индустрии в 2026-м: инди на энтузиазме и опционах, сервисные проекты-казино, ремастеры ремастеров, миграция разработчиков в «дочерние структуры» ради зарплаты и профессия геймдева как искусство договариваться с самим собой — где мы все в одной дырявой лодке.</description>
+  </item>
+  <item>
+    <title>Непослушный using</title>
+    <link>https://dalerank.github.io/articles/disobedient-using.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/disobedient-using.html</guid>
+    <pubDate>Wed, 20 May 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Почему using namespace и ADL делают поиск имён в C++ непредсказуемым: argument-dependent lookup и operator&lt;&lt;, перехват std локальной подменой, проверка пригодности функции (function viability), ранги неявных преобразований и почему =delete-функции участвуют в overload resolution как полноценные кандидаты.</description>
+  </item>
+  <item>
+    <title>Про 10x программистов</title>
+    <link>https://dalerank.github.io/articles/10x-programmers.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/10x-programmers.html</guid>
+    <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Существуют ли 10x программисты или это миф стартаперов и мечта менеджеров: пять реальных типов «быстрых» разработчиков — человек, сросшийся с проектом, тот, кто пишет меньше кода, DoItProperlyMan, узкая экспертиза и миф про фокус — и почему 10x всегда про накопленный контекст, а не про врождённый коэффициент.</description>
+  </item>
+  <item>
+    <title>Как работают с памятью в игровых консолях</title>
+    <link>https://dalerank.github.io/articles/console-memory.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/console-memory.html</guid>
+    <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
+    <category>Производительность</category>
+    <description>История архитектуры памяти игровых консолей от Atari 2600 до PS5 и Xbox Series: счёт тактов и бланки, дележ шины и DMA, быстрая-но-медленная RDRAM на N64, тайловый рендер Dreamcast, три острова памяти PS2, SPU и Local Store на PS3, унификация памяти на PS4 и SSD как новый уровень иерархии памяти.</description>
+  </item>
+  <item>
+    <title>Как не перепутать мечту, портфолио и вторую работу</title>
+    <link>https://dalerank.github.io/articles/dream-portfolio-second-job.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/dream-portfolio-second-job.html</guid>
+    <pubDate>Tue, 28 Apr 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Про пет-проекты в геймдеве: почему «проект на пару вечеров» превращается в годы жизни, чем обучение отличается от написания своего движка, почему маленькая библиотека выживает чаще амбициозного комбайна, цена C++ для хобби-проектов и как open-source незаметно становится второй работой.</description>
+  </item>
+  <item>
+    <title>Простой поиск имён в C++</title>
+    <link>https://dalerank.github.io/articles/simple-name-lookup.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/simple-name-lookup.html</guid>
+    <pubDate>Wed, 22 Apr 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Простой (неквалифицированный) и квалифицированный поиск имён в C++: почему пространство имён и локальная переменная с одним именем сосуществуют, скрытие имён и целых перегрузок при наследовании, неоднозначность ромбовидного наследования, правило using namespace при квалифицированном поиске и исторические различия GCC, Clang и MSVC.</description>
+  </item>
+  <item>
+    <title>Компиляторы тоже путаются в именах</title>
+    <link>https://dalerank.github.io/articles/compilers-confused-names.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/compilers-confused-names.html</guid>
+    <pubDate>Tue, 14 Apr 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Поиск имён в C++: идентификаторы, unqualified-id, qualified-id, template-id и «терминальное имя», история ADL (Koenig lookup) от проблемы с пространствами имён до решения Кёнига, двухфазный поиск в шаблонах и почему GCC, Clang и MSVC исторически вели себя по-разному.</description>
+  </item>
+</channel>
+</rss>

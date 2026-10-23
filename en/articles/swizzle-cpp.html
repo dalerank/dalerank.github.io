@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/swizzle-cpp.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/swizzle-cpp.html">RU</a><i>/</i><a class="on" href="swizzle-cpp.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>The magic of shader swizzle in C++</h1><div class="ameta"><span>Dec 10, 2023</span><span>9 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Abnormal programming</a><h1>The magic of shader swizzle in C++</h1><div class="ameta"><span>Dec 10, 2023</span><span>9 min</span></div></div>
   <article class="prose">
     <p>Swizzle is one of the nicest little things in shader languages: you can address any vector by reordering or duplicating its components — <code>vec.xxy</code>, <code>vec.zx</code>, <code>vec.rgb</code>. C++ has nothing like it out of the box, but you really want to write engine and game code as tersely as in GLSL. In this article — how we added swizzle to the engine's vector math via unions and templates, with no overhead in memory or in speed.</p>
     <hr />
@@ -439,9 +441,20 @@ static void Vec3Swizzling(benchmark::State&amp; state) {
     BENCHMARK(Vec3SwizzlingCxxSwizzle);</code></pre>
     <p>By the benchmarks, the current implementation is 1.2x faster than the one in <strong>glm</strong> and 2x faster than <strong>CxxSwizzle</strong>. The speedup comes from the absence of the extra checks present in those libs, and from better adaptation to the engine's data structures.</p>
     <p>You can speed swizzling up further by using SSE intrinsics for shuffling — then in asm it'll be a single operation altogether. There's the question of how it all lays out in memory, but that'll be the topic of the next refactor.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="where-are-your-bugs.html">Where are your bugs?</a><div class="pmeta"><span>Sep 30, 2023</span><span>8 min</span></div></li>
+      <li class="lane-abn"><a href="private-but-want-public.html">When it's private but you really want public</a><div class="pmeta"><span>Sep 21, 2023</span><span>8 min</span></div></li>
+      <li class="lane-abn"><a href="switch-sdk-three-sin.html">Why does the Switch SDK have three different sin functions?</a><div class="pmeta"><span>Jun 11, 2023</span><span>8 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

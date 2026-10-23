@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/redundant-computations.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a class="on" href="redundant-computations.html">RU</a><i>/</i><a href="../en/articles/redundant-computations.html">EN</a><i>/</i><a href="../it/articles/redundant-computations.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>Лишние вычисления</h1><div class="ameta"><span>6 апреля 2026</span><span>12 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Производительность</a><h1>Лишние вычисления</h1><div class="ameta"><span>6 апреля 2026</span><span>12 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/redundant-computations/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Если говорить о производительности вне существующих решений в железе, то интуиция будет подсказывать достаточно простую модель выполнения, когда процессор обрабатывает инструкции, а память поставляет данные, и чем быстрее и то и другое, тем быстрее работает программа.</p>
@@ -146,9 +148,20 @@ x = (a &amp; mask) | (b &amp; ~mask);</code></pre>
     <p>З.Ы. Если Вы дочитали до этого места, то Вам наверное интересна немного тема производительности в приложениях и играх. В прошлом году я выложил статью «<a href="dancing-with-allocators.html">Game++. Dancing with allocators</a>», из которой вырос позже целый цикл Game++, а потом и <a href="https://bhv.ru/product/game-ustrojstvo-i-optimizatsiya-igrovogo-dvizhka/" target="_blank" rel="noopener">книга, которую БХВ выпустили не так давно</a>.</p>
     <p>Эта и еще пара статей стала основой для одной из глав книги, целиком посвященой программированию без аллокаций, пулам, стековым и кастомным аллокаторам, другим подходам и тому, как всё это ведёт себя в реальном игровом движке под нагрузкой. Материал в книге получился достаточно плотный, но все равно какие-то моменты остались за кадром, а мне хотелось дать возможность отработать его руками, а не просто прочитать. Поэтому я сделал из главы отдельный курс на Stepik «<a href="https://stepik.org/a/251888" target="_blank" rel="noopener">Нескучное программирование. С++ без аллокаций памяти</a>».</p>
     <p>Курс устроен так, что теория из пары глав книги разбита на короткие блоки, каждый сопровождается вопросами и задачами, которые нужно решить самому, а не просто запустить готовый код. Упражнения построены на реальных паттернах из игровой разработки, но без особой жести, мне главное было показать как можно обходить ограничения языка и улучшать производительность, иногда парой строк кода.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-perf"><a href="why-no-l5-cache.html">Почему у нас нет кешей L5?</a><div class="pmeta"><span>11 марта 2026</span><span>13 мин</span></div></li>
+      <li class="lane-perf"><a href="console-memory.html">Как работают с памятью в игровых консолях</a><div class="pmeta"><span>5 мая 2026</span><span>22 мин</span></div></li>
+      <li class="lane-perf"><a href="red-fps-hunt.html">Охота за красным fps</a><div class="pmeta"><span>19 февраля 2026</span><span>25 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

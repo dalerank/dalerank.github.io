@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/enum-name-runtime.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/enum-name-runtime.html">RU</a><i>/</i><a class="on" href="enum-name-runtime.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>A C++ enum's name at runtime</h1><div class="ameta"><span>Nov 7, 2022</span><span>10 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Abnormal programming</a><h1>A C++ enum's name at runtime</h1><div class="ameta"><span>Nov 7, 2022</span><span>10 min</span></div></div>
   <article class="prose">
     <p>Getting a type's name — whether it's a struct or an enum — in C++ is a problem. What is trivially known to the compiler while it parses the sources can't easily be turned into a human-readable form at runtime. You can use std::type_info::name, which isn't a portable solution because it depends on the compiler's name-mangling implementation. Some compilers (e.g. MSVC, IBM, Oracle) produce a "convenient" type name, while gcc and clang return a mangled name that can be turned into a readable form with extra functions such as abi::__cxa_demangle. For all that magic to work you need RTTI enabled, which isn't always available either — and is sometimes outright harmful, because it eats precious performance.</p>
     <img src="../../assets/articles/enum-name-runtime/cover.jpg" alt="A C++ enum's name at runtime" class="post-image" loading="lazy" />
@@ -327,9 +329,20 @@ $&gt;  {te_first, 0 }
     <h2>Instead of conclusions</h2>
     <p>No cheating, only black magic. Although there may be no built-in way to get an object's full type name at compile time, you can hack the language itself (I love C++ for letting you pull off this kind of madness) to reach the result you want. Was it useful, and will I drag it into production — hardly; was it interesting — absolutely. If you need a ready-made solution, look up magic_enum on GitHub, but it needs C++17 to work, whereas I'm not done roaming the lands of the C++11/14 dragons yet.</p>
     <p>P.S. the code is here — <a href="https://github.com/dalerank/tokenum" target="_blank" rel="noopener">github.com/dalerank/tokenum</a>.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="switch-sdk-three-sin.html">Why does the Switch SDK have three different sin functions?</a><div class="pmeta"><span>Jun 11, 2023</span><span>8 min</span></div></li>
+      <li class="lane-abn"><a href="private-but-want-public.html">When it's private but you really want public</a><div class="pmeta"><span>Sep 21, 2023</span><span>8 min</span></div></li>
+      <li class="lane-abn"><a href="where-are-your-bugs.html">Where are your bugs?</a><div class="pmeta"><span>Sep 30, 2023</span><span>8 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

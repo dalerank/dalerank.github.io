@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/architecture-tradeoffs.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/architecture-tradeoffs.html">RU</a><i>/</i><a class="on" href="architecture-tradeoffs.html">EN</a><i>/</i><a href="../../it/articles/architecture-tradeoffs.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>Architectural trade-offs in game development</h1><div class="ameta"><span>Jun 3, 2026</span><span>106 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Abnormal programming</a><h1>Architectural trade-offs in game development</h1><div class="ameta"><span>Jun 3, 2026</span><span>106 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/architecture-tradeoffs/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>I have a book called <a href="https://habr.com/ru/articles/1002546/" target="_blank" rel="noopener">Game++</a> and several articles where I went over which patterns are used in games and engines. The book devotes almost a hundred pages to these very patterns and describes in detail what kinds there are, how they look in C++, where their pitfalls are, and how to apply them. That is, exactly those implementation details that are usually worth re-reading when you once again decide whether to make a factory a separate class or try to get by with std::function. When I was writing it, it seemed to me that it would be a very useful practical text, and it turned out that way, and an experienced person finds what they need there fairly quickly.</p>
@@ -608,9 +610,20 @@ TD |   *     |  ***    | ********  | **********|   top-down
     <p>Thank you for reading. If you correct me somewhere on the factual details of specific engines and projects, I'll be grateful. If you object on the substance, I'll be even more grateful, because the main benefit of an article like this is to provoke a quality argument. See you in the next articles, and maybe new books too.</p>
     <img src="../../assets/articles/architecture-tradeoffs/13.jpg" alt="" class="post-image" loading="lazy" />
     <p>A draft of the next book is partly posted on GitHub, based on the Habr articles (<a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>); in general the book itself is already written, and I post interesting chapters from it as articles. P.S. The lead images are taken from the wonderful site <a href="https://refactoring.guru/" target="_blank" rel="noopener">refactoring.guru</a> with their permission and slightly touched up with a file.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="resource-manager.html">The resource manager</a><div class="pmeta"><span>Jun 8, 2026</span><span>28 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten.html">Why game GUIs get rewritten (Part 1)</a><div class="pmeta"><span>Jun 16, 2026</span><span>22 min</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten-2.html">How game GUIs get rewritten (Part 2)</a><div class="pmeta"><span>Jun 17, 2026</span><span>43 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

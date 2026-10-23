@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/red-fps-hunt.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/it/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/red-fps-hunt.html">RU</a><i>/</i><a href="../../en/articles/red-fps-hunt.html">EN</a><i>/</i><a class="on" href="red-fps-hunt.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Prestazioni</span><h1>A caccia degli fps rossi</h1><div class="ameta"><span>19 febbraio 2026</span><span>25 min</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Prestazioni</a><h1>A caccia degli fps rossi</h1><div class="ameta"><span>19 febbraio 2026</span><span>25 min</span></div></div>
   <article class="prose">
 
 <img src="../../assets/articles/red-fps-hunt/01.jpg" alt="A caccia degli fps rossi" class="post-image" loading="lazy" />
@@ -420,10 +422,21 @@ if (PROFILING_ENABLED) {       if (config.profiling) {
 <h3>Quindi qual è la conclusione...</h3>
 <p>Alla fine siamo arrivati al fatto che il profiling moderno è un sistema multi-livello, e ogni dettaglio dell'architettura è stato scritto con sangue, sudore e fps bassi. Dalla scelta tra sampling, instrumentation e tracing all'implementazione di un'architettura zero-allocation con pool e stringhe-che-non-sono-stringhe — tutte queste decisioni sono mirate a ottenere il quadro più accurato possibile delle prestazioni senza influenzare le prestazioni stesse, il che è molto, molto difficile da fare. Il percorso dalla semplice misurazione dell'FPS nei primi motori alle mietitrebbie al livello di Tracy e PIX, capaci di elaborare quasi tutto quello che vuoi, mostra come questi sistemi si siano evoluti da feature di gioco e strumenti di debug in soluzioni autonome per l'ottimizzazione. E tutto questo è cresciuto non solo in strumenti di debug ma in un'infrastruttura a sé stante, senza la quale lo sviluppo di giochi perderebbe sia in velocità di sviluppo che nelle scadenze.</p>
 
+    <!-- related -->
+    <nav class="related" aria-label="Altro sull’argomento">
+      <h2>Altro sull’argomento</h2>
+      <ul>
+      <li class="lane-perf"><a href="why-no-l5-cache.html">Perché non abbiamo cache L5?</a><div class="pmeta"><span>11 marzo 2026</span><span>13 min</span></div></li>
+      <li class="lane-perf"><a href="redundant-computations.html">Calcoli ridondanti</a><div class="pmeta"><span>6 aprile 2026</span><span>12 min</span></div></li>
+      <li class="lane-perf"><a href="../../en/articles/good-bad-colored-fast.html">Il buono, il brutto, il colorato e il veloce</a><div class="pmeta"><span>10 ottobre 2025</span><span>13 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Tutti gli articoli</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/it/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

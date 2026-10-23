@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/twenty-cores-not-enough.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/twenty-cores-not-enough.html">RU</a><i>/</i><a class="on" href="twenty-cores-not-enough.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>And 20 cores still aren't enough</h1><div class="ameta"><span>Jul 18, 2024</span><span>27 min</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Performance</a><h1>And 20 cores still aren't enough</h1><div class="ameta"><span>Jul 18, 2024</span><span>27 min</span></div></div>
   <article class="prose">
     <p>If you look at the general bloat of modern software, 100-gigabyte game downloads, the annual Nvidia X090 giving +20% year over year, and 20-core processors, then from the outside it might seem that performance optimization of anything — games or other software — has, supposedly, lost its relevance. In an era of unpunished hardware performance you can spill out even half of that power, and the user won't even notice. All of this may be true, if you're not making a game. So why then, on those twenty cores, does a game released two years ago freeze and stutter (good thing it doesn't crash often)?</p>
     <p>I won't tell you why it stutters: maybe the developers who made it (on not the newest engine, it has to be said) were just making a game and didn't think about ordinary players sitting on five-year-old hardware — even though five-year-old hardware beats the current-generation consoles. Maybe it's a different reason — when your work machine with 64 gigabytes of RAM and a 4080 on board runs the editor just fine, you can start worrying about players after the day-one patch.</p>
@@ -760,9 +762,20 @@ BM_MutexInc/10000      164190 ns       163240 ns         3733</code></pre>
 
     <h2>Does all this work?</h2>
     <p>All these design patterns, optimizations and micro-optimizations were, with varying degrees of success, road-tested on working engines, and I tried to gather them as a list with simple, clear examples. This in no way removes the need to know and apply data structures and algorithms suited to the specific task. No fastest processor will haul an algorithm with O(n!^2). I hope I managed to show you a few paths to improving performance, seemingly already where there's no more perf to squeeze out. And where there were 20 fps, you get 30, and 40, even 60.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-perf"><a href="do-not-copy.html">Just don't copy that</a><div class="pmeta"><span>Sep 30, 2024</span><span>5 min</span></div></li>
+      <li class="lane-perf"><a href="486-enough-for-everyone.html">A 486 ought to be enough for everyone</a><div class="pmeta"><span>Nov 6, 2024</span><span>13 min</span></div></li>
+      <li class="lane-perf"><a href="task-based-game-engines.html">Task-based thinking in game engines</a><div class="pmeta"><span>Nov 28, 2024</span><span>16 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

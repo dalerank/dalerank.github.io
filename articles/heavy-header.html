@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/heavy-header.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="heavy-header.html">RU</a><i>/</i><a href="../en/articles/heavy-header.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Тяжёлый H[header]</h1><div class="ameta"><span>10 ноября 2024</span><span>14 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Ненормальное программирование</a><h1>Тяжёлый H[header]</h1><div class="ameta"><span>10 ноября 2024</span><span>14 мин</span></div></div>
   <article class="prose">
     <p>Всегда хотел написать о чём-нибудь лёгком и воздушном, как пишет, например, <a href="https://habr.com/ru/users/antoshkka/" target="_blank" rel="noopener">@antoshkka</a> про userver, или о том, как легко и непринуждённо обернуть какую-нибудь хрень алгоритм в десяток шаблонов, полить это всё <code>std::optional</code> и, попивая кофе, ждать, когда компилятор соизволит это всё пережевать. Но судьба (а не тимлид, нет, как вы могли такое подумать) постоянно подкидывает задачки, где суровые объятия отладчика не отпускают мечтательную душу программера до поздней ночи, да вечная борьба с компилятором рушит все попытки обернуть результат хрени алгоритма в другой десяток шаблонов. На этот раз судьба ясным июньским утром подкинула забавную задачу — время полной сборки бандла подбиралось к двум часам, да собирать бандлы нынче удовольствие не из быстрых, но, посмотрев статистику, стало понятно, что ~55% времени тратится на сборку ресурсов: текстур, моделей, локализацию и т. д. Там есть что чинить, но это царство билд-инженеров. Ещё 30%, или сорок минут, тратится на тесты — теперь всё, что мы насобирали и переконвертили, надо проверить, загрузить, пострелять, побегать, монстров поубивать, BT-шки погонять, с этим пусть QA разбираются. А вот оставшиеся 15%, или около 15 минут, мы занимались «настоящей работой», собирали сердце проекта — бинарь. «Да норм, у нас всегда так, даже на пустом проекте UE», — сказали наши мобильщики и ушли пить кофе на террасу. Но мы же не мобильщики, мы серьёзные AAA-ребята, у нас свой движок и кастомный пайплайн на билдферме. И потом 15 минут — это всё равно много, даже если у тебя 27к файлов в проекте. Айда смотреть, куда время потратили.</p>
 
@@ -238,9 +240,20 @@ std::vector&lt;int&gt;:                      0.002384s
     <p>Комбинирование этих флагов в Visual Studio предоставляет много информации о том, куда уходит время компиляции. Для clang есть флаг <code>-ftime-report</code>; советую посмотреть <a href="https://aras-p.info/blog/2019/01/16/time-trace-timeline-flame-chart-profiler-for-Clang/" target="_blank" rel="noopener">этот пост</a> — он довольно старый, но принципиально ничего не поменялось.</p>
     <p>Если у вас есть дополнения и предложения — пишите в комментах. ccache/ram-disk не предлагать: дорого, много возни и мало профита.</p>
     <p>Спасибо, что дочитали!</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="unity-cow-strings.html">Как Unity отказались от своих строк</a><div class="pmeta"><span>29 октября 2024</span><span>7 мин</span></div></li>
+      <li class="lane-abn"><a href="boss-its-all-gone.html">Шеф, всё пропало</a><div class="pmeta"><span>7 октября 2024</span><span>12 мин</span></div></li>
+      <li class="lane-abn"><a href="string-interning.html">Game++. String interning</a><div class="pmeta"><span>13 января 2025</span><span>9 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

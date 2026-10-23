@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/486-enough-for-everyone.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/486-enough-for-everyone.html">RU</a><i>/</i><a class="on" href="486-enough-for-everyone.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>A 486 ought to be enough for everyone</h1><div class="ameta"><span>Nov 6, 2024</span><span>13 min</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Performance</a><h1>A 486 ought to be enough for everyone</h1><div class="ameta"><span>Nov 6, 2024</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/486-enough-for-everyone/01-header.jpg" alt="A 486 ought to be enough for everyone" class="post-image" loading="lazy" />
     <p>At the end of a technical interview, if the candidate has answered the questions and handled the tasks, we leave some time for open questions they can ask the team or one of the interviewers. I've carried this practice from company to company, and it has always helped defuse the mood or draw a person into a conversation if they were tense during the talk. The questions can be anything except personal ones or those under NDA. Usually candidates ask technical questions about the stack and the pipelines; sometimes they try tricky questions, especially about C++, to test us. Sometimes we can't answer all of them either. Google-style questions — for example, "why are pills round?" — come up too, but recently in one of the interviews a question was raised that everyone seemed to know the answer to, yet no one could give it right away. The question went like this: "Which general-purpose technologies and solutions have appeared in CPUs since the days of the 486 that we use all the time?"</p>
@@ -161,9 +163,20 @@ close(wc_fd);</code></pre>
     <p>And one more observation about branches: modern CPUs (XBOX, PS4, PS5, almost all mobile chips) ignore branch-prediction hint instructions, but such hints help the compiler lay out the code better. The CPU itself relies solely on the BPU, not on "hints" from the programmer.</p>
 
     <p>Thanks for reading! If I forgot to mention something, write in the comments.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-perf"><a href="task-based-game-engines.html">Task-based thinking in game engines</a><div class="pmeta"><span>Nov 28, 2024</span><span>16 min</span></div></li>
+      <li class="lane-perf"><a href="spears-and-bits.html">Spears &amp; bits</a><div class="pmeta"><span>Dec 17, 2024</span><span>15 min</span></div></li>
+      <li class="lane-perf"><a href="do-not-copy.html">Just don't copy that</a><div class="pmeta"><span>Sep 30, 2024</span><span>5 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

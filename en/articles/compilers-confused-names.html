@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/compilers-confused-names.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/compilers-confused-names.html">RU</a><i>/</i><a class="on" href="compilers-confused-names.html">EN</a><i>/</i><a href="../../it/articles/compilers-confused-names.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Compilers get confused by names too</h1><div class="ameta"><span>Apr 14, 2026</span><span>10 min</span></div></div>
+  <div class="article-head"><a class="tag lane-cpp" href="../topics/cpp.html">C++</a><h1>Compilers get confused by names too</h1><div class="ameta"><span>Apr 14, 2026</span><span>10 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/compilers-confused-names/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>This is a continuation of the topic started in <a href="pragmatic-names.html">Do names matter to the compiler</a>, and continued in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">At night all cats are grey, and all using's are alike</a> (in Russian), and if you want the full picture of how the compiler turns text into a program, then without understanding name lookup you won't be able to move on.</p>
@@ -214,9 +216,20 @@ int main() {
     <p>I tried to break down the basic building blocks of this system: identifiers, how <code>unqualified-id</code> and <code>qualified-id</code> are formed from them, where <code>template-id</code> appears, and why it makes sense to single out the "terminal name" as the point that the whole lookup algorithm ultimately comes down to. These concepts by themselves don't answer all questions, but without them it's impossible to understand ADL, two-phase lookup, or template behavior.</p>
     <p>I hope after these articles you understand why in C++ there's no single "name-lookup algorithm" that simply walks the steps one after another, but rather several different mechanisms that kick in depending on the form of the name and the context.</p>
     <p>If you keep this model in mind as a system of several intersecting mechanisms, then many C++ "oddities" start to look quite "logical." And from this point you can already move on and analyze concrete cases where these rules intersect and start behaving non-obviously. In the next article I'll talk about the most basic mechanism (unqualified lookup) and we'll see how even it alone is capable of creating rather non-trivial situations.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-cpp"><a href="simple-name-lookup.html">Simple name lookup in C++</a><div class="pmeta"><span>Apr 22, 2026</span><span>11 min</span></div></li>
+      <li class="lane-cpp"><a href="pragmatic-generalizations-2.html">Generalizations in C++ (part 2)</a><div class="pmeta"><span>Mar 18, 2026</span><span>26 min</span></div></li>
+      <li class="lane-cpp"><a href="disobedient-using.html">The disobedient using</a><div class="pmeta"><span>May 20, 2026</span><span>12 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

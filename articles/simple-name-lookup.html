@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/simple-name-lookup.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a class="on" href="simple-name-lookup.html">RU</a><i>/</i><a href="../en/articles/simple-name-lookup.html">EN</a><i>/</i><a href="../it/articles/simple-name-lookup.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Простой поиск имён в C++</h1><div class="ameta"><span>22 апреля 2026</span><span>11 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-cpp" href="../topics/cpp.html">C++</a><h1>Простой поиск имён в C++</h1><div class="ameta"><span>22 апреля 2026</span><span>11 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/simple-name-lookup/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Это продолжение темы, начатой в статье <a href="pragmatic-names.html">Важны ли компилятору имена</a>, продолженной в <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">Ночью все кошки серы, а using'и одинаковы</a> и далее в <a href="compilers-confused-names.html">Компиляторы тоже путаются в именах</a>. Если не читали, то лучше будет пробежаться по диагонали. Теперь вот мы подобрались к такой интересной теме, как квалифицированный и неквалифицированный поиск.</p>
@@ -375,9 +377,20 @@ int main() {
     <p>Один из примеров выше показал, что скрытие имён в классах работает не так, как это интуитивно ожидается. Объявление в <code>Derived</code> скрывает все перегрузки из <code>Base</code>, а не только совпадающую, и такое поведение является прямым следствием того, как работает поиск имён по иерархии базовых классов.</p>
     <p>Именно для таких случаев существует using-объявление, позволяя явно ввести имена из базового класса в область производного, не нарушая правил поиска и не создавая конфликтов. Но <code>using</code> — это не только про наследование: к C++14 он стал полноценным инструментом управления видимостью, который работает по своим правилам и взаимодействует с поиском имён предсказуемым и строго определённым образом, и об этом я расскажу в следующей статье...</p>
     <p>Уже набралось материала ещё для двух глав (история концептов и поиск имён), выложу их на гитхабе в ближайшее время — <a href="https://github.com/dalerank/playful_programming_cpp" target="_blank" rel="noopener">playful_programming_cpp</a>.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-cpp"><a href="compilers-confused-names.html">Компиляторы тоже путаются в именах</a><div class="pmeta"><span>14 апреля 2026</span><span>10 мин</span></div></li>
+      <li class="lane-cpp"><a href="pragmatic-generalizations-2.html">Обобщения в C++ (часть 2)</a><div class="pmeta"><span>18 марта 2026</span><span>26 мин</span></div></li>
+      <li class="lane-cpp"><a href="disobedient-using.html">Непослушный using</a><div class="pmeta"><span>20 мая 2026</span><span>12 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

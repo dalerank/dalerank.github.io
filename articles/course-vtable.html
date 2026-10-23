@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/course-vtable.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="course-vtable.html">RU</a><i>/</i><a href="../en/articles/course-vtable.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-cpp">Курс · C++</span><h1>Как работает vtable</h1><div class="ameta"><span>25 июня 2026</span><span>5 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-cpp" href="../topics/cpp.html">Курс · C++</a><h1>Как работает vtable</h1><div class="ameta"><span>25 июня 2026</span><span>5 мин</span></div></div>
   <article class="prose">
     <p class="cap">Бесплатный урок из курса <a href="https://stepik.org/a/251888" target="_blank" rel="noopener">«С++ без аллокаций памяти»</a> на Stepik.</p>
 <p>Полиморфизм в C++ достигается с помощью <strong>виртуальных функций</strong>. Он позволяет вызывать разные реализации одной и той же функции через указатель или ссылку на базовый класс. Благодаря этому можно работать с объектами разных типов единообразно, а фактическая реализация будет выбрана автоматически во время выполнения.</p>
@@ -171,9 +173,20 @@ void init_child(Child *ap)
 <br>
 Во-вторых, это обеспечивает единообразное поведение для <strong>указателей на функции-члены</strong>: у компилятора есть единый способ хранить и вызывать их, независимо от того, обычная это функция или виртуальная.&nbsp;Несмотря на дополнительные шаги, vtable делает полиморфизм в C++ и удобным, и предсказуемым, а в большинстве случаев цена за это минимальна благодаря оптимизациям.</p>
     <p style="margin:2.2rem 0 0"><a class="btn" href="https://stepik.org/a/251888" target="_blank" rel="noopener">Пройти курс на Stepik</a></p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-cpp"><a href="course-new-delete.html">Что делают new и delete</a><div class="pmeta"><span>25 июня 2026</span><span>3 мин</span></div></li>
+      <li class="lane-cpp"><a href="course-assoc.html">Ассоциативные контейнеры STL</a><div class="pmeta"><span>25 июня 2026</span><span>3 мин</span></div></li>
+      <li class="lane-cpp"><a href="course-heap-stack.html">Компромиссы кучи и стека</a><div class="pmeta"><span>25 июня 2026</span><span>6 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>dalerank — notes on code and craft</title>
+  <link>https://dalerank.github.io/en/</link>
+  <description>Articles on C++, game engine performance and reverse-engineering games.</description>
+  <language>en</language>
+  <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Where Complexity Comes From</title>
+    <link>https://dalerank.github.io/en/articles/where-complexity-comes-from.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/where-complexity-comes-from.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>The second part of “Dirty Games”: nobody writes complex code for fun — complexity arrives together with a number: 16 ms per frame, 5 GB of available memory, a patch-size limit, ten seconds to the first interactive frame. Broadphase levels from O(n²) to a SIMD BVH as the mechanism of buying complexity, why two constraints are worse than one constraint twice, how data-oriented design drags the cache line up through the whole architecture, hard and soft limits with a console memory budget, the Jevons paradox in gamedev, and constraints that are not in any document.</description>
+  </item>
+  <item>
+    <title>Dirty Games</title>
+    <link>https://dalerank.github.io/en/articles/dirty-games.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/dirty-games.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Why games with “dirty” architecture sell millions while games on beautiful engines with ECS and a job system sit in your backlog: a frame budget where logic for 200 enemies costs 0.05 ms, the cargo cult of GDC interfaces, Vampire Survivors on Phaser, Balatro on Löve and VVVVVV, a boring stack as risk management, a monolithic GameManager and a linear Tick versus an EventBus — and where simplicity does break: boundaries between data and logic, save games and certification.</description>
+  </item>
+  <item>
+    <title>What You Can Do with an Array of Arrays</title>
+    <link>https://dalerank.github.io/en/articles/array-of-arrays.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/array-of-arrays.html</guid>
+    <pubDate>Sun, 11 Oct 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>A reverse “location → regiments” index for snapshotting game state in a 4X strategy: why vector&lt;vector&lt;uint&gt;&gt; over a million locations spends 72 bytes per 24 useful ones and 90 ms per copy, and how three hacks — “count, then allocate”, a single buffer with a prefix sum, and offsets only (CSR) — make the build 17× faster, the snapshot 23× faster and random traversal 3.6× faster. Plus heap fragmentation, cache lines, where a strategy game gets a million objects, and why the trick predates games and ECS.</description>
+  </item>
+  <item>
+    <title>These Bees Make the Wrong C++</title>
+    <link>https://dalerank.github.io/en/articles/wrong-cpp-bees.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/wrong-cpp-bees.html</guid>
+    <pubDate>Thu, 01 Oct 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>The “Arkaned C++” of a team from Austin: C++14 with exceptions, RTTI and global new/delete cut out. Result&lt;T, E&gt; with [[nodiscard]] and a single panic() with source_location, zero frame allocations and twenty allocations per frame paid for with a 20 MB stack, domain memory with FrameArena/StagePool/LevelHeap, rewritten OpenSSL and zlib, and third-party libraries locked in isolated worker processes with a watchdog — and why frame time was bought with programmers’ lifetime.</description>
+  </item>
+  <item>
+    <title>Anatomy of the rakes we step on</title>
+    <link>https://dalerank.github.io/en/articles/anatomy-of-rakes.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/anatomy-of-rakes.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>A taxonomy of a game engine’s chitinous friends: the typo your brain autocorrects, off-by-one and premature optimisation, writing past the end of a fixed pool, memory and reference leaks, memory corruption with cause and symptom torn apart in time, race conditions, the Friday fix, heisenbugs, feature-bugs from Street Fighter II to bunny hopping in Quake, the butterfly effect on floats, spaghetti dependencies, priority inversion and variable delta time.</description>
+  </item>
+  <item>
+    <title>Fibonacci your enemies</title>
+    <link>https://dalerank.github.io/en/articles/fibonacci-enemies.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/fibonacci-enemies.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Strings of ones and twos, rank as the sum of the digits — and Fibonacci numbers that were known in ancient India a thousand years before Fibonacci himself. The Young-Fibonacci graph, the four rules of Fomin and Stanley, and two studios that arrived at it independently while placing enemies: string rank as a segment budget, gradedness instead of random difficulty jumps, and Young’s lattice inside a tech tree.</description>
+  </item>
+  <item>
+    <title>Play the good ones, don&#x27;t play the bad ones</title>
+    <link>https://dalerank.github.io/en/articles/play-good-not-bad.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/play-good-not-bad.html</guid>
+    <pubDate>Sun, 06 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Fifteen years in gamedev and still no way to explain to your own child why their game is a bad one. Retention lives in every game you ever liked — from Elden Ring to Tetris — and the only thing that moved is where the cash register stands. Friction decides more than quality, three people in a lobby pin both BG3 and Miyazaki to the mat, and the arithmetic of an hour of content explains why «good» studios build services anyway.</description>
+  </item>
+  <item>
+    <title>Lemons, games and the economics of remakes</title>
+    <link>https://dalerank.github.io/en/articles/lemons-and-remake-economics.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/lemons-and-remake-economics.html</guid>
+    <pubDate>Sat, 05 Sep 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Akerlof’s «market for lemons» applied to game engines: what gets sold is not the architecture but a demo scene built on bought assets, the engineering opinion is worth less than a morning coffee, and «buy, don’t build» assembles a game out of third-party modules that know nothing about your memory or your game. Where technical core competency goes, and why losing it ends in a remake conveyor belt.</description>
+  </item>
+  <item>
+    <title>What consoles gave developers</title>
+    <link>https://dalerank.github.io/en/articles/what-consoles-gave-developers.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/what-consoles-gave-developers.html</guid>
+    <pubDate>Mon, 24 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Fifty years of console gifts to the developer: the Fairchild cartridge separated the game from the hardware, racing the beam on the Atari 2600 created a profession of its own, Exec on the Intellivision became the first SDK, and 10NES became the licensing model. Then Mode 7, the memory card, Xbox 360 achievements and the subscription that replaced the game — plus the bill that had to be paid for every gift.</description>
+  </item>
+  <item>
+    <title>English instead of code</title>
+    <link>https://dalerank.github.io/en/articles/english-instead-of-code.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/english-instead-of-code.html</guid>
+    <pubDate>Sun, 09 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>COBOL, SQL, 4GL, CASE, UML and No-Code all promised to rid the industry of programmers, and every time they spawned a new specialty with its own salary band. Why &quot;natural language instead of code&quot; runs into a ceiling: irreducible ambiguity, Rice&#x27;s theorem, the discourse representation theory of Kamp and Heim — and the Jevons paradox, thanks to which cheaper code only grows the demand for developers.</description>
+  </item>
+  <item>
+    <title>Production has fallen, my lord</title>
+    <link>https://dalerank.github.io/en/articles/production-has-fallen.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/production-has-fallen.html</guid>
+    <pubDate>Thu, 06 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>A chronicle of the fall of Krivengard castle: a charter unifying every signal is rolled out nine days before a siege, Master Godfrid’s forgotten contraption dozes in the cellar, and a thrifty scribe left the eighth tower out of the registry. A fortress that had withstood eleven sieges fell without a single stone breached — and the post-mortem found nobody to blame.</description>
+  </item>
+  <item>
+    <title>Dirty Coding Tricks, part 3</title>
+    <link>https://dalerank.github.io/en/articles/dirty-coding-tricks-3.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/dirty-coding-tricks-3.html</guid>
+    <pubDate>Sun, 02 Aug 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>A tongue-in-cheek sequel to the classic Dirty Coding Tricks roundup: studio legends and gamedev war stories — a low-battery dialog instead of fixing a crash in Super Time Force, an FPS counter that fixed the physics in Burnout 3, invisible squirrel-timers in Titan Quest, Nuclear Gandhi, the buggy cops that spawned GTA, and Soviet calculator games.</description>
+  </item>
+  <item>
+    <title>A field guide to EASTL</title>
+    <link>https://dalerank.github.io/en/articles/eastl-guide.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/eastl-guide.html</guid>
+    <pubDate>Fri, 24 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>The second part of the field guide to other people&#x27;s &quot;standard&quot; libraries, now on EA&#x27;s EASTL: why the C++ STL fits console gamedev so poorly, stateful object-allocators with flags instead of type binding, fixed and intrusive containers, sorted vectors and reset() for scratch memory — and how many of these ideas eventually made it into the standard: pmr, string_view, flat_map, inplace_vector and trivial relocation.</description>
+  </item>
+  <item>
+    <title>We&#x27;ll all end up there…</title>
+    <link>https://dalerank.github.io/en/articles/game-engine-phases.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/game-engine-phases.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Every game engine passes through four stages — from everything-is-an-object and a god-like GameObject, through components and configs, to its own scripting language, and then the circle closes. Why data-driven is not inevitable, how architecture differs from systems design, and which of the industry&#x27;s most expensive engines is easier to throw away than to fix.</description>
+  </item>
+  <item>
+    <title>Victims of clean code</title>
+    <link>https://dalerank.github.io/en/articles/victims-of-clean-code.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/victims-of-clean-code.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Why trading &quot;10% of performance for programmer comfort&quot; in gamedev hits both the games and the developers themselves: Martin&#x27;s clean code as an extra layer of abstraction, cache misses and virtual calls versus SoA, the cost of every iteration and not just the runtime, and how slowdowns spread across the cyclic dependency graph of a studio, engines, and SDKs.</description>
+  </item>
+  <item>
+    <title>Where a senior can grow in gamedev</title>
+    <link>https://dalerank.github.io/en/articles/senior-gamedev-paths.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/senior-gamedev-paths.html</guid>
+    <pubDate>Sat, 18 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Three fundamentally different growth paths after senior in gamedev: architect (system of systems), tech lead (technology and depth), and producer (product and market). The price of each path, hybrids and asymmetric transitions between them, super-producers like Bobby Kotick, the &quot;toastmaster&quot; archetype, and how to tell which way you&#x27;re being pulled.</description>
+  </item>
+  <item>
+    <title>The Worst Programming Language of All Time /s</title>
+    <link>https://dalerank.github.io/en/articles/worst-programming-language.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/worst-programming-language.html</guid>
+    <pubDate>Tue, 14 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Why C++ gets bashed: the zoo of initializations, keywords that lie, dozens of integer types, a non-standard standard library, unreadable template errors, and not-so-zero-cost abstractions. And why it all converges on one point — backward compatibility at the cost of everything.</description>
+  </item>
+  <item>
+    <title>Squeezing a Megacity Down to iPhone 4 Size</title>
+    <link>https://dalerank.github.io/en/articles/megacity-on-iphone.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/megacity-on-iphone.html</guid>
+    <pubDate>Sun, 12 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>The engineering underbelly of mobile SimCity BuildIt: how EA (and the St. Petersburg studio EA SPB) crammed a desktop city builder into an iPhone&#x27;s 100–300 MB of RAM — a server-authoritative economy on timers, a &quot;dumb&quot; client-terminal, aggressive batching and texture atlases, a TBDR renderer with preview sectors, a gutted simulation with sprite traffic jams, power as Capacity − Demand, and a &quot;classified-ads&quot; market. Plus photos from the closing of EA&#x27;s office in 2016.</description>
+  </item>
+  <item>
+    <title>A field guide to other people&#x27;s STLs</title>
+    <link>https://dalerank.github.io/en/articles/foreign-stl-guide.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/foreign-stl-guide.html</guid>
+    <pubDate>Mon, 06 Jul 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>A tour of the alternative &quot;standard&quot; C++ libraries from game studios and big companies: EASTL and its best practices, LLVM SmallVector/DenseMap, Folly and the anatomy of fbstring (SSO, eager copy, COW, and the jemalloc pairing), boost flat_map, Zmeya&#x27;s serializable containers, Adobe&#x27;s Stlab and value-oriented programming — why each appeared and where you can hurt yourself on it.</description>
+  </item>
+  <item>
+    <title>What new and delete actually do</title>
+    <link>https://dalerank.github.io/en/articles/course-new-delete.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/course-new-delete.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Course · C++</category>
+    <description>How the new/delete expressions in C++ differ from malloc/free: constructor and destructor calls, operator new/delete and working with raw memory — with an assembly walkthrough. A free lesson from the course “C++ without Memory Allocations”.</description>
+  </item>
+  <item>
+    <title>How a vtable works</title>
+    <link>https://dalerank.github.io/en/articles/course-vtable.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/course-vtable.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Course · C++</category>
+    <description>How a C++ compiler implements virtual functions: the hidden vptr, the vtable and dynamic dispatch — with a hand-rolled implementation of the mechanism using function pointers. A free lesson from the course “C++ without Memory Allocations”.</description>
+  </item>
+  <item>
+    <title>STL associative containers</title>
+    <link>https://dalerank.github.io/en/articles/course-assoc.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/course-assoc.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Course · C++</category>
+    <description>STL associative containers: set, map, multiset and multimap — how they differ, when keys are unique and when they repeat, with short examples. A free lesson from the course “C++ without Memory Allocations”.</description>
+  </item>
+  <item>
+    <title>Heap vs stack tradeoffs</title>
+    <link>https://dalerank.github.io/en/articles/course-heap-stack.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/course-heap-stack.html</guid>
+    <pubDate>Thu, 25 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Course · C++</category>
+    <description>Heap vs stack: determinism, fragmentation, binary size and memory footprint — why in games and on consoles it pays to minimize the heap. A free lesson from the course “C++ without Memory Allocations”.</description>
+  </item>
+  <item>
+    <title>C++101 (Part 1)</title>
+    <link>https://dalerank.github.io/en/articles/cpp101-part1.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/cpp101-part1.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>A catalog of ~100 C++ idioms and techniques that grew out of the Game++ section. Part 1: resources and compilation — RAII, scope guard, copy-and-swap, smart pointer, copy-on-write, Pimpl and Fast Pimpl, interface class, include/inline/export guards, CRTP, Barton-Nackman, EBO, and metafunction.</description>
+  </item>
+  <item>
+    <title>C++101 (Part 2)</title>
+    <link>https://dalerank.github.io/en/articles/cpp101-part2.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/cpp101-part2.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Part 2: metaprogramming and templates — traits, tag dispatching, int-to-type, type selection, SFINAE and enable-if, member detector, policy-based design, type erasure, thin template, named template parameters, expression templates and result_of, plus named and computational constructors and base-from-member.</description>
+  </item>
+  <item>
+    <title>C++101 (Part 3)</title>
+    <link>https://dalerank.github.io/en/articles/cpp101-part3.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/cpp101-part3.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Part 3: initialization, polymorphism, and containers — calling virtuals during init, construction tracker, NVI and thread-safe interface, acyclic visitor, covariant return types, virtual friend function, algebraic hierarchy, polymorphic value types, functors, iterator pair, generic container, erase-remove, safe bool, and attorney-client.</description>
+  </item>
+  <item>
+    <title>C++101 (Part 4)</title>
+    <link>https://dalerank.github.io/en/articles/cpp101-part4.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/cpp101-part4.html</guid>
+    <pubDate>Sun, 21 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Part 4: friendship, object memory, and modern C++ — non-member non-friend, SOO/SSO, prohibiting heap, execute-around pointer, temporary proxy, nullptr, move constructor, boost mutant, deprecate and delete, function poisoning, rule of zero/three/five, most vexing parse, pass-key, and the spaceship operator.</description>
+  </item>
+  <item>
+    <title>How game GUIs get rewritten (Part 2)</title>
+    <link>https://dalerank.github.io/en/articles/game-gui-rewritten-2.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/game-gui-rewritten-2.html</guid>
+    <pubDate>Wed, 17 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>The sequel: game UI architecture along six independent axes — placement relative to the world (diegetic / HUD / meta / spatial / narrative, from Metroid Prime and Dead Space to Spec Ops and Hellblade), function, in-memory storage (scene graph, flat list, immediate mode, ECS), data flow (MVC/MVVM, reactive, unidirectional, data binding), layout (constraint, flexbox, anchors, RIMD), and rendering (canvas, layer, SDF, GPU-driven). Part 2.</description>
+  </item>
+  <item>
+    <title>Why game GUIs get rewritten (Part 1)</title>
+    <link>https://dalerank.github.io/en/articles/game-gui-rewritten.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/game-gui-rewritten.html</guid>
+    <pubDate>Tue, 16 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>The architecture of a game UI and why it&#x27;s rewritten from project to project: a control tree as Composite, properties with reflection, decoupling from game code via bindings, prototype templates long before Unity Prefab, three handler levels, shape-based hit testing, synchronous messages, layout and 9-slice, integer coordinates, a Bridge over the renderer, styles as CSS, the pain of localization, SDF fonts, and diegetic UI (Dead Space, Doom, Metro). Part 1.</description>
+  </item>
+  <item>
+    <title>On the &quot;random&quot; people in IT</title>
+    <link>https://dalerank.github.io/en/articles/random-people-in-it.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/random-people-in-it.html</guid>
+    <pubDate>Sun, 14 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>A reply to the claim that &quot;without a relevant degree, don&#x27;t even bother trying to get into IT&quot;: the history of the game industry as a history of lawyers, homemakers, pilots, ushers, and canned-bean exporters. From Gary Gygax and D&amp;D to Miyamoto, Iwatani, Roberta Williams, Will Wright, Kojima, Molyneux, Miyazaki, Notch, Eric Barone, and Davey Wreden — people with no relevant experience who built everything you&#x27;ve played.</description>
+  </item>
+  <item>
+    <title>Why Soviet programmers didn&#x27;t make GTA</title>
+    <link>https://dalerank.github.io/en/articles/soviet-gta.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/soviet-gta.html</guid>
+    <pubDate>Wed, 10 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Why the country that designed the Buran, the Tu-160, and nuclear icebreakers never made a Western-level mass-market game: a game as a large engineering task, where talented developers come from, back-of-the-envelope arithmetic for the socialist bloc, Silicon Valley&#x27;s global &quot;talent vacuum cleaner&quot;, a tour of post-Soviet gamedev from Tetris and Vangers to S.T.A.L.K.E.R., Atomic Heart, and War Thunder — and why a &quot;Russian Unreal&quot; can&#x27;t be conjured up on command.</description>
+  </item>
+  <item>
+    <title>The resource manager</title>
+    <link>https://dalerank.github.io/en/articles/resource-manager.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/resource-manager.html</guid>
+    <pubDate>Mon, 08 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>Why a resource manager is not a singleton but a whole engine subsystem: resource identity as a (source + parameters) pair, a cache with weak references and LRU, explicit and implicit parameters, targeted reload and hot-reload, recovery after device lost from D3D9 pools to DX12/Vulkan, a shared templated base for managers, and changing graphics settings without a restart — with examples from Unreal, Unity, Source, id Tech, Godot, No Man&#x27;s Sky, and Cyberpunk.</description>
+  </item>
+  <item>
+    <title>Architectural trade-offs in game development</title>
+    <link>https://dalerank.github.io/en/articles/architecture-tradeoffs.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/architecture-tradeoffs.html</guid>
+    <pubDate>Wed, 03 Jun 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>A big breakdown of architectural patterns and trade-offs in gamedev: layers, metalayers, subsystems, pipes &amp; filters, microkernel, and blackboard with examples from Source, CryEngine, Unreal, id Tech, and Naughty Dog; design strategies (top-down/bottom-up/constant refactoring), the push vs pull axis, scripting languages, and rethinking GoF in modern game C++.</description>
+  </item>
+  <item>
+    <title>Three in a boat, poverty and dogs</title>
+    <link>https://dalerank.github.io/en/articles/three-in-a-boat.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/three-in-a-boat.html</guid>
+    <pubDate>Wed, 27 May 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>An honest look at the state of the game industry in 2026: indies running on enthusiasm and options, service-game casinos, remasters of remasters, developers migrating into &quot;subsidiaries&quot; for a paycheck, and gamedev as the art of negotiating with yourself — where we&#x27;re all in one leaky boat.</description>
+  </item>
+  <item>
+    <title>The disobedient using</title>
+    <link>https://dalerank.github.io/en/articles/disobedient-using.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/disobedient-using.html</guid>
+    <pubDate>Wed, 20 May 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Why using namespace and ADL make name lookup in C++ unpredictable: argument-dependent lookup and operator&lt;&lt;, hijacking std with a local substitute, checking function viability, the ranks of implicit conversions, and why =delete functions take part in overload resolution as full-fledged candidates.</description>
+  </item>
+  <item>
+    <title>About 10x programmers</title>
+    <link>https://dalerank.github.io/en/articles/10x-programmers.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/10x-programmers.html</guid>
+    <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>Do 10x programmers exist, or is it a startup myth and a manager&#x27;s dream: five real types of &quot;fast&quot; developers — the person fused with the project, the one who writes less code, DoItProperlyMan, narrow expertise, and the focus myth — and why 10x is always about accumulated context, not an innate coefficient.</description>
+  </item>
+  <item>
+    <title>How memory works in game consoles</title>
+    <link>https://dalerank.github.io/en/articles/console-memory.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/console-memory.html</guid>
+    <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
+    <category>Performance</category>
+    <description>A history of game-console memory architecture from the Atari 2600 to the PS5 and Xbox Series: cycle counting and blanks, sharing the bus and DMA, the fast-but-slow RDRAM on the N64, the Dreamcast tile renderer, the PS2&#x27;s three memory islands, SPUs and Local Store on the PS3, PS4 memory unification, and the SSD as a new level of the memory hierarchy.</description>
+  </item>
+  <item>
+    <title>How not to confuse a dream, a portfolio, and a second job</title>
+    <link>https://dalerank.github.io/en/articles/dream-portfolio-second-job.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/dream-portfolio-second-job.html</guid>
+    <pubDate>Tue, 28 Apr 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>On pet projects in gamedev: why a &quot;couple-of-evenings&quot; project turns into years of your life, how learning differs from writing your own engine, why a small library survives more often than an ambitious all-in-one, the cost of C++ for hobby projects, and how open-source quietly becomes a second job.</description>
+  </item>
+  <item>
+    <title>Simple name lookup in C++</title>
+    <link>https://dalerank.github.io/en/articles/simple-name-lookup.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/simple-name-lookup.html</guid>
+    <pubDate>Wed, 22 Apr 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Simple (unqualified) and qualified name lookup in C++: why a namespace and a local variable with the same name coexist, hiding of names and whole overload sets in inheritance, diamond-inheritance ambiguity, the using-namespace rule in qualified lookup, and the historical differences between GCC, Clang and MSVC.</description>
+  </item>
+  <item>
+    <title>Compilers get confused by names too</title>
+    <link>https://dalerank.github.io/en/articles/compilers-confused-names.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/compilers-confused-names.html</guid>
+    <pubDate>Tue, 14 Apr 2026 09:00:00 +0000</pubDate>
+    <category>C++</category>
+    <description>Name lookup in C++: identifiers, unqualified-id, qualified-id, template-id and the &quot;terminal name&quot;, the history of ADL (Koenig lookup) from the namespace conflict to Koenig&#x27;s solution, two-phase lookup in templates, and why GCC, Clang and MSVC historically behaved differently.</description>
+  </item>
+</channel>
+</rss>

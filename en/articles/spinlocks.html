@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/spinlocks.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/spinlocks.html">RU</a><i>/</i><a class="on" href="spinlocks.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>No need to rush… (About spinlocks)</h1><div class="ameta"><span>Sep 27, 2022</span><span>13 min</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Performance</a><h1>No need to rush… (About spinlocks)</h1><div class="ameta"><span>Sep 27, 2022</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/spinlocks/s-01.jpg" alt="From the film “Kidnapping, Caucasian Style”" class="post-image" loading="lazy" />
     <p>From the film “Kidnapping, Caucasian Style”.</p>
@@ -297,9 +299,20 @@ pthread_spinlock_bench/24/real_time        606 ms        0.000 ms            1</
       </li>
       <li><a href="https://patents.google.com/patent/US9378069B2" target="_blank" rel="noopener">And a spinlock can even be patented</a>.</li>
     </ul>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-perf"><a href="cache-pollution.html">Cache pollution? Stock up on tests</a><div class="pmeta"><span>Sep 9, 2022</span><span>12 min</span></div></li>
+      <li class="lane-perf"><a href="twenty-cores-not-enough.html">And 20 cores still aren't enough</a><div class="pmeta"><span>Jul 18, 2024</span><span>27 min</span></div></li>
+      <li class="lane-perf"><a href="do-not-copy.html">Just don't copy that</a><div class="pmeta"><span>Sep 30, 2024</span><span>5 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

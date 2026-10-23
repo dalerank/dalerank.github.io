@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-map-rendering.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pharaoh-map-rendering.html">RU</a><i>/</i><a class="on" href="pharaoh-map-rendering.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-rev">Reverse-engineering</span><h1>How the map is drawn in Pharaoh</h1><div class="ameta"><span>Oct 17, 2023</span><span>10 min</span></div></div>
+  <div class="article-head"><a class="tag lane-rev" href="../topics/reverse-engineering.html">Reverse-engineering</a><h1>How the map is drawn in Pharaoh</h1><div class="ameta"><span>Oct 17, 2023</span><span>10 min</span></div></div>
   <article class="prose">
     <p>In my spare time I'm restoring an old but rather well-known game, Pharaoh. It's a city-builder released last century and developed by Impressions Games. The rendering technology in this game was a significant achievement for its time and helped create the striking atmosphere of Ancient Egypt — it immerses the player in a richly detailed setting, surprises you with its attention to small details, and conveys the richness and variety of ancient Egyptian landscapes. In this article I'll describe the algorithm for drawing the city, buildings, objects and animation, and the map format of the original game.</p>
     <img src="../../assets/articles/pharaoh-map-rendering/cover.jpg" alt="A city map in Pharaoh" class="post-image" loading="lazy" />
@@ -169,9 +171,20 @@ UINT8  floodplain_growth[N] - grass growth progress on fertile tiles near the ri
     <p>To wrap up this article on how the map is drawn in the game, I want to note that even nearly a quarter-century later, "Pharaoh" remains popular among strategy fans. The game stays a classic exemplar of the city-builder genre and an example of how outstanding design and excellent visual style continue to delight and inspire players years and years after release. And even the launch of the failed remake by Triskell Interactive couldn't dampen the community's interest in the good old Pharaoh. Honestly, I was really looking forward to the remake, actively taking part in discussions with the developers, but when I realized the game was heading toward ever more simplification, I kind of lost my enthusiasm. And when rumors recently came from Triskell that they're working on a mobile port and an f2p mode, I got thoroughly upset.</p>
     <p>If you want to see how it all works in code and blow the dust of ages off 25-year-aged legacy code — join the repository <a href="https://github.com/dalerank/Ozymandias" target="_blank" rel="noopener">github.com/dalerank/Ozymandias</a>. The game isn't 100% restored yet, but it's getting there.</p>
     <p>I've also made a regularly updated build at <a href="https://dalerank.itch.io/ozymandias" target="_blank" rel="noopener">dalerank.itch.io/ozymandias</a> — if you don't feel like compiling the game for your OS, you can grab a ready build. You'll need the resources from the original, of course; we're not pirates after all.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-rev"><a href="caesar3-part6.html">Reverse-engineering Caesar III: the game loop</a><div class="pmeta"><span>Oct 20, 2014</span><span>20 min</span></div></li>
+      <li class="lane-rev"><a href="caesar3-city-model.html">Reverse-engineering Caesar III: the city model</a><div class="pmeta"><span>Sep 15, 2014</span><span>9 min</span></div></li>
+      <li class="lane-rev"><a href="caesar3-generation.html">Reverse-engineering Caesar III: world generation</a><div class="pmeta"><span>Jul 23, 2014</span><span>6 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

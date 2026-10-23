@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/fit-elephant-in-suitcase.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="fit-elephant-in-suitcase.html">RU</a><i>/</i><a href="../en/articles/fit-elephant-in-suitcase.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>Как засунуть слона в чемодан</h1><div class="ameta"><span>21 декабря 2024</span><span>10 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Производительность</a><h1>Как засунуть слона в чемодан</h1><div class="ameta"><span>21 декабря 2024</span><span>10 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/fit-elephant-in-suitcase/01-header.jpg" alt="Как засунуть слона в чемодан" class="post-image" loading="lazy" />
     <p>Меня всегда удивляло, как разработчики умудряются размещать большой объём вычислений на относительно слабом железе, к каким трюкам и решениям прибегают, чтобы приложение работало быстро. Это относится не только к игровым движкам, но и к базам данных, системам управления и т. д., но так как моя область — это всё же игры и игровые движки, то рассказывать я буду про них. Особенно заметна эта разница была при портировании относительно свежих игр (поколение ps3+) на всякие портативные консоли вроде Nintendo Switch, Apple TV (это девайс тоже считается неплохой платформой в плане того, что там есть платящая аудитория) и мобилки. И Switch, и Apple TV по производительности не сильно далеко ушли от третьей плойки, и попытки перенести требовательные игры, рассчитанные как минимум на следующее (ps4) поколение консолей, приводят к значительным проблемам, которые непросто решаются. Игры — это достаточно требовательный софт, зачастую с мягким реалтаймом: надо же выдавать приемлемый fps, иначе играть будет больно, некомфортно, и её никто не купит. Небольшим подспорьем при переносе на портативки и мобилки является их стабильное железо, хотя вот для мобилок я бы так не сказал — там целый зоопарк процов, видях и окружения. На консолях с этим всё получше, и спеки меняются раз в пару лет. Когда речь заходит о портировании игры, оптимизации можно разделить на несколько уровней: архитектура, алгоритмы и код.</p>
@@ -286,9 +288,20 @@ bool table_need_escaping_symbol(eastl::stringz view) {
     <p>Получилось очень даже неплохо, эту таску мы закрыли с чистой совестью; наступал новый 2016 год, и мы спокойно пошли праздновать свои маленькие победы на корпоратив. А рендер-тим продолжала упаковывать слонов и что-то там оптимайзить, но это уже совсем другая история.</p>
     <img src="../assets/articles/fit-elephant-in-suitcase/06-closing.jpg" alt="Слон в чемодане" class="post-image" loading="lazy" />
     <p>Всех с наступающим Новым годом!</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-perf"><a href="spears-and-bits.html">Spears &amp; bits</a><div class="pmeta"><span>17 декабря 2024</span><span>15 мин</span></div></li>
+      <li class="lane-perf"><a href="task-based-game-engines.html">Task-based мышление в игровых движках</a><div class="pmeta"><span>28 ноября 2024</span><span>16 мин</span></div></li>
+      <li class="lane-perf"><a href="486-enough-for-everyone.html">486-го хватит всем</a><div class="pmeta"><span>6 ноября 2024</span><span>13 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

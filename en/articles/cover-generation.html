@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/cover-generation.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/cover-generation.html">RU</a><i>/</i><a class="on" href="cover-generation.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-design">Game design</span><h1>Procedural generation of cover in games</h1><div class="ameta"><span>Oct 24, 2023</span><span>8 min</span></div></div>
+  <div class="article-head"><a class="tag lane-design" href="../topics/game-design.html">Game design</a><h1>Procedural generation of cover in games</h1><div class="ameta"><span>Oct 24, 2023</span><span>8 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/cover-generation/cg-01.jpg" alt="A cover system in dynamic combat" class="post-image" loading="lazy" />
     <p class="cap">Cover lets you build interesting tactical behaviour for NPCs</p>
@@ -104,8 +106,19 @@
     <p>The cover system uses two separate methods for generation: scanning the surroundings and walking the edges of the navigation mesh. The first method is better at finding cover suited to a specific place on the level; the second speeds up the search and lets you build the system on complex geometry in bounded time. Object scanning involves computing geometry at a given point through the engine/game subsystems, and this system can be extended with detection of ledges, balconies and corners. With a few tweaks it can run at runtime and support dynamic recomputation of these points if needed.</p>
     <p>P.S. I hope this article was useful for understanding the principles and organization of systems like this in your own project. If anything is unclear or you have questions, don't hesitate to ask them in the comments.</p>
     <p>P.P.S. Sorry for the heavy wording — the article was prepared for the DevGamm 2023 game conference in Gdansk, and it may well be easier to follow in English.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-design"><a href="red-barrel-problem.html">The Red Barrel Problem</a><div class="pmeta"><span>Mar 27, 2024</span><span>4 min</span></div></li>
+      <li class="lane-design"><a href="miss-old-game-mechanics.html">I miss the mechanics of old games</a><div class="pmeta"><span>Apr 21, 2024</span><span>15 min</span></div></li>
+      <li class="lane-design"><a href="corridors-tell-no-tales.html">Corridors tell no tales</a><div class="pmeta"><span>May 9, 2024</span><span>12 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
+<script src="../../site.js" defer></script>
 </body></html>

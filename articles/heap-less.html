@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/heap-less.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="heap-less.html">RU</a><i>/</i><a href="../en/articles/heap-less.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Game++. Heap? Less</h1><div class="ameta"><span>3 апреля 2025</span><span>20 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Ненормальное программирование</a><h1>Game++. Heap? Less</h1><div class="ameta"><span>3 апреля 2025</span><span>20 мин</span></div></div>
   <article class="prose">
 
     <img src="../assets/articles/heap-less/01.jpg" alt="Когда открыл мемори профайлер" class="post-image" loading="lazy" />
@@ -755,10 +757,21 @@ int main() {
 <p>Процесс оптимизации и убирания аллокаций относительно несложный, но затратный по времени и вносимым изменениям, да и к тому же «размазанный перф» убирается очень долго, кроме самых явных случаев. Нет какой-то критической точки, починив которую можно получить хороший прирост к перфу, даже в самых запущенных случаях вы получите +1%, но таких мест могут быть сотни. Само по себе время алокации достаточно маленькое, но оно комплексно влияет на весь стек вызова, порою давай буст не в самых очевидных местах. Поэтому при оптимизации работы с памятью лучше сравнивать с билдами недельной, а то и месячной давности при анализе прогресса.</p>
 <p>16 мс на фрейм это слишком мало, чтобы разбрасываться этим временем и тратить его на алгоритмы аллокации памяти.</p>
 
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="work-hard.html">Game++. Work hard</a><div class="pmeta"><span>14 апреля 2025</span><span>16 мин</span></div></li>
+      <li class="lane-abn"><a href="unpacking-containers.html">Game++. Unpacking containers</a><div class="pmeta"><span>19 марта 2025</span><span>40 мин</span></div></li>
+      <li class="lane-abn"><a href="patching-patterns.html">Game++. Patching patterns</a><div class="pmeta"><span>29 апреля 2025</span><span>30 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

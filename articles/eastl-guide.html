@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/eastl-guide.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a class="on" href="eastl-guide.html">RU</a><i>/</i><a href="../en/articles/eastl-guide.html">EN</a><i>/</i><a href="../it/articles/eastl-guide.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Путеводитель по EASTL</h1><div class="ameta"><span>24 июля 2026</span><span>15 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Ненормальное программирование</a><h1>Путеводитель по EASTL</h1><div class="ameta"><span>24 июля 2026</span><span>15 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/eastl-guide/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Это вторая часть статьи <a href="foreign-stl-guide.html">Путеводитель по чужим STL</a>, возможно будет и третья про разные трюки-хаки с контейнерами, как наберется материал. </p>
@@ -376,10 +378,21 @@ eastl::vector_map&lt;int, Enemy&gt;
     <p>За последние годы развитие сместилось от внедрения новых типов контейнеров к «полировке» существующего кода под требования современных компиляторов и стандартов C++. Большой фокус был сделан на обеспечении бесшовной работы с C++20/23, включая полноценную поддержку новых типов и <code>constexpr</code>-семантики для многих алгоритмов и контейнеров, фиксов  статических анализаторов.  Библиотека последние несколько лет считается индустриальным стандартом, для использования внутри игровых движков самых разных размеров, где <code>std</code> слишком медленен или неудобен, и делает это с учетом всех современных требований к безопасности кода и кроссплатформенности.  </p>
     <p>З.Ы. EASTL сейчас лежит на GitHub под BSD-лицензией (<a href="https://github.com/electronicarts/EASTL" target="_blank" rel="noopener">https://github.com/electronicarts/EASTL</a>)</p>
 
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="dirty-coding-tricks-3.html">Dirty Coding Tricks, part 3</a><div class="pmeta"><span>2 августа 2026</span><span>16 мин</span></div></li>
+      <li class="lane-abn"><a href="game-engine-phases.html">Все там будем…</a><div class="pmeta"><span>18 июля 2026</span><span>11 мин</span></div></li>
+      <li class="lane-abn"><a href="worst-programming-language.html">Худший язык программирования всех времён /s</a><div class="pmeta"><span>14 июля 2026</span><span>24 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

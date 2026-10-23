@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/resource-manager.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a class="on" href="resource-manager.html">RU</a><i>/</i><a href="../en/articles/resource-manager.html">EN</a><i>/</i><a href="../it/articles/resource-manager.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Менеджер ресурсов</h1><div class="ameta"><span>8 июня 2026</span><span>28 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Ненормальное программирование</a><h1>Менеджер ресурсов</h1><div class="ameta"><span>8 июня 2026</span><span>28 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/resource-manager/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>В <a href="architecture-tradeoffs.html">прошлой статье я разбирал паттерны</a> и необходимость компромиссов в реальной разработке, и там была одна мысль которую я намеренно оставил в стороне. Паттерны редко живут в одиночку, и любая реальная система это не один паттерн, а несколько, склеенных, скрученые, слепленных, и местами прибитых сбоку гвоздями, и каждый из них закрывает только часть проблемы. Менеджер ресурсов это, наверное, самый показательный пример такой склейки, потому что снаружи он обычно выглядит как пару строчек вида <code>LoadTexture("bark.dds")</code>, а внутри это кэш, политика дефолтов, механика восстановления после сбоя и ещё полдюжины вещей, каждая из которых прошла через пот, кровь и пиксели и осталась в архитектуре этой системы.</p>
@@ -265,9 +267,20 @@ TextureManager::instance().reloadGroup("shadows")</code></pre>
     <p>Если попытаться одним абзацем выразить вест текст выше, то оно будет звучать примерно так. Менеджер ресурсов это не очередной паттерн Singleton применительно к текстурам, а проработанная архитектура жизненного цикла ассетов, в которой есть понятие идентичность ресурса, кэша, и групповые политики дефолтов, и два разных по природе вида перезагрузки, аварийный для потерянного устройства и пользовательский для смены настроек, и удобный для программиста API, в который этот многоуровневый механизм аккуратно завёрнут. Хорошая архитектура отличается от модных в этом году паттернов как раз тем, что её формулировки переживают и API, на которых она была впервые описана, и поколения консолей, в которых она впервые проверена, и команды, которые её писали, и продолжают приносить пользу там, где уже даже не помнят имена людей, её придумавших.</p>
     <p>З.Ы. Всё написанное выше достаточно точно описывает менеджеры ресурсов до примерно 2022 года, этот период я знаю по личному опыту в продакшене. Дальше начинается территория где у меня больше чтения чем практики, и три темы заслуживают отдельного разговора: bindless rendering, Nanite и PSO cache. Если вы работаете с современным стеком, эти темы стоит изучать по более свежим материалам.</p>
     <p>З.З.Ы. КДПВ взяты с замечательного сайта <a href="https://refactoring.guru/" target="_blank" rel="noopener">https://refactoring.guru/</a> с их разрешения и немного доработаны напильником.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="architecture-tradeoffs.html">Архитектурные компромиссы в разработке игр</a><div class="pmeta"><span>3 июня 2026</span><span>106 мин</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten.html">Почему игровой GUI пишут заново (Ч.1)</a><div class="pmeta"><span>16 июня 2026</span><span>22 мин</span></div></li>
+      <li class="lane-abn"><a href="game-gui-rewritten-2.html">Как игровой GUI пишут заново (Ч.2)</a><div class="pmeta"><span>17 июня 2026</span><span>43 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

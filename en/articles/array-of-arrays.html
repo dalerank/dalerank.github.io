@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/array-of-arrays.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/array-of-arrays.html">RU</a><i>/</i><a class="on" href="array-of-arrays.html">EN</a><i>/</i><a href="../../it/articles/array-of-arrays.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>What You Can Do with an Array of Arrays</h1><div class="ameta"><span>Oct 11, 2026</span><span>13 min</span></div></div>
+  <div class="article-head"><a class="tag lane-cpp" href="../topics/cpp.html">C++</a><h1>What You Can Do with an Array of Arrays</h1><div class="ameta"><span>Oct 11, 2026</span><span>13 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/array-of-arrays/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>On one of our projects (a 4X historical strategy game) we got the task of moving part of the logic onto worker threads by handing them a snapshot of the game state. The idea was that while the main thread crunches its tick, the others (AI, pathfinding, UI and so on) could spin their own logic, things like "who is standing in this location", and do it without locks or the risk of seeing half of someone else's write. To build such a system you have to figure out how to get a reverse index of regiments by location, and make lookups cheap for the threads. In other words, each thread needs its own snapshot of some part of the game world as of the moment the update starts (a frame, a logic tick, a day, a month, etc.).</p>
@@ -286,10 +288,21 @@ blob[]     [ 0 | 1 2 3 4 5 6 7 | 8 9 10 11 12 | ... ]
     <p>When my colleagues and I were preparing a presentation of this solution for the team, I came across the 2023 article <a href="https://zeux.io/2023/06/30/efficient-jagged-arrays/" target="_blank" rel="noopener">Efficient jagged arrays</a>, where the author arrived at the same layout for mesh vertices in his project. We came at it from the side of game entities and cross-thread snapshots, he came from the side of triangle indices, but in the end we arrived at the same scheme. That in itself is a good sign that the problem comes up in development often enough that it's worth not reinventing it and finding some more reusable solution. Unfortunately, I didn't find one publicly available... maybe I didn't look hard enough.</p>
     <p>Fundamentally, the task is the same as it was in the 80s and earlier: the data needs to be in the right place, in the right shape, by the time the hot path goes through it.</p>
 
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-cpp"><a href="wrong-cpp-bees.html">These Bees Make the Wrong C++</a><div class="pmeta"><span>Oct 1, 2026</span><span>11 min</span></div></li>
+      <li class="lane-cpp"><a href="anatomy-of-rakes.html">Anatomy of the rakes we step on</a><div class="pmeta"><span>Sep 6, 2026</span><span>8 min</span></div></li>
+      <li class="lane-cpp"><a href="course-new-delete.html">What new and delete actually do</a><div class="pmeta"><span>Jun 25, 2026</span><span>3 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
 
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

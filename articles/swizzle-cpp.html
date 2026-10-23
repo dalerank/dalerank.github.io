@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/swizzle-cpp.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="swizzle-cpp.html">RU</a><i>/</i><a href="../en/articles/swizzle-cpp.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Магия swizzle из шейдеров в C++</h1><div class="ameta"><span>10 декабря 2023</span><span>9 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Ненормальное программирование</a><h1>Магия swizzle из шейдеров в C++</h1><div class="ameta"><span>10 декабря 2023</span><span>9 мин</span></div></div>
   <article class="prose">
     <p>Swizzle (свизлинг) — одна из самых приятных мелочей в шейдерных языках: к любому вектору можно обратиться, переставив или продублировав его компоненты — <code>vec.xxy</code>, <code>vec.zx</code>, <code>vec.rgb</code>. В C++ из коробки такого нет, но очень хочется писать движковый и игровой код так же лаконично, как в GLSL. В этой статье — как мы добавили swizzle в векторную математику движка через union и шаблоны, без накладных расходов по памяти и по скорости.</p>
     <hr />
@@ -439,9 +441,20 @@ static void Vec3Swizzling(benchmark::State&amp; state) {
     BENCHMARK(Vec3SwizzlingCxxSwizzle);</code></pre>
     <p>По бенчам текущая реализация быстрее реализации в <strong>glm</strong> в 1.2 раза и <strong>CxxSwizzle</strong> в два раза. Ускорение достигается за счёт отсутствия лишних проверок, которые есть в этих либах, и лучшей адаптации к структурам данных движка.</p>
     <p>Можно ещё ускорить свизлинг, если воспользоваться интринсиками SSE для перемешивания, — тогда в асме это будет вообще одна операция. Есть вопрос, как это всё ляжет в памяти, но это будет тема следующего рефакторинга.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="where-are-your-bugs.html">Федя, дичь</a><div class="pmeta"><span>30 сентября 2023</span><span>8 мин</span></div></li>
+      <li class="lane-abn"><a href="private-but-want-public.html">Когда private, но очень хочется public</a><div class="pmeta"><span>21 сентября 2023</span><span>8 мин</span></div></li>
+      <li class="lane-abn"><a href="switch-sdk-three-sin.html">Зачем в Switch SDK три разных sin?</a><div class="pmeta"><span>11 июня 2023</span><span>8 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

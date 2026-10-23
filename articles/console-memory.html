@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/console-memory.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a class="on" href="console-memory.html">RU</a><i>/</i><a href="../en/articles/console-memory.html">EN</a><i>/</i><a href="../it/articles/console-memory.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Производительность</span><h1>Как работают с памятью в игровых консолях</h1><div class="ameta"><span>5 мая 2026</span><span>22 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Производительность</a><h1>Как работают с памятью в игровых консолях</h1><div class="ameta"><span>5 мая 2026</span><span>22 мин</span></div></div>
   <article class="prose">
     <img src="../assets/articles/console-memory/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Самая продаваемая консоль поколения имела худшую архитектуру памяти, самая технически грамотная продалась хуже всех, а самая простая в разработке принадлежала компании, которая никогда раньше не делала консолей. Вы, наверное, узнали тут PS2, GameCube и Xbox.</p>
@@ -324,9 +326,20 @@ IWRAM_CODE void critical_update_function(void) {
     <p>Частично эту задачу решают современные низкоуровневые API вроде Vulkan, DX12 и Metal, требуя от разработчика явно описывать владение ресурсом, точки синхронизации и барьеры, но концептуально эта проблема не решена — просто мы вынесли проблемы железа на уровень разработчика.</p>
     <p>Sony видит решение этой проблемы в ещё одном слое DMA, только теперь уже на отдельной шине между CPU и GPU, а Microsoft и Apple — в унификации APU, который мог бы решать оба набора задач. Но фундаментальная задача осталась той же самой: данные должны оказаться в правильном месте, в правильный момент и в правильной форме, иначе о производительности можно забыть.</p>
     <p>З.Ы. Как правильно заметил <a href="https://habr.com/ru/users/xenre/" target="_blank" rel="noopener">@XenRE</a>, без маппера (NROM) адресное пространство CPU жёстко ограничено диапазоном 0x8000–0xFFFF, что даёт максимум 32 КБ для PRG и 8 КБ для CHR через диапазон PPU 0x0000–0x1FFF. Цифра 512 КБ относится к мапперу MMC3 как одному из самых распространённых в коммерческой библиотеке NES (Super Mario Bros. 3, Mega Man 3–6, Contra и сотни других). MMC3 переключает банки PRG и CHR на лету, обходя физические ограничения шины. Теоретического предела для PRG/CHR ROM с маппером не существует, и всё упирается только в конкретную схему маппера.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-perf"><a href="redundant-computations.html">Лишние вычисления</a><div class="pmeta"><span>6 апреля 2026</span><span>12 мин</span></div></li>
+      <li class="lane-perf"><a href="why-no-l5-cache.html">Почему у нас нет кешей L5?</a><div class="pmeta"><span>11 марта 2026</span><span>13 мин</span></div></li>
+      <li class="lane-perf"><a href="red-fps-hunt.html">Охота за красным fps</a><div class="pmeta"><span>19 февраля 2026</span><span>25 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

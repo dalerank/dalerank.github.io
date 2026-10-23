@@ -7,7 +7,9 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-part6.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -26,7 +28,7 @@
   <div class="actions"><span class="lang"><a class="on" href="caesar3-part6.html">RU</a><i>/</i><a href="../en/articles/caesar3-part6.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-rev">Реверс-инжиниринг</span><h1>Реверс-инжиниринг Caesar III: игровой цикл</h1>
+  <div class="article-head"><a class="tag lane-rev" href="../topics/reverse-engineering.html">Реверс-инжиниринг</a><h1>Реверс-инжиниринг Caesar III: игровой цикл</h1>
   <div class="ameta"><span>20 октября 2014</span><span>Часть 6</span><span>20 мин</span></div></div>
   <article class="prose">
     <p>Если бы меня спросили, какая часть технической реализации игры «Цезарь» мне интересна больше других, я бы вспомнил о расчете одного «дня» городской жизни. Отдельные компоненты математической модели города тоже интересны в реализации, но эти «шестеренки» будут крутиться только в сборе. Большая часть игры проходит внутри «игрового цикла», в котором проводятся вычисления параметров компонентов, выполняются перемещения игровых объектов, создаются новые события и объекты. Если вам интересно узнать, как была устроена симуляция города в одной из лучших игр 1998 года — добро пожаловать под кат. Описания, псевдокод и схемы помогут вам лучше узнать об используемых алгоритмах.</p>
@@ -108,9 +110,20 @@
     <img src="../assets/articles/caesar6/c-26.jpg" alt="" class="post-image" loading="lazy" />
     <p>P.S. Этой статьи не получилось бы без помощи Bianca van Schaik, которая очень много сил и времени потратила на восстановление исходников оригинала.</p>
     <h2>Спасибо за уделенное время</h2>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-rev"><a href="caesar3-city-model.html">Реверс-инжиниринг Caesar III: модель города</a><div class="pmeta"><span>15 сентября 2014</span><span>9 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-generation.html">Реверс-инжиниринг Caesar III: генерация мира</a><div class="pmeta"><span>23 июля 2014</span><span>6 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-game-logic.html">Реверс-инжиниринг Caesar III: игровая логика</a><div class="pmeta"><span>9 июня 2014</span><span>18 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

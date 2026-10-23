@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/compilers-confused-names.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/it/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/compilers-confused-names.html">RU</a><i>/</i><a href="../../en/articles/compilers-confused-names.html">EN</a><i>/</i><a class="on" href="compilers-confused-names.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-cpp">C++</span><h1>Anche i compilatori si confondono con i nomi</h1><div class="ameta"><span>14 aprile 2026</span><span>10 min</span></div></div>
+  <div class="article-head"><a class="tag lane-cpp" href="../topics/cpp.html">C++</a><h1>Anche i compilatori si confondono con i nomi</h1><div class="ameta"><span>14 aprile 2026</span><span>10 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/compilers-confused-names/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>Questa è la continuazione del tema iniziato in <a href="../../en/articles/pragmatic-names.html">I nomi contano per il compilatore</a> e proseguito in <a href="https://habr.com/ru/articles/1015492/" target="_blank" rel="noopener">Di notte tutti i gatti sono grigi, e tutti gli using si somigliano</a> (in russo); se vuoi il quadro completo di come il compilatore trasforma il testo in un programma, allora senza capire il name lookup non potrai andare avanti.</p>
@@ -214,9 +216,20 @@ int main() {
     <p>Ho cercato di scomporre i mattoni di base di questo sistema: gli identificatori, come da essi si formano <code>unqualified-id</code> e <code>qualified-id</code>, dove compare il <code>template-id</code> e perché ha senso isolare il «terminal name» come il punto a cui si riconduce in definitiva tutto l'algoritmo di lookup. Questi concetti da soli non rispondono a tutte le domande, ma senza di essi è impossibile comprendere l'ADL, il two-phase lookup o il comportamento dei template.</p>
     <p>Spero che dopo questi articoli tu capisca perché in C++ non esiste un unico «algoritmo di name lookup» che semplicemente percorre i passi uno dopo l'altro, ma piuttosto diversi meccanismi differenti che entrano in gioco a seconda della forma del nome e del contesto.</p>
     <p>Se tieni a mente questo modello come un sistema di più meccanismi che si intersecano, allora molte «stranezze» del C++ cominciano a sembrare abbastanza «logiche». E da questo punto puoi già andare avanti e analizzare casi concreti in cui queste regole si intersecano e cominciano a comportarsi in modo non ovvio. Nel prossimo articolo parlerò del meccanismo più basilare (l'unqualified lookup) e vedremo come persino esso da solo sia in grado di creare situazioni piuttosto non banali.</p>
+    <!-- related -->
+    <nav class="related" aria-label="Altro sull’argomento">
+      <h2>Altro sull’argomento</h2>
+      <ul>
+      <li class="lane-cpp"><a href="simple-name-lookup.html">Il name lookup semplice in C++</a><div class="pmeta"><span>22 aprile 2026</span><span>11 min</span></div></li>
+      <li class="lane-cpp"><a href="pragmatic-generalizations-2.html">Generalizzazioni in C++ (parte 2)</a><div class="pmeta"><span>18 marzo 2026</span><span>26 min</span></div></li>
+      <li class="lane-cpp"><a href="disobedient-using.html">Lo using disobbediente</a><div class="pmeta"><span>20 maggio 2026</span><span>12 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Tutti gli articoli</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — costruito e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/it/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

@@ -10,7 +10,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -45,7 +47,7 @@
 <main class="wrap article">
 
   <div class="article-head">
-    <span class="tag lane-perf">Производительность</span>
+    <a class="tag lane-perf" href="../topics/performance.html">Производительность</a>
     <h1>Просто не копируй это</h1>
     <div class="ameta"><span>30 сентября 2024</span><span>5 мин</span></div>
   </div>
@@ -272,6 +274,16 @@ BENCHMARK(CycleNone);</code></pre>
 }</code></pre>
     <img src="../assets/articles/do-not-copy/copy-09.jpg" alt="" class="post-image" loading="lazy" />
 
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-perf"><a href="486-enough-for-everyone.html">486-го хватит всем</a><div class="pmeta"><span>6 ноября 2024</span><span>13 мин</span></div></li>
+      <li class="lane-perf"><a href="twenty-cores-not-enough.html">И целых 20 ядер мало</a><div class="pmeta"><span>18 июля 2024</span><span>27 мин</span></div></li>
+      <li class="lane-perf"><a href="task-based-game-engines.html">Task-based мышление в игровых движках</a><div class="pmeta"><span>28 ноября 2024</span><span>16 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 
@@ -282,10 +294,11 @@ BENCHMARK(CycleNone);</code></pre>
     <span>© 2026 dalerank — собрано и размещено на GitHub Pages</span>
     <span>
       <a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>
-    </span>
+     <a href="/feed.xml">RSS</a></span>
   </div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body>
 </html>

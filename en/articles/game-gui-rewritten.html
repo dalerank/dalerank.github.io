@@ -9,7 +9,9 @@
 <link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/game-gui-rewritten.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -28,7 +30,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/game-gui-rewritten.html">RU</a><i>/</i><a class="on" href="game-gui-rewritten.html">EN</a><i>/</i><a href="../../it/articles/game-gui-rewritten.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>Why game GUIs get rewritten (Part 1)</h1><div class="ameta"><span>Jun 16, 2026</span><span>22 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/cpp.html">Abnormal programming</a><h1>Why game GUIs get rewritten (Part 1)</h1><div class="ameta"><span>Jun 16, 2026</span><span>22 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/game-gui-rewritten/01.jpg" alt="" class="post-image" loading="lazy" />
     <p>If you show any game programmer some lectures about user interfaces from around 2006, and then show them what they slapped together in a modern game, they'll recognize almost everything, with minor reservations. The API names and the codegen language changed, but the architecture and the core ideas stayed the same: a tree of controls, properties with reflection, links between properties, templates, an abstraction over the engine, and the eternal war for pixel-perfection.</p>
@@ -393,9 +395,20 @@ public:
     <p>What hasn't changed is the reasons why GUI systems get rewritten. To this day any tech lead who lands on a new project starts with the phrase "let's do it properly this once", and to this day, two years later, it turns out the GUI had more tasks than the plan assumed. <br/>If you want to step on a lead's sore spot, ask whether the UI system needs to be rewritten and watch his eye start twitching as he runs off for the valerian drops.</p>
     <p>P.S. Stay tuned — there will be a second part about how this very UI was tormented from game to game...</p>
     <img src="../../assets/articles/game-gui-rewritten/25.jpg" alt="" class="post-image" loading="lazy" />
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="game-gui-rewritten-2.html">How game GUIs get rewritten (Part 2)</a><div class="pmeta"><span>Jun 17, 2026</span><span>43 min</span></div></li>
+      <li class="lane-abn"><a href="cpp101-part4.html">C++101 (Part 4)</a><div class="pmeta"><span>Jun 21, 2026</span><span>38 min</span></div></li>
+      <li class="lane-abn"><a href="cpp101-part3.html">C++101 (Part 3)</a><div class="pmeta"><span>Jun 21, 2026</span><span>36 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

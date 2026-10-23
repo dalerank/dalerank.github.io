@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/switch-sdk-three-sin.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a class="on" href="switch-sdk-three-sin.html">RU</a><i>/</i><a href="../en/articles/switch-sdk-three-sin.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Ненормальное программирование</span><h1>Зачем в Switch SDK три разных sin?</h1><div class="ameta"><span>11 июня 2023</span><span>8 мин</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Ненормальное программирование</a><h1>Зачем в Switch SDK три разных sin?</h1><div class="ameta"><span>11 июня 2023</span><span>8 мин</span></div></div>
   <article class="prose">
     <p>Работая в компании Gaijin несколько лет назад, мне довелось поучаствовать в портировании пары игр компании на консоль Nintendo Switch, тогда вовсю завоевывающую новые рынки. Для меня это стало первым крупным проектом на этой платформе. А с учетом, что ни команда, ни разработчик движка с платформой, системой сборки и вообще экосистемой Нинтендо знакомы не были, то все грабли приходилось искать и бережно на них наступать. Чтобы опробовать возможности новой платформы, параллельно с портированием игры, был написан внутренний middleware (связка dagor engine + nxsdk + jam) и код обрастал всевозможными тестами, build matrix, бенчмарками, прогоном стабильности и другими внутренними проверками. Надо отметить что на момент 2018 года, в самом switch sdk не было реализовано часть posix функций вроде poll и send/receive, и большая часть функций для работы с файлами, posix прослойку нужно было писать самим. Дошли тогда руки и до написания различных бенчмарков для функций стандартной библиотеки, и были замечены некоторые аномалии в поведении части тригонометрических функций в различных режимах сборки. Для справки, sdk использует урезанный вариант musl libc (<a href="https://www.musl-libc.org/" target="_blank" rel="noopener">musl-libc.org</a>), все статически линкуется в один большой бинарник clang'ом от Нинтендо 9 версии (2018 год), который потом запускается на консоли. Доступа к исходникам самой libc в исполнении Нинтендо у нас не было, но всегда можно посмотреть дизасм и боле менее представить что происходит.</p>
     <img src="../assets/articles/switch-sdk-three-sin/cover.jpg" alt="To sine or not to sine?" class="post-image" loading="lazy" />
@@ -436,9 +438,20 @@ glibc_sin         7.43 ns         7.16 ns     79544722</code></pre></details>
     <h2>Выводы</h2>
     <p>Никакой практической пользы мы с этого не получили, но было интересно разобраться в особенностях работы сдк. Честь и хвала японским инженерам, подарившим миру эту замечательную консоль. У меня только один вопрос, нафига три?</p>
     <p><strong>UPD:</strong> в личку написал товарищ, что так Нинтендо отслеживала использование старых и паленых сдк, без активного ключа разработчика всегда вызывалась первая реализация, таким образом билд, который пытался пройти сертификацию помогал находить украденные аккаунты и ключи. Проверить эти данные я не могу, остается только поверить :)</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-abn"><a href="private-but-want-public.html">Когда private, но очень хочется public</a><div class="pmeta"><span>21 сентября 2023</span><span>8 мин</span></div></li>
+      <li class="lane-abn"><a href="enum-name-runtime.html">Имя enum'a C++ в рантайме</a><div class="pmeta"><span>7 ноября 2022</span><span>10 мин</span></div></li>
+      <li class="lane-abn"><a href="where-are-your-bugs.html">Федя, дичь</a><div class="pmeta"><span>30 сентября 2023</span><span>8 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
 </body></html>

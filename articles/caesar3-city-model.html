@@ -7,7 +7,9 @@
 <link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/caesar3-city-model.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -26,7 +28,7 @@
   <div class="actions"><span class="lang"><a class="on" href="caesar3-city-model.html">RU</a><i>/</i><a href="../en/articles/caesar3-city-model.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-rev">Реверс-инжиниринг</span><h1>Реверс-инжиниринг Caesar III: модель города</h1>
+  <div class="article-head"><a class="tag lane-rev" href="../topics/reverse-engineering.html">Реверс-инжиниринг</a><h1>Реверс-инжиниринг Caesar III: модель города</h1>
   <div class="ameta"><span>15 сентября 2014</span><span>Часть 5</span><span>9 мин</span></div></div>
   <article class="prose">
     <p>Я помню как играл первый раз в Цезарь 3, это удивительно умная и сбалансированная игра, создает чувство, что город живет своей жизнью и после завершения миссии. Можно провести часы, наблюдая за городом и не вмешиваться в его жизнь: плебеи будут бегать по городу в поисках работы, а патриции жаловаться на неважные условия жизни, торговцы, школьники, лодки, жрецы — этот мир замирает лишь в минуты пауз, давая игроку возможность продумать следующий шаг. Исследуя внутренние алгоритмы игры, я не перестаю удивляться с какой точностью авторы сложили кусочки мозаики, под названием «баланс». За время, проведенное над восстановлением кода оригинальной игры скопилось достаточно материала по макромеханике игры, которым я хочу поделиться с хабрасообществом.</p>
@@ -61,8 +63,19 @@
     <img src="../assets/articles/caesar5/c-16.jpg" alt="" class="post-image" loading="lazy" />
     <p>Какие задачи решены на данный моментЭто ролик второй обучающей миссии, тогда еще не было сделано воспроизведение игровых роликов (это живой gameplay как есть) видео долгое, я просто играл вторую миссию:</p>
     <p>1. Симуляция города 1.1 пожары и старение зданий 1.2 в игре реализованы все здания оригинала, функционал некоторых нуждается в доработке 1.3 реализованы все слои города, которые использовались в оригинале (обучение, здоровье, здравоохранение, налоги и т.п) 1.4 сделана система сбора налогов на основе форумов 2. Боги и религия, боги могу гневаться или радоваться 2.1 Сделан обсчет области покрытия храмов 3. Расчет распределения вода, товаров, продуктов и услуг 4. Сделано появление недовольных граждан и повстанцев 5. Сделан простой ИИ для управления солдатами, своими и вражескими 6. Планирование и проведение фестивалей 7. Запросы императора и торговля между городами 8. Животные и рыбная ловля 9. Рождение, старение и смерть горожан. Возрастные группы 10. Динамическое обновление путей у объектов, обход препятствий 11. Сюжетные миссии из оригинала (пока до миссии в Тингисе) 12. Добыча ресурсов и и производственные цепочки</p>
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-rev"><a href="caesar3-part6.html">Реверс-инжиниринг Caesar III: игровой цикл</a><div class="pmeta"><span>20 октября 2014</span><span>20 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-generation.html">Реверс-инжиниринг Caesar III: генерация мира</a><div class="pmeta"><span>23 июля 2014</span><span>6 мин</span></div></li>
+      <li class="lane-rev"><a href="caesar3-game-logic.html">Реверс-инжиниринг Caesar III: игровая логика</a><div class="pmeta"><span>9 июня 2014</span><span>18 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">Все статьи</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
+<script src="../site.js" defer></script>
 </body></html>

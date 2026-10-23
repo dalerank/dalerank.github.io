@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/task-based-game-engines.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/task-based-game-engines.html">RU</a><i>/</i><a class="on" href="task-based-game-engines.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-perf">Performance</span><h1>Task-based thinking in game engines</h1><div class="ameta"><span>Nov 28, 2024</span><span>16 min</span></div></div>
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Performance</a><h1>Task-based thinking in game engines</h1><div class="ameta"><span>Nov 28, 2024</span><span>16 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/task-based-game-engines/01-header.jpg" alt="Task-based thinking in game engines" class="post-image" loading="lazy" />
     <p>Games have always demanded high system performance, and game engines were built with proper support for multithreaded computation in mind, so as to make use of all the computer's resources. But applying good abstractions makes development much harder, and although multithreading opens up very wide possibilities in games, it also adds a fair share of problems. Developing any software with multithreading support is a topic of its own, and plenty has been written about it. Here I decided to show the basic patterns for using a task system — one that will, with high probability, be implemented in any game engine — along with the pros and cons of the various approaches.</p>
@@ -183,8 +185,19 @@
       <li><a href="https://www.youtube.com/watch?v=0nTDFLMLX9k" target="_blank" rel="noopener">Destiny's Multithreaded Rendering Architecture (Natalya Tatarchuk, GDC 2015)</a>.</li>
       <li><a href="https://www.gdcvault.com/play/1022186/Parallelizing-the-Naughty-Dog-Engine" target="_blank" rel="noopener">Parallelizing the Naughty Dog Engine Using Fibers</a> — the fiber-based job system for The Last of Us Remastered at 60 fps.</li>
     </ul>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-perf"><a href="spears-and-bits.html">Spears &amp; bits</a><div class="pmeta"><span>Dec 17, 2024</span><span>15 min</span></div></li>
+      <li class="lane-perf"><a href="fit-elephant-in-suitcase.html">How to fit an elephant into a suitcase</a><div class="pmeta"><span>Dec 21, 2024</span><span>10 min</span></div></li>
+      <li class="lane-perf"><a href="486-enough-for-everyone.html">A 486 ought to be enough for everyone</a><div class="pmeta"><span>Nov 6, 2024</span><span>13 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
+<script src="../../site.js" defer></script>
 </body></html>

@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-demo-vs-retail.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/pharaoh-demo-vs-retail.html">RU</a><i>/</i><a class="on" href="pharaoh-demo-vs-retail.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-rev">Reverse-engineering</span><h1>Welcome to Ancient…</h1><div class="ameta"><span>Jan 22, 2025</span><span>12 min</span></div></div>
+  <div class="article-head"><a class="tag lane-rev" href="../topics/reverse-engineering.html">Reverse-engineering</a><h1>Welcome to Ancient…</h1><div class="ameta"><span>Jan 22, 2025</span><span>12 min</span></div></div>
   <article class="prose">
     <img src="../../assets/articles/pharaoh-demo-vs-retail/01-header.jpg" alt="Welcome to Ancient Egypt" class="post-image" loading="lazy" />
     <p>...Egypt — a world of majestic pyramids, the turbulent waters of the Nile and one of the warmest, coziest 2D strategy games from 1999! Here you become an architect and ruler, building cities, caring for the well-being of your citizens and erecting monuments worthy of pharaohs. Did you know Pharaoh had a full-fledged demo? Although that was normal for the industry of that period, it's the differences from the retail version that we'll be talking about. (Lots of pictures)</p>
@@ -122,9 +124,20 @@ Satellite provider? No</code></pre>
     <p>If you're interested in how it all works on the inside, come to <a href="https://github.com/dalerank/Akhenaten" target="_blank" rel="noopener">GitHub</a> or to <a href="https://akhenatengame.squarespace.com/" target="_blank" rel="noopener">the site</a> — some sympathizers set up a site for me, I'll fill it with content when I can and keep a devblog. From the latest news: it's playable up to mission 8 and can run on Macs, there are no pyramids yet, only mastabas. The game is entirely in C++, with a self-written JS VM for configs and a bunch of various tricks, like pulling a class name at compile time with the help of <a href="https://habr.com/ru/articles/839692/" target="_blank" rel="noopener">black magic and templates</a>. There won't be a Telegram, sorry — I just don't get along with it somehow.</p>
     <img src="../../assets/articles/pharaoh-demo-vs-retail/21-akhenaten-site.jpg" alt="The Akhenaten project site" class="post-image" loading="lazy" />
     <p>UPD: I was asked to add the link <a href="https://akhenatengame.squarespace.com/" target="_blank" rel="noopener">akhenatengame.squarespace.com</a>.</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-rev"><a href="pharaoh-engine-tricks.html">ECS, dynvtbl, logical threads and Pharaoh</a><div class="pmeta"><span>Oct 8, 2024</span><span>2 min</span></div></li>
+      <li class="lane-rev"><a href="pharaoh-house-evolution.html">House evolution mechanics in Pharaoh (1999)</a><div class="pmeta"><span>May 24, 2025</span><span>13 min</span></div></li>
+      <li class="lane-rev"><a href="pharaoh-map-rendering.html">How the map is drawn in Pharaoh</a><div class="pmeta"><span>Oct 17, 2023</span><span>10 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>

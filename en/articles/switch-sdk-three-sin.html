@@ -8,7 +8,9 @@
 <link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/switch-sdk-three-sin.html" />
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 <meta property="og:type" content="article" />
@@ -27,7 +29,7 @@
   <div class="actions"><span class="lang"><a href="../../articles/switch-sdk-three-sin.html">RU</a><i>/</i><a class="on" href="switch-sdk-three-sin.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
 </div></header>
 <main class="wrap article">
-  <div class="article-head"><span class="tag lane-abn">Abnormal programming</span><h1>Why does the Switch SDK have three different sin functions?</h1><div class="ameta"><span>Jun 11, 2023</span><span>8 min</span></div></div>
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Abnormal programming</a><h1>Why does the Switch SDK have three different sin functions?</h1><div class="ameta"><span>Jun 11, 2023</span><span>8 min</span></div></div>
   <article class="prose">
     <p>A few years ago, while working at Gaijin, I got to take part in porting a couple of the company's games to the Nintendo Switch, which was rapidly conquering new markets at the time. For me it was the first major project on the platform. And since neither the team nor the engine developers were familiar with the platform, the build system, or the Nintendo ecosystem in general, we had to find every rake and carefully step on it. To kick the tires of the new platform, alongside porting the game we wrote an internal middleware layer (dagor engine + nxsdk + jam), and the code grew all sorts of tests, build matrices, benchmarks, stability soak runs and other internal checks. It's worth noting that as of 2018, the Switch SDK itself hadn't implemented some POSIX functions like poll and send/receive, and most of the file I/O functions; we had to write the POSIX shim ourselves. At some point we also got around to writing various benchmarks for the standard-library functions, and we noticed some anomalies in the behavior of a few trigonometric functions across different build configurations. For reference, the SDK uses a trimmed-down variant of musl libc (<a href="https://www.musl-libc.org/" target="_blank" rel="noopener">musl-libc.org</a>); everything is statically linked into one big binary by Nintendo's clang version 9 (2018), which then runs on the console. We didn't have access to the sources of Nintendo's own libc, but you can always look at the disassembly and get a more-or-less clear picture of what's going on.</p>
     <img src="../../assets/articles/switch-sdk-three-sin/cover.jpg" alt="To sine or not to sine?" class="post-image" loading="lazy" />
@@ -436,9 +438,20 @@ glibc_sin         7.43 ns         7.16 ns     79544722</code></pre></details>
     <h2>Conclusions</h2>
     <p>We got no practical benefit out of this, but it was interesting to dig into the quirks of the SDK. All honor and praise to the Japanese engineers who gave the world this wonderful console. I only have one question: why three?</p>
     <p><strong>UPD:</strong> a fellow wrote to me in DMs that this is how Nintendo tracked the use of old and pirated SDKs — without an active developer key the first implementation was always called, so a build trying to pass certification helped detect stolen accounts and keys. I can't verify this, so I'll just have to take their word for it :)</p>
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-abn"><a href="private-but-want-public.html">When it's private but you really want public</a><div class="pmeta"><span>Sep 21, 2023</span><span>8 min</span></div></li>
+      <li class="lane-abn"><a href="enum-name-runtime.html">A C++ enum's name at runtime</a><div class="pmeta"><span>Nov 7, 2022</span><span>10 min</span></div></li>
+      <li class="lane-abn"><a href="where-are-your-bugs.html">Where are your bugs?</a><div class="pmeta"><span>Sep 30, 2023</span><span>8 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
     <a class="backlink" href="index.html">All articles</a>
   </article>
 </main>
-<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a></span></div></footer>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built &amp; hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
 </body></html>
