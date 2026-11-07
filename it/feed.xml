@@ -7,6 +7,14 @@
   <language>it</language>
   <atom:link href="https://dalerank.github.io/it/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Colpire impossibile mancare</title>
+    <link>https://dalerank.github.io/it/articles/lag-compensation.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/lag-compensation.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Il seguito della storia del coyote time: in uno sparatutto in rete bisogna mentire non sulla posizione del personaggio ma sul tempo. Perché il giocatore vede il nemico dove sul server non c’è più, come il server costruisce una macchina del tempo dalla cronologia delle hitbox, di quanti tick riavvolgere il mondo e dove sta il limite, perché non riavvolgere tutti, come impedire al client di mentire, cosa fare con i colpi di un giocatore già morto e in cosa la lag compensation differisce dal rollback. Con esempi interattivi.</description>
+  </item>
+  <item>
     <title>Coyote time, ovvero come mentire un po’ ai giocatori</title>
     <link>https://dalerank.github.io/it/articles/coyote-time.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/it/articles/coyote-time.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Sun, 22 Feb 2026 09:00:00 +0000</pubDate>
     <category>Mestiere</category>
     <description>Come la serie Game++ su Habr è diventata un libro sul C++ pragmatico e lo sviluppo di motori: cos&#x27;è un «buon» C++, le persone che hanno aiutato a far nascere il libro, l&#x27;editing come mestiere a sé e un grande blocco di risposte alle domande frequenti su come scriverlo e pubblicarlo.</description>
-  </item>
-  <item>
-    <title>A caccia degli fps rossi</title>
-    <link>https://dalerank.github.io/it/articles/red-fps-hunt.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/red-fps-hunt.html</guid>
-    <pubDate>Thu, 19 Feb 2026 09:00:00 +0000</pubDate>
-    <category>Prestazioni</category>
-    <description>Il profiling dei giochi come filosofia di sviluppo: l&#x27;evoluzione delle aspettative sugli FPS, come i contenuti degli artisti danneggiano le prestazioni (geometria, texture, render, culling), i metodi di profiling — sampling, instrumentation, tracing, event-based, analisi statica e replay — e il design di un tracing profiler con architettura zero-allocation e handle per le stringhe.</description>
   </item>
 </channel>
 </rss>

@@ -7,6 +7,14 @@
   <language>ru</language>
   <atom:link href="https://dalerank.github.io/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Попасть нельзя промахнуться</title>
+    <link>https://dalerank.github.io/articles/lag-compensation.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/lag-compensation.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Геймдизайн</category>
+    <description>Продолжение истории про coyote time: в сетевом шутере врать приходится уже не о положении персонажа, а о времени. Почему игрок видит противника там, где его на сервере уже нет, как сервер строит машину времени из истории хитбоксов, на сколько тиков перематывать мир и где этому предел, зачем перематывать не всех, как не дать клиенту соврать, что делать с выстрелами уже мёртвого игрока и чем lag compensation отличается от rollback. С интерактивными примерами.</description>
+  </item>
+  <item>
     <title>Coyote Time, или как немножко врать игрокам</title>
     <link>https://dalerank.github.io/articles/coyote-time.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/articles/coyote-time.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
     <category>Производительность</category>
     <description>История архитектуры памяти игровых консолей от Atari 2600 до PS5 и Xbox Series: счёт тактов и бланки, дележ шины и DMA, быстрая-но-медленная RDRAM на N64, тайловый рендер Dreamcast, три острова памяти PS2, SPU и Local Store на PS3, унификация памяти на PS4 и SSD как новый уровень иерархии памяти.</description>
-  </item>
-  <item>
-    <title>Как не перепутать мечту, портфолио и вторую работу</title>
-    <link>https://dalerank.github.io/articles/dream-portfolio-second-job.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/dream-portfolio-second-job.html</guid>
-    <pubDate>Tue, 28 Apr 2026 09:00:00 +0000</pubDate>
-    <category>Ремесло</category>
-    <description>Про пет-проекты в геймдеве: почему «проект на пару вечеров» превращается в годы жизни, чем обучение отличается от написания своего движка, почему маленькая библиотека выживает чаще амбициозного комбайна, цена C++ для хобби-проектов и как open-source незаметно становится второй работой.</description>
   </item>
 </channel>
 </rss>

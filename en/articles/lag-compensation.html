@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hit Can’t Miss — dalerank</title>
+<meta name="description" content="Lag compensation as a small lie about time: hitbox history, rewinding the world by the right number of ticks, an honest server and shots from an already dead player." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/lag-compensation.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/lag-compensation.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/lag-compensation.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/en/feed.xml" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:url" content="https://dalerank.github.io/en/articles/lag-compensation.html" />
+<meta property="og:title" content="Hit Can’t Miss — dalerank" />
+<meta property="og:description" content="Lag compensation as a small lie about time: hitbox history, rewinding the world by the right number of ticks, an honest server and shots from an already dead player." />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/lag-compensation/01.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articles</a><a href="../index.html#books">Books</a><a href="../index.html#topics">Topics</a><a href="../about.html">About</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/lag-compensation.html">RU</a><i>/</i><a class="on" href="lag-compensation.html">EN</a><i>/</i><a href="../../it/articles/lag-compensation.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Support</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><a class="tag lane-design" href="../topics/game-design.html">Game design</a><h1>Hit Can’t Miss</h1><div class="ameta"><span>Nov 8, 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/lag-compensation/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In <a href="coyote-time.html">the previous article we already lied to the player a little</a>, and pretty shamelessly at that: we took a ground check that was perfectly correct from the physics point of view, stretched it out by a few milliseconds and let the character jump after it had actually left the platform. We did all that not because our physics programmer is too clumsy to write a proper collision check, but so that the player wouldn't have to know what's going on with our collisions at all… and they're under no obligation to know.</p>
+    <p>A networked game has roughly the same thing going on, except now we have to lie a little not about the character's position but about time. If coyote time was a small lie about where the platform ends, then lag compensation is a small lie about when exactly the game world existed.</p>
+    <p>It gets interesting here too: the server may be entirely right that the player missed, and the player will still be convinced the game stole a hit from them. Let's not disappoint players and lose money to bad reviews.</p>
+    <hr />
+    <h3>Hits that never happened</h3>
+    <p>Picture a playtest of a multiplayer shooter where one of the players is sitting somewhere in Frankfurt with a 78 ms ping, which is actually a pretty decent ping and perfectly playable. During the test he lands two headshots, sees them on his screen, and twice the game tells him there was no hit.</p>
+    <p>When you start digging into the problem on the server, the logs really do show there was no headshot. The player thought (that's where the problem is), then clicked the mouse, then the shot packet went out over the network, the enemy kept moving all that time, the packet finally reached the server, the server looked at the current state of the world and found that the enemy's head was already about 0.4 meters to the left of where the player had fired.</p>
+    <p>From the server's point of view there's no problem at all: the raycast didn't cross the hitbox, so no hit. Close the bug, write something like "works as designed" in the ticket, except that the player, for some reason, disagrees. And this is a good moment to recall the previous article, because there we had the same problem: the computer saw one state and the human saw another. Now there's a network sitting between those two states as well.</p>
+    <p>In a local game we at least have one single world, but in a networked game the world starts existing in several versions in time at once, and each of those versions is the one true reality for its own part of the system.</p>
+    <p>For the player, the real world is the one on their screen; for the server, the real world is the one that exists on the current server tick. Between them sits the network, which takes two identical things and for a while convinces us that they're different.</p>
+    <p>As a result, for players with more than 40 ms of latency about 12% of shots in the test prototype don't intersect the hitbox on the server at all, while in a local game such cases are under 2%, and the phrase "your ping is just high" becomes your problem rather than the player's.</p>
+<pre style="margin:1.4rem 0"><code>CLIENT                                  SERVER
+
+   target                                 target
+      O                                      O
+      |                                      |
+      |                                      |
+      |                                      |
+    SHOOT!                                   |
+      |                                      |
+      +---------- packet -------------------&gt;|
+                                             |
+                                             v
+                                        target moved
+
+                                    RAYCAST
+                                       |
+                                       X MISS</code></pre>
+    <video class="post-image" src="../../assets/articles/lag-compensation/02.mp4" poster="../../assets/articles/lag-compensation/02.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>Where is the enemy?</h3>
+    <img src="../../assets/articles/lag-compensation/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>In a networked game the question "where is the enemy?" is actually quite tricky. If I'm looking at him right now, where is he? At the point I see on my screen, or at the point where he is on the server? Or at the point where he was a few dozen milliseconds ago, when my client received the corresponding snapshot of the world state?</p>
+    <p>Hmm… and it turns out all three answers can be correct at the same time. The client doesn't show the server's latest state exactly, because then remote players' movement would look very jerky: one snapshot arrives, the character is standing here; the next arrives, the character is suddenly a bit further on, with nothing in between. The picture starts stuttering, and instead of smooth movement the player gets a free demo of the network protocol at work. So the client interpolates the world state, gradually nudging objects' current positions toward the server's.</p>
+    <p>The server sent the player's positions for several adjacent ticks, the client received them with a delay and can now smoothly move the character between those states, and to do that it has to keep them in the past for a while. If the interpolation delay is 100 ms, then the positions you see on screen right now correspond to a world the server has already left behind.</p>
+    <p>This is the client-server pair working normally; more than that, it's exactly the behavior we want as developers. The problem shows up the moment the player clicks the mouse, because they want to shoot at the world they see, while the server receives your shot a bit later and checks it against a different world (its own). We end up in a strange situation where the shot was fired in the past, the server checks it in the present, and the player expects the server to somehow figure out that they were seeing an even earlier past.</p>
+<pre style="margin:1.4rem 0"><code>TIME ------------------------------------------------------------&gt;
+
+SERVER     [100]------[101]------[102]------[103]------[104]
+                                              ^
+                                              |
+                                         shot arrives
+
+CLIENT          [100]------[101]
+                              ^
+                              |
+                           SHOOT!
+
+CLIENT SEES                    O
+                                |
+                              TARGET
+
+SERVER NOW                         O
+                                    |
+                                  TARGET</code></pre>
+    <p>And if the server doesn't do that, you get the classic "I hit him, but the game said no." (<a href="https://dalerank.github.io/article_pathfinding/examples/shooting-naive-raycast.html" target="_blank" rel="noopener">Try it yourself</a>) Aim at what you see and watch latency turn a "naive" shot into a miss.</p>
+    <h3>Building a time machine</h3>
+    <img src="../../assets/articles/lag-compensation/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>The most obvious solution here is to make the server remember the past: on every server tick, save the positions of something "more or less persistent", for example the characters' hitboxes, and stash the snapshots in an array. Then instead of a single current state we have a small history of the world that we can walk back through, and if we keep 64 ticks at 60 Hz, the server gets roughly 1066 ms of history.</p>
+    <p>Now the server literally gets the ability to ask, "so where was this guy a second ago?" If a character has 18 collision boxes of 32 bytes each, one snapshot takes 576 bytes, and for 32 players and 64 ticks the whole history takes about 1MB, which for a modern server doesn't look scary at all.</p>
+    <p>The fun starts after that, because storing history is fairly easy, but figuring out which exact point of that history to use for a particular shot is harder. Roughly speaking, we end up with something like this (the code itself doesn't matter, it's just an example):</p>
+<pre style="margin:1.4rem 0"><code>struct FHitboxSnapshot{
+       uint32 Tick;
+       Capsule Hitboxes[18];
+};</code></pre>
+    <p>Then, when processing a shot, we no longer just do Raycast(CurrentWorld); first we try to work out at which moment in the past our CurrentWorld should exist. So the task turns from <code>did the ray hit the hitbox?</code> into <code> Did the ray hit the hitbox in the world state the shooter saw?</code>. And we get roughly this:</p>
+<pre style="margin:1.4rem 0"><code>                         NOW
+                          |
+                          v
+SERVER   -----------------+-----------------------------&gt;
+                          |
+                       target
+                          O
+                         /   /   /   X    MISS
+
+                         &lt;---- REWIND ----
+
+SERVER   -----------------+-----------------------------&gt;
+                          |
+                     old target
+                          O
+                         /   /   /   /   /      HIT</code></pre>
+    <p>And a simple-looking time check turns into a task of an entirely different caliber. <a href="https://dalerank.github.io/article_pathfinding/examples/shooting-time-machine.html" target="_blank" rel="noopener">Try it yourself</a> (toggle rewind compensation on and off to compare the hit rate).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/05.mp4" poster="../../assets/articles/lag-compensation/05.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>How many ticks back do we go?</h3>
+    <p>The first thing you want to do is just take the tick time and roll it back by the ping. Say the tick time is 100 ms and the ping is 78 ms, so let's rewind the world one tick back. But ping is the round-trip time, and what we care about first and foremost is the part of the latency it took the shot packet to reach the server, so this particular implementation uses the formula:</p>
+<pre style="margin:1.4rem 0"><code>rewindTime = RTT / 2 + interpolationDelay;</code></pre>
+    <p>With a 78 ms ping and a 100 ms interpolation delay we get:</p>
+<pre style="margin:1.4rem 0"><code>                         REWIND
+                            |
+              +-------------+-------------+
+              |                           |
+           RTT / 2                 interpolation
+              |                       delay
+              |                           |
+            39 ms                       100 ms
+              |                           |
+              +-------------+-------------+
+                            |
+                            v
+                         139 ms</code></pre>
+    <p>So the server checks the hit against roughly the hitbox state that existed 139 ms ago. There's a small catch here too: you can't just take the time from the client's message, because then all a client has to do is tell the server it supposedly interpolates the world with a two-second delay, and the server will helpfully rewind all the other players somewhere back to the age of the dinosaurs.</p>
+    <p>So the server measures the rewind time itself, but how to verify incoming data is a different story. Ping itself can't be treated as a constant either, because the network changes latency right in the middle of the game; in a system like this you can keep stats on the last 20 responses and take a value between the 25th and 75th percentiles, and when the spread is large, round the rewind rather than try to compensate for every random latency spike.</p>
+    <p>Because if you try to compensate for the player's actual ping, you'll very quickly discover there are players with genuinely bad ping who are shooting practically from the past, with a rewind of 500+ ms. Imagine another player who ran around a corner and crouched there, and then suddenly caught a headshot: that's roughly what overcompensated ping looks like.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-rewind-formula.html" target="_blank" rel="noopener">Try it yourself</a> (move RTT and interpolation delay separately and watch how they add up to rewindTime).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/06.mp4" poster="../../assets/articles/lag-compensation/06.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>True lies</h3>
+    <img src="../../assets/articles/lag-compensation/07.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And here a very interesting question comes up: if we've already agreed to rewind the world for the player's sake, why not rewind it as far as needed? Why not give a player with 500 ms of ping the same conditions as a player with 20?</p>
+    <p>Because then latency starts turning from a handicap into a gameplay advantage, and at extremely high ping you start getting situations where an enemy stepped out from behind a wall, you saw him, fired, and he ducked right back. In your slow world he's still where you just saw him, but on the server he's long since been behind the wall.</p>
+    <p>And if the server trusts the past state, a high-latency player will regularly hit people who, from the server's point of view, have long since disappeared behind cover. So we seem to have fixed the sense of unfairness for the shooter, but at the same time created a new unfairness for the one being shot. That's why the maximum rewind window on the server has to be capped.</p>
+<pre style="margin:1.4rem 0"><code>PAST                                                        NOW
+ |                                                           |
+ v                                                           v
+ +-----------------------------------------------------------+
+ |&lt;-------------------- history ----------------------------&gt;|
+                         |
+                         |&lt;------ 200 ms ------&gt;|
+                         |
+                         + MAX REWIND</code></pre>
+    <p>Ideally the implementation shouldn't go beyond 200 ms… give or take, for our game. Where did that number come from? It's simply a compromise you derive from player complaints. At 250 ms, complaints about getting hit after already ducking behind cover go up; at 150 ms, headshots start dropping and a different set of players complains. So 200 ms turned out to be a reasonable compromise between two opposite problems. Lag compensation has no correct number.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-max-rewind.html" target="_blank" rel="noopener">Try it yourself</a> (hide the target behind a wall and raise MAX_REWIND above the shooter's latency to catch an unfair hit).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/08.mp4" poster="../../assets/articles/lag-compensation/08.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>Why rewind everyone?</h3>
+    <img src="../../assets/articles/lag-compensation/09.jpg" alt="" class="post-image" loading="lazy" />
+    <p>There's also a more mundane problem once we've learned to time-travel. If the game has 32 players, on every shot we have to rewind all 32, and the server does this for every single shot. But we roughly know the direction of the shot, so we can first figure out which objects could possibly intersect the ray and only then bother with history. That way we can throw out the 90% that don't intersect and cut the check time.</p>
+<pre style="margin:1.4rem 0"><code>                 SHOT RAY
+                    v
+        +-----------------------+
+        |  32 players           |
+        |  O  O     O           |
+        |       O               |
+        |    O       O          |
+        |             O         |
+        +-----------------------+
+                    |
+              spatial filter
+                    v
+                 O  O
+                 2.3 avg.
+ALL PLAYERS                    FILTERED
+     |                              |
+     v                              v
+   0.9 ms                         0.08 ms</code></pre>
+    <p>So here we didn't so much speed up the rewind itself as first make sure we don't need to do it for most objects at all. And it's quite likely that the bullet's ray doesn't come anywhere near anyone, in which case we don't need to run the hit logic at all.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-spatial-filter.html" target="_blank" rel="noopener">Try it yourself</a> (shoot into a crowd and watch the measured perf delta between checking all players and checking only the candidates).</p>
+    <img src="../../assets/articles/lag-compensation/10.jpg" alt="" class="post-image" loading="lazy" />
+    <p>And this is where a class of problems begins that shows how much all of this isn't really just about the network. Say we decided to save the hitbox every tick:</p>
+<pre style="margin:1.4rem 0"><code>SaveHitboxSnapshot();
+UpdateAnimation();</code></pre>
+    <p>Now we have a problem: the visual model has already moved into a new pose, while the saved hitbox still matches the old one. For regular movement the player will most likely never notice, but for a fast-moving enemy (a plane, a car, a full sprint) a difference of a few centimeters can be quite enough to turn a hit into a miss.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-hitbox-order.html" target="_blank" rel="noopener">Try it yourself</a> (swap the order of SaveHitboxSnapshot()/UpdateAnimation() and watch the visible pose and the saved hitbox drift apart).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/11.mp4" poster="../../assets/articles/lag-compensation/11.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>The server has to be honest</h3>
+    <img src="../../assets/articles/lag-compensation/12.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Up to this point we've mostly been trying to make the server kinder to the player, but now we need to think a bit about what happens if the player decides to take advantage of that kindness. Because ping lets the client tell the server: <code>I fired on tick 123456</code></p>
+    <p>and effectively ask the server to look into the past, which means the time parameter itself becomes part of the logic and can no longer simply be trusted. The server has to cap the rewind depth on its own and check how much the claimed tick even looks like a normal continuation of that particular connection's timeline, for example by comparing it with a moving average of the last 32 packets and rejecting requests that deviate by more than roughly 60 ms. Otherwise the compensation mechanism very quickly turns from a handy game mechanic into yet another frag-farming tool. So suspicious requests are best not only dropped but also logged.</p>
+    <p>And that's also pretty typical for networked games: as soon as the system starts trusting the client even a little more than necessary, it turns out clients find ways to exploit it.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-trust-but-verify.html" target="_blank" rel="noopener">Try it yourself</a> (you can lie to the server about your latency and see when the claim gets accepted and when it gets rejected).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/13.mp4" poster="../../assets/articles/lag-compensation/13.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>What if the player is already dead?</h3>
+    <p>There's one more small edge case: the player fired, then the packet flew off to the server. While the packet was in flight, the player died, and the packet arrived after death. What do you do? You could look at the player's current state and say "The player is dead, so there was no shot", but then a high-ping player gets rather strange behavior, where their bullets only exist up until their character dies on the server. So it makes sense to check not only the current state but also the shooter's state at the moment the shot belongs to. And that gives us another wonderful situation, where the server can say at the same time:</p>
+    <blockquote>Yes, you're dead now. And you killed someone<br />Because when you fired, you were still alive.</blockquote>
+    <img src="../../assets/articles/lag-compensation/14.jpg" alt="" class="post-image" loading="lazy" />
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-already-dead.html" target="_blank" rel="noopener">Try it yourself</a> (fire a split second before dying and watch how the naive and the honest alive checks behave).</p>
+    <p>Time compensation really can't be considered separately from running ahead into the future (client prediction), because in the end all these systems are trying to solve the same problem from different sides. The client has to keep living while the server is somewhere far away, and then both versions of the world somehow have to agree again on what exactly happened, so they need a shared timeline.</p>
+    <p>People also often confuse time compensation with rollback (plain rewinding of time), because both approaches use words like "roll back", "go back" and "check the past", but under the hood they're completely different systems.</p>
+    <p>Rollback returns the simulation to the past and then replays it to get a new world state.</p>
+<pre style="margin:1.4rem 0"><code>LAG COMPENSATION
+
+PAST                                  NOW
+ |                                     |
+ v                                     v
+[old hitboxes] -------------------- [world]
+      |
+      +--&gt; raycast
+      |
+      +--&gt; restore
+
+
+ROLLBACK
+
+PAST                                  NOW
+ |                                     |
+ v                                     v
+[whole world] ---- replay ----------&gt; [world]
+      |
+      +--&gt; physics
+      +--&gt; AI
+      +--&gt; projectiles
+      +--&gt; inputs</code></pre>
+    <p>Time compensation in this form is simpler: we don't roll back all the physics, don't rewind bullet traces, don't rerun the AI and don't recompute all 32 players. We temporarily take the old positions of the hitboxes we need, do the hit check, and then put everything back.</p>
+    <p>So the same phrase "we take the game back into the past" can mean two completely different architectures: one keeps a few dozen kilobytes of hitbox history, and the other suddenly starts re-simulating half the game.</p>
+    <p><a href="https://dalerank.github.io/article_pathfinding/examples/shooting-rollback-vs-lagcomp.html" target="_blank" rel="noopener">Try it yourself</a> (the same shot, but rewinding one hitbox versus replaying the whole world, so you can see what each costs; the red dots are the whole-world replay).</p>
+    <video class="post-image" src="../../assets/articles/lag-compensation/15.mp4" poster="../../assets/articles/lag-compensation/15.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>A good game should lie about time</h3>
+    <p>Looked at from the outside, a lag compensation system seems pretty odd. We deliberately store the past, deliberately rewind the world, deliberately check the hit not against the state that exists on the server right now but against the state the client saw a while ago, and we do all this so that the player gets a result that looks natural from their point of view.</p>
+    <p>So the server knowingly checks not quite the world that exists at this moment. That's a lot like coyote time, and again, from the standpoint of ordinary physics it looks a bit insane, but a game is under no obligation to be a rigorous physical model.</p>
+    <p>That's why coyote time and lag compensation are really two flavors of the same idea (bending the game to fit the quirks of human perception), even though they live in completely different parts of the engine. The player has no idea that their client lives 100 ms in the past, that the shot packet arrived late, that the server keeps 64 snapshots, that the hitbox was rewound by 139 ms, that one of them got filtered out and then restored back. They shouldn't have to know any of it.</p>
+    <p>In the end it's a theater for an audience of one. A good game should lie a little; what matters is that the player enjoys playing.</p>
+    <img src="../../assets/articles/lag-compensation/16.jpg" alt="" class="post-image" loading="lazy" />
+    <p>P.S. The esteemed Klavdiy and Fublya helped build the examples for this article, because writing all of this in C++ and making you compile it on your own machine felt somewhere beyond good and evil. I've also added examples to the previous article, if anyone's interested.</p>
+    <details class="code"><summary>Klavdiy and Fublya</summary><div class="spoiler-body" style="padding:14px 20px">
+<p>A little girl is getting ready to go for a walk with her mom, and mom is hurrying her along:<br /> — Get ready faster, sweetie.<br /> — Coming, mommy, I just need to grab Fublya!<br /> — Grab who???<br />The girl runs off to her room and comes back with a horrible, grimy, revolting doll with a pushed-in eye, mangy hair, a chewed-up leg and some rags instead of a dress.<br />Mom sees this monstrosity and recoils in horror:<br /> — Fu! Bl*! (Russian for roughly "Ugh! F*ck!")<br />The girl:<br /> — That's what Daddy calls her too</p>
+    </div></details>
+
+    <!-- related -->
+    <nav class="related" aria-label="More on this topic">
+      <h2>More on this topic</h2>
+      <ul>
+      <li class="lane-design"><a href="coyote-time.html">Coyote Time, or How to Lie to Players a Little</a><div class="pmeta"><span>Nov 8, 2026</span><span>7 min</span></div></li>
+      <li class="lane-design"><a href="fibonacci-enemies.html">Fibonacci your enemies</a><div class="pmeta"><span>Sep 6, 2026</span><span>6 min</span></div></li>
+      <li class="lane-design"><a href="why-pharaoh-best.html">Why Pharaoh remains the best game in the series</a><div class="pmeta"><span>Sep 26, 2025</span><span>14 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
+    <a class="backlink" href="index.html">All articles</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — built and hosted on GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/en/feed.xml">RSS</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
+</body></html>

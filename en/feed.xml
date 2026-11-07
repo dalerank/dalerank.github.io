@@ -7,6 +7,14 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Hit Can’t Miss</title>
+    <link>https://dalerank.github.io/en/articles/lag-compensation.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/lag-compensation.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>A sequel to the coyote time story: in a networked shooter you have to lie not about the character’s position but about time. Why the player sees an enemy where the server no longer has them, how the server builds a time machine out of hitbox history, how many ticks to rewind the world and where the limit is, why you shouldn’t rewind everyone, how to keep the client from lying, what to do with shots from an already dead player, and how lag compensation differs from rollback. With interactive examples.</description>
+  </item>
+  <item>
     <title>Coyote Time, or How to Lie to Players a Little</title>
     <link>https://dalerank.github.io/en/articles/coyote-time.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/coyote-time.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
     <category>Performance</category>
     <description>A history of game-console memory architecture from the Atari 2600 to the PS5 and Xbox Series: cycle counting and blanks, sharing the bus and DMA, the fast-but-slow RDRAM on the N64, the Dreamcast tile renderer, the PS2&#x27;s three memory islands, SPUs and Local Store on the PS3, PS4 memory unification, and the SSD as a new level of the memory hierarchy.</description>
-  </item>
-  <item>
-    <title>How not to confuse a dream, a portfolio, and a second job</title>
-    <link>https://dalerank.github.io/en/articles/dream-portfolio-second-job.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/dream-portfolio-second-job.html</guid>
-    <pubDate>Tue, 28 Apr 2026 09:00:00 +0000</pubDate>
-    <category>Craft</category>
-    <description>On pet projects in gamedev: why a &quot;couple-of-evenings&quot; project turns into years of your life, how learning differs from writing your own engine, why a small library survives more often than an ambitious all-in-one, the cost of C++ for hobby projects, and how open-source quietly becomes a second job.</description>
   </item>
 </channel>
 </rss>
