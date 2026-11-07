@@ -7,6 +7,14 @@
   <language>ru</language>
   <atom:link href="https://dalerank.github.io/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Держи хотпас в холоде, а кеш в тепле</title>
+    <link>https://dalerank.github.io/articles/hotpath-cold-cache-warm.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/hotpath-cold-cache-warm.html</guid>
+    <pubDate>Sat, 07 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Производительность</category>
+    <description>В играх важнее не пропускная способность памяти, а латентность: сколько проходит между запросом и ответом, пока все системы кадра делят один L3. Программный прогрев кеша фиктивными обращениями и где он стреляет по ногам, структура, которая «просто выросла» и всё сломала, дорогая косвенность хендлов, софтверный префетч, который выстрелил только на 32 МБ, не такая уж дорогая виртуальность, ложные просадки в кеше, загрязнитель кеша, обманувший сам себя, и аппаратная блокировка кеша на Intel, AMD и PS5.</description>
+  </item>
+  <item>
     <title>Откуда берётся сложность</title>
     <link>https://dalerank.github.io/articles/where-complexity-comes-from.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/articles/where-complexity-comes-from.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Wed, 22 Apr 2026 09:00:00 +0000</pubDate>
     <category>C++</category>
     <description>Простой (неквалифицированный) и квалифицированный поиск имён в C++: почему пространство имён и локальная переменная с одним именем сосуществуют, скрытие имён и целых перегрузок при наследовании, неоднозначность ромбовидного наследования, правило using namespace при квалифицированном поиске и исторические различия GCC, Clang и MSVC.</description>
-  </item>
-  <item>
-    <title>Компиляторы тоже путаются в именах</title>
-    <link>https://dalerank.github.io/articles/compilers-confused-names.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/compilers-confused-names.html</guid>
-    <pubDate>Tue, 14 Apr 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>Поиск имён в C++: идентификаторы, unqualified-id, qualified-id, template-id и «терминальное имя», история ADL (Koenig lookup) от проблемы с пространствами имён до решения Кёнига, двухфазный поиск в шаблонах и почему GCC, Clang и MSVC исторически вели себя по-разному.</description>
   </item>
 </channel>
 </rss>

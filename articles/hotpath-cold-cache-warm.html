@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Держи хотпас в холоде, а кеш в тепле — dalerank</title>
+<meta name="description" content="Латентность против пропускной способности в играх: программный прогрев кеша и где он стреляет по ногам, дорогая косвенность, софтверный префетч, виртуальные вызовы, ложные просадки в кеше и аппаратная блокировка кеша на Intel, AMD и PS5." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/hotpath-cold-cache-warm.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/hotpath-cold-cache-warm.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/hotpath-cold-cache-warm.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="ru_RU" />
+<meta property="og:url" content="https://dalerank.github.io/articles/hotpath-cold-cache-warm.html" />
+<meta property="og:title" content="Держи хотпас в холоде, а кеш в тепле — dalerank" />
+<meta property="og:description" content="Латентность против пропускной способности в играх: программный прогрев кеша и где он стреляет по ногам, дорогая косвенность, софтверный префетч, виртуальные вызовы, ложные просадки в кеше и аппаратная блокировка кеша на Intel, AMD и PS5." />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/hotpath-cold-cache-warm/01.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Статьи</a><a href="../index.html#books">Книги</a><a href="../index.html#topics">Темы</a><a href="../about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="hotpath-cold-cache-warm.html">RU</a><i>/</i><a href="../en/articles/hotpath-cold-cache-warm.html">EN</a><i>/</i><a href="../it/articles/hotpath-cold-cache-warm.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><a class="tag lane-perf" href="../topics/performance.html">Производительность</a><h1>Держи хотпас в холоде, а кеш в тепле</h1><div class="ameta"><span>7 ноября 2026</span><span>15 мин</span></div></div>
+  <article class="prose">
+    <img src="../assets/articles/hotpath-cold-cache-warm/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>В литературе по оптимизации, работа с памятью стоит не на первом месте, и даже если вы добрались до этих глав там, с большой вероятностью будут рассказывать про пропускную способность, чтобы система могла перемалывать условные пять ГБ/с вместо трех. И в целом это правильная метрика, когда у вас потоковая обработка, или батчи данных вродя запекания освещения, сборки навмеша, или компиляция шейдеров. Там имеет значение сколько данных прошло через процессор за отведённое время, и все стандартные приёмы (SoA, плотные массивы, линейный обход, векторизация) работают на эту метрику.</p>
+    <p>В редких книгах, вы увидите примеры о том, где «не сколько» данных вы обработали, а сколько времени прошло между запросом и ответом, а классические примеры из большого мира будут про высокочастотный трейдинг, автомобильные и медицинские системы, аудио‑ и видеосвязь, что обычному программисту не всегда интересно или имеет специфику далекую от области, где это можно применить. Также это все это достаточно далеко от разработки игр, потому что большинство приемов из этих примеров и книг, в чистом виде не переносятся в силу специфики игровой разработки. В обратную сторону тоже работает плохо, поэтому каждый живет при своих проблемах, идеях и костылях.</p>
+    <p>В играх, особенно разных стратегиях, симуляторах и факторингах, потоковая задача прогнать через кеш как можно больше данных остро не стоит, зато вылезают разные latency‑задачи, которым нужно, чтобы данные этих задач из кеша по возможности не выкидывали, а работая в группе по возможности избегать кешканибализма и драки за шину.</p>
+    <hr />
+    <p>Напомню, что бюджет кадра все еще 16мс, а в реальности и того меньше, где‑то на 10%, потому что есть сериальная часть кадра, смена буферов, и куча непараллезуемых задач, которые все равно кто‑то должен сделать, и обычно этот кто‑то сидит в конце фрейма и делает это все в один поток.</p>
+    <p>Для VR‑шлема будет и вовсе 10мс, потому что на частоте меньше 100 fps начинает вести даже самых стойких, и там ощущение «подлагивает», превращается в «ой, шота меня тошнит». Внутри этих 15(9)мс живут игровая логика, физика, анимация, скриптовая машина, UI, подготовка команд рендера и подача их на GPU, и все они делят один L3 на всех.</p>
+    <details class="code"><summary>Книги, если кто захочет углубиться</summary><div class="spoiler-body" style="padding:14px 20px">
+<p>Denis Bakhvalov, Performance Analysis and Tuning on Modern CPUs<br />Richard Fabian, Data‑Oriented Design<br />Fedor Pikus, The Art of Writing Efficient Programs<br />Anthony Williams, C++ Concurrency in Action</p>
+    </div></details>
+    <p>Большинство из вас наверняка знает время выборки кешлинии, если не помните, то выборка в L1 стоит порядка четырёх тактов, в L2 уже примерно десяток, в L3 за сорок, а уход в основную память на десктопе это сотни тактов, причём такты эти процессор просто стоит (виртуально для вашей задачи) и ничего не делает. Для обычного программиста что одын наносекунд, что две сотни, особой погоды не делают, потому что он живет в мире единиц и десятков миллисекунд, пока не выясняется, что какая нибудь логика не обходит полуровня, спрашивая «дружище, а ты далеко от меня, дайка мне свою позиция, я тут хочу расстояние до тебя посчитать». Выясняется что позиция лежит в своём куске памяти, и каждый обход это промах, и вот у вас уже этих наносекунд набежало аж на полторы миллисекунды, а данные вроде бы лежат в линейном массиве и вполне себе даже рядом.</p>
+    <p>И этих полутора миллисекунд нет в профайлере как отдельной строчки, и вы просто видите что функция вызывается очень часто, и вызовы эти размазаны по всему кадру ровным слоем, и в принципе код не выглядит «очень медленный», но запашок есть, то есть профайлер честно показывает где, но не показывает почему.</p>
+    <p>Основная проблема latency‑критичного кода, что нужные нам данные вылетают из кеша, потому что к ним обращаются недостаточно часто, хотя к ним обращаются часто. Первая пара примеров будет объяснящими и не привязаными к игре, а код для примеров ниже я взял из реального проекта, но чтобы не палить внутренние имена систем и структуру данных, примеры немного переписаны без узнаваемых имён.</p>
+<pre style="margin:1.4rem 0"><code>std::unordered_map&lt;int32_t, SOrder&gt; ActiveOrders;
+while (Running)
+{
+    SCommand* pCommand = PollAiCommand();
+    if (pCommand != nullptr)
+    {
+        auto Found = ActiveOrders.find(pCommand-&gt;OrderId);
+        if (Found != ActiveOrders.end())
+        {
+            RespondToPlayer(pCommand-&gt;Origin, Found-&gt;second);
+        }
+    }
+}</code></pre>
+    <p>Пока вызывающей логики нет, цикл не делает ничего полезного, и хеш‑таблица <code>ActiveOrders</code> уезжает из кеша, потому что за это время через тот же кеш прошли анимация, физика, аудио и стриминг текстур, и каждый из них подтягивал свои данные. А когда команда наконец приходит, мы платим за все промахи, которые накопились, сразу и игрок видит фриз или падение фпс.</p>
+    <p>То же самое происходит с любой редко используемой, но обязанной быть быстрой структурой вроде кеша локализации, дерева UI‑виджетов панели, которую игрок открывает хорошо если раз в минуту, таблицей «объект по идентификатору». Все они сделаны технически быстрыми, но в момент, когда они нужны, их данных нет ни в одном из кешей, и мы получаем увеличение времени кадра. Проблема известна давно, и решения к ней тоже известны давно, но работают не всегда.</p>
+    <h3>Программный прогрев кеша</h3>
+    <p>Самое используемое и самое дешевое по времени, но дорогое по электронам решение это не отпускать наши данные из кеша. Выглядит варварски, работает также, и первая реакция даже опытных коллег обычно «это же чушь».</p>
+    <p>Для того, чтобы работать быстрее, надо делать фиктивные обращения к тем данным, которые мы хотим удержать в кеше, здасьте приехали, чтобы быстро что‑нибудь считать, надо что‑нибудь считать? не что‑нибудь...</p>
+<pre style="margin:1.4rem 0"><code>std::unordered_map&lt;int32_t, SOrder&gt; ActiveOrders;
+int64_t WarmupSink = 0;
+while (Running)
+{
+    if (HasPendingPlayerCommand())
+    {
+        SCommand* pCommand = PollPlayerCommand();
+        if (pCommand != nullptr)
+        {
+            auto Found = ActiveOrders.find(pCommand-&gt;OrderId);
+            if (Found != ActiveOrders.end())
+            {
+                RespondToPlayer(pCommand-&gt;Origin, Found-&gt;second);
+            }
+        }
+    }
+    else
+    {
+        const int32_t WarmupId = GetPlausibleOrderId();
+        auto Found = ActiveOrders.find(WarmupId);
+        WarmupSink += (Found != ActiveOrders.end()) ? 1 : 0;
+    }
+}</code></pre>
+    <p><code>WarmupSink</code> тут нужен чтобы компилятор не выкинул весь прогрев как код без побочных эффектов, и даже это не всегда помогает и современный clang, считает себя настолько умным, что все равно выкидывает прогрев, отчего приходится городить костыли уже в виде вывода этого значения куда‑нибудь в лог или в файл, дабы компилятор не тянул свои грязные лапки к «мертвому» коду.</p>
+    <p>Обмениваем некоторое количество электронов и пропускной способности на предсказуемость времени ответа. Для среднего fps это будет конечно плохо, потому что мы забрали часть времени, которое могло бы пойти на что‑то полезное, например на ожидание спинлока, но для тех случаев, когда игрок нашел несчастного юнита, про которого забыл несколько секунд назад, и тыкнул в него мышкой — мы получаем выигрыш и избавляемся от фриза.</p>
+    <img src="../assets/articles/hotpath-cold-cache-warm/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Меньше лучше или как читать этот график. На графике одно и то же обращение <code>find</code> в таблице на 32 768 записей после того, как через кеш специально прогнали мусорные данные: слева направо четыре способа подогреть кеш данными, по вертикали идут такты процессора. У каждой стратегии три столбика: среднее, медиана (p50) и худший случай (p99).</p>
+    <p>Слева направо прогрев становится умнее, отчего время поиска становится меньше. Без прогрева среднее около 1220 тактов и худшее время 1947, то есть данные были вне L3, с одним постоянным ключом почти то же самое. Со случайными ключами будет примерно вдвое быстрее, а с недавно используемыми ключами получаем кратное снижение времени поиска.</p>
+    <p>Смотреть надо на оранжевые и красные колонки (времена). У прогрева недавними ключами медиана падает до 98 тактов, то есть большая часть обращений (p50) попала при работе в кеши L1 или L2. Оно и понятно, мы насильно удерживаем в кеше L1/L2 данные, но среднее при этом 350 тактов (mean), потому что (p90/p99, редкие и непопулярные) часть запросов все равно уходят мимо рабочего набора и тянут среднее вверх.</p>
+    <p>p99 почти не отличается от случайного прогрева, потому редкий запрос и на случайных данных и на истории работает одинаково плохо, не попадая в рабочий набор в кеше и подтягивая данные из памяти.</p>
+    <details class="code"><summary>Код бенчмарка</summary><pre><code>#include &lt;random&gt;
+#include &lt;string&gt;
+#include &lt;unordered_map&gt;
+#include &lt;vector&gt;
+
+#include "perf_common.h"
+
+namespace NColdLatency
+{
+	struct STooltipInputs
+	{
+		uint32_t Population;
+		uint32_t OwnerId;
+		uint32_t MarketIndex;
+		uint32_t Development;
+		uint32_t Reserved[ 4 ];
+	};
+
+	enum class EWarmup
+	{
+		None,
+		Constant,
+		Random,
+		History
+	};
+
+	const char* GetWarmupName( EWarmup Mode )
+	{
+		switch ( Mode )
+		{
+			case EWarmup::None: return "no warmup";
+			case EWarmup::Constant: return "constant key";
+			case EWarmup::Random: return "random keys";
+			case EWarmup::History: return "recent keys";
+		}
+		return "unknown";
+	}
+
+	class CRecentRing
+	{
+	public:
+		static constexpr int32_t RING_SIZE = 64;
+
+		void Push( uint32_t Id )
+		{
+			_Ring[ _Write ] = Id;
+			_Write = ( _Write + 1 ) % RING_SIZE;
+		}
+
+		uint32_t Next()
+		{
+			_Read = ( _Read + 1 ) % RING_SIZE;
+			return _Ring[ _Read ];
+		}
+
+	private:
+		uint32_t _Ring[ RING_SIZE ] = {};
+		int32_t _Write = 0;
+		int32_t _Read = 0;
+	};
+
+	constexpr int32_t WARMUP_LOOKUPS = 64;
+	constexpr int32_t WORKING_SET_SIZE = 64;
+	constexpr int32_t WORKING_SET_HIT_PERCENT = 90;
+
+	struct SResult
+	{
+		NPerf::SStats Cycles;
+		uint64_t Sink = 0;
+	};
+
+	SResult RunExperiment( int32_t EntryCount, EWarmup Mode, int32_t SampleCount, size_t PollutionBytesPerSample )
+	{
+		std::mt19937 AccessRng( 777u );
+		std::mt19937 WarmupRng( 12345u );
+		std::mt19937 SetupRng( 20260801u );
+
+		std::unordered_map&lt;uint32_t, STooltipInputs&gt; Table;
+		Table.reserve( static_cast&lt;size_t&gt;( EntryCount ) * 2 );
+		for ( int32_t Index = 0; Index &lt; EntryCount; ++Index )
+		{
+			STooltipInputs Value = {};
+			Value.Population = static_cast&lt;uint32_t&gt;( Index ) * 37u;
+			Value.OwnerId = static_cast&lt;uint32_t&gt;( Index ) &amp; 255u;
+			Table.emplace( static_cast&lt;uint32_t&gt;( Index ), Value );
+		}
+
+		std::vector&lt;uint32_t&gt; WorkingSet( WORKING_SET_SIZE );
+		for ( uint32_t&amp; Id : WorkingSet )
+		{
+			Id = SetupRng() % static_cast&lt;uint32_t&gt;( EntryCount );
+		}
+
+		NPerf::CCachePolluter Polluter( PollutionBytesPerSample * 4, PollutionBytesPerSample );
+
+		CRecentRing Recent;
+		for ( uint32_t Id : WorkingSet )
+		{
+			Recent.Push( Id );
+		}
+
+		uint64_t Sink = 0;
+		std::vector&lt;double&gt; Samples;
+		Samples.reserve( SampleCount );
+
+		for ( int32_t Sample = 0; Sample &lt; SampleCount; ++Sample )
+		{
+			const bool FromWorkingSet = ( AccessRng() % 100u ) &lt; static_cast&lt;uint32_t&gt;( WORKING_SET_HIT_PERCENT );
+			const uint32_t CriticalId = FromWorkingSet
+				? WorkingSet[ AccessRng() % WorkingSet.size() ]
+				: ( AccessRng() % static_cast&lt;uint32_t&gt;( EntryCount ) );
+
+			Polluter.Pollute();
+
+			if ( Mode != EWarmup::None )
+			{
+				for ( int32_t Warm = 0; Warm &lt; WARMUP_LOOKUPS; ++Warm )
+				{
+					uint32_t WarmId = 0;
+					if ( Mode == EWarmup::Constant )
+					{
+						WarmId = 0;
+					}
+					else if ( Mode == EWarmup::Random )
+					{
+						WarmId = WarmupRng() % static_cast&lt;uint32_t&gt;( EntryCount );
+					}
+					else
+					{
+						WarmId = Recent.Next();
+					}
+
+					const auto Found = Table.find( WarmId );
+					Sink += ( Found != Table.end() ) ? Found-&gt;second.Population : 0u;
+				}
+			}
+
+			const uint64_t Start = NPerf::ReadTsc();
+			const auto Found = Table.find( CriticalId );
+			const uint32_t Payload = ( Found != Table.end() ) ? Found-&gt;second.Population : 0u;
+			const uint64_t End = NPerf::ReadTsc();
+
+			Sink += Payload;
+			Samples.push_back( static_cast&lt;double&gt;( End - Start ) );
+			Recent.Push( CriticalId );
+		}
+
+		SResult Result;
+		Result.Cycles = NPerf::ComputeStats( std::move( Samples ) );
+		Result.Sink = Sink + Polluter.GetSink();
+		return Result;
+	}
+}
+
+int main()
+{
+	NPerf::PinToFirstPerformanceCore();
+	const double TscHz = NPerf::CalibrateTscHz();
+
+	printf( "Cold-access latency of a rarely used lookup table\n" );
+	printf( "================================================\n\n" );
+	NPerf::PrintEnvironment( TscHz );
+
+	const int32_t SampleCount = 2000;
+	const size_t PollutionBytes = 40ull * 1024 * 1024;
+
+	printf( "Samples per variant: %d\n", SampleCount );
+	printf( "Cache pollution between accesses: %zu MB of writes\n", PollutionBytes / ( 1024 * 1024 ) );
+	printf( "Warmup lookups per sample: %d\n", NColdLatency::WARMUP_LOOKUPS );
+	printf( "Access pattern: %d%% inside a %d-entry working set, rest uniform\n\n",
+		NColdLatency::WORKING_SET_HIT_PERCENT, NColdLatency::WORKING_SET_SIZE );
+
+	const int32_t EntryCounts[] = { 1024, 8192, 32768, 131072 };
+	const NColdLatency::EWarmup Modes[] = {
+		NColdLatency::EWarmup::None,
+		NColdLatency::EWarmup::Constant,
+		NColdLatency::EWarmup::Random,
+		NColdLatency::EWarmup::History
+	};
+
+	uint64_t TotalSink = 0;
+	for ( int32_t EntryCount : EntryCounts )
+	{
+		printf( "--- table with %d entries -------------------------------------------------\n", EntryCount );
+		printf( "%-14s %10s %10s %10s %10s %10s %10s\n", "warmup", "mean", "stddev", "p50", "p90", "p99", "max" );
+
+		for ( NColdLatency::EWarmup Mode : Modes )
+		{
+			const NColdLatency::SResult Result =
+				NColdLatency::RunExperiment( EntryCount, Mode, SampleCount, PollutionBytes );
+			TotalSink += Result.Sink;
+
+			printf( "%-14s %10.1f %10.1f %10.1f %10.1f %10.1f %10.1f\n",
+				NColdLatency::GetWarmupName( Mode ),
+				Result.Cycles.Mean,
+				Result.Cycles.Stddev,
+				Result.Cycles.P50,
+				Result.Cycles.P90,
+				Result.Cycles.P99,
+				Result.Cycles.Max );
+		}
+		printf( "\n" );
+	}
+
+	printf( "(all values in CPU cycles; %.2f cycles = 1 ns on this machine)\n", TscHz / 1e9 );
+	printf( "sink = %llu\n", static_cast&lt;unsigned long long&gt;( TotalSink ) );
+	return 0;
+}</code></pre></details>
+    <h3>Места для стрельбы по ногам</h3>
+    <p>Прогрев случайными значениями работает только если реальная нагрузка тоже более‑менее случайно распределена по структуре, а в играх этого почти никогда нет. Команды игрока приходят пачками, иногда по одному и тому же объекту, то есть типичный игрок выделил юнита, потыкал в него шесть раз, потом переключился на другого, потыкал в него, и так далее.</p>
+    <p>Пакеты от клиента приходят всплесками с одинаковыми идентификаторами и если в такой ситуации греть кеш случайными ключами, то вы притащите в кеш совершенно бесполезные данные и сюприз... вытесните оттуда те, которые как раз собирались использоваться, сделав не прививку, а наоборот усугубив болячку. Поэтому греть надо не случайным, а тем, что приходило в прошлом, и по сути вы вручную пишете предсказатель, который в процессеоре уже есть, просто железный оракул не знает, что игрок выделил Бургундию или просматривает свои армии, а вы знаете, и можете использовать это знание.</p>
+    <p>Второй способ прострелить ногу — это греть слишком много данных, кеш очень маленький относительно рабочих наборов и на всех его не хватит. Всё что вы в него затащили, оттуда что‑то вытеснит, и об этом тоже стоит помнить, поэтому если у вас наборы данных превышают 1Mб, то надо либо уменьшать рабочий набор, либо мириться с увеличением времени работы при небольших прогревочных сетах.</p>
+    <p>Третий способ повреждения ног — греть не на том ядре, где будут потом основные вычисления, нет смысла что‑то тащить в кеш данные если они там не нужны, надеюсь это понятно без пояснений. Дополнительно еще надо помнить, что греть кеш в момент реальной работы, тоже плохая идея, потому что будут вытеснены недавно используемые горячие данные, что в сумме нам дает не так уж много мест для прогрева где это будет работать — это отдельные низкоприоритетные потоки, пропуски кадров, или моменты, когда игрок выполняет «долгие по времени действия и несущественные по затратам», например тянется курсором к кнопке, но ещё не нажал её.</p>
+    <p>Продолжим эксперименты с разными размерами таблиц, а между обращениями кеш будем вытеснять сорока мегабайтами записей, у меня L3 на тестовой машине 30 мегабайт, так что вытесняется он гарантированно и целиком. Дальше запускаем <code>find</code>, и смотрим что получилось, то есть сделаем эмуляцию поиска по холодному кешу с предварительным прогревом. В чем суть теста, эмулируем действия игрока, который иногда тыкает по юнитам, но перидически прогоняем «холостой» поиск с разными стратегиями и выбрасываем его результаты, чтобы подгревать кеш данными.</p>
+    <img src="../assets/articles/hotpath-cold-cache-warm/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Как обычно меньше лучше, и как читать этот график. Столбец без прогрева будет нашим «идеальным худшим замером», то есть мы дергаем поиск по таблице, только когда он реально случился, но даже прогрев одним последним ключом дает около десяти процентов, немного поддерживая «кеш» в тонусе. Прирост, конечно, небольшой, ибо вы удерживаете в кеше данные только для одной ветки поиска из возможных log2(size).</p>
+    <p>Дальше становится интереснее и прогрев случайными ключами дает уже х2, что объясняется случайно природой самих данных, то есть случайные числа, на случайную выборку в бенчмарке ложатся хорошо, значит прогрев работает.</p>
+    <p>Прогрев недавними ключами дает уже х3.5 по среднему и больше х11 по медиане, что означает попадание рабочего сета в кеши L1 или L2, то есть действительно нужные данные оказывались в самом быстром кеше. Обрадованные такими результатами летим к техдиру и мержим комит, получая -1% к времени работы в реальных сценариях, ну хоть не плюс... и то хорошо.</p>
+    <h2>Работать это не будет</h2>
+    <p>А теперь расскажу, из‑за чего весь предыдущий текст оказался бесполезен в реальном проекте. Вот как выглядит структура, которая просто выросла в игре:</p>
+<pre style="margin:1.4rem 0"><code>struct SLocation
+{
+    uint32_t OwnerId;
+    uint32_t ControllerId;
+    float    Development;
+    uint16_t Population;
+    uint8_t  TerrainType;
+    uint8_t  Flags;
+    char     DisplayName[64];
+    uint8_t  History[200];
+    uint8_t  Buildings[96];
+};</code></pre>
+    <p>Размер этой структры равен 376 байтам, перебор областей карты читает из неё четыре поля, то есть десять байт, а вынужден тащить в кеш все 376, что приводит нас к полезной нагрузке в кеше что‑то (10 / 376) около трех процентов. Все эти x2, x5, x10 из прошлой части умножаем на 3% и получаем прирост x1.06 в реальных вызовах. А вот то, что используется в поиске на самом деле:</p>
+<pre style="margin:1.4rem 0"><code>struct SColorInputs
+{
+    uint32_t OwnerId;
+    uint8_t  TerrainType;
+    uint8_t  Flags;
+    uint16_t Padding;
+};</code></pre>
+    <p>Теперь мы получаем только те восемь байт, которые реально нужны при поиске, и в одну 64-байтную кеш‑линию влезает восемь локаций вместо одной шестой одной.</p>
+    <img src="../assets/articles/hotpath-cold-cache-warm/04.jpg" alt="" class="post-image" loading="lazy" />
+    <details class="code"><summary>Код бенчмарка</summary><pre><code>#include &lt;map&gt;
+#include &lt;memory&gt;
+#include &lt;numeric&gt;
+#include &lt;random&gt;
+#include &lt;vector&gt;
+
+#include &lt;benchmark/benchmark.h&gt;
+
+#include "map_world.h"
+#include "perf_common.h"
+
+namespace NRecolorBench
+{
+	using NMapWorld::ComputeColor;
+	using NMapWorld::SColorInputs;
+	using NMapWorld::SLocationFat;
+
+	struct SWorld
+	{
+		std::vector&lt;SLocationFat&gt; Fat;
+		std::vector&lt;SColorInputs&gt; Slim;
+		std::vector&lt;uint32_t&gt; SoaOwner;
+		std::vector&lt;uint8_t&gt; SoaTerrain;
+		std::vector&lt;uint8_t&gt; SoaFlags;
+		std::vector&lt;uint32_t&gt; Palette;
+		std::vector&lt;uint32_t&gt; ColorBuffer;
+		std::vector&lt;uint32_t&gt; ShuffledIndices;
+		std::vector&lt;uint32_t&gt; OrderedIndices;
+		std::vector&lt;std::unique_ptr&lt;SColorInputs&gt;&gt; SlotStorage;
+		std::vector&lt;SColorInputs*&gt; SlotPointers;
+		std::vector&lt;int32_t&gt; HandleToSlot;
+		std::vector&lt;uint32_t&gt; ShuffledHandles;
+	};
+
+	constexpr int32_t MAX_FAT_COUNT = 262144;
+
+	SWorld* BuildWorld( int32_t Count, bool WithFat, bool WithScatteredSlots )
+	{
+		SWorld* pWorld = new SWorld();
+		std::mt19937 Rng( 20260801u );
+
+		if ( WithFat )
+		{
+			pWorld-&gt;Fat.resize( Count );
+		}
+		pWorld-&gt;Slim.resize( Count );
+		pWorld-&gt;SoaOwner.resize( Count );
+		pWorld-&gt;SoaTerrain.resize( Count );
+		pWorld-&gt;SoaFlags.resize( Count );
+		pWorld-&gt;ColorBuffer.resize( Count );
+
+		pWorld-&gt;Palette.resize( 256 );
+		for ( int32_t Index = 0; Index &lt; 256; ++Index )
+		{
+			pWorld-&gt;Palette[ Index ] = Rng();
+		}
+
+		for ( int32_t Index = 0; Index &lt; Count; ++Index )
+		{
+			const uint32_t Owner = Rng() &amp; 255u;
+			const uint8_t Terrain = static_cast&lt;uint8_t&gt;( Rng() &amp; 15u );
+			const uint8_t Flags = static_cast&lt;uint8_t&gt;( Rng() &amp; 7u );
+
+			if ( WithFat )
+			{
+				SLocationFat&amp; Location = pWorld-&gt;Fat[ Index ];
+				Location.OwnerId = Owner;
+				Location.ControllerId = Owner;
+				Location.Development = 1.0f;
+				Location.Population = static_cast&lt;uint16_t&gt;( Index &amp; 0xFFFF );
+				Location.TerrainType = Terrain;
+				Location.Flags = Flags;
+				Location.DisplayName[ 0 ] = 'L';
+				Location.History[ 0 ] = 1;
+				Location.Buildings[ 0 ] = 1;
+			}
+
+			pWorld-&gt;Slim[ Index ].OwnerId = Owner;
+			pWorld-&gt;Slim[ Index ].TerrainType = Terrain;
+			pWorld-&gt;Slim[ Index ].Flags = Flags;
+			pWorld-&gt;Slim[ Index ].Padding = 0;
+
+			pWorld-&gt;SoaOwner[ Index ] = Owner;
+			pWorld-&gt;SoaTerrain[ Index ] = Terrain;
+			pWorld-&gt;SoaFlags[ Index ] = Flags;
+		}
+
+		pWorld-&gt;OrderedIndices.resize( Count );
+		std::iota( pWorld-&gt;OrderedIndices.begin(), pWorld-&gt;OrderedIndices.end(), 0u );
+		pWorld-&gt;ShuffledIndices = pWorld-&gt;OrderedIndices;
+		std::shuffle( pWorld-&gt;ShuffledIndices.begin(), pWorld-&gt;ShuffledIndices.end(), Rng );
+
+		if ( WithScatteredSlots )
+		{
+			pWorld-&gt;SlotStorage.reserve( Count );
+			pWorld-&gt;SlotPointers.reserve( Count );
+			pWorld-&gt;HandleToSlot.resize( Count );
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				auto Slot = std::make_unique&lt;SColorInputs&gt;( pWorld-&gt;Slim[ Index ] );
+				pWorld-&gt;SlotPointers.push_back( Slot.get() );
+				pWorld-&gt;SlotStorage.push_back( std::move( Slot ) );
+				pWorld-&gt;HandleToSlot[ Index ] = Index;
+			}
+			pWorld-&gt;ShuffledHandles = pWorld-&gt;ShuffledIndices;
+		}
+
+		return pWorld;
+	}
+
+	SWorld&amp; GetWorld( int32_t Count )
+	{
+		static std::map&lt;int32_t, SWorld*&gt; Cache;
+		auto Found = Cache.find( Count );
+		if ( Found == Cache.end() )
+		{
+			const bool HeavyExtras = Count &lt;= MAX_FAT_COUNT;
+			Found = Cache.emplace( Count, BuildWorld( Count, HeavyExtras, HeavyExtras ) ).first;
+		}
+		return *Found-&gt;second;
+	}
+
+	void Recolor_FatStruct( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SLocationFat&amp; Location = World.Fat[ Index ];
+				World.ColorBuffer[ Index ] = ComputeColor( Location.OwnerId, Location.TerrainType, Location.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+		State.SetBytesProcessed( State.iterations() * Count * static_cast&lt;int64_t&gt;( sizeof( SLocationFat ) ) );
+	}
+
+	void Recolor_HotSlice( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ Index ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+		State.SetBytesProcessed( State.iterations() * Count * static_cast&lt;int64_t&gt;( sizeof( SColorInputs ) ) );
+	}
+
+	void Recolor_SoA( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+		const uint32_t* pOwner = World.SoaOwner.data();
+		const uint8_t* pTerrain = World.SoaTerrain.data();
+		const uint8_t* pFlags = World.SoaFlags.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				World.ColorBuffer[ Index ] = ComputeColor( pOwner[ Index ], pTerrain[ Index ], pFlags[ Index ], pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Traverse_IndexedOrdered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ World.OrderedIndices[ Index ] ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Traverse_IndexedShuffled( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ World.ShuffledIndices[ Index ] ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	template &lt;int32_t Distance&gt;
+	void Traverse_IndexedShuffled_Prefetch( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				if ( Index + Distance &lt; Count )
+				{
+					_mm_prefetch( reinterpret_cast&lt;const char*&gt;( &amp;World.Slim[ World.ShuffledIndices[ Index + Distance ] ] ), _MM_HINT_T0 );
+				}
+				const SColorInputs&amp; Inputs = World.Slim[ World.ShuffledIndices[ Index ] ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	template &lt;int32_t Distance&gt;
+	void Traverse_LinearPrefetch( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				if ( Index + Distance &lt; Count )
+				{
+					_mm_prefetch( reinterpret_cast&lt;const char*&gt;( &amp;World.Slim[ Index + Distance ] ), _MM_HINT_T0 );
+				}
+				const SColorInputs&amp; Inputs = World.Slim[ Index ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Traverse_HandlesShuffled( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const uint32_t Handle = World.ShuffledHandles[ Index ];
+				const int32_t Slot = World.HandleToSlot[ Handle ];
+				if ( Slot &lt; 0 )
+				{
+					continue;
+				}
+				const SColorInputs* pInputs = World.SlotPointers[ Slot ];
+				World.ColorBuffer[ Index ] = ComputeColor( pInputs-&gt;OwnerId, pInputs-&gt;TerrainType, pInputs-&gt;Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Traverse_HandlesOrdered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const uint32_t Handle = World.OrderedIndices[ Index ];
+				const int32_t Slot = World.HandleToSlot[ Handle ];
+				if ( Slot &lt; 0 )
+				{
+					continue;
+				}
+				const SColorInputs* pInputs = World.SlotPointers[ Slot ];
+				World.ColorBuffer[ Index ] = ComputeColor( pInputs-&gt;OwnerId, pInputs-&gt;TerrainType, pInputs-&gt;Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	BENCHMARK( Recolor_FatStruct )-&gt;Arg( 4096 )-&gt;Arg( 32768 )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Recolor_HotSlice )-&gt;Arg( 4096 )-&gt;Arg( 32768 )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Recolor_SoA )-&gt;Arg( 4096 )-&gt;Arg( 32768 )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+
+	constexpr int32_t L2_RESIDENT = 32768;
+	constexpr int32_t RAM_RESIDENT = 4194304;
+
+	BENCHMARK( Recolor_HotSlice )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Traverse_IndexedOrdered )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Traverse_IndexedShuffled )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 4 )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 8 )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 16 )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 32 )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 64 )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 128 )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_IndexedShuffled_Prefetch, 256 )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK_TEMPLATE( Traverse_LinearPrefetch, 8 )-&gt;Arg( L2_RESIDENT )-&gt;Arg( RAM_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Traverse_HandlesOrdered )-&gt;Arg( L2_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Traverse_HandlesShuffled )-&gt;Arg( L2_RESIDENT )-&gt;Unit( benchmark::kMicrosecond );
+}
+
+int main( int argc, char** argv )
+{
+	NPerf::PinToFirstPerformanceCore();
+
+	printf( "sizeof( SLocationFat ) = %zu bytes\n", sizeof( NRecolorBench::SLocationFat ) );
+	printf( "sizeof( SColorInputs ) = %zu bytes\n\n", sizeof( NRecolorBench::SColorInputs ) );
+
+	benchmark::Initialize( &amp;argc, argv );
+	if ( benchmark::ReportUnrecognizedArguments( argc, argv ) )
+	{
+		return 1;
+	}
+	benchmark::RunSpecifiedBenchmarks();
+	benchmark::Shutdown();
+	return 0;
+}</code></pre></details>
+    <p>Логики в обоих вариантах одинаковое количество, а разница только в раскладке структур. При 4096 локациях массив толстых струкрур это полтора мегабайта, он влезает в L2, и проседание будет около х1.35, то есть на маленькой карте вы этой проблемы просто не увидите. При 32 768 локаций/свойств/выберитесвое толстый массив будет уже 12 мегабайт и вылетит из L2 в L3 сделав обращение дороже в x5, а при 262 144 он будет уже 98 мегабайт и вылетит даже из L3 тоже вылетел, сделав обращение к нему дороже в 10 раз.</p>
+    <p>То есть один и тот же код, который на прототипе с маленькой числом локаций/юнитов/свойств работал нормально, при росте контента деградирует, и в профайлере мы видим что «игра стала тормозить, когда мы добавили свойств в обработку», то есть думаем на алгоритм обработки, а на самом деле надо чинить надо структуру. По сути, это тоже самое если мы все данные раскидаем по отдельным массивам (ECS/SoA), где каждое поле лежит в своем массиве.</p>
+<pre style="margin:1.4rem 0"><code>void Recolor_SoA( benchmark::State&amp; State )
+{
+	const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+	SWorld&amp; World = GetWorld( Count );
+	const uint32_t* pPalette = World.Palette.data();
+	const uint32_t* pOwner = World.SoaOwner.data();
+	const uint8_t* pTerrain = World.SoaTerrain.data();
+	const uint8_t* pFlags = World.SoaFlags.data();
+	for ( auto _ : State )
+	{
+		for ( int32_t Index = 0; Index &lt; Count; ++Index )
+		{
+			World.ColorBuffer[ Index ] = ComputeColor( pOwner[ Index ], pTerrain[ Index ], pFlags[ Index ], pPalette );
+		}
+		benchmark::ClobberMemory();
+	}
+	State.SetItemsProcessed( State.iterations() * Count );
+}</code></pre>
+    <p>Вариант с SoA дает то же самое, что и вынос «горячих данных» отдельную структуру (17.2 против 17.4 микросекунды при 32768). Разницы нет, потому что мы читаем все три поля, и раскладывать их по отдельным массивам смысла не имеет и вывод отсюда такой, что ECS тоже не серебряная пуля, и если вы правильно вынесли горячие данные, то разница становится не заметна, но не заставляет вас тащить весь ECS фреймворк в игру, или не тащить его туда, где он не нужен.</p>
+    <h2>Дорогая косвенность</h2>
+    <p>Сколько уже было статей на Хабре про стоимость обращения к указателю, но каждый уважающий себя движок все равно наступает на эти грабли с завидным постоянством и обязательно найдется массив хендлов, который пролезает в поиск, поиск обращается к менеджеру объектов, менеджер тянется через пару указателей за самим объектом, который естественно живет в куче.</p>
+<pre style="margin:1.4rem 0"><code>for (int32_t Index = 0; Index &lt; Count; ++Index)
+{
+    const uint32_t Handle = _VisibleHandles[Index];
+    const int32_t Slot = _HandleToSlot[Handle];
+    if (Slot &lt; 0)
+    {
+        continue;
+    }
+    const SColorInputs* pInputs = _SlotPointers[Slot];
+    _ColorBuffer[Index] = ComputeColor(pInputs-&gt;OwnerId, 
+                                       pInputs-&gt;TerrainType,
+                                       pInputs-&gt;Flags,
+                                       pPalette);
+}</code></pre>
+    <img src="../assets/articles/hotpath-cold-cache-warm/05.jpg" alt="" class="post-image" loading="lazy" />
+    <details class="code"><summary>Любителям покопаться в коде</summary><pre><code>#include &lt;cstdio&gt;
+
+#include &lt;benchmark/benchmark.h&gt;
+
+#include "map_bench_world.h"
+#include "perf_common.h"
+
+namespace NIndirection
+{
+	using NMapBenchWorld::ComputeColor;
+	using NMapBenchWorld::GetWorld;
+	using NMapBenchWorld::SColorInputs;
+	using NMapBenchWorld::SWorld;
+
+	void DenseLinear( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count, false, false );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ Index ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void IndexedOrdered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count, false, false );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ World.OrderedIndices[ Index ] ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void IndexedShuffled( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count, false, true );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const SColorInputs&amp; Inputs = World.Slim[ World.ShuffledIndices[ Index ] ];
+				World.ColorBuffer[ Index ] = ComputeColor( Inputs.OwnerId, Inputs.TerrainType, Inputs.Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void HandlesOrdered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count, false, true );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const uint32_t Handle = World.OrderedIndices[ Index ];
+				const int32_t Slot = World.HandleToSlot[ Handle ];
+				if ( Slot &lt; 0 )
+				{
+					continue;
+				}
+				const SColorInputs* pInputs = World.SlotPointers[ Slot ];
+				World.ColorBuffer[ Index ] = ComputeColor( pInputs-&gt;OwnerId, pInputs-&gt;TerrainType, pInputs-&gt;Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void HandlesShuffled( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SWorld&amp; World = GetWorld( Count, false, true );
+		const uint32_t* pPalette = World.Palette.data();
+
+		for ( auto _ : State )
+		{
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				const uint32_t Handle = World.ShuffledHandles[ Index ];
+				const int32_t Slot = World.HandleToSlot[ Handle ];
+				if ( Slot &lt; 0 )
+				{
+					continue;
+				}
+				const SColorInputs* pInputs = World.SlotPointers[ Slot ];
+				World.ColorBuffer[ Index ] = ComputeColor( pInputs-&gt;OwnerId, pInputs-&gt;TerrainType, pInputs-&gt;Flags, pPalette );
+			}
+			benchmark::ClobberMemory();
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	BENCHMARK( DenseLinear )-&gt;Arg( 32768 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( IndexedOrdered )-&gt;Arg( 32768 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( IndexedShuffled )-&gt;Arg( 32768 )-&gt;Arg( 4194304 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( HandlesOrdered )-&gt;Arg( 32768 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( HandlesShuffled )-&gt;Arg( 32768 )-&gt;Unit( benchmark::kMicrosecond );
+}
+
+int main( int argc, char** argv )
+{
+	NPerf::PinToFirstPerformanceCore();
+	printf( "07_indirection\n\n" );
+
+	benchmark::Initialize( &amp;argc, argv );
+	if ( benchmark::ReportUnrecognizedArguments( argc, argv ) )
+	{
+		return 1;
+	}
+	benchmark::RunSpecifiedBenchmarks();
+	benchmark::Shutdown();
+	return 0;
+}</code></pre></details>
+<pre style="margin:1.4rem 0"><code>| как обходим                         | время |
+| ----------------------------------- | ----- |
+| плотный массив подряд               | 17.4  |
+| через индексный буфер по порядку    | 22.9  |
+| через индексный буфер вперемешку    | 29.8  |
+| через хендлы и менеджер, по порядку | 40.4  |
+| через хендлы и менеджер, вперемешку | 64.1  |</code></pre>
+    <p>Между первой и последней строкой разница в 4 раза, а вся код отличается только тем, сколько раз мы прыгнули по указателю и в каком порядке, чтобы получить на выходе один и тот же результат.</p>
+    <p>Само обращение через индекс стоит почти тридцать процентов даже при идеальном порядке обхода, перемешанный порядок добавляет еще столько же, двойная косвенность через менеджер и разбросанные по куче объекты добавляет еще больше, помому что каждый объект был выделен своим <code>new</code> и лежит там, где ему нашлось место, а не рядом с соседями.</p>
+    <p>На большой карте это дополнительными условиями, и этот x4 легко превращается в x5, x10, x20. Это и есть та цена случайного доступа, из‑за которой даже сейчас приходится данные складывать последовательно.</p>
+    <h2>Софтверный префетч</h2>
+    <p>Вы возможно слышали про интринсик<code>_mm_prefetch</code>, и что его применяют, когда шаблон доступа к данным сложный и не детектируется блоком предсказаний, и возможно даже ставили его в своем коде и удивлялись почему он не работал... и у многих не работал, но не потому что не работает сам интринсик. Возьмем тот же перемешанный обход из прошлого абзаца, в первой у нас массив 256 килобайт и целиком лежит в L2, а во второй он 32 мегабайта и не влезает в L3.</p>
+<pre style="margin:1.4rem 0"><code>template &lt;int32_t Distance&gt;
+void Traverse(...)
+{
+    for (int32_t Index = 0; Index &lt; Count; ++Index)
+    {
+        if (Index + Distance &lt; Count)
+        {
+            _mm_prefetch(&amp;_Data[_Indices[Index + Distance]], _MM_HINT_T0);
+        }
+        Process(_Data[_Indices[Index]]);
+    }
+}
+
+| дистанция    | 256 КБ (в L2) | 32 МБ (в памяти) |
+| ------------ | ------------- | ---------------- |
+| без префетча | 29.8          | 35 978           |
+| 4            | 33.3          | 30 071           |
+| 8            | 34.1          | 26 034           |
+| 16           | 33.1          | 22 510           |
+| 32           | 37.4          | 16 329           |
+| 64           | -             | 18 163           |
+| 128          | -             | 21 266           |
+| 256          | -             | 19 256           |</code></pre>
+    <details class="code"><summary>Код бенчмарка</summary><pre><code>#include &lt;algorithm&gt;
+#include &lt;cstdint&gt;
+#include &lt;cstdio&gt;
+#include &lt;map&gt;
+#include &lt;memory&gt;
+#include &lt;random&gt;
+#include &lt;unordered_map&gt;
+#include &lt;vector&gt;
+
+#include &lt;benchmark/benchmark.h&gt;
+
+#include "perf_common.h"
+
+namespace NPolymorphism
+{
+	class IUnitBehavior
+	{
+	public:
+		virtual ~IUnitBehavior() = default;
+		virtual uint32_t Evaluate( uint32_t Input ) const = 0;
+	};
+
+	class CInfantry final : public IUnitBehavior
+	{
+	public:
+		explicit CInfantry( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return Input * 3u + _Strength; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	class CCavalry final : public IUnitBehavior
+	{
+	public:
+		explicit CCavalry( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return Input * 5u - _Strength; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	class CArtillery final : public IUnitBehavior
+	{
+	public:
+		explicit CArtillery( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return ( Input ^ _Strength ) * 7u; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	enum class EUnitType : uint8_t
+	{
+		Infantry,
+		Cavalry,
+		Artillery
+	};
+
+	struct SUnit
+	{
+		uint32_t Strength;
+		EUnitType Type;
+		uint8_t Padding[ 3 ];
+	};
+
+	inline uint32_t EvaluateByTag( const SUnit&amp; Unit, uint32_t Input )
+	{
+		switch ( Unit.Type )
+		{
+			case EUnitType::Infantry: return Input * 3u + Unit.Strength;
+			case EUnitType::Cavalry: return Input * 5u - Unit.Strength;
+			case EUnitType::Artillery: return ( Input ^ Unit.Strength ) * 7u;
+		}
+		return 0u;
+	}
+
+	struct SArmy
+	{
+		std::vector&lt;std::unique_ptr&lt;IUnitBehavior&gt;&gt; Owned;
+		std::vector&lt;IUnitBehavior*&gt; Scattered;
+		std::vector&lt;SUnit&gt; Mixed;
+		std::vector&lt;SUnit&gt; Grouped;
+	};
+
+	SArmy&amp; GetArmy( int32_t Count )
+	{
+		static std::map&lt;int32_t, SArmy*&gt; Cache;
+		auto Found = Cache.find( Count );
+		if ( Found != Cache.end() )
+		{
+			return *Found-&gt;second;
+		}
+
+		SArmy* pArmy = new SArmy();
+		std::mt19937 Rng( 20260801u );
+
+		pArmy-&gt;Owned.reserve( Count );
+		pArmy-&gt;Scattered.reserve( Count );
+		pArmy-&gt;Mixed.reserve( Count );
+
+		for ( int32_t Index = 0; Index &lt; Count; ++Index )
+		{
+			const uint32_t Strength = Rng() &amp; 0xFFFFu;
+			const EUnitType Type = static_cast&lt;EUnitType&gt;( Rng() % 3u );
+
+			std::unique_ptr&lt;IUnitBehavior&gt; Unit;
+			switch ( Type )
+			{
+				case EUnitType::Infantry: Unit = std::make_unique&lt;CInfantry&gt;( Strength ); break;
+				case EUnitType::Cavalry: Unit = std::make_unique&lt;CCavalry&gt;( Strength ); break;
+				case EUnitType::Artillery: Unit = std::make_unique&lt;CArtillery&gt;( Strength ); break;
+			}
+			pArmy-&gt;Scattered.push_back( Unit.get() );
+			pArmy-&gt;Owned.push_back( std::move( Unit ) );
+
+			SUnit Tagged = {};
+			Tagged.Strength = Strength;
+			Tagged.Type = Type;
+			pArmy-&gt;Mixed.push_back( Tagged );
+		}
+
+		std::shuffle( pArmy-&gt;Scattered.begin(), pArmy-&gt;Scattered.end(), Rng );
+
+		pArmy-&gt;Grouped = pArmy-&gt;Mixed;
+		std::stable_sort( pArmy-&gt;Grouped.begin(), pArmy-&gt;Grouped.end(),
+			[]( const SUnit&amp; Left, const SUnit&amp; Right ) { return Left.Type &lt; Right.Type; } );
+
+		Cache.emplace( Count, pArmy );
+		return *pArmy;
+	}
+
+	void Evaluate_VirtualScattered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SArmy&amp; Army = GetArmy( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += Army.Scattered[ Index ]-&gt;Evaluate( static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Evaluate_TagMixed( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SArmy&amp; Army = GetArmy( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += EvaluateByTag( Army.Mixed[ Index ], static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Evaluate_TagGrouped( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SArmy&amp; Army = GetArmy( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += EvaluateByTag( Army.Grouped[ Index ], static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	BENCHMARK( Evaluate_VirtualScattered )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Evaluate_TagMixed )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Evaluate_TagGrouped )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+}
+
+int main( int argc, char** argv )
+{
+	NPerf::PinToFirstPerformanceCore();
+	printf( "08_virtual_vs_tag\n" );
+	printf( "sizeof( SUnit ) = %zu\n\n", sizeof( NPolymorphism::SUnit ) );
+	benchmark::Initialize( &amp;argc, argv );
+	if ( benchmark::ReportUnrecognizedArguments( argc, argv ) )
+	{
+		return 1;
+	}
+	benchmark::RunSpecifiedBenchmarks();
+	benchmark::Shutdown();
+	return 0;
+}</code></pre></details>
+    <p>Если у вас массив маленький, то префетч данных не даст ничего даже на сложном паттерне (смотри левую колонку) ни на одной дистанции, а местами сделал даже хуже, добавив работы в алгоритм. Это ожидаемый результат, потому что данные уже в L2 и переносить нечего, а инструкции вы добавили и, к сожалению, так выглядит большинство мест, куда люди пытаются прикрутить несчастный префетч.</p>
+    <p>А вот когда данные реально большие и рабочий набор составляет мегабайты и паттерн доступа сложный, то префетч начинает работать (смотри вторую правую колонку), но обратите внимание на форму прироста, дистанция 4 элемента почти бесполезна, потому что данные, которые вы поставили на загрузку уже рядом лежат, и повторный запрос отбрасывается, для 8 и 16 становится лучше, подтягивая заранее часть данных, а оптимум получаем на 32, потому что, к тому моменту как <code>Process </code>добирается к нужным элементам, они уже лежат в кеше, и мы действительно через prefetch убрали узкое место, дав алгоритму работать без ожиданий.</p>
+    <p>А дальше опять становится хуже, потому что мы притащили данные заранее, но они опять далеко от рабочей области и успевают вытесниться до того, как понадобятся. Вот и получается что __mm_prefetch используется неправильно, и моя личная статистика фикса таких вещей показывает, что в 80% случаях применение неправильно, т.е либо не давал прироста, либо давал прирост отрицательный. Но вера в силу префетча у народа не угасает, и позволяет ему с легкостью проходить кодревью.</p>
+    <p>И не верьте человеку, который одним вызовом «prefetch» обещает вам иксы в алгоритме. Универсального правильного числа для префетча не существует и оно зависит от размера элемента, от того сколько работы делается на итерацию, от конкретного процессора, и подбирать это руками значит продавать всем игрокам, то что работало у вас на вашей машине. Если вы не можете назвать процессор на котором это будет работать, размер вашего рабочего массива и в какой уровень кеша влезают данные, то воткнутый «простотак» префетч в лучшем случае оставит вас при своих милисекундах.</p>
+    <img src="../assets/articles/hotpath-cold-cache-warm/06.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Виртуальность не такая уж и дорогая</h2>
+<pre style="margin:1.4rem 0"><code>class IUnitBehavior
+{
+public:
+    virtual ~IUnitBehavior() = default;
+    virtual uint32_t Evaluate(uint32_t Input) const = 0;
+};</code></pre>
+    <p>Есть у нас в движке такой класс, который может вещаться на юнит и немного менять его поведение, таких «немного» на один обьект можно повесить много, и в какой‑то момент <code>Evaluate</code>, стал виден в профайлере. Объектов много, свойств много, и влиять стало уже просто количество вызываемых <code>Evaluate</code>, так что в какой‑то момент от виртуальности пришлось откзаться в пользу более дубового решения.</p>
+<pre style="margin:1.4rem 0"><code>struct SBeh
+{
+    uint32_t Strength;
+    EBehType Type;
+    uint8_t Padding[3];
+};
+
+inline uint32_t EvaluateByTag(const SBeh&amp; Unit, uint32_t Input)
+{
+    switch (Unit.Type)
+    {
+        case EBehType::Move:  return Input * 3u + Unit.Strength;
+        case EBehType::BuffRun:   return Input * 5u - Unit.Strength;
+        case EBehType::BuffShoot: return (Input ^ Unit.Strength) * 7u;
+    }
+    return 0u;
+}
+
+| как обходим                                   | время | к виртуальному |
+| --------------------------------------------- | ----- | -------------- |
+| виртуальный вызов, объекты разбросаны по куче | 1990  | 1.0            |
+| тег и switch, типы перемешаны                 | 1078  | 1.8            |
+| тег и switch, отсортировано по типу           | 162   | 12.3           |</code></pre>
+    <p><code>sizeof(SBeh)</code> равен восьми байтам и замеры в тесте я сделал на 262 144 «свойствах», это чуть меньше чем сессия собирает к late‑game. Но только убрать виртуальность и переехать в плотный массив дало всего x2 ко времени вызова и функция все еще висела в профайлере, поэтому стали смотреть что еще мешает. Виртуальный вызов был опять про косвенность, и починить обращение через указатель, переделав его на switch было относительно «мудрым» решением, но на современных процессорах с большими таблицами переходов это дает слабый результат, который во многом сьедается высокоуровневой логикой.</p>
+    <p>Основную проблему перфа это не решило, потому что убрало только один хоп в память, но разбросанные объекты по памяти объекты так и остались. Теперь вместо индирекции на виртульном вызове, мы получили кучу <code>switch</code> по перемешанным типам, заменив непредсказуемый хоп в память, на непредсказуемое ветвление.</p>
+    <p>Предсказатель переходов начинается ошибаться тем чаще, чем больше у вас становится типов и каждая ошибка стоит десятка с лишним тактов. Увидев такое мы сделали еще небольшой шажок и сгруппировали данные по типу, теперь предсказатель угадывает всегда, кроме нескольких переходов на границах групп, и <code>switch</code> фактически исчезает.</p>
+    <p>Морали тут нет, но если вдруг захотите заморочиться переписыванием полиморфной иерархии в плотный массив, то предлагаю поискать другое решение, и скорее всего выигрыш будет не там где вы ожидаете, а вот где он будет придется искать.</p>
+    <img src="../assets/articles/hotpath-cold-cache-warm/07.jpg" alt="" class="post-image" loading="lazy" />
+    <details class="code"><summary>Бенч, для любителей покопаться в коде</summary><pre><code>#include &lt;algorithm&gt;
+#include &lt;cstdint&gt;
+#include &lt;cstdio&gt;
+#include &lt;map&gt;
+#include &lt;memory&gt;
+#include &lt;random&gt;
+#include &lt;unordered_map&gt;
+#include &lt;vector&gt;
+
+#include &lt;benchmark/benchmark.h&gt;
+
+#include "perf_common.h"
+
+namespace NPolymorphism
+{
+	class IBeh
+	{
+	public:
+		virtual ~IBeh() = default;
+		virtual uint32_t Evaluate( uint32_t Input ) const = 0;
+	};
+
+	class CMeleeBeh final : public IBeh
+	{
+	public:
+		explicit CMeleeBeh( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return Input * 3u + _Strength; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	class CChargeBeh final : public IBeh
+	{
+	public:
+		explicit CChargeBeh( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return Input * 5u - _Strength; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	class CBarrageBeh final : public IBeh
+	{
+	public:
+		explicit CBarrageBeh( uint32_t Strength ) : _Strength( Strength ) {}
+		uint32_t Evaluate( uint32_t Input ) const override { return ( Input ^ _Strength ) * 7u; }
+
+	private:
+		uint32_t _Strength;
+	};
+
+	enum class EBehType : uint8_t
+	{
+		Melee,
+		Charge,
+		Barrage
+	};
+
+	struct SBeh
+	{
+		uint32_t Strength;
+		EBehType Type;
+		uint8_t Padding[ 3 ];
+	};
+
+	inline uint32_t EvaluateByTag( const SBeh&amp; Beh, uint32_t Input )
+	{
+		switch ( Beh.Type )
+		{
+			case EBehType::Melee: return Input * 3u + Beh.Strength;
+			case EBehType::Charge: return Input * 5u - Beh.Strength;
+			case EBehType::Barrage: return ( Input ^ Beh.Strength ) * 7u;
+		}
+		return 0u;
+	}
+
+	struct SBehSet
+	{
+		std::vector&lt;std::unique_ptr&lt;IBeh&gt;&gt; Owned;
+		std::vector&lt;IBeh*&gt; Scattered;
+		std::vector&lt;SBeh&gt; Mixed;
+		std::vector&lt;SBeh&gt; Grouped;
+	};
+
+	SBehSet&amp; GetBehSet( int32_t Count )
+	{
+		static std::map&lt;int32_t, SBehSet*&gt; Cache;
+		auto Found = Cache.find( Count );
+		if ( Found != Cache.end() )
+		{
+			return *Found-&gt;second;
+		}
+
+		SBehSet* pSet = new SBehSet();
+		std::mt19937 Rng( 20260801u );
+
+		pSet-&gt;Owned.reserve( Count );
+		pSet-&gt;Scattered.reserve( Count );
+		pSet-&gt;Mixed.reserve( Count );
+
+		for ( int32_t Index = 0; Index &lt; Count; ++Index )
+		{
+			const uint32_t Strength = Rng() &amp; 0xFFFFu;
+			const EBehType Type = static_cast&lt;EBehType&gt;( Rng() % 3u );
+
+			std::unique_ptr&lt;IBeh&gt; Beh;
+			switch ( Type )
+			{
+				case EBehType::Melee: Beh = std::make_unique&lt;CMeleeBeh&gt;( Strength ); break;
+				case EBehType::Charge: Beh = std::make_unique&lt;CChargeBeh&gt;( Strength ); break;
+				case EBehType::Barrage: Beh = std::make_unique&lt;CBarrageBeh&gt;( Strength ); break;
+			}
+			pSet-&gt;Scattered.push_back( Beh.get() );
+			pSet-&gt;Owned.push_back( std::move( Beh ) );
+
+			SBeh Tagged = {};
+			Tagged.Strength = Strength;
+			Tagged.Type = Type;
+			pSet-&gt;Mixed.push_back( Tagged );
+		}
+
+		std::shuffle( pSet-&gt;Scattered.begin(), pSet-&gt;Scattered.end(), Rng );
+
+		pSet-&gt;Grouped = pSet-&gt;Mixed;
+		std::stable_sort( pSet-&gt;Grouped.begin(), pSet-&gt;Grouped.end(),
+			[]( const SBeh&amp; Left, const SBeh&amp; Right ) { return Left.Type &lt; Right.Type; } );
+
+		Cache.emplace( Count, pSet );
+		return *pSet;
+	}
+
+	void Evaluate_VirtualScattered( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SBehSet&amp; Set = GetBehSet( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += Set.Scattered[ Index ]-&gt;Evaluate( static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Evaluate_TagMixed( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SBehSet&amp; Set = GetBehSet( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += EvaluateByTag( Set.Mixed[ Index ], static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	void Evaluate_TagGrouped( benchmark::State&amp; State )
+	{
+		const int32_t Count = static_cast&lt;int32_t&gt;( State.range( 0 ) );
+		SBehSet&amp; Set = GetBehSet( Count );
+		for ( auto _ : State )
+		{
+			uint32_t Total = 0;
+			for ( int32_t Index = 0; Index &lt; Count; ++Index )
+			{
+				Total += EvaluateByTag( Set.Grouped[ Index ], static_cast&lt;uint32_t&gt;( Index ) );
+			}
+			benchmark::DoNotOptimize( Total );
+		}
+		State.SetItemsProcessed( State.iterations() * Count );
+	}
+
+	BENCHMARK( Evaluate_VirtualScattered )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Evaluate_TagMixed )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+	BENCHMARK( Evaluate_TagGrouped )-&gt;Arg( 262144 )-&gt;Unit( benchmark::kMicrosecond );
+}
+
+int main( int argc, char** argv )
+{
+	NPerf::PinToFirstPerformanceCore();
+	printf( "08_virtual_vs_tag\n" );
+	printf( "sizeof( SBeh ) = %zu\n\n", sizeof( NPolymorphism::SBeh ) );
+	benchmark::Initialize( &amp;argc, argv );
+	if ( benchmark::ReportUnrecognizedArguments( argc, argv ) )
+	{
+		return 1;
+	}
+	benchmark::RunSpecifiedBenchmarks();
+	benchmark::Shutdown();
+	return 0;
+}</code></pre></details>
+    <h2>Не всякая просадка в кеше это просадка</h2>
+    <p>Немного починив время фрейма и убрав дневные спайки, я наткнулся на недельный тик по массиву построек, где у каждой есть флаг <code>IsProducing</code> и свойство <code>Output</code>, и мы суммируем выпуск только тех, что сейчас реально работают, используя для этого максимально тупой цикл.</p>
+<pre style="margin:1.4rem 0"><code>for (int32_t Index = 0; Index &lt; Count; ++Index)
+{
+    if (IsProducing[Index] != 0)
+    {
+        TotalOutput += Output[Index];
+    }
+}
+
+| данные                             | время, мкс |
+| флаги перемешаны                   | 93.9       |
+| флаги отсортированы                | 11.2       |
+| флаги перемешаны, но без ветвления | 16.1       |</code></pre>
+    <p>О чем, табличка выше и как получился прирост 8.4 раза между первой и второй строкой. К кешу это уже не имеет ни малейшего отношения, поскольку массивы те же и читаются линейно. Все различие в том, что на перемешанных флагах предсказатель переходов угадывать будет в половине случаев, и каждая ошибка обходится в десяток‑полтора тактов на сброс конвейера.</p>
+    <p>А если вы данные сначала отсортируете, то сначала идут все простаивающие, а потом все работающие, и предсказатель ошибается один раз на границе перехода. Как получить отсортированный массив это другой вопрос, но если у дневного апдейта остается время на кадре, то он может сортировать такие массивы и тогда к началу апдейта недельного мы получим готовый к работает массив и прирост. Еще учтите что сортировка почти отсортированного массива обходится намного дешевле, чем несортированного и получается, что выгоднее держать этот массив в правильном состоянии, размазывая общее время вычилений по кадрам, чтобы снизить нагрузку в пик.</p>
+    <p>Третья строка, уберем<code>if</code> из кода и заменим его на арифметику, что дает сравнимый прирост, но вопрос почему этого не сделал сам компилятор остается открытым. Ветвления больше нет, предсказывать нечего, и время падает почти до уровня отсортированных данных, при том что порядок флагов мы не трогали.</p>
+<pre style="margin:1.4rem 0"><code>const uint64_t Mask = (uint64_t)(0u - (uint32_t)(IsProducing[Index] != 0));
+TotalOutput += Output[Index] &amp; Mask;</code></pre>
+    <p>Зачем это в статье про память. А затем, что х8 это больше, чем дала любая из моих оптимизаций раскладки данных, и если вы пришли в горячий цикл с гипотезой «тут промахи кеша» и начали переупаковывать структуры, а настоящая причина в непредсказуемом <code>if</code> внутри цикла, то вы потратите день и получите ноль. Поэтому рассуждать о промахах кеша можно, но сначала надо доказать, что это именно промах кеша, а не что‑то другое, что требует совершенно разного лечения.</p>
+    <h2>А пока я ставил эти эксперименты...</h2>
+    <p>Уже не относится непосредственно к оптимизациям.</p>
+    <p>Для бенчмарков я написал загрязнитель кеша, который каждый кадр переписывал одни и те же два мегабайта, из простого предположения что если писать в память, то кеш вытесняется. Только L3 на этой машине 30 мегабайт, а мои два мегабайта вытесняли ровно два мегабайта, и большой массив на девять мегабайт все время оставался в L3. И первые прогоны показали разницу в 0.05 миллисекунды на холодном и горячем кешах, потому что холодного доступа в эксперименте не было.</p>
+    <p>Я это заметил и поднял вытеснение до 24 мегабайт на кадр, и стало еще хуже, теперь сам загрязнитель занимал 0.8 миллисекунды и своим шумом полностью закрывал то, что я мерил. Поэтому я начал обновлять 2 мегабайта свежей памяти за кадр, но каждый раз в новом месте большого буфера, тогда за 30 кадров накапливается 60 мегабайт разной памяти и L3 “вымывается” целиком, и при этом на кадр приходится очень небольшая нагрузка, что стало близко к той картине что я видел в реальном проекте.</p>
+    <p>Префетч на массиве в 256 килобайт мог бы сюда не попасть, ибо 256 килобайт целиком лежат в L2 и промахов там просто нет, и я собирался выкинуть эту идею как нерабочую. Но потом, чтото меня кольнуло попробовать префетч на 32 мегабайтах, и вот там тот же самый код дал х2 раза. В проект эта оптимизация все равно не пошла, по указанным ранее причинам.</p>
+    <h2>Аппаратный прогрев</h2>
+    <p>Кроме ручного дергания данных, процессоры на консолях и серверах умеют удерживать нужный кусок памяти в кеше на уровне железа. У Intel (Cache Pseudo‑Locking) надо сконфигурировать часть кеша под критичные данные, потом эта часть выставляется наружу как символьное устройство и работать с ней нужно через <code>mmap</code>. У AMD (L3 Cache Range Reservation) позволяет зарезервировать диапазон физических адресов в L3, правда, в пользовательской документации SDK фича в упомянута в общем, но как ей пользоваться приходится узнавать сам.</p>
+    <p>Работает это все на L2 или L3, но не на L1, то есть в самый быстрый уровень вам все равно не дадут влезть ручками, и под все это нужны права и настроенная машина, чего у игры на машине игрока не бывает почти никогда, но пригодится, если вы пишете выделенный сервер, который сами же и хостите.</p>
+    <p>На PS5 можно залочить до 256 килобайт L2 и «удержать данные в быстрой памяти», но сюрпризов тоже навалом, потому что никакой невидимой политики вытеснения нет, и вам самим нужно это все менеджить руками. И в целом для консольных проектов прогрев обсуждать бессмысленно, потому что и так кеш небольшой, а еще и забирать у него часть данных будет отличным способам пострелять по ногам, поэтому на консолях обычно начинают с уменьшения размеров горячих структур.</p>
+    <p>Программный прогрев кеша это лекарство, но скорее всего не от тех проблем, которыя вы видите у себя в профайлере, и получить непонятные и невидимые просадки, которые еще фиг поймешь как появились, вполне реально.</p>
+    <p>З.Ы. Никого ни к чему не призываю, и советовать использовать программный прогрев не буду, весь код и примеры даны для ознакомления.</p>
+
+    <!-- related -->
+    <nav class="related" aria-label="Ещё по теме">
+      <h2>Ещё по теме</h2>
+      <ul>
+      <li class="lane-perf"><a href="console-memory.html">Как работают с памятью в игровых консолях</a><div class="pmeta"><span>5 мая 2026</span><span>22 мин</span></div></li>
+      <li class="lane-perf"><a href="redundant-computations.html">Лишние вычисления</a><div class="pmeta"><span>6 апреля 2026</span><span>12 мин</span></div></li>
+      <li class="lane-perf"><a href="why-no-l5-cache.html">Почему у нас нет кешей L5?</a><div class="pmeta"><span>11 марта 2026</span><span>13 мин</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
+    <a class="backlink" href="index.html">Все статьи</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../site.js" defer></script>
+</body></html>

@@ -7,6 +7,14 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Keep the Hot Path Cool and the Cache Warm</title>
+    <link>https://dalerank.github.io/en/articles/hotpath-cold-cache-warm.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/hotpath-cold-cache-warm.html</guid>
+    <pubDate>Sat, 07 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Performance</category>
+    <description>In games, what matters is not memory bandwidth but latency: how long it takes from request to response while every system in the frame shares one L3. Software cache warming with dummy accesses and where it shoots you in the foot, a struct that “just grew” and broke everything, costly handle indirection, a software prefetch that only paid off at 32 MB, virtual calls that aren’t so expensive after all, cache stalls that aren’t really stalls, a cache polluter that fooled itself, and hardware cache locking on Intel, AMD and PS5.</description>
+  </item>
+  <item>
     <title>Where Complexity Comes From</title>
     <link>https://dalerank.github.io/en/articles/where-complexity-comes-from.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/where-complexity-comes-from.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Wed, 22 Apr 2026 09:00:00 +0000</pubDate>
     <category>C++</category>
     <description>Simple (unqualified) and qualified name lookup in C++: why a namespace and a local variable with the same name coexist, hiding of names and whole overload sets in inheritance, diamond-inheritance ambiguity, the using-namespace rule in qualified lookup, and the historical differences between GCC, Clang and MSVC.</description>
-  </item>
-  <item>
-    <title>Compilers get confused by names too</title>
-    <link>https://dalerank.github.io/en/articles/compilers-confused-names.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/compilers-confused-names.html</guid>
-    <pubDate>Tue, 14 Apr 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>Name lookup in C++: identifiers, unqualified-id, qualified-id, template-id and the &quot;terminal name&quot;, the history of ADL (Koenig lookup) from the namespace conflict to Koenig&#x27;s solution, two-phase lookup in templates, and why GCC, Clang and MSVC historically behaved differently.</description>
   </item>
 </channel>
 </rss>

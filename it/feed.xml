@@ -7,6 +7,14 @@
   <language>it</language>
   <atom:link href="https://dalerank.github.io/it/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Tieni l’hot path al fresco e la cache al caldo</title>
+    <link>https://dalerank.github.io/it/articles/hotpath-cold-cache-warm.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/hotpath-cold-cache-warm.html</guid>
+    <pubDate>Sat, 07 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Prestazioni</category>
+    <description>Nei giochi conta non la banda di memoria ma la latenza: quanto passa tra richiesta e risposta mentre tutti i sistemi del frame si dividono un’unica L3. Il riscaldamento software della cache con accessi fittizi e dove ti spara nei piedi, una struttura che «è semplicemente cresciuta» e ha rotto tutto, il costo dell’indirezione degli handle, un prefetch software che ha pagato solo su 32 MB, chiamate virtuali non poi così costose, cali di cache che non sono veri cali, un inquinatore di cache che ha ingannato se stesso e il blocco hardware della cache su Intel, AMD e PS5.</description>
+  </item>
+  <item>
     <title>Da dove viene la complessità</title>
     <link>https://dalerank.github.io/it/articles/where-complexity-comes-from.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/it/articles/where-complexity-comes-from.html</guid>
