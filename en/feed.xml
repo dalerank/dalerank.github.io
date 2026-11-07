@@ -7,6 +7,14 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>The Gate Problem</title>
+    <link>https://dalerank.github.io/en/articles/gate-problem.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/gate-problem.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>One soldier walks through the gate just fine, but send a crowd and everything breaks. Why an agent “gets stuck” in a passage that looks wide enough, how the NavMesh differs from the floor in the viewport, when A* gets expensive and hierarchical search comes to the rescue, what to do when everyone heads for the same point, local avoidance and RVO, dynamic obstacles, path-request budgets — and why the problem usually isn’t where we look for it. With interactive examples.</description>
+  </item>
+  <item>
     <title>Hit Can’t Miss</title>
     <link>https://dalerank.github.io/en/articles/lag-compensation.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/lag-compensation.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
     <category>Craft</category>
     <description>Do 10x programmers exist, or is it a startup myth and a manager&#x27;s dream: five real types of &quot;fast&quot; developers — the person fused with the project, the one who writes less code, DoItProperlyMan, narrow expertise, and the focus myth — and why 10x is always about accumulated context, not an innate coefficient.</description>
-  </item>
-  <item>
-    <title>How memory works in game consoles</title>
-    <link>https://dalerank.github.io/en/articles/console-memory.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/console-memory.html</guid>
-    <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
-    <category>Performance</category>
-    <description>A history of game-console memory architecture from the Atari 2600 to the PS5 and Xbox Series: cycle counting and blanks, sharing the bus and DMA, the fast-but-slow RDRAM on the N64, the Dreamcast tile renderer, the PS2&#x27;s three memory islands, SPUs and Local Store on the PS3, PS4 memory unification, and the SSD as a new level of the memory hierarchy.</description>
   </item>
 </channel>
 </rss>

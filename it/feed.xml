@@ -7,6 +7,14 @@
   <language>it</language>
   <atom:link href="https://dalerank.github.io/it/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Il problema del cancello</title>
+    <link>https://dalerank.github.io/it/articles/gate-problem.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/gate-problem.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Un soldato da solo passa il cancello senza problemi, ma mandaci una folla e si rompe tutto. Perché un agente «si incastra» in un passaggio che sembra abbastanza largo, in cosa la NavMesh differisce dal pavimento nel viewport, quando A* diventa costoso e arriva in soccorso la ricerca gerarchica, cosa fare quando tutti vanno verso lo stesso punto, local avoidance e RVO, ostacoli dinamici, budget delle richieste di percorso — e perché il problema di solito non è dove lo cerchiamo. Con esempi interattivi.</description>
+  </item>
+  <item>
     <title>Colpire impossibile mancare</title>
     <link>https://dalerank.github.io/it/articles/lag-compensation.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/it/articles/lag-compensation.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Thu, 05 Mar 2026 09:00:00 +0000</pubDate>
     <category>Mestiere</category>
     <description>Riflessioni di uno sviluppatore che ha vissuto l&#x27;epoca in cui il codice si scriveva a mano, senza assistenti IA: perché un traguardo raggiunto troppo facilmente sembra non pesare nulla, come l&#x27;IA elimina l&#x27;«attrito utile» e lo stato di flow, e dove può trovarsi la nuova maestria del programmatore — nell&#x27;architettura e nella profondità delle decisioni più che nella velocità di battitura.</description>
-  </item>
-  <item>
-    <title>Scrivere codice è più facile che scrivere un libro sullo scrivere codice</title>
-    <link>https://dalerank.github.io/it/articles/writing-a-book-about-code.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/writing-a-book-about-code.html</guid>
-    <pubDate>Sun, 22 Feb 2026 09:00:00 +0000</pubDate>
-    <category>Mestiere</category>
-    <description>Come la serie Game++ su Habr è diventata un libro sul C++ pragmatico e lo sviluppo di motori: cos&#x27;è un «buon» C++, le persone che hanno aiutato a far nascere il libro, l&#x27;editing come mestiere a sé e un grande blocco di risposte alle domande frequenti su come scriverlo e pubblicarlo.</description>
   </item>
 </channel>
 </rss>

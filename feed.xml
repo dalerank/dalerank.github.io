@@ -7,6 +7,14 @@
   <language>ru</language>
   <atom:link href="https://dalerank.github.io/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Проблема ворот</title>
+    <link>https://dalerank.github.io/articles/gate-problem.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/gate-problem.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Геймдизайн</category>
+    <description>Пока солдат один, он спокойно проходит в ворота, но стоит отправить туда толпу, и всё ломается. Почему агент «застревает» в проходе, который выглядит широким, как NavMesh отличается от пола во вьюпорте, когда A* становится дорогим и спасает иерархический поиск, что делать, если все идут в одну точку, local avoidance и RVO, динамические препятствия, бюджет запросов пути — и почему проблема обычно не там, где мы её ищем. С интерактивными примерами.</description>
+  </item>
+  <item>
     <title>Попасть нельзя промахнуться</title>
     <link>https://dalerank.github.io/articles/lag-compensation.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/articles/lag-compensation.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
     <category>Ремесло</category>
     <description>Существуют ли 10x программисты или это миф стартаперов и мечта менеджеров: пять реальных типов «быстрых» разработчиков — человек, сросшийся с проектом, тот, кто пишет меньше кода, DoItProperlyMan, узкая экспертиза и миф про фокус — и почему 10x всегда про накопленный контекст, а не про врождённый коэффициент.</description>
-  </item>
-  <item>
-    <title>Как работают с памятью в игровых консолях</title>
-    <link>https://dalerank.github.io/articles/console-memory.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/console-memory.html</guid>
-    <pubDate>Tue, 05 May 2026 09:00:00 +0000</pubDate>
-    <category>Производительность</category>
-    <description>История архитектуры памяти игровых консолей от Atari 2600 до PS5 и Xbox Series: счёт тактов и бланки, дележ шины и DMA, быстрая-но-медленная RDRAM на N64, тайловый рендер Dreamcast, три острова памяти PS2, SPU и Local Store на PS3, унификация памяти на PS4 и SSD как новый уровень иерархии памяти.</description>
   </item>
 </channel>
 </rss>
