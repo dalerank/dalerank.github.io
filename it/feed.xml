@@ -7,6 +7,14 @@
   <language>it</language>
   <atom:link href="https://dalerank.github.io/it/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Coyote time, ovvero come mentire un po’ ai giocatori</title>
+    <link>https://dalerank.github.io/it/articles/coyote-time.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/coyote-time.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>I giocatori chiamano bug un salto fisicamente corretto — «sei a terra, puoi saltare»: le persone vedono un movimento continuo, il gioco vede frame discreti, e in mezzo si perdono i millisecondi di reazione. Da dove vengono il coyote time e il coyote dei cartoni, perché serve anche un jump buffer, perché il numero giusto di millisecondi non esiste, come queste concessioni cambiano la difficoltà e le aspettative dei giocatori e perché un buon gioco a volte deve mentire.</description>
+  </item>
+  <item>
     <title>Tieni l’hot path al fresco e la cache al caldo</title>
     <link>https://dalerank.github.io/it/articles/hotpath-cold-cache-warm.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/it/articles/hotpath-cold-cache-warm.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Thu, 19 Feb 2026 09:00:00 +0000</pubDate>
     <category>Prestazioni</category>
     <description>Il profiling dei giochi come filosofia di sviluppo: l&#x27;evoluzione delle aspettative sugli FPS, come i contenuti degli artisti danneggiano le prestazioni (geometria, texture, render, culling), i metodi di profiling — sampling, instrumentation, tracing, event-based, analisi statica e replay — e il design di un tracing profiler con architettura zero-allocation e handle per le stringhe.</description>
-  </item>
-  <item>
-    <title>La meccanica dell&#x27;evoluzione delle case in Pharaoh (1999)</title>
-    <link>https://dalerank.github.io/it/articles/pharaoh-house-evolution.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/pharaoh-house-evolution.html</guid>
-    <pubDate>Sat, 24 May 2025 09:00:00 +0000</pubDate>
-    <category>Reverse engineering</category>
-    <description>Come funziona l&#x27;evoluzione delle case in Pharaoh (1999): le case come FSM, il sistema di bisogni e attributi (desiderabilità del terreno, tasse, sicurezza antincendio, salute), gli overlay, lo switch di evoluzione ricostruito dall&#x27;originale, il consumo di cibo e risorse, il buffer condiviso runtime_data e l&#x27;aggiornamento delle texture, sull&#x27;esempio del remake Akhenaten.</description>
   </item>
 </channel>
 </rss>

@@ -7,6 +7,14 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Coyote Time, or How to Lie to Players a Little</title>
+    <link>https://dalerank.github.io/en/articles/coyote-time.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/coyote-time.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Players call a physically correct jump — “on the ground, you can jump” — a bug: people see continuous motion, the game sees discrete frames, and reaction milliseconds get lost in between. Where coyote time and the cartoon coyote came from, why it needs a jump buffer, why there is no right number of milliseconds, how these allowances change difficulty and player expectations, and why a good game sometimes has to lie.</description>
+  </item>
+  <item>
     <title>Keep the Hot Path Cool and the Cache Warm</title>
     <link>https://dalerank.github.io/en/articles/hotpath-cold-cache-warm.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/hotpath-cold-cache-warm.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Tue, 28 Apr 2026 09:00:00 +0000</pubDate>
     <category>Craft</category>
     <description>On pet projects in gamedev: why a &quot;couple-of-evenings&quot; project turns into years of your life, how learning differs from writing your own engine, why a small library survives more often than an ambitious all-in-one, the cost of C++ for hobby projects, and how open-source quietly becomes a second job.</description>
-  </item>
-  <item>
-    <title>Simple name lookup in C++</title>
-    <link>https://dalerank.github.io/en/articles/simple-name-lookup.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/simple-name-lookup.html</guid>
-    <pubDate>Wed, 22 Apr 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>Simple (unqualified) and qualified name lookup in C++: why a namespace and a local variable with the same name coexist, hiding of names and whole overload sets in inheritance, diamond-inheritance ambiguity, the using-namespace rule in qualified lookup, and the historical differences between GCC, Clang and MSVC.</description>
   </item>
 </channel>
 </rss>

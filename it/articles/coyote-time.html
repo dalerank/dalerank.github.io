@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coyote time, ovvero come mentire un po’ ai giocatori — dalerank</title>
+<meta name="description" content="Perché un salto fisicamente corretto sembra un bug: coyote time, jump buffer, il numero «giusto» di millisecondi che non esiste e perché un buon gioco a volte deve mentire." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/coyote-time.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/coyote-time.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/coyote-time.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/it/feed.xml" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:url" content="https://dalerank.github.io/it/articles/coyote-time.html" />
+<meta property="og:title" content="Coyote time, ovvero come mentire un po’ ai giocatori — dalerank" />
+<meta property="og:description" content="Perché un salto fisicamente corretto sembra un bug: coyote time, jump buffer, il numero «giusto» di millisecondi che non esiste e perché un buon gioco a volte deve mentire." />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/coyote-time/02.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/coyote-time.html">RU</a><i>/</i><a href="../../en/articles/coyote-time.html">EN</a><i>/</i><a class="on" href="coyote-time.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><a class="tag lane-design" href="../topics/game-design.html">Game design</a><h1>Coyote time, ovvero come mentire un po’ ai giocatori</h1><div class="ameta"><span>8 novembre 2026</span><span>7 min</span></div></div>
+  <article class="prose">
+    <p>Nei giochi esiste una categoria di bug piuttosto curiosa: formalmente sono bug a tutti gli effetti, ma ai giocatori piacciono, e anzi sono proprio loro a chiamare bug il «comportamento normale» e a sfornare segnalazioni sui programmatori con due mani sinistre. Dove il programmatore ha fatto il suo lavoro bene e in modo fisicamente corretto, il giocatore vede un errore nella propria percezione del gioco: non della fisica, ma proprio della percezione. Immaginate il più classico dei platform, in cui il personaggio corre su una piattaforma, si avvicina al bordo e deve saltare sulla successiva. Se in quel punto gestite il salto in modo «corretto», tipo «il personaggio è a terra - può saltare, il personaggio non è a terra - non può saltare»: <code>if (IsGrounded() &amp;&amp; JumpPressed()) then Jump()</code>, dal punto di vista della fisica «corretta» non c'è nulla da obiettare, perché se sotto i piedi non c'è più la piattaforma sarebbe piuttosto strano dire al personaggio che si trova ancora a terra.</p>
+    <p>E se il tasto di salto è stato premuto dopo che il sistema di collisioni ci ha comunicato la perdita di contatto con la superficie, il salto va negato. Di questa logica si può persino dire che si comporta in modo «fisicamente corretto», ma poi arriva il tester e dice: «Ragazzi, il salto è strano. Sento di essere a terra, ma il salto non parte».</p>
+    <p>Quel «sento» nasce dall'esperienza umana: gli occhi stanno un po' più avanti, i talloni un po' più indietro, e tutta la vostra esperienza precedente vi dice che si può ancora saltare. In realtà no, non si può: con i talloni proprio sul bordo della piattaforma non riuscirete a saltare, a meno che, ovviamente, non siate Drake o Jackie Chan. Il vostro cervello si limita a compensare la vostra posizione rispetto al punto di stacco, raccontandovi qualche piccola bugia.</p>
+    <p>Va bene, lasciamo in pace i tester: sono brave persone e spesso hanno più pietà dei giocatori che degli sviluppatori. Andiamo dal nostro programmatore della fisica a presentargli le lamentele dei giocatori, e riceviamo una risposta fisicamente corretta, ma sbagliata, badate bene: «manca una finestra di tolleranza tra lo stato grounded e il momento in cui arriva il jump input». Tradotto in lingua umana: «il bordo della piattaforma è un edge case che non obbedisce alla fisica».</p>
+    <h3>Dove finisce la piattaforma?</h3>
+    <img src="../../assets/articles/coyote-time/02.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Supponiamo che il personaggio corra verso destra a 5 metri al secondo, che il gioco giri a 60 FPS e che a un certo punto succeda questo:</p>
+<pre style="margin:1.4rem 0"><code>frame 100 -&gt; personaggio ancora sulla piattaforma
+frame 101 -&gt; personaggio ancora sulla piattaforma
+frame 102 -&gt; personaggio ha lasciato la piattaforma
+frame 103 -&gt; il giocatore ha premuto Jump</code></pre>
+    <p>Per la fisica, insomma, la situazione è del tutto univoca: al frame 103 il personaggio è in aria, quindi <code>IsGrounded()</code> restituisce <code>false</code>, la condizione non è soddisfatta, niente salto. Per la persona davanti al monitor le cose stanno in modo completamente diverso: lei non vede i singoli frame, vede il movimento, e non come una sequenza di stati discreti, ma come un evento continuo. «Sono arrivato al bordo, mi trovo letteralmente a pochi pixel da lì, ho premuto il tasto, ed è successo tutto praticamente nello stesso istante».</p>
+    <p>Ma il gioco ha già fatto in tempo a spezzare questa scena in diversi stati completamente distinti, a registrare tra loro qualche millisecondo di differenza e a dire, in sostanza, «troppo tardi, ti è mancata la terra sotto i piedi».</p>
+    <p>Qui arriviamo a uno dei problemi fondamentali dello sviluppo di videogiochi, che con i salti non c'entra affatto: è solo che lì si vede più spesso. Il gioco misura il mondo in eventi, mentre l'uomo lo percepisce in stati di movimento, e ciò che per il gioco è avvenuto al frame 101, 102 o 103, per l'uomo è «vedo il bordo, decido di saltare e premo il tasto». Non sono tre azioni diverse, è un unico stato di movimento. Queste due visioni divergono, e la logica rigorosa comincia a punire la persona per qualcosa che non è colpa sua, ma dei limiti del suo sistema nervoso.</p>
+    <h3>Ed ecco che spunta il coyote dei cartoni</h3>
+    <img src="../../assets/articles/coyote-time/03.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Il termine stesso «coyote time» rimanda alla vecchia gag dei cartoni animati con Wile E. Coyote, che corre oltre il bordo del burrone e per un po' continua a correre sicuro nell'aria, finché non guarda in basso e non si accorge che sotto i piedi, a dirla tutta, non c'è più niente. È una metafora piuttosto precisa della meccanica: il personaggio ha già lasciato la piattaforma e fisicamente si trova in aria, ma il gioco per qualche frame ancora finge che sotto di lui ci sia la terra, e se il giocatore preme salto subito dopo il bordo della piattaforma, il gioco gli permette comunque di saltare.</p>
+<pre style="margin:1.4rem 0"><code>if (IsGrounded() || timeSinceLeftGround &lt; coyoteTime)
+    Jump();</code></pre>
+    <p>Alla fine tutta la meccanica si riduce a un paio di righe e a un valore di configurazione, ma abbiamo appena aggiunto al gioco un bug di proposito: il gioco sa che il personaggio è in aria, il gioco sa che la superficie è finita, il gioco sa che il giocatore è in ritardo. Però abbiamo restituito il comportamento «giusto», quello che si aspetta il giocatore, che semplicemente preme il tasto e vede il salto. Un buon coyote time non dovrebbe essere percepito come una meccanica a sé, ma come un normale controllo del personaggio.</p>
+    <video class="post-image" src="../../assets/articles/coyote-time/04.mp4" poster="../../assets/articles/coyote-time/04.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <h3>Ma chi se l'è inventato?</h3>
+    <img src="../../assets/articles/coyote-time/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Il nome moderno è chiaramente legato al coyote dei cartoni, ma individuare la prima persona che ha inventato la meccanica, o che per prima l'ha chiamata proprio <em>coyote time</em>, è praticamente impossibile. Varianti simili di «perdono del bordo» esistevano nei vecchi platform molto prima che la terminologia attuale si diffondesse, e alcuni giochi d'epoca contenevano meccaniche decisamente simili. Tra gli esempi citati ci sono <em>A Boy and His Blob</em>, <em>Donkey Kong Country</em>, <em>Super Mario Bros. 2</em> e altri giochi della fine degli anni '80 e degli anni '90.</p>
+    <p>Il coyote time somiglia molto a una di quelle idee che spuntano contemporaneamente in tutta l'industria: decine di sviluppatori si scontrano con lo stesso problema, ognuno lo risolve un po' a modo suo, e poi col tempo la community trova un nome azzeccato per una tecnica che già esiste. Prima nasce una piccola pezza, poi la pezza diventa un sistema, poi il sistema riceve un nome, e vent'anni dopo gli sviluppatori chiedono quale <code>float</code> bisogna impostare per ottenere il comportamento «giusto». Ma il <code>float</code> giusto, ovviamente, non esiste, perché i giocatori premono i tasti con ritardi diversi, da 80 ms fino a 420 ms nel caso peggiore.</p>
+    <h3>Ma a cosa serve il coyote time?</h3>
+    <p>Qui bisogna dimenticarsi per un attimo del salto perché, come ho già detto, questa meccanica non riguarda affatto i salti, ma il ritardo tra ciò che il giocatore vede e la sua reazione. La persona vede la piattaforma, valuta la distanza, capisce che adesso deve saltare. Poi il sistema nervoso trasmette il segnale ai muscoli, il dito inizia a muoversi, il tasto viene premuto, il controller trasmette lo stato al gioco, e solo a quel punto il nostro codice viene a sapere cos'è successo.</p>
+    <p>Eppure al giocatore sembra di aver fatto tutto all'istante: per lui non c'è differenza tra «ho premuto 30 millisecondi prima del bordo» e «ho premuto 30 millisecondi dopo il bordo», perché questi eventi si trovano praticamente nello stesso punto del suo tempo soggettivo. Per il gioco la differenza c'è, perché tra il momento in cui un certo sistema ha comunicato che l'azione è impossibile e la pressione del tasto possono passare fino a 30 frame (nel caso peggiore 420 ms, cioè quasi 30 frame). Ed è proprio per questo che i giochi sono costretti di continuo a concedere simili agevolazioni: il problema non è che il giocatore sia scarso o lento, è che la percezione umana è continua, mentre il gioco, in fin dei conti, è fatto di singoli stati discreti.</p>
+    <p>E più il gioco è veloce, più questa differenza si fa sentire: a 60 FPS un frame dura circa 16,7 millisecondi, sei frame sono già circa 100 millisecondi, che per una persona è praticamente il massimo dei riflessi rapidi.</p>
+    <h3>Il problema inverso del coyote time</h3>
+    <img src="../../assets/articles/coyote-time/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Ok, abbiamo imparato a perdonare il ritardo del giocatore, e ora, superato il bordo della piattaforma e premuto il salto qualche frame dopo, lui salta comunque. Ma salta fuori un'altra situazione. Il personaggio sta cadendo su una piattaforma e il giocatore vuole fare un «bunny hop», cioè proseguire il movimento con una serie di salti: vede il personaggio toccare terra e preme il tasto. Ma la fisica non ha ancora fatto in tempo a registrare l'atterraggio, e succede questo:</p>
+<pre style="margin:1.4rem 0"><code>frame 200 -&gt; personaggio in aria
+frame 201 -&gt; personaggio ha quasi toccato terra
+frame 202 -&gt; il giocatore ha premuto Jump
+frame 203 -&gt; personaggio è atterrato</code></pre>
+    <p>E di nuovo il gioco ha ragione: al frame 202 non si può ancora saltare, solo che il giocatore, ancora una volta, è convinto di aver fatto tutto bene. Lui non vuole saltare «adesso», vuole saltare «appena atterra», e se ci limitiamo a buttare via l'input perdiamo l'intenzione del giocatore, strappandolo dal suo stato di movimento. Così tocca commettere un secondo errore, il cosiddetto jump buffer, in cui il gioco conserva la pressione del tasto per un certo tempo:</p>
+<pre style="margin:1.4rem 0"><code>if (JumpPressed())
+    jumpBuffer = JumpBufferTime;
+else
+    jumpBuffer -= dt;</code></pre>
+    <p>E dopo l'atterraggio controlliamo se il giocatore non volesse saltare un po' prima:</p>
+<pre style="margin:1.4rem 0"><code>if (IsGrounded() &amp;&amp; jumpBuffer &gt; 0.0f)
+    Jump();</code></pre>
+    <video class="post-image" src="../../assets/articles/coyote-time/07.mp4" poster="../../assets/articles/coyote-time/07.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <p>È logico: se il coyote time perdona il ritardo, un altro sistema deve perdonare la fretta. Il che ci porta a una descrizione del «gameplay giusto» più precisa della parola «reattività». Però qui andrei molto cauto con il numero in sé: come capite, i tempi di reazione delle persone sono diversi, e se proviamo a creare un parametro magico, o dei parametri, per entrambe le agevolazioni, sarà sempre sbagliato:</p>
+<pre style="margin:1.4rem 0"><code>Coyote Time:
+Mario       = 100 ms
+Celeste     = 100 ms
+Hollow Knight = 120 ms
+Your Game   = ????</code></pre>
+    <p>Per un sistema del genere non esistono numeri giusti: 100 millisecondi possono essere un valore perfetto per una persona e insufficiente per un'altra. Ecco perché spuntano altri due sistemi, che regolano questi numeri in base alla velocità del personaggio, alle dimensioni della piattaforma, all'accelerazione attuale, alla durata del salto, alla durata dell'animazione in corso e ai tempi con cui il giocatore ha premuto il tasto in passato, portandoci a un sistema di movimento del personaggio a sé stante.</p>
+    <h3>Come influisce sulla difficoltà del gioco</h3>
+    <video class="post-image" src="../../assets/articles/coyote-time/08.mp4" poster="../../assets/articles/coyote-time/08.poster.jpg" autoplay loop muted playsinline aria-hidden="true"></video>
+    <p>Il coyote time semplifica il gioco: per il giocatore saltare diventa un po' più facile. E per due giocatori che leggono il livello in modo diverso, prendono decisioni in modo diverso e premono il tasto in frame diversi, il gioco elimina proprio questa differenza. Questo permette al designer di creare livelli più difficili e spettacolari, aggiungendo una difficoltà interessante.</p>
+    <p>Ma c'è anche il rovescio: i giochi moderni senza questo sistema ora sembrano rotti. Quando un giocatore gioca per anni ai titoli moderni, si abitua pian piano a un certo livello di «perdono», e non solo nei salti: questo coyote time trapela anche in altri sistemi. Solo che ormai il giocatore non sa nemmeno che questo livello esiste, e lo considera la norma. Se ha premuto il tasto di salto un attimo prima dell'atterraggio, il personaggio deve saltare. Se è appena sceso dal bordo, il salto deve ancora funzionare. Se ha quasi preso l'angolo della piattaforma, il gioco probabilmente dovrebbe dargli una mano. Se ha avviato un'azione qualche millisecondo prima che finisse la precedente, il gioco forse dovrebbe mettere l'input in coda. Il giocatore non lo percepisce come un aiuto: per lui ormai è un «normale controllo».</p>
+    <p>E quando si imbatte in un gioco dove niente di tutto questo c'è, si crea una situazione in cui il gioco può essere tecnicamente, «fisicamente» corretto, ma il giocatore dice che «i controlli sono un po' storti». Non significa per forza che i vecchi giochi fossero brutti: è semplicemente cambiato lo standard culturale di come un gioco deve interpretare un'azione umana. Più o meno lo stesso è successo con i salvataggi: un tempo era del tutto normale perdere un'ora di progressi dopo una morte, oggi una persona può perdere dieci minuti e cominciare già a sospettare che gli sviluppatori abbiano deciso di condurre su di lei un esperimento sociale. Ci abituiamo gradualmente a un certo livello di comodità, e da quel momento la mancanza della comodità abituale comincia a essere percepita non come l'assenza di una funzione, ma come un «errore di comportamento del programma».</p>
+    <h3>Un buon gioco a volte deve mentire</h3>
+    <p>Se il gioco riesce a capire cosa voleva fare il giocatore, deve cercare di farlo, e allora diventa chiaro perché la stessa logica compare ben oltre i salti. Nei giochi moderni questo sistema funziona già nel buffer degli attacchi, nei ritardi extra per il wall jump, nel sistema che permette a un'azione di iniziare un po' prima che la precedente sia finita, o nel mantenere lo slancio del giocatore per qualche frame dopo che si è fermato.</p>
+    <p>Ammettiamo che tra l'intenzione della persona e lo stato della simulazione esista un piccolo errore temporale e spaziale, e poi progettiamo apposta il sistema in modo che questo errore non si trasformi in una punizione. Siamo abituati a pensare che una buona fisica rispetti il più fedelmente possibile le regole stabilite, ma al giocatore della vostra fisica non importa nulla. Gli serve un personaggio che faccia ciò che lui si aspetta.</p>
+    <p>«Sì, tecnicamente sei già caduto dalla piattaforma, ma capisco che volevi saltare, quindi facciamo finta che tu non sia ancora caduto»: questa è una parte del tutto normale dello sviluppo di videogiochi. Si può costringere la persona ad adattarsi al computer, oppure si può adattare un po' il gioco alla persona.</p>
+    <p>E se il gioco è riuscito ad adattarsi, il giocatore non si accorgerà nemmeno di quante piccole regole avete infranto per lui. Premerà semplicemente il tasto, e il personaggio salterà.</p>
+    <p>P.S. <a href="https://dalerank.github.io/article_pathfinding/index.html" target="_blank" rel="noopener">Tutti gli esempi sono qui</a></p>
+
+    <!-- related -->
+    <nav class="related" aria-label="Altro sull’argomento">
+      <h2>Altro sull’argomento</h2>
+      <ul>
+      <li class="lane-design"><a href="fibonacci-enemies.html">Fibonaccia i nemici</a><div class="pmeta"><span>6 settembre 2026</span><span>6 min</span></div></li>
+      <li class="lane-design"><a href="../../en/articles/why-pharaoh-best.html">Perché Pharaoh resta il miglior gioco della serie</a><div class="pmeta"><span>26 settembre 2025</span><span>14 min</span></div></li>
+      <li class="lane-design"><a href="../../en/articles/blackbox-gameplay.html">Gameplay a scatola nera</a><div class="pmeta"><span>31 maggio 2025</span><span>12 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/it/feed.xml">RSS</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
+</body></html>
