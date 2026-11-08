@@ -7,6 +7,30 @@
   <language>ru</language>
   <atom:link href="https://dalerank.github.io/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Как немножко обмануть сервер</title>
+    <link>https://dalerank.github.io/articles/cheating-the-server.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/cheating-the-server.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Геймдизайн</category>
+    <description>В прошлых статьях игра немножко обманывала игрока, теперь игрок обманывает сервер. Знакомьтесь, Вася: проигрывать он не любит настолько, что готов потратить на подготовку больше, чем на сам матч. Авторитетный клиент и деньги из воздуха, спидхаки, wallhack и freecam, аимботы, которые не трогают игру, no-recoil и silent aim, роутер, который тоже врёт серверу, перестановка пакетов, боты и макросы, отключение соперников, накрутка рейтинга — и из чего на самом деле состоит защита, включая галлюцинации Ricochet, которые обманывают уже самого Васю.</description>
+  </item>
+  <item>
+    <title>Нужно больше инстансов, Милорд</title>
+    <link>https://dalerank.github.io/articles/more-instances-milord.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/more-instances-milord.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Ремесло</category>
+    <description>Продолжение летописи «Продакшен пал, Милорд»: королевство Юндексбург строит новый замок в Мамстердаме, ворота никто не проверяет, картографов сокращают на четверть, а дорожные указатели расставляют по длине конских хвостов. Однажды ошибка в конюшне шлёт гонцов во все дороги мира, реестры захлёбываются, и мастера Годфрида снова зовут ко двору — к механизму в подвале с табличкой «Разобрать после релиза» от Бальтазара фон Костыля.</description>
+  </item>
+  <item>
+    <title>Не делайте NPC умнее игрока</title>
+    <link>https://dalerank.github.io/articles/dont-make-npc-smarter.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/articles/dont-make-npc-smarter.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Геймдизайн</category>
+    <description>В AAA-играх, где рендер кадра делят сотни потоков, противниками по-прежнему управляют конечные автоматы, behavior tree и тонна ифов. Почему так: как обучаемый NPC взламывает функцию награды, почему игра меняется быстрее, чем модель успевает переобучиться, зачем предсказуемость — это тоже геймдизайн, а NPC обязан ошибаться, где ML в играх всё-таки работает, почему старые технологии никуда не денутся и что не так с LLM-NPC. С интерактивными примерами.</description>
+  </item>
+  <item>
     <title>Проблема ворот</title>
     <link>https://dalerank.github.io/articles/gate-problem.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/articles/gate-problem.html</guid>
@@ -301,30 +325,6 @@
     <pubDate>Wed, 03 Jun 2026 09:00:00 +0000</pubDate>
     <category>Ненормальное программирование</category>
     <description>Большой разбор архитектурных паттернов и компромиссов в геймдеве: слои, метаслои, подсистемы, конвейер, микроядро и blackboard на примерах Source, CryEngine, Unreal, id Tech и Naughty Dog; стратегии проектирования (top-down/bottom-up/constant refactoring), ось push vs pull, скриптовые языки и переосмысление GoF в современном игровом C++.</description>
-  </item>
-  <item>
-    <title>Трое в лодке, нищета и собаки (с)</title>
-    <link>https://dalerank.github.io/articles/three-in-a-boat.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/three-in-a-boat.html</guid>
-    <pubDate>Wed, 27 May 2026 09:00:00 +0000</pubDate>
-    <category>Ремесло</category>
-    <description>Честный взгляд на состояние игровой индустрии в 2026-м: инди на энтузиазме и опционах, сервисные проекты-казино, ремастеры ремастеров, миграция разработчиков в «дочерние структуры» ради зарплаты и профессия геймдева как искусство договариваться с самим собой — где мы все в одной дырявой лодке.</description>
-  </item>
-  <item>
-    <title>Непослушный using</title>
-    <link>https://dalerank.github.io/articles/disobedient-using.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/disobedient-using.html</guid>
-    <pubDate>Wed, 20 May 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>Почему using namespace и ADL делают поиск имён в C++ непредсказуемым: argument-dependent lookup и operator&lt;&lt;, перехват std локальной подменой, проверка пригодности функции (function viability), ранги неявных преобразований и почему =delete-функции участвуют в overload resolution как полноценные кандидаты.</description>
-  </item>
-  <item>
-    <title>Про 10x программистов</title>
-    <link>https://dalerank.github.io/articles/10x-programmers.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/articles/10x-programmers.html</guid>
-    <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
-    <category>Ремесло</category>
-    <description>Существуют ли 10x программисты или это миф стартаперов и мечта менеджеров: пять реальных типов «быстрых» разработчиков — человек, сросшийся с проектом, тот, кто пишет меньше кода, DoItProperlyMan, узкая экспертиза и миф про фокус — и почему 10x всегда про накопленный контекст, а не про врождённый коэффициент.</description>
   </item>
 </channel>
 </rss>

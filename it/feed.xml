@@ -7,6 +7,30 @@
   <language>it</language>
   <atom:link href="https://dalerank.github.io/it/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>Come imbrogliare un po’ il server</title>
+    <link>https://dalerank.github.io/it/articles/cheating-the-server.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/cheating-the-server.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Negli articoli precedenti era il gioco a mentire un po’ al giocatore; ora è il giocatore a mentire al server. Vi presento Vasja: odia perdere al punto da passare più tempo a prepararsi che a giocare la partita. Client autoritativo e soldi dal nulla, speedhack, wallhack e freecam, aimbot che non toccano il gioco, no-recoil e silent aim, un router che mente anche lui al server, riordino dei pacchetti, bot e macro, avversari buttati fuori dalla partita, manipolazione del rating — e di cosa è fatta davvero la protezione, comprese le allucinazioni di Ricochet che ingannano Vasja stesso.</description>
+  </item>
+  <item>
+    <title>Servono più istanze, Milord</title>
+    <link>https://dalerank.github.io/it/articles/more-instances-milord.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/more-instances-milord.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Mestiere</category>
+    <description>Il seguito della cronaca «La produzione è caduta, Milord»: il regno di Yundexburg costruisce un nuovo castello a Mamsterdam, nessuno controlla le porte, i cartografi vengono ridotti di un quarto e i cartelli stradali si piazzano in base alla lunghezza della coda dei cavalli. Un giorno un errore nelle scuderie manda i messaggeri su tutte le strade del mondo, i registri soffocano e mastro Godfrid viene di nuovo convocato a corte — davanti a un congegno in cantina con il cartello «Smontare dopo il rilascio» di Baldassarre von Pezza.</description>
+  </item>
+  <item>
+    <title>Non rendete gli NPC più intelligenti del giocatore</title>
+    <link>https://dalerank.github.io/it/articles/dont-make-npc-smarter.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/it/articles/dont-make-npc-smarter.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>Nei giochi AAA, dove centinaia di thread si dividono il rendering di un frame, i nemici sono ancora guidati da macchine a stati finiti, behavior tree e una montagna di if. Perché: come un NPC addestrato aggira la funzione di ricompensa, perché il gioco cambia più in fretta di quanto un modello si possa riaddestrare, perché anche la prevedibilità è game design e un NPC deve sbagliare, dove il ML nei giochi funziona davvero, perché le vecchie tecniche non spariranno e cosa non va negli NPC basati su LLM. Con esempi interattivi.</description>
+  </item>
+  <item>
     <title>Il problema del cancello</title>
     <link>https://dalerank.github.io/it/articles/gate-problem.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/it/articles/gate-problem.html</guid>
@@ -301,30 +325,6 @@
     <pubDate>Mon, 06 Apr 2026 09:00:00 +0000</pubDate>
     <category>Prestazioni</category>
     <description>Come l&#x27;esecuzione speculativa e la branch prediction interagiscono con il sottosistema di memoria: perché il codice branchless non è sempre più veloce, il costo di una misprediction rispetto alla latenza della memoria, la storia da Tomasulo al Pentium Pro, la ricerca binaria e benchmark sul Jaguar (PS4).</description>
-  </item>
-  <item>
-    <title>Generalizzazioni in C++ (parte 2)</title>
-    <link>https://dalerank.github.io/it/articles/pragmatic-generalizations-2.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/pragmatic-generalizations-2.html</guid>
-    <pubDate>Wed, 18 Mar 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>La continuazione del capitolo 1 di PragmatiC++: identità e uguaglianza degli oggetti, procedure e call stack, le convenzioni di chiamata e le categorie in/out/in-out, la base computazionale dall&#x27;ENIAC ad AMX, e la regolarità dei tipi come guida pratica per progettare astrazioni prevedibili.</description>
-  </item>
-  <item>
-    <title>Perché non abbiamo cache L5?</title>
-    <link>https://dalerank.github.io/it/articles/why-no-l5-cache.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/why-no-l5-cache.html</guid>
-    <pubDate>Wed, 11 Mar 2026 09:00:00 +0000</pubDate>
-    <category>Prestazioni</category>
-    <description>Perché una CPU ha più livelli di cache invece di uno solo grande: la fisica dei segnali sul die, l&#x27;analogia delle palline di Natale, la storia dall&#x27;i486 a Nehalem, perché L1I e L1D sono separate, i protocolli di coerenza (MSI/MESI/MOESI…), eDRAM e HBM come L4 «nascosta» e perché una L5 per ora non ha senso.</description>
-  </item>
-  <item>
-    <title>Sulla gioia di programmare e l&#x27;imponderabilità dei traguardi</title>
-    <link>https://dalerank.github.io/it/articles/joy-of-programming.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/it/articles/joy-of-programming.html</guid>
-    <pubDate>Thu, 05 Mar 2026 09:00:00 +0000</pubDate>
-    <category>Mestiere</category>
-    <description>Riflessioni di uno sviluppatore che ha vissuto l&#x27;epoca in cui il codice si scriveva a mano, senza assistenti IA: perché un traguardo raggiunto troppo facilmente sembra non pesare nulla, come l&#x27;IA elimina l&#x27;«attrito utile» e lo stato di flow, e dove può trovarsi la nuova maestria del programmatore — nell&#x27;architettura e nella profondità delle decisioni più che nella velocità di battitura.</description>
   </item>
 </channel>
 </rss>

@@ -7,6 +7,30 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>How to Cheat the Server a Little</title>
+    <link>https://dalerank.github.io/en/articles/cheating-the-server.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/cheating-the-server.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>In the previous articles the game lied to the player a little; now the player lies to the server. Meet Vasya: he hates losing so much that he’ll spend more time preparing than playing the match. Client authority and money out of thin air, speedhacks, wallhacks and freecam, aimbots that never touch the game, no-recoil and silent aim, a router that lies to the server too, packet reordering, bots and macros, knocking opponents offline, rating manipulation — and what anti-cheat protection is actually made of, including Ricochet’s hallucinations that fool Vasya himself.</description>
+  </item>
+  <item>
+    <title>More instances are needed, my lord</title>
+    <link>https://dalerank.github.io/en/articles/more-instances-milord.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/more-instances-milord.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Craft</category>
+    <description>A sequel to the chronicle “Production has fallen, my lord”: the kingdom of Yundexburg builds a new castle in Mamsterdam, nobody checks the gates, the cartographers are cut by a quarter, and road signs are placed according to the length of horses’ tails. One day a mistake in the stables sends messengers down every road in the world, the registries choke, and Master Godfrid is summoned to court once more — to a contraption in the cellar labelled “Dismantle after the release” from Balthazar von Kludge.</description>
+  </item>
+  <item>
+    <title>Don’t Make NPCs Smarter Than the Player</title>
+    <link>https://dalerank.github.io/en/articles/dont-make-npc-smarter.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/dont-make-npc-smarter.html</guid>
+    <pubDate>Sun, 08 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Game design</category>
+    <description>In AAA games, where hundreds of threads share the work of rendering a frame, enemies are still driven by finite state machines, behavior trees and a ton of ifs. Why: how a trained NPC hacks its reward function, why the game changes faster than a model can be retrained, why predictability is game design too and an NPC has to make mistakes, where ML in games actually works, why the old techniques aren’t going anywhere, and what’s wrong with LLM NPCs. With interactive examples.</description>
+  </item>
+  <item>
     <title>The Gate Problem</title>
     <link>https://dalerank.github.io/en/articles/gate-problem.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/gate-problem.html</guid>
@@ -301,30 +325,6 @@
     <pubDate>Wed, 03 Jun 2026 09:00:00 +0000</pubDate>
     <category>Abnormal programming</category>
     <description>A big breakdown of architectural patterns and trade-offs in gamedev: layers, metalayers, subsystems, pipes &amp; filters, microkernel, and blackboard with examples from Source, CryEngine, Unreal, id Tech, and Naughty Dog; design strategies (top-down/bottom-up/constant refactoring), the push vs pull axis, scripting languages, and rethinking GoF in modern game C++.</description>
-  </item>
-  <item>
-    <title>Three in a boat, poverty and dogs</title>
-    <link>https://dalerank.github.io/en/articles/three-in-a-boat.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/three-in-a-boat.html</guid>
-    <pubDate>Wed, 27 May 2026 09:00:00 +0000</pubDate>
-    <category>Craft</category>
-    <description>An honest look at the state of the game industry in 2026: indies running on enthusiasm and options, service-game casinos, remasters of remasters, developers migrating into &quot;subsidiaries&quot; for a paycheck, and gamedev as the art of negotiating with yourself — where we&#x27;re all in one leaky boat.</description>
-  </item>
-  <item>
-    <title>The disobedient using</title>
-    <link>https://dalerank.github.io/en/articles/disobedient-using.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/disobedient-using.html</guid>
-    <pubDate>Wed, 20 May 2026 09:00:00 +0000</pubDate>
-    <category>C++</category>
-    <description>Why using namespace and ADL make name lookup in C++ unpredictable: argument-dependent lookup and operator&lt;&lt;, hijacking std with a local substitute, checking function viability, the ranks of implicit conversions, and why =delete functions take part in overload resolution as full-fledged candidates.</description>
-  </item>
-  <item>
-    <title>About 10x programmers</title>
-    <link>https://dalerank.github.io/en/articles/10x-programmers.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/10x-programmers.html</guid>
-    <pubDate>Tue, 12 May 2026 09:00:00 +0000</pubDate>
-    <category>Craft</category>
-    <description>Do 10x programmers exist, or is it a startup myth and a manager&#x27;s dream: five real types of &quot;fast&quot; developers — the person fused with the project, the one who writes less code, DoItProperlyMan, narrow expertise, and the focus myth — and why 10x is always about accumulated context, not an innate coefficient.</description>
   </item>
 </channel>
 </rss>

@@ -26,6 +26,7 @@
   <url><loc>https://dalerank.github.io/articles/caesar3-rendering.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/cat-notes-iron-man.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/catch-the-paying-player.html</loc></url>
+  <url><loc>https://dalerank.github.io/articles/cheating-the-server.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/compilers-confused-names.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/console-memory.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/cooking-vectors.html</loc></url>
@@ -46,6 +47,7 @@
   <url><loc>https://dalerank.github.io/articles/dirty-games.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/disobedient-using.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/do-not-copy.html</loc></url>
+  <url><loc>https://dalerank.github.io/articles/dont-make-npc-smarter.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/dont-panic-aa-gamedev.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/dream-portfolio-second-job.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/eastl-guide.html</loc></url>
@@ -74,6 +76,7 @@
   <url><loc>https://dalerank.github.io/articles/lemons-and-remake-economics.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/megacity-on-iphone.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/miss-old-game-mechanics.html</loc></url>
+  <url><loc>https://dalerank.github.io/articles/more-instances-milord.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/need-own-game-engine.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/not-unity-alone.html</loc></url>
   <url><loc>https://dalerank.github.io/articles/patching-patterns.html</loc></url>
@@ -169,6 +172,7 @@
   <url><loc>https://dalerank.github.io/en/articles/caesar3-rendering.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/cat-notes-iron-man.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/catch-the-paying-player.html</loc></url>
+  <url><loc>https://dalerank.github.io/en/articles/cheating-the-server.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/compilers-confused-names.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/console-memory.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/cooking-vectors.html</loc></url>
@@ -189,6 +193,7 @@
   <url><loc>https://dalerank.github.io/en/articles/dirty-games.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/disobedient-using.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/do-not-copy.html</loc></url>
+  <url><loc>https://dalerank.github.io/en/articles/dont-make-npc-smarter.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/dont-panic-aa-gamedev.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/dream-portfolio-second-job.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/eastl-guide.html</loc></url>
@@ -217,6 +222,7 @@
   <url><loc>https://dalerank.github.io/en/articles/lemons-and-remake-economics.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/megacity-on-iphone.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/miss-old-game-mechanics.html</loc></url>
+  <url><loc>https://dalerank.github.io/en/articles/more-instances-milord.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/need-own-game-engine.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/not-unity-alone.html</loc></url>
   <url><loc>https://dalerank.github.io/en/articles/patching-patterns.html</loc></url>
@@ -289,12 +295,14 @@
   <url><loc>https://dalerank.github.io/it/articles/anatomy-of-rakes.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/architecture-tradeoffs.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/array-of-arrays.html</loc></url>
+  <url><loc>https://dalerank.github.io/it/articles/cheating-the-server.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/compilers-confused-names.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/console-memory.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/coyote-time.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/dirty-coding-tricks-3.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/dirty-games.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/disobedient-using.html</loc></url>
+  <url><loc>https://dalerank.github.io/it/articles/dont-make-npc-smarter.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/dream-portfolio-second-job.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/eastl-guide.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/english-instead-of-code.html</loc></url>
@@ -309,6 +317,7 @@
   <url><loc>https://dalerank.github.io/it/articles/lag-compensation.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/lemons-and-remake-economics.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/megacity-on-iphone.html</loc></url>
+  <url><loc>https://dalerank.github.io/it/articles/more-instances-milord.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/pharaoh-house-evolution.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/play-good-not-bad.html</loc></url>
   <url><loc>https://dalerank.github.io/it/articles/pragmatic-generalizations-2.html</loc></url>
