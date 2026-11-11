@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Come Pharaoh viveva in 16 megabyte di memoria — dalerank</title>
+<meta name="description" content="Come Pharaoh fece stare 300 megabyte di grafica in 16 megabyte di RAM: palette a 8 bit, un RLE da cui si può disegnare direttamente, rombi senza angoli, cinque direzioni invece di otto e immagini che in memoria non ci sono." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/articles/pharaoh-16mb.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/articles/pharaoh-16mb.html" />
+<link rel="alternate" hreflang="it" href="https://dalerank.github.io/it/articles/pharaoh-16mb.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="../../style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/it/feed.xml" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:url" content="https://dalerank.github.io/it/articles/pharaoh-16mb.html" />
+<meta property="og:title" content="Come Pharaoh viveva in 16 megabyte di memoria — dalerank" />
+<meta property="og:description" content="Come Pharaoh fece stare 300 megabyte di grafica in 16 megabyte di RAM: palette a 8 bit, un RLE da cui si può disegnare direttamente, rombi senza angoli, cinque direzioni invece di otto e immagini che in memoria non ci sono." />
+<meta property="og:image" content="https://dalerank.github.io/assets/articles/pharaoh-16mb/01.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="../index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html">Articoli</a><a href="../index.html#books">Libri</a><a href="../index.html#topics">Argomenti</a><a href="../../en/about.html">Chi sono</a></nav>
+  <div class="actions"><span class="lang"><a href="../../articles/pharaoh-16mb.html">RU</a><i>/</i><a href="../../en/articles/pharaoh-16mb.html">EN</a><i>/</i><a class="on" href="pharaoh-16mb.html">IT</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Sostieni</a></div>
+</div></header>
+<main class="wrap article">
+  <div class="article-head"><a class="tag lane-abn" href="../topics/abnormal-programming.html">Programmazione anormale</a><h1>Come Pharaoh viveva in 16 megabyte di memoria</h1><div class="ameta"><span>11 novembre 2026</span><span>11 min</span></div></div>
+  <article class="prose">
+    <img src="../../assets/articles/pharaoh-16mb/01.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Il codice che disegnava unità e tile negli strategici di fine anni Novanta veniva eseguito centinaia di volte per frame: il blitting hardware era già abbastanza economico, ma non lo era ancora abbastanza in termini di memoria, e quel codice toccava quasi ogni pixel che il giocatore vedeva sullo schermo. Forse non era così importante se la risoluzione poteva essere 640×480 (almeno, è su un monitor del genere che ho giocato le prime volte a Pharaoh), e per un codice del genere contava già più la disposizione dei dati in memoria che l’eleganza dell’architettura, anche se, a pensarci bene, chi meglio di quei pionieri poteva parlare di bellezza dell’architettura in 16 megabyte tutti contati.</p>
+    <p>I giochi sono sempre stati prima di tutto immagine, checché ne dicano i marketer, e una bella immagine in uno strategico ambientato nell’antico Egitto significa migliaia di sprite: case, abitanti, animazioni in otto direzioni, templi, dodici eserciti nemici e monumenti. I monumenti, poi, venivano disegnati con una passata a parte, perché erano grandi e non entravano in tutti gli schermi.</p>
+    <p>In Pharaoh, sul disco ci sono circa 302 megabyte di sola grafica, e se fate il parsing del file ini del gioco ci troverete il parametro <code>RAM</code>, impostato di default a 15, più o meno quanto ne aveva una macchina media dell’epoca. E c’era anche una modalità «poca memoria» per le macchine sotto i 16 megabyte, se avevate dei modesti 14 megabyte di RAM (come me), in cui il gioco passava forzatamente a 640×480 e semplificava il ciclo di simulazione della città.</p>
+    <p>Gli strumenti standard dell’epoca si prestavano poco a un compito in cui bisognava tenere in memoria anche tutto ciò che al momento non serviva, così Impressions già ai tempi di Caesar lo risolse con un proprio formato di compressione grafica, che si può descrivere nel modo più semplice come «hack, trucchi e magia nera che fanno risparmiare RAM».</p>
+    <p>In questo articolo analizzerò questi trucchi, con i numeri dei file reali del gioco e il codice di <a href="https://github.com/dalerank/tutankhamun" target="_blank" rel="noopener">Tutankhamun</a>, la mia reimplementazione di Pharaoh in C. Il progetto è iniziato circa tre anni fa e finalmente è arrivato al traguardo, cioè a sorgenti comprensibili, e se leggete i miei articoli da tempo vi ricorderete forse che il primo parlava <a href="../../en/articles/how-caesar-draws-city.html">del reverse engineering del motore di Caesar</a>, e quindi... è ora di saccheggiare anche le tombe dei faraoni.</p>
+    <hr />
+    <h2>Anche i formati di dati sono strumenti</h2>
+    <blockquote>Blitting: calco dal nome della funzione ddraw che copia istantaneamente una texture precaricata nella scheda video nel punto giusto del back buffer, cioè il buffer dello schermo per il frame successivo. Tecn.: operazione di trasferimento di un’immagine raster da un dispositivo di memorizzazione alla finestra di output sullo schermo. Thanks to <a href="https://habr.com/ru/users/8street/" target="_blank" rel="noopener">8 street</a>.</blockquote>
+    <p>Oggi i formati di dati sono verità incrollabili scolpite nel codice, calate dall’alto insieme all’SDK del vendor o della console, e se volete che il vostro modellino si carichi in fretta con il decoder hardware, siate così gentili da limare le parti sporgenti del vostro motore... ma questo è oggi, mentre un tempo i formati di dati erano un ulteriore livello di strumenti, e la gente si inventava il formato adatto a compiti specifici. Nessuno si metterebbe a stringere un dado esagonale con una chiave pentagonale, ma se non sapete che si può fare diversamente, continuerete a cercare di infilare la grafica del gioco in BMP solo perché BMP/PNG si apre nell’editor.</p>
+    <p>Quali opzioni aveva uno sviluppatore nel 1999 per memorizzare la grafica, e quale prezzo comportava ciascuna? Si poteva prendere una bitmap grezza, l’opzione più ovvia, e allora ogni immagine sarebbe stata un normale rettangolo di pixel, larghezza per altezza per due byte, o quattro. La si può leggere, disegnare con un solo <code>memcpy</code>, e dentro, ahimè, non c’è alcuna magia... in molti facevano così, e lo fanno tuttora.</p>
+    <p>Ma uno strategico cittadino in isometria (soprattutto quelli vecchi, in 2.5D) è fatto quasi interamente di texture che non sono rettangoli, come la casella di terreno a rombo che nel suo rettangolo 58×30 occupa meno di metà dell’area, mentre tutto il resto sono angoli trasparenti che vanno onestamente memorizzati, visto che la nostra texture è rettangolare.</p>
+    <p>E poi bisognerà onestamente leggerla dal disco e onestamente saltare tutto il trasparente in fase di disegno, e attorno alla figurina di un abitante che cammina per strada lo sfondo trasparente è ancora di più; se si sommano tutte le immagini che Pharaoh tiene in memoria dopo l’avvio, sotto forma di semplici bitmap, si arriva a circa 62,6 megabyte. Cioè non ci sta proprio, e servirebbe un supercomputer con 64 MB di RAM, che non avevano certo tutti.</p>
+    <img src="../../assets/articles/pharaoh-16mb/02.jpg" alt="" class="post-image" loading="lazy" />
+    <h3>Una palette a 256 colori</h3>
+    <p>Si può fare un hack sul colore stesso, in modo che invece dei colori normali un solo byte faccia riferimento a una palette di 256 colori, il che permette di dimezzare subito la memoria, e il vecchio Caesar II viveva proprio così, come del resto molti giochi dell’epoca.</p>
+    <p>Ma verso la fine degli anni Novanta le schede video lavoravano già tranquillamente a 16 bit, e gli artisti volevano sfumature morbide di sabbia e acqua, mentre 256 colori per tutto lo schermo significavano che deserto, Nilo, verde dei campi, pelle degli abitanti e oro dei templi avrebbero dovuto spartirsi un’unica palette. E palette multiple, come sullo SNES, su PC nessuno sano di mente le avrebbe fatte a mano, perché costose, brutte e comunque poco efficaci, così Impressions passò ai 16 bit, e risparmiare bisognò altrove. Lo vedete il gopher? No? Eppure c’è...</p>
+    <img src="../../assets/articles/pharaoh-16mb/03.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Le superfici DirectDraw</h2>
+    <p>Il nuovissimo DirectDraw proponeva di memorizzare le immagini in «superfici», idealmente direttamente nella memoria video, e di disegnarle con il blitter hardware, il che sulla carta suonava come prestazioni gratis. Ma in pratica una tipica scheda video del 1999 aveva sì e no 4 megabyte di memoria, di cui una parte già occupata dallo schermo e dal back buffer, le superfici potevano «perdersi» al cambio di finestra e andavano ripristinate, e il blitter hardware sapeva gestire il color key, ma non l’RLE, né i rombi, né la colorazione del font nel colore desiderato. Alla fine Pharaoh usa DirectDraw solo come mezzo per mostrare il frame finito, e tutte le immagini le disegna da sé, con la CPU, ed è per questo che i PC dell’epoca con processori deboli reggevano il gioco solo a 640×480 a 20 frame.</p>
+    <h3>Archivi e compressione</h3>
+    <p>Si poteva comprimere tutto con qualche LZ e decomprimere al caricamento, risparmiando così spazio su disco (relativamente: il gioco occupava comunque meno di metà CD), ma la memoria non la si risparmia in questo modo, e uno sprite decompresso occuperà quanto uno non compresso. Per questo comprimere ha senso solo se l’immagine si può disegnare direttamente dalla forma compressa, senza decomprimerla.</p>
+    <p>E l’ultima opzione si affida al funzionamento di Windows: allocare quanto serve, e poi ci pensi lo swap. Ma se al gioco mancava memoria fisica, le pagine finivano fisicamente su disco e tornavano indietro quando servivano... il che era, diciamo così, percepibile a occhio nudo, e non appena la scena chiede più di quanto c’è, il frame si trasforma in un fruscio di hard disk, e il giocatore scopre che aspetto hanno tre frame al secondo.</p>
+    <p>Anticipo subito che anche Pharaoh si appoggia a questo meccanismo, solo che cerca di fare in modo che i dati freddi siano davvero freddi.</p>
+    <h2>Come è fatto in Pharaoh</h2>
+    <img src="../../assets/articles/pharaoh-16mb/04.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Tutta la grafica del gioco sta nella cartella <code>Data</code> in coppie di file: <code>.sg3</code> è l’indice e <code>.555</code> sono i pixel, e di coppie così nella build se ne contano circa duecento, in tutto 395 file e 302 MB, di cui 177 megabyte sono i pixel veri e propri e altri 125 megabyte gli indici, ma gli indici sono per lo più vuoti</p>
+    <p>Ogni <code>.sg3</code> inizia con un header, una tabella da 300 gruppi, i nomi dei file BMP sorgente da cui gli artisti assemblavano il texture pack, e un array di record da 64 byte per immagine. I record nel file sono sempre 10 000 oppure 13 000, indipendentemente da quante immagini ci siano davvero, per cui 158 file hanno una dimensione di 695 080 byte, e altri 17 file con gli sprite di abitanti e nemici ne hanno 887 080. Sospetto che dipendesse dalla pipeline di build o dalla build farm, anche se quando ho parlato con Simon Bradbury (lead del team di sviluppo di Caesar e in parte di Pharaoh, e anche di Stronghold), di build farm non ha fatto alcuna menzione: la build la faceva semplicemente su richiesta uno dei programmatori sul proprio PC e la metteva sul disco condiviso.</p>
+<pre style="margin:1.4rem 0"><code>typedef struct {
+    int32_t data;                  // offset dei pixel nel .555
+    int32_t data_length;
+    int32_t isometric_top_offset;  // dove inizia la parte alta dell’edificio
+    int32_t file_slot;
+    int32_t mirror_source_offset;  // da dove prendere l’immagine, se è specchiata
+    int16_t width, height;
+    // ... animazione, offset dello sprite ...
+    uint8_t draw_type;             // piatta, isometrica, font monocolore ...
+    uint8_t is_compressed;
+    uint8_t is_external;           // pixel non in memoria, ma su disco
+    uint8_t has_isometric_top;
+    // ...
+    uint8_t is_mirrored;
+} image_header;                    // 64 byte, static_assert nel nostro codice</code></pre>
+    <p>Quindi un centinaio abbondante di megabyte su disco saranno in gran parte zeri, che non arrivano mai in memoria: il gioco legge il <code>.sg3</code> in un buffer temporaneo, lo analizza e lo libera subito. Nel 2000 i dischi erano già grandi, ma la possibilità di mettere in memoria tutto il texture pack non c’era, e a dire il vero non c’è nemmeno oggi, il che è buffo: con 8 GB di memoria video, i livelli adesso pesano 20–30 GB.</p>
+    <p>E poi ogni texture pack, oltre agli sprite veri e propri, inizia con le stesse duecento immagini di <code>system.bmp</code> (cornici, pulsanti, frecce), tutta un’eredità di Caesar 2, che lì quei dati li conservava davvero. A quanto pare era più comodo mantenere la continuità del formato. Il loader del gioco lo sa, e per tutti i pacchetti successivi al primo salta questi duecento record e inizia a leggere il <code>.555</code> dall’offset 39 214 byte. Una sciocchezza, circa un megabyte di risparmio su tutti i pacchetti insieme, ma nel 2000 un megabyte era ancora un megabyte, e si combatteva per i kilobyte.</p>
+    <h2>Un RLE da cui si può disegnare</h2>
+    <img src="../../assets/articles/pharaoh-16mb/05.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Torniamo ai pixel trasparenti (abitanti, animali, alberi, fumo) che stanno nel nostro sprite. Il gioco codifica questi byte con RLE e mette come marcatore di inizio di un tratto trasparente <code>0xFF</code>, seguito da un numero N, che significa «salta N pixel trasparenti», mentre qualsiasi altro byte N significa «seguono N normali pixel a 16 bit».</p>
+<pre style="margin:1.4rem 0"><code>while (row_left &gt; 0) {
+    uint8_t n = *src++;
+    if (n == 0xFF) {        // tratto trasparente
+        n = *src++;
+        dst += n;
+    } else {                // tratto opaco
+        memcpy(dst, src, n * 2);
+        src += n * 2;
+        dst += n;
+    }
+    row_left -= n;
+}</code></pre>
+    <p>La cosa principale qui non è nemmeno il rapporto di compressione, ma il fatto che un formato del genere non va decompresso e il blitter può disegnare direttamente da lì (ricordate che disegniamo con la CPU, pixel per pixel): i pixel trasparenti si possono non toccare affatto, spostando semplicemente il puntatore. Così, delle 13 366 immagini compresse che il gioco tiene dopo l’avvio, risultano 19,85 megabyte di pixel reali da disegnare invece dei 34 MB delle bitmap grezze, cioè meno 40%.</p>
+    <img src="../../assets/articles/pharaoh-16mb/06.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Come si sa, tutto si paga, e se lo sprite è tagliato in alto dal bordo dello schermo, il blitter scorre diligentemente tutte le righe invisibili per trovare la prima visibile e iniziare a disegnare, e poi il bello deve ancora venire...</p>
+    <h2>Rombi senza angoli</h2>
+    <img src="../../assets/articles/pharaoh-16mb/07.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Una casella di terreno in isometria appare al giocatore come un rombo di 58×30 pixel, ma memorizzarlo come rettangolo significa memorizzare 1740 pixel, di cui se ne vede meno della metà. Per questo gli autori del gioco iniziarono a memorizzare solo il rombo stesso (righe lunghe 2, 6, 10 … 58, 58 … 6, 2 pixel, una dopo l’altra), senza byte vuoti, ottenendo 900 pixel e una dimensione ridotta del 50%, e considerando che tutte le nostre caselle della mappa sono rombi, ci ritroviamo con un’altra metà di memoria libera.</p>
+    <p>Da qui deriva anche la suddivisione degli edifici grandi N×N, le cui caselle sono memorizzate come N² rombi di questo tipo e disegnate diagonale dopo diagonale. Questo semplifica anche il disegno, perché al blitter dei rombi non serve né il color key né il controllo della trasparenza: conosce semplicemente la lunghezza di ogni riga, anzi non sa proprio cosa ci sia da disegnare, tutto il rendering isometrico dell’edificio si basa sulla matematica degli offset. Chi è che parlava di trasparenza?</p>
+    <h2>La parte alta dell’edificio a parte</h2>
+    <img src="../../assets/articles/pharaoh-16mb/08.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Ma questo modo di disegnare va bene solo per i tile «piatti», e un edificio come si deve non è solo la base. Il tempio ha le colonne, la casa ha il tetto, la bottega avrà una tettoia, e tutto questo sporge sopra i rombi, quindi questa parte va memorizzata separatamente, subito dopo i rombi, compressa con lo stesso RLE, e nell’header dell’immagine c’è <code>isometric_top_offset</code>, che indica dove inizia.</p>
+    <img src="../../assets/articles/pharaoh-16mb/09.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Un edificio di 6×6 caselle, di 358×223 pixel, ora occupa 36 rombi da 1800 byte più 28 726 byte di parte alta, in totale 93 526 byte invece di 159 668. E in più questo risolve il problema delle sovrapposizioni senza usare lo z-buffer (che non è economico nemmeno oggi, e negli anni Duemila era un vero problema per i giochi isometrici). Ora il gioco disegna prima tutte le basi sullo schermo, poi in una seconda passata, fila dopo fila, le parti alte degli edifici, gli abitanti e le animazioni, e alla fine la fila più vicina viene semplicemente disegnata dopo quella più lontana, e così tutto finisce al suo posto.</p>
+    <img src="../../assets/articles/pharaoh-16mb/10.jpg" alt="" class="post-image" loading="lazy" />
+    <h2>Cinque direzioni invece di otto</h2>
+    <img src="../../assets/articles/pharaoh-16mb/11.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Passiamo agli abitanti della nostra città virtuale: in Pharaoh camminano in otto direzioni, e ogni frame di animazione richiede otto texture distinte, ma dato che gli schermi erano piccoli, gli autori del gioco ricorsero a un hack e memorizzarono solo le animazioni di cinque direzioni, mentre le direzioni 5, 6 e 7 erano marcate con il flag <code>is_mirrored</code> e rimandavano ai record vicini con offset −2, −4 e −6. Cioè il blitter le disegnava specchiate, il che permise di risparmiare altri 2,3 megabyte circa di RAM: a pensarci bene, andare a destra costa la metà che andare a sinistra.</p>
+    <h2>Un font che si colora mentre viene disegnato</h2>
+    <img src="../../assets/articles/pharaoh-16mb/12.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Restano ancora le lettere... lettere normalissime, che pure vanno disegnate sullo schermo e pure occupano memoria. Le lettere sono normali immagini nel pacchetto <code>Pharaoh_Fonts</code>, ce ne sono 1340 per 488 kilobyte, e una parte di esse è di tipo «monocolore»: una maschera RLE a sé, senza colori propri, che il blitter riempie con il colore che gli viene passato. Un unico set di glifi funziona per il testo bianco, rosso e verde, e l’ombra sotto la scritta sarà la stessa lettera, disegnata un’altra volta in nero e spostata di un pixel.</p>
+    <h2>Immagini che non stanno in memoria</h2>
+    <img src="../../assets/articles/pharaoh-16mb/13.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Ma il guadagno più grande nel gioco lo dà il meccanismo che nel codice si chiama «disegno sul posto»: tutte queste texture sono state spostate dai texture pack in uno solo. È un file quasi vuoto, che contiene duecento immagini di sistema per 39 kilobyte e 482 texture i cui pixel stanno in <code>.555</code> separati e non vengono mai caricati in memoria. Sono texture grandi, che occupano quasi 44 MB (sfondi a tutto schermo dei menu, immagini dei briefing, ritratti dei consiglieri, illustrazioni del tutorial, cornici dei pannelli).</p>
+    <p>E quando il gioco deve disegnare un’immagine del genere, apre il file, legge quel pezzo in un buffer di lavoro separato grande quanto lo schermo, poi converte il colore e lo disegna sopra lo schermo principale.</p>
+    <img src="../../assets/articles/pharaoh-16mb/14.jpg" alt="" class="post-image" loading="lazy" />
+<pre style="margin:1.4rem 0"><code>seek(fd, offset_of_first_visible_row);
+for (row = 0; row &lt; visible_height; row++) {
+    read(fd, buffer, visible_width * 2);
+    seek(fd, row_skip, SEEK_CUR);   // 1024 * 2 - visible_width * 2
+    buffer += visible_width * 2;
+}</code></pre>
+    <h2>Slot e segnaposto</h2>
+    <p>Manca ancora poco: tutta la grafica in memoria è distribuita su trenta slot, che possono indirizzare singoli texture pack con un intervallo fisso di numeri di immagine, cioè fisicamente Pharaoh non poteva tenere in memoria più di 16k texture. I numeri delle immagini erano cablati nel codice e nei salvataggi, quindi il contenuto di uno slot si poteva cambiare, ma spostare i numeri no.</p>
+    <img src="../../assets/articles/pharaoh-16mb/15.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Anche questa è un’eredità di Caesar 2, abbandonata solo in Zeus, per cui bisognava creare un sistema di caricamento in cui una parte degli slot era fissa (sprite principali, grafica comune, terreno, font, mappa dell’impero), mentre gli altri cambiavano a seconda della situazione:</p>
+    <ul>
+      <li>per esempio lo slot del nemico: c’era solo uno dei dodici eserciti, dagli Hyksos ai Persiani, circa 1,2 megabyte ciascuno, scelto in base allo scenario della missione;</li>
+      <li>oppure lo slot del complesso templare, uno dei cinque dèi, quando il giocatore lo costruisce, il che limitava la possibilità di costruire complessi diversi sulla stessa mappa.</li>
+      <li>oppure gli slot dei monumenti (piramide, mastaba, tombe della Valle dei Re, Abu Simbel, biblioteca e faro di Alessandria, a seconda dell’epoca della missione).</li>
+      <li>Per la sfinge, il faro, la biblioteca e il mausoleo, ogni fase di costruzione è un texture pack a sé, che viene caricato man mano che il cantiere avanza e sostituisce il precedente</li>
+    </ul>
+    <img src="../../assets/articles/pharaoh-16mb/16.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Per questo il vero Abu Simbel pesa 9.4 megabyte, ma se ne carica solo la parte da 1.2 che viene effettivamente usata nella missione.</p>
+<pre style="margin:1.4rem 0"><code>int32_t image_collection_load_file(const char *name, int32_t slot)
+{
+    if (strcmp(slots[slot].name, name) == 0) {
+        return 1;                      // già caricato, non facciamo nulla
+    }
+    free(slots[slot].pixels);          // liberiamo il vecchio pacchetto
+    load_sg3_and_555(name, slot);      // i numeri delle immagini dello slot non cambiano
+    return 1;
+}</code></pre>
+    <h2>Come si facevano i giochi una volta</h2>
+    <p>Esattamente come oggi: trucchi, hack e convenzioni, sono cambiate solo le dimensioni. In Pharaoh, dopo l’avvio, in memoria ci sono circa 39 megabyte di pixel in trenta slot, più 3,2 megabyte per la tabella degli header, più i buffer dello schermo. È più di 16 megabyte, e più di 32, ma molto meno dei 300 megabyte iniziali: il gioco si appoggiava onestamente allo swap di Windows, e tutto il meccanismo descritto sopra serviva a far sì che il working set di un singolo frame (terreno, sprite degli abitanti, nemico corrente, fase giusta del monumento) entrasse nella memoria fisica, mentre tutto il resto se ne stava tranquillo su disco, senza frusciare e senza scricchiolare.</p>
+    <p>Senza tutti questi trucchi, le stesse immagini avrebbero occupato circa 92,6 megabyte più altri 8,3 per le direzioni specchiate, senza contare i 43,8 megabyte di sfondi a tutto schermo, che non vengono proprio caricati, e i monumenti, che si caricano solo nelle rispettive missioni: ecco, nel 2000 la differenza tra «ci sta con lo swap» e «non ci sta per niente» era più o meno questa.</p>
+    <h2>Invece di una conclusione</h2>
+    <img src="../../assets/articles/pharaoh-16mb/17.jpg" alt="" class="post-image" loading="lazy" />
+    <p>Mi piace scavare nei vecchi giochi, perché mostrano come si può lavorare dentro dei vincoli. Nessuno dei trucchi descritti era una svolta di per sé: lo stesso RLE è noto dagli anni Settanta, e la matematica dei rombi isometrici addirittura dagli anni Cinquanta o anche prima. Anche gli sprite specchiati c’erano già sul NES, e il caricamento dei dati su richiesta è semplicemente buon senso da sviluppatore.</p>
+    <p>Ma tutti insieme hanno trasformato 300 megabyte di grafica in un working set che entrava nella memoria di un computer del 2000, e lo hanno fatto senza una sola riga di assembly, semplicemente cambiando il formato dei dati. Il problema, come al solito, non era disegnare più in fretta: bastava che al momento giusto in memoria ci fossero le immagini giuste nella forma giusta.</p>
+    <p>P.S. Così si chiude la storia di quasi tre anni di ricostruzione dei sorgenti del Pharaoh originale, potete dare un’occhiata a cosa ne è venuto fuori. Compatibile a livello binario e spirituale con il gioco del 2000. Benvenuti agli scavi IT <a href="https://github.com/dalerank/tutankhamun" target="_blank" rel="noopener">https://github.com/dalerank/tutankhamun</a></p>
+    <p>P.P.S. Il progetto ha subito l’intervento di Claude, solo nelle ultime fasi (più o meno gli ultimi due mesi), quando c’era da scrivere la documentazione, a cui sono fortemente allergico: cioè smontare il codice non è un problema per me, ma poi scrivere cosa succede lì dentro e renderlo leggibile... ecco, lì sono messo male... ma è sempre stato il mio punto debole. Per il resto si è rivelato un ottimo aiutante nelle faccende archeologiche, sorprendentemente....</p>
+
+    <!-- related -->
+    <nav class="related" aria-label="Altro sull’argomento">
+      <h2>Altro sull’argomento</h2>
+      <ul>
+      <li class="lane-abn"><a href="dirty-coding-tricks-3.html">Dirty Coding Tricks, part 3</a><div class="pmeta"><span>2 agosto 2026</span><span>16 min</span></div></li>
+      <li class="lane-abn"><a href="eastl-guide.html">Guida sul campo a EASTL</a><div class="pmeta"><span>24 luglio 2026</span><span>15 min</span></div></li>
+      <li class="lane-abn"><a href="game-engine-phases.html">Finiremo tutti lì…</a><div class="pmeta"><span>18 luglio 2026</span><span>11 min</span></div></li>
+      </ul>
+    </nav>
+    <!-- /related -->
+    <a class="backlink" href="index.html">Tutti gli articoli</a>
+
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — creato e ospitato su GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/it/feed.xml">RSS</a></span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script>hljs.highlightAll();</script>
+<script src="../../site.js" defer></script>
+</body></html>

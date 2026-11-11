@@ -7,6 +7,14 @@
   <language>en</language>
   <atom:link href="https://dalerank.github.io/en/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>How Pharaoh Lived in 16 Megabytes of Memory</title>
+    <link>https://dalerank.github.io/en/articles/pharaoh-16mb.html</link>
+    <guid isPermaLink="true">https://dalerank.github.io/en/articles/pharaoh-16mb.html</guid>
+    <pubDate>Wed, 11 Nov 2026 09:00:00 +0000</pubDate>
+    <category>Abnormal programming</category>
+    <description>How Pharaoh (2000) fit about 300 megabytes of graphics into 16 megabytes of RAM without a single line of assembly, just by changing the data format: 8-bit palettes and DirectDraw surfaces, .sg3/.555 archives, RLE you can draw from directly, isometric diamonds without corners, building tops drawn separately, five directions instead of eight, a font that gets coloured while it’s drawn, on-demand image loading, and slots with placeholders. With numbers from the real game files and code from Tutankhamun, a reimplementation of Pharaoh in C.</description>
+  </item>
+  <item>
     <title>How to Cheat the Server a Little</title>
     <link>https://dalerank.github.io/en/articles/cheating-the-server.html</link>
     <guid isPermaLink="true">https://dalerank.github.io/en/articles/cheating-the-server.html</guid>
@@ -317,14 +325,6 @@
     <pubDate>Mon, 08 Jun 2026 09:00:00 +0000</pubDate>
     <category>Abnormal programming</category>
     <description>Why a resource manager is not a singleton but a whole engine subsystem: resource identity as a (source + parameters) pair, a cache with weak references and LRU, explicit and implicit parameters, targeted reload and hot-reload, recovery after device lost from D3D9 pools to DX12/Vulkan, a shared templated base for managers, and changing graphics settings without a restart — with examples from Unreal, Unity, Source, id Tech, Godot, No Man&#x27;s Sky, and Cyberpunk.</description>
-  </item>
-  <item>
-    <title>Architectural trade-offs in game development</title>
-    <link>https://dalerank.github.io/en/articles/architecture-tradeoffs.html</link>
-    <guid isPermaLink="true">https://dalerank.github.io/en/articles/architecture-tradeoffs.html</guid>
-    <pubDate>Wed, 03 Jun 2026 09:00:00 +0000</pubDate>
-    <category>Abnormal programming</category>
-    <description>A big breakdown of architectural patterns and trade-offs in gamedev: layers, metalayers, subsystems, pipes &amp; filters, microkernel, and blackboard with examples from Source, CryEngine, Unreal, id Tech, and Naughty Dog; design strategies (top-down/bottom-up/constant refactoring), the push vs pull axis, scripting languages, and rethinking GoF in modern game C++.</description>
   </item>
 </channel>
 </rss>
