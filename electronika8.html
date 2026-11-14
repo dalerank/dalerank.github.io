@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ELECTRONIKA8 — игра про советскую лабораторию и честную электронику — dalerank</title>
+<meta name="description" content="Советский НИИ, 1975 год. Вы новый лаборант: собирайте схемы из ламп, резисторов, транзисторов и микросхем на настоящем симуляторе и дорастите до собственного калькулятора. Скоро в Steam." />
+<link rel="alternate" hreflang="ru" href="https://dalerank.github.io/electronika8.html" />
+<link rel="alternate" hreflang="en" href="https://dalerank.github.io/en/electronika8.html" />
+<link rel="alternate" hreflang="x-default" href="https://dalerank.github.io/en/electronika8.html" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="style.css" />
+<link rel="alternate" type="application/rss+xml" title="dalerank" href="/feed.xml" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="dalerank" />
+<meta property="og:locale" content="ru_RU" />
+<meta property="og:url" content="https://dalerank.github.io/electronika8.html" />
+<meta property="og:title" content="ELECTRONIKA8 — скоро в Steam" />
+<meta property="og:description" content="Советский НИИ, 1975 год. Собирайте схемы на честной физике и дорастите до собственного калькулятора." />
+<meta property="og:image" content="https://dalerank.github.io/assets/projects/electronika8/key-art.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<style>
+.e8-hero{margin:40px 0 0;border-radius:6px;overflow:hidden;background:#0d2a2a;aspect-ratio:1672/940}
+.e8-hero img{display:block;width:100%;height:100%;object-fit:cover}
+.e8-lead{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:start;padding:36px 0 8px}
+.e8-lead h1{font-size:clamp(34px,5vw,54px);font-weight:600;letter-spacing:-.022em;line-height:1.02;margin:0 0 14px}
+.e8-lead p{margin:0;font-size:20px;color:var(--ink-2)}
+.e8-buy{display:flex;flex-direction:column;gap:14px;padding:22px;border:1px solid var(--rule);border-radius:6px;background:var(--surface)}
+.e8-buy .btn{text-align:center;font-size:16px;padding:12px 16px;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.e8-buy .btn:hover{background:var(--link);border-color:var(--link)}
+.e8-buy dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font:400 15px/1.4 var(--sans)}
+.e8-buy dt{color:var(--ink-2)}
+.e8-buy dd{margin:0}
+.e8-video{margin:36px 0 0;border-radius:6px;overflow:hidden;background:#000;aspect-ratio:16/9}
+.e8-video video{display:block;width:100%;height:100%}
+.e8-body{max-width:760px;margin:0 auto;padding:16px 0 24px}
+.e8-body ul{padding-left:1.2em}
+.e8-body li{margin:6px 0}
+.e8-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:8px 0 0}
+.e8-gallery a{display:block;border-radius:4px;overflow:hidden;background:var(--surface);aspect-ratio:16/9}
+.e8-gallery img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s}
+.e8-gallery a:hover img{transform:scale(1.03)}
+.e8-small{font-size:16px;color:var(--ink-2)}
+.e8-body h2{scroll-margin-top:80px}
+@media (max-width:760px){
+  .e8-lead{grid-template-columns:1fr;gap:24px}
+  .e8-gallery{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap nav">
+  <a class="brand" href="index.html"><span class="seal"><img src="https://avatars.githubusercontent.com/u/918081?v=4" alt="dalerank" /></span><span>dale<b>rank</b></span></a>
+  <nav class="links"><a href="index.html#writing">Статьи</a><a href="index.html#books">Книги</a><a href="index.html#projects">Проекты</a><a href="about.html">Обо мне</a></nav>
+  <div class="actions"><span class="lang"><a class="on" href="electronika8.html">RU</a><i>/</i><a href="en/electronika8.html">EN</a></span><a class="btn" href="https://www.patreon.com/cw/dalerank" target="_blank" rel="noopener">Поддержать</a></div>
+</div></header>
+<main class="wrap">
+  <div class="e8-hero"><img src="assets/projects/electronika8/key-art.jpg" alt="ELECTRONIKA 8: советская печатная плата, красный и зелёный провода" /></div>
+
+  <section class="e8-lead">
+    <div>
+      <span class="eyebrow">Головоломка · симулятор электроники · Windows</span>
+      <h1>ELECTRONIKA8</h1>
+      <p>Советский НИИ, 1975 год. Вы новый лаборант, и задания вам присылает завлаб служебными записками. Собирайте схемы из ламп, резисторов, конденсаторов, транзисторов и микросхем на честной физике и дорастите до собственного калькулятора.</p>
+    </div>
+    <aside class="e8-buy">
+      <a class="btn" href="https://store.steampowered.com/app/5618740/" target="_blank" rel="noopener">Добавить в желаемое в Steam</a>
+      <dl>
+        <dt>Выход</dt><dd>скоро; сначала демо</dd>
+        <dt>Платформа</dt><dd>Windows 10/11, 64-bit</dd>
+        <dt>Языки</dt><dd>русский, английский</dd>
+        <dt>Уровни</dt><dd>94 в 10 главах</dd>
+      </dl>
+    </aside>
+  </section>
+
+  <div class="e8-video">
+    <video controls preload="none" playsinline poster="assets/projects/electronika8/trailer.poster.jpg">
+      <source src="assets/projects/electronika8/trailer.mp4" type="video/mp4" />
+    </video>
+  </div>
+
+  <article class="prose e8-body">
+    <h2>Товарищ лаборант!</h2>
+    <p>Первое задание это лампа и батарейка. Последнее это калькулятор из микросхем, которые вы спроектировали сами.</p>
+    <p>Каждый уровень приходит служебной запиской от завлаба. Кот директора боится темноты, котельной нужна сигнализация, которую не поднимет один совравший датчик, министерству нужна счётная машина на стол каждому бухгалтеру. Вам дают бюджет, ящик с остатками и каталог деталей. Вы собираете схему на плате, включаете питание, и стенд прогоняет её по шагам. Прошла, значит записка получает штамп «ПРИНЯТО», а прибор на стенде оживает.</p>
+
+    <div class="e8-gallery">
+      <a href="assets/projects/electronika8/02-ru.jpg"><img src="assets/projects/electronika8/02-ru.jpg" alt="Стенд: ночник для кота директора" loading="lazy" /></a>
+      <a href="assets/projects/electronika8/01-ru.jpg"><img src="assets/projects/electronika8/01-ru.jpg" alt="Служебная записка с заданием и плакат на столе" loading="lazy" /></a>
+    </div>
+
+    <h2>Честная физика</h2>
+    <ul>
+      <li>Схемы считает настоящий симулятор электроники, порт circuitjs Пола Фалстада и Иэна Шарпа. Закон Ома здесь не подсказка, а закон.</li>
+      <li>Детали греются и горят. Дешёвый резистор сгорает сразу, хороший сначала краснеет и дымит. Сгоревшее стоит денег и оставляет след на плате.</li>
+      <li>Мерьте мультиметром, смотрите сигналы на осциллографе, ищите плохой контакт и резистор не того номинала.</li>
+    </ul>
+
+    <h2>От лампочки до калькулятора</h2>
+    <ul>
+      <li><b>94 уровня в 10 главах:</b> ток и лампа, закон Ома, конденсаторы и время, диоды и светодиоды, транзисторы, вентили, комбинационная логика, память и такт, арифметика и калькулятор.</li>
+      <li><b>Свои микросхемы.</b> Соберите вентиль из транзисторов, и по его чертежу завод выпустит чип. Следующие чипы собираются из предыдущих.</li>
+      <li><b>Деньги считаются.</b> У каждой детали цена, качество дороже. На барахолке дешевле, но маркировка стёрта. В посылках из-за границы попадается брак.</li>
+      <li><b>Карьера</b> от лаборанта до завлаба, а рядом м.н.с. Петров со своими советами.</li>
+    </ul>
+
+    <div class="e8-gallery">
+      <a href="assets/projects/electronika8/04-ru.jpg"><img src="assets/projects/electronika8/04-ru.jpg" alt="Стенд с ракетой во дворе института" loading="lazy" /></a>
+      <a href="assets/projects/electronika8/06-ru.jpg"><img src="assets/projects/electronika8/06-ru.jpg" alt="Большая схема и газета «Правда» на столе" loading="lazy" /></a>
+      <a href="assets/projects/electronika8/03-ru.jpg"><img src="assets/projects/electronika8/03-ru.jpg" alt="Плата с самоваром на стенде и подсказкой Петрова" loading="lazy" /></a>
+      <a href="assets/projects/electronika8/05-ru.jpg"><img src="assets/projects/electronika8/05-ru.jpg" alt="Проходная института на стенде" loading="lazy" /></a>
+    </div>
+
+    <h2>Институт вокруг</h2>
+    <ul>
+      <li>Своя комната на каждую главу, от подвала до кабинета директора, «Правда» на столе и радио на 24 трека.</li>
+      <li>Мастерская-песочница со всеми открытыми деталями и редактор уровней.</li>
+      <li><b>Три режима:</b> «Стажёр» с деньгами в полтора раза больше, «МНС» и «Завлаб» с одним сохранением, без «начать заново», где провал заканчивает кампанию.</li>
+      <li><b>35 знаков отличия</b> вручаются в коробочках, десять из них скрытые.</li>
+    </ul>
+    <p>Знать электронику не нужно, игра учит по ходу дела.</p>
+
+    <h2>Демоверсия</h2>
+    <p>Первые две главы, 22 уровня: ток и лампа, закон Ома. Сохранения переходят в полную игру, и она продолжается с того места, где закончилось демо.</p>
+
+    <h2>Благодарности</h2>
+    <p class="e8-small">Симуляция схем построена на <a href="https://www.falstad.com/circuit/">circuitjs</a> Пола Фалстада и Иэна Шарпа и используется с разрешения авторов. Звуки из библиотеки Pixabay. Как в игре используется генеративный ИИ, написано на странице в Steam.</p>
+
+    <h2 id="privacy">Конфиденциальность</h2>
+    <p class="e8-small">ELECTRONIKA8 не собирает и не передаёт никаких данных об игроке. В игре нет аналитики, рекламы и учётных записей. Прогресс хранится в файле на вашем компьютере (<code>%APPDATA%\Electronika8</code>), а Steam Cloud копирует его между вашими машинами по правилам Steam. Достижения и статус в списке друзей передаёт клиент Steam. Вопросы: <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a>.</p>
+
+    <a class="backlink" href="index.html#projects">Все проекты</a>
+  </article>
+</main>
+<footer><div class="wrap foot"><span>© 2026 dalerank — собрано и размещено на GitHub Pages</span><span><a href="https://github.com/dalerank">GitHub</a> <a href="https://www.patreon.com/cw/dalerank">Patreon</a> <a href="https://dalerank.github.io/Akhenaten/">Akhenaten</a> <a href="https://t.me/dalerank" target="_blank" rel="noopener">@dalerank</a> <a href="/feed.xml">RSS</a></span></div></footer>
+<script src="site.js" defer></script>
+</body></html>
